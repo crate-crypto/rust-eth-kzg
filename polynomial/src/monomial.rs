@@ -64,6 +64,18 @@ pub fn poly_mul(a: &PolyCoeff, b: &PolyCoeff) -> PolyCoeff {
     result
 }
 
+/// Given a list of points, this method will compute the polynomial
+/// Z(x) which is equal to zero when evaluated at each point.
+/// 
+/// Example: vanishing_poly([1, 2, 3]) = (x - 1)(x - 2)(x - 3)
+pub fn vanishing_poly(roots: &[Scalar]) -> Vec<Scalar> {
+    let mut poly = vec![Scalar::from(1u64)];
+    for root in roots {
+        poly = poly_mul(&poly, &vec![-root, Scalar::from(1u64)]);
+    }
+    poly
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -134,5 +146,24 @@ mod tests {
             Scalar::from(15),
         ];
         assert_eq!(poly_mul(&a, &b), expected);
+    }
+
+    #[test]
+    fn vanishing_polynomial_smoke_test() {
+        // f(x) = (x - 1)(x - 2)(x - 3) = x^3 - 6x^2 + 11x - 6
+        let roots = vec![Scalar::from(1u64), Scalar::from(2u64), Scalar::from(3u64)];
+        let expected = vec![
+            -Scalar::from(6u64),
+            Scalar::from(11u64),
+            -Scalar::from(6u64),
+            Scalar::from(1u64),
+        ];
+        let poly = vanishing_poly(&roots);
+        assert_eq!(&poly, &expected);
+
+        // Check that this polynomial evaluates to zero on the roots
+        for root in roots.iter() {
+            assert_eq!(poly_eval(&poly, &root), Scalar::from(0u64));
+        }
     }
 }
