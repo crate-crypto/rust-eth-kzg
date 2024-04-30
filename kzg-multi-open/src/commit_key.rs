@@ -83,3 +83,17 @@ impl CommitKeyLagrange {
         g2_lincomb(&self.g2s[0..polynomial.len()], &polynomial)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::trusted_setup::from_eth_setup;
+
+    use super::CommitKey;
+
+    #[test]
+    fn eth_trusted_setup_deserializes() {
+        // Just test that the trusted setup can be loaded
+        let (g1s, g2s) = from_eth_setup();
+        let _ck = CommitKey::new(g1s, g2s);
+    }
+}
