@@ -38,39 +38,9 @@ pub fn poly_sub(a: PolyCoeff, b: PolyCoeff) -> PolyCoeff {
     poly_add(a, neg_b)
 }
 
-/// Computes powers of a scalar up to and including the given degree.
-///
-/// Example: powers(x, 10) == [1, x, x^2, ..., x^10]
-fn powers_of(scalar: &Scalar, max_degree: usize) -> Vec<Scalar> {
-    let mut powers = Vec::with_capacity(max_degree);
-    powers.push(Scalar::from(1u64));
-    for i in 1..=max_degree {
-        powers.push(powers[i - 1] * scalar);
-    }
-    powers
-}
-
 /// Given a polynomial `f(x)` and a scalar `z`. This method will compute
 /// the result of `f(z)` and return the result.
 pub fn poly_eval(poly: &PolyCoeff, value: &Scalar) -> Scalar {
-    // If the scalar, we are evaluating at it zero, return the constant term
-    if value == &Scalar::from(0u64) {
-        return poly[0];
-    }
-
-    let powers = powers_of(value, poly.len());
-
-    let mut sum = Scalar::from(0u64);
-    for (power, coeff) in powers.iter().zip(poly.iter()) {
-        sum += coeff * power
-    }
-
-    sum
-}
-
-/// Given a polynomial `f(x)` and a scalar `z`. This method will compute
-/// the result of `f(z)` and return the result.
-pub fn horners_eval(poly: &PolyCoeff, value: &Scalar) -> Scalar {
     let mut result = Scalar::from(0u64);
     for coeff in poly.iter().rev() {
         result = result * value + coeff;
@@ -81,7 +51,6 @@ pub fn horners_eval(poly: &PolyCoeff, value: &Scalar) -> Scalar {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bls12_381::ff::Field;
 
     #[test]
     fn basic_polynomial_add() {
@@ -114,19 +83,6 @@ mod tests {
         let b = vec![Scalar::from(6), Scalar::from(7), Scalar::from(8)];
         let c = vec![-Scalar::from(2), -Scalar::from(2), -Scalar::from(8)];
         assert_eq!(poly_sub(a, b), c);
-    }
-
-    #[test]
-    fn powers_of_smoke_test() {
-        let scalar = Scalar::from(2u64);
-        let max_degree = 10;
-        let powers = powers_of(&scalar, max_degree);
-
-        assert_eq!(powers.len(), max_degree + 1);
-        
-        for i in 0..=max_degree {
-            assert_eq!(powers[i], scalar.pow_vartime(&[i as u64]));
-        }
     }
 
     #[test]
