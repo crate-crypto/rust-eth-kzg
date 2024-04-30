@@ -4,8 +4,8 @@ pub mod batch_inversion;
 // TODO: We could feature flag the different bls12-381 implementations
 
 // Re-export ff and group, so other crates do not need to directly import(and independently version) them
-pub use group;
 pub use ff;
+pub use group;
 
 pub type G1Point = blstrs::G1Affine;
 pub type G1Projective = blstrs::G1Projective;

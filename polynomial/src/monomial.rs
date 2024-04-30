@@ -1,5 +1,5 @@
-use bls12_381::Scalar;
 use bls12_381::ff::Field;
+use bls12_381::Scalar;
 
 /// This file will hold the implementation of a polynomial in monomial form
 
@@ -7,9 +7,9 @@ use bls12_381::ff::Field;
 /// Layout: x^0 * a_0 + x^1 * a_1 + ... + x^(n-1) * a_(n-1)
 pub type PolyCoeff = Vec<Scalar>;
 
-/// For two polynomials, `f(x)` and `g(x)`, this method computes 
+/// For two polynomials, `f(x)` and `g(x)`, this method computes
 /// the result of `f(x) + g(x)` and returns the result.
-/// 
+///
 /// Note: Polynomials can be of different lengths.
 pub fn poly_add(a: PolyCoeff, b: PolyCoeff) -> PolyCoeff {
     let (smaller_poly, mut larger_poly) = if a.len() < b.len() { (a, b) } else { (b, a) };
@@ -32,7 +32,7 @@ pub fn poly_neg(mut a: PolyCoeff) -> PolyCoeff {
 
 /// For two polynomials, `f(x)` and `g(x)`, this method computes
 /// the result of `f(x) - g(x)` and returns the result.
-/// 
+///
 /// Note: Polynomials can be of different lengths
 pub fn poly_sub(a: PolyCoeff, b: PolyCoeff) -> PolyCoeff {
     let neg_b = poly_neg(b);
@@ -48,7 +48,6 @@ pub fn poly_eval(poly: &PolyCoeff, value: &Scalar) -> Scalar {
     }
     result
 }
-
 
 /// For two polynomials, `f(x)` and `g(x)`, this method computes
 /// the result of `f(x) * g(x)` and returns the result.
@@ -66,7 +65,7 @@ pub fn poly_mul(a: &PolyCoeff, b: &PolyCoeff) -> PolyCoeff {
 
 /// Given a list of points, this method will compute the polynomial
 /// Z(x) which is equal to zero when evaluated at each point.
-/// 
+///
 /// Example: vanishing_poly([1, 2, 3]) = (x - 1)(x - 2)(x - 3)
 pub fn vanishing_poly(roots: &[Scalar]) -> Vec<Scalar> {
     let mut poly = vec![Scalar::from(1u64)];
@@ -88,7 +87,6 @@ mod tests {
         }
         result
     }
-
 
     #[test]
     fn basic_polynomial_add() {

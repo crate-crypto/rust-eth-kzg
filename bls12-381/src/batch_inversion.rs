@@ -93,23 +93,29 @@ fn serial_batch_inversion(v: &mut [Scalar]) {
 
 #[cfg(test)]
 mod tests {
-    use ff::Field;
-    use crate::Scalar;
     use super::{batch_inverse, batch_inverse_check_for_zero};
+    use crate::Scalar;
+    use ff::Field;
 
-    fn random_elements(num_elements : usize) -> Vec<Scalar> {
+    fn random_elements(num_elements: usize) -> Vec<Scalar> {
         (0..num_elements)
-        .map(|_| Scalar::random(&mut rand::thread_rng()))
-        .collect::<Vec<_>>()
+            .map(|_| Scalar::random(&mut rand::thread_rng()))
+            .collect::<Vec<_>>()
     }
 
     #[test]
     fn batch_inversion_smoke_test() {
         let random_elements = random_elements(1000);
         // A zero element is unlikely to be generated, however we check for it and swap it with 1, if thats the case
-        let mut random_non_zero_elements = random_elements.into_iter().map(|f| if f.is_zero_vartime() { Scalar::ONE } else { f }).collect::<Vec<_>>();
-        
-        let got_inversion = random_non_zero_elements.iter().map(|f| f.invert().expect("unexpected zero scalar")).collect::<Vec<_>>();
+        let mut random_non_zero_elements = random_elements
+            .into_iter()
+            .map(|f| if f.is_zero_vartime() { Scalar::ONE } else { f })
+            .collect::<Vec<_>>();
+
+        let got_inversion = random_non_zero_elements
+            .iter()
+            .map(|f| f.invert().expect("unexpected zero scalar"))
+            .collect::<Vec<_>>();
         batch_inverse(&mut random_non_zero_elements);
 
         assert_eq!(random_non_zero_elements, got_inversion);
@@ -119,7 +125,7 @@ mod tests {
     fn batch_inverse_zero_check() {
         let mut zero_elements = vec![Scalar::ZERO; 1000];
         batch_inverse_check_for_zero(&mut zero_elements);
-        
+
         assert_eq!(zero_elements, vec![Scalar::ZERO; 1000]);
     }
 
