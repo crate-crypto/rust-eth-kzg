@@ -3,6 +3,9 @@ use bls12_381::Scalar;
 
 /// This file will hold the implementation of a polynomial in monomial form
 
+// TODO: These methods are taking ownership which should Ideally be changed.
+// TODO: We can also possibly remove the type alias and use a new type
+
 /// A polynomial in monomial form where the lowest degree term is first
 /// Layout: x^0 * a_0 + x^1 * a_1 + ... + x^(n-1) * a_(n-1)
 pub type PolyCoeff = Vec<Scalar>;
