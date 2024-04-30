@@ -174,6 +174,8 @@ fn fft_scalar(nth_root_of_unity: Scalar, points: &[Scalar]) -> Vec<Scalar> {
 /// Computes a DFT of the group elements(points) using powers of the roots of unity.
 ///
 /// Note: This is essentially multiple multi-scalar multiplications.
+///
+/// TODO: Optimize this, currently very slow
 fn fft_g1(nth_root_of_unity: Scalar, points: &[G1Projective]) -> Vec<G1Projective> {
     let n = points.len();
     if n == 1 {
