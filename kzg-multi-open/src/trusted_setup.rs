@@ -1,5 +1,8 @@
 use bls12_381::{G1Projective, G2Projective};
 
+/// TODO: This has been placed here for convenience. Once things are fleshed out more,
+/// TODO: we can move this up the stack.
+
 /// Returns the monomial form of the powers of tau for G1 and G2
 pub fn from_eth_setup() -> (Vec<G1Projective>, Vec<G2Projective>) {
     let mut g1_points = Vec::new();
