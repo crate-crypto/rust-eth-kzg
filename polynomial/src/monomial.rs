@@ -68,6 +68,16 @@ pub fn poly_eval(poly: &PolyCoeff, value: &Scalar) -> Scalar {
     sum
 }
 
+/// Given a polynomial `f(x)` and a scalar `z`. This method will compute
+/// the result of `f(z)` and return the result.
+pub fn horners_eval(poly: &PolyCoeff, value: &Scalar) -> Scalar {
+    let mut result = Scalar::from(0u64);
+    for coeff in poly.iter().rev() {
+        result = result * value + coeff;
+    }
+    result
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
