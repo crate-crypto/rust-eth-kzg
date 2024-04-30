@@ -1,4 +1,5 @@
 use bls12_381::Scalar;
+use bls12_381::ff::Field;
 
 /// This file will hold the implementation of a polynomial in monomial form
 
@@ -45,6 +46,21 @@ pub fn poly_eval(poly: &PolyCoeff, value: &Scalar) -> Scalar {
     for coeff in poly.iter().rev() {
         result = result * value + coeff;
     }
+    result
+}
+
+
+/// For two polynomials, `f(x)` and `g(x)`, this method computes
+/// the result of `f(x) * g(x)` and returns the result.
+pub fn poly_mul(a: &PolyCoeff, b: &PolyCoeff) -> PolyCoeff {
+    let mut result = vec![Scalar::ZERO; a.len() + b.len() - 1];
+
+    for (i, a_coeff) in a.iter().enumerate() {
+        for (j, b_coeff) in b.iter().enumerate() {
+            result[i + j] += a_coeff * b_coeff;
+        }
+    }
+
     result
 }
 
@@ -102,5 +118,21 @@ mod tests {
         let poly = vec![Scalar::from(1), Scalar::from(2), Scalar::from(3)];
         let value = Scalar::from(2u64);
         assert!(poly_eval(&poly, &value) == naive_poly_eval(&poly, &value));
+    }
+
+    #[test]
+    fn polynomial_multiplication() {
+        // f(x) = 1 + 2x + 3x^2
+        // g(x) = 4 + 5x
+        // f(x) * g(x) = 4 + 8x + 12x^2 + 5x + 10x^2 + 15x^3 = 4 + 13x + 22x^2 + 15x^3
+        let a = vec![Scalar::from(1), Scalar::from(2), Scalar::from(3)];
+        let b = vec![Scalar::from(4), Scalar::from(5)];
+        let expected = vec![
+            Scalar::from(4),
+            Scalar::from(13),
+            Scalar::from(22),
+            Scalar::from(15),
+        ];
+        assert_eq!(poly_mul(&a, &b), expected);
     }
 }
