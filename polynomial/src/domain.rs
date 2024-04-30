@@ -1,6 +1,9 @@
 use crate::monomial::PolyCoeff;
 use bls12_381::ff::{Field, PrimeField};
-use bls12_381::Scalar;
+use bls12_381::{
+    group::Group,
+    {G1Projective, Scalar},
+};
 
 /// A struct representing a set of points that are roots of unity,
 /// which allows us to efficiently evaluate and interpolate polynomial
@@ -94,6 +97,27 @@ impl Domain {
         fft_scalar(self.generator, &points)
     }
 
+    /// Computes a DFT for the group elements(points) using the domain roots.
+    pub fn fft_g1(&self, mut points: Vec<G1Projective>) -> Vec<G1Projective> {
+        // pad the points with zeroes
+        points.resize(self.size(), G1Projective::identity());
+        fft_g1(self.generator, &points)
+    }
+
+    /// Computes an IDFT for the group elements(points) using the domain roots.
+    pub fn ifft_g1(&self, mut points: Vec<G1Projective>) -> Vec<G1Projective> {
+        // pad the points with zeroes
+        points.resize(self.size(), G1Projective::identity());
+
+        let mut ifft_g1 = fft_g1(self.generator_inv, &points);
+
+        for element in ifft_g1.iter_mut() {
+            *element = *element * self.domain_size_inv
+        }
+
+        ifft_g1
+    }
+
     /// Interpolates the points over the domain to get a polynomial
     /// in monomial form.
     pub fn ifft_scalars(&self, mut points: Vec<Scalar>) -> Vec<Scalar> {
@@ -139,6 +163,37 @@ fn fft_scalar(nth_root_of_unity: Scalar, points: &[Scalar]) -> Vec<Scalar> {
     for k in 0..n / 2 {
         let tmp = fft_odd[k] * input_point;
         evaluations[k] = fft_even[k] + tmp;
+        evaluations[k + n / 2] = fft_even[k] - tmp;
+
+        input_point = input_point * nth_root_of_unity;
+    }
+
+    evaluations
+}
+
+/// Computes a DFT of the group elements(points) using powers of the roots of unity.
+///
+/// Note: This is essentially multiple multi-scalar multiplications.
+fn fft_g1(nth_root_of_unity: Scalar, points: &[G1Projective]) -> Vec<G1Projective> {
+    let n = points.len();
+    if n == 1 {
+        return points.to_vec();
+    }
+
+    let (even, odd) = take_even_odd(points);
+
+    // Compute a root with half the order
+    let gen_squared = nth_root_of_unity.square();
+
+    let fft_even = fft_g1(gen_squared, &even);
+    let fft_odd = fft_g1(gen_squared, &odd);
+
+    let mut input_point = Scalar::ONE;
+    let mut evaluations = vec![G1Projective::identity(); n];
+
+    for k in 0..n / 2 {
+        let tmp = fft_odd[k] * input_point;
+        evaluations[k] = G1Projective::from(fft_even[k]) + tmp;
         evaluations[k + n / 2] = fft_even[k] - tmp;
 
         input_point = input_point * nth_root_of_unity;
@@ -214,5 +269,39 @@ mod tests {
         // Evaluate the polynomial at the domain points
         let got_evals = domain.fft_scalars(poly_coeff.clone());
         assert_eq!(got_evals, evaluations);
+    }
+
+    #[test]
+    fn fft_g1_smoke_test() {
+        fn naive_msm(points: &[G1Projective], scalars: &[Scalar]) -> G1Projective {
+            let mut acc = G1Projective::identity();
+            for (point, scalar) in points.iter().zip(scalars.iter()) {
+                acc += point * scalar;
+            }
+            acc
+        }
+        fn powers_of(scalar: &Scalar, max_degree: usize) -> Vec<Scalar> {
+            let mut powers = Vec::new();
+            powers.push(Scalar::from(1u64));
+            for i in 1..=max_degree {
+                powers.push(powers[i - 1] * scalar);
+            }
+            powers
+        }
+
+        let n = 4;
+        let domain = Domain::new(n);
+        let points = vec![G1Projective::random(&mut rand::thread_rng()); n];
+
+        let dft_points = domain.fft_g1(points.clone());
+        for (i, root) in domain.roots.iter().enumerate() {
+            let powers = powers_of(root, points.len());
+
+            let expected = naive_msm(&points, &powers);
+            let got = dft_points[i];
+            assert_eq!(expected, got);
+        }
+
+        assert_eq!(domain.ifft_g1(dft_points), points);
     }
 }
