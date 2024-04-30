@@ -33,10 +33,10 @@ impl Domain {
         };
 
         let generator = Self::compute_generator_for_size(size);
-        let generator_inv = generator.invert().unwrap(); // Generator should not be zero
+        let generator_inv = generator.invert().expect("generator should not be zero");
 
         let size_as_scalar = Scalar::from(size as u64);
-        let size_as_scalar_inv = size_as_scalar.invert().unwrap();
+        let size_as_scalar_inv = size_as_scalar.invert().expect("size should not be zero");
 
         let mut roots = Vec::with_capacity(size);
         roots.push(Scalar::ONE);
@@ -55,6 +55,9 @@ impl Domain {
         }
     }
 
+    /// Computes an n'th root of unity for a given `n`
+    ///
+    /// TODO: If this shows to be too slow, we can use a lookup table
     fn compute_generator_for_size(size: usize) -> Scalar {
         assert!(size.is_power_of_two());
 
@@ -69,7 +72,8 @@ impl Domain {
         Domain::largest_root_of_unity().pow_vartime(&[exponent])
     }
 
-    fn largest_root_of_unity() -> Scalar {
+    /// The largest root of unity that we can use for the domain
+    const fn largest_root_of_unity() -> Scalar {
         Scalar::ROOT_OF_UNITY
     }
 
