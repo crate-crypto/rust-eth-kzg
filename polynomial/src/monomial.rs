@@ -6,10 +6,10 @@ use bls12_381::Scalar;
 /// Layout: x^0 * a_0 + x^1 * a_1 + ... + x^(n-1) * a_(n-1)
 pub type PolyCoeff = Vec<Scalar>;
 
-/// For two polynomials, f(x) and g(x), this method computes 
+/// For two polynomials, `f(x)` and `g(x)`, this method computes 
 /// the result of `f(x) + g(x)` and returns the result.
 /// 
-/// Note: Polynomials can be of different lengths
+/// Note: Polynomials can be of different lengths.
 pub fn poly_add(a: PolyCoeff, b: PolyCoeff) -> PolyCoeff {
     let (smaller_poly, mut larger_poly) = if a.len() < b.len() { (a, b) } else { (b, a) };
 
@@ -20,7 +20,7 @@ pub fn poly_add(a: PolyCoeff, b: PolyCoeff) -> PolyCoeff {
     larger_poly
 }
 
-/// For a polynomial, f(x), this method computes the result of `-f(x)`
+/// For a polynomial, `f(x)`, this method computes the result of `-f(x)`
 /// and returns the result.
 pub fn poly_neg(mut a: PolyCoeff) -> PolyCoeff {
     for i in 0..a.len() {
@@ -29,7 +29,7 @@ pub fn poly_neg(mut a: PolyCoeff) -> PolyCoeff {
     a
 }
 
-/// For two polynomials, f(x) and g(x), this method computes
+/// For two polynomials, `f(x)` and `g(x)`, this method computes
 /// the result of `f(x) - g(x)` and returns the result.
 /// 
 /// Note: Polynomials can be of different lengths
@@ -38,7 +38,7 @@ pub fn poly_sub(a: PolyCoeff, b: PolyCoeff) -> PolyCoeff {
     poly_add(a, neg_b)
 }
 
-/// Computes powers of a scalar up to a given degree.
+/// Computes powers of a scalar up to and including the given degree.
 ///
 /// Example: powers(x, 10) == [1, x, x^2, ..., x^10]
 fn powers_of(scalar: &Scalar, max_degree: usize) -> Vec<Scalar> {
@@ -50,8 +50,8 @@ fn powers_of(scalar: &Scalar, max_degree: usize) -> Vec<Scalar> {
     powers
 }
 
-/// Given a polynomial f(x) and a scalar z. This method will compute
-/// the result of f(z) and return the result.
+/// Given a polynomial `f(x)` and a scalar `z`. This method will compute
+/// the result of `f(z)` and return the result.
 pub fn poly_eval(poly: &PolyCoeff, value: &Scalar) -> Scalar {
     // If the scalar, we are evaluating at it zero, return the constant term
     if value == &Scalar::from(0u64) {
