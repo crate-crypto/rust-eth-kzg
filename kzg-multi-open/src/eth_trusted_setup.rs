@@ -4,7 +4,7 @@ use bls12_381::{G1Projective, G2Projective};
 /// TODO: we can move this up the stack.
 
 /// Returns the monomial form of the powers of tau for G1 and G2
-pub fn from_eth_setup() -> (Vec<G1Projective>, Vec<G2Projective>) {
+pub fn deserialize() -> (Vec<G1Projective>, Vec<G2Projective>) {
     let mut g1_points = Vec::new();
     for g1_point in G1_MONOMIAL {
         let g1_point_without_0x = g1_point.strip_prefix("0x").unwrap();
