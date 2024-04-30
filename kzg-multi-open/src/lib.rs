@@ -4,6 +4,7 @@ use opening_key::OpeningKey;
 pub mod commit_key;
 pub mod lincomb;
 pub mod opening_key;
+pub mod proof;
 
 // TODO: Remove this once we have imported the consensus specs test vectors
 mod consensus_specs_fixed_test_vector;
