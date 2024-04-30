@@ -1,3 +1,30 @@
+use bls12_381::{G1Projective, G2Projective};
+
+/// Returns the monomial form of the powers of tau for G1 and G2
+pub fn from_eth_setup() -> (Vec<G1Projective>, Vec<G2Projective>) {
+    let mut g1_points = Vec::new();
+    for g1_point in G1_MONOMIAL {
+        let g1_point_without_0x = g1_point.strip_prefix("0x").unwrap();
+        let g1_points_bytes: [u8; 48] = hex::decode(g1_point_without_0x)
+            .expect("trusted setup is malformed")
+            .try_into()
+            .unwrap();
+        g1_points.push(G1Projective::from_compressed(&g1_points_bytes).unwrap())
+    }
+
+    let mut g2_points = Vec::new();
+    for g2_point in G2_MONOMIAL {
+        let g2_point_without_0x = g2_point.strip_prefix("0x").unwrap();
+        let g2_points_bytes: [u8; 96] = hex::decode(g2_point_without_0x)
+            .expect("trusted setup is malformed")
+            .try_into()
+            .unwrap();
+        g2_points.push(G2Projective::from_compressed(&g2_points_bytes).unwrap())
+    }
+
+    (g1_points, g2_points)
+}
+
 pub const G1_MONOMIAL : [&str; 4096] = [
     "0x97f1d3a73197d7942695638c4fa9ac0fc3688c4f9774b905a14e3a3f171bac586c55e83ff97a1aeffb3af00adb22c6bb",
     "0xad3eb50121139aa34db1d545093ac9374ab7bca2c0f3bf28e27c8dcd8fc7cb42d25926fc0c97b336e9f0fb35e5a04c81",
