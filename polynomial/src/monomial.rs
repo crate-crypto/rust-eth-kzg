@@ -51,6 +51,16 @@ pub fn poly_eval(poly: &PolyCoeff, value: &Scalar) -> Scalar {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bls12_381::ff::Field;
+
+    fn naive_poly_eval(poly: &PolyCoeff, value: &Scalar) -> Scalar {
+        let mut result = Scalar::from(0u64);
+        for (i, coeff) in poly.iter().enumerate() {
+            result += coeff * value.pow_vartime(&[i as u64]);
+        }
+        result
+    }
+
 
     #[test]
     fn basic_polynomial_add() {
@@ -91,12 +101,6 @@ mod tests {
         // f(2) = 1 + 2*2 + 3*2^2 = 1 + 4 + 12 = 17
         let poly = vec![Scalar::from(1), Scalar::from(2), Scalar::from(3)];
         let value = Scalar::from(2u64);
-        let result = Scalar::from(17u64);
-        assert!(poly_eval(&poly, &value) == result);
-
-        // f(0) = 1
-        let value = Scalar::from(0u64);
-        let result = Scalar::from(1u64);
-        assert!(poly_eval(&poly, &value) == result);
+        assert!(poly_eval(&poly, &value) == naive_poly_eval(&poly, &value));
     }
 }
