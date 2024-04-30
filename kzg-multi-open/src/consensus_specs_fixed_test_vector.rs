@@ -2,25 +2,27 @@
 // commitment, cells, proofs and blob that is produced.
 //
 // For now, we will use this as the source of truth for interoperability.
-
+//
+// We have prefixed the publicly facing methods with eth, since the object names are quite
+// generic and so that when we move this code, up the stack, we just need to look for the eth namespace.
 use bls12_381::{G1Projective, Scalar, G1_POINT_SERIALIZED_SIZE, SCALAR_SERIALIZED_SIZE};
 
-pub fn commitment() -> G1Projective {
+pub fn eth_commitment() -> G1Projective {
     deserialize_compressed_g1(COMMITMENT)
 }
 
-pub fn blob() -> Vec<Scalar> {
+pub fn eth_polynomial() -> Vec<Scalar> {
     convert_blob_to_polynomial(BLOB)
 }
 
-pub fn cells() -> Vec<Vec<Scalar>> {
+pub fn eth_cells() -> Vec<Vec<Scalar>> {
     CELLS
         .into_iter()
         .map(|cell_str| convert_cell_to_scalars(cell_str))
         .collect()
 }
 
-pub fn proofs() -> Vec<G1Projective> {
+pub fn eth_proofs() -> Vec<G1Projective> {
     PROOFS
         .into_iter()
         .map(|proof_str| deserialize_compressed_g1(proof_str))
