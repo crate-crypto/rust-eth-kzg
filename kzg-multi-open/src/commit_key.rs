@@ -65,14 +65,17 @@ impl CommitKeyLagrange {
 
 #[cfg(test)]
 mod tests {
-    use crate::trusted_setup::from_eth_setup;
+    use crate::{opening_key::OpeningKey, trusted_setup::from_eth_setup};
 
     use super::CommitKey;
 
     #[test]
     fn eth_trusted_setup_deserializes() {
-        // Just test that the trusted setup can be loaded
+        // Just test that the trusted setup can be loaded/deserialized
         let (g1s, g2s) = from_eth_setup();
+        let generator = g1s[0];
+
         let _ck = CommitKey::new(g1s);
+        let _vk = OpeningKey::new(generator, g2s);
     }
 }
