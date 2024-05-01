@@ -29,14 +29,18 @@ pub fn create_eth_commit_opening_keys() -> (CommitKey, OpeningKey) {
 }
 
 #[cfg(test)]
-mod tests {
+mod eth_tests {
+    use bls12_381::G1Point;
     use polynomial::domain::Domain;
 
     use super::CommitKey;
     use crate::{
-        consensus_specs_fixed_test_vector::{eth_commitment, eth_polynomial},
+        consensus_specs_fixed_test_vector::{
+            eth_cells, eth_commitment, eth_polynomial, eth_proofs,
+        },
         eth_trusted_setup,
         opening_key::OpeningKey,
+        proof::verify_multi_opening_naive,
         reverse_bit_order,
     };
 
@@ -44,7 +48,6 @@ mod tests {
     fn eth_trusted_setup_deserializes() {
         // Just test that the trusted setup can be loaded/deserialized
         let (g1s, g2s) = eth_trusted_setup::deserialize();
-        let generator = g1s[0];
         let g1s_65 = g1s[0..65].to_vec();
         let _ck = CommitKey::new(g1s);
         let _vk = OpeningKey::new(g1s_65, g2s);
@@ -67,6 +70,41 @@ mod tests {
         let got_commitment = ck_lagrange.commit_g1(&polynomial);
 
         assert_eq!(got_commitment, expected_commitment);
+    }
+
+    #[test]
+    fn test_proofs_verify() {
+        // Setup
+        let (_, vk) = super::create_eth_commit_opening_keys();
+        const POLYNOMIAL_LEN: usize = 4096;
+        const NUMBER_OF_POINTS_TO_EVALUATE: usize = 2 * POLYNOMIAL_LEN;
+
+        const NUMBER_OF_POINTS_PER_PROOF: usize = 64;
+        let domain_extended = Domain::new(NUMBER_OF_POINTS_TO_EVALUATE);
+        let mut domain_extended_roots = domain_extended.roots.clone();
+        reverse_bit_order(&mut domain_extended_roots);
+
+        let chunked_bit_reversed_roots: Vec<_> = domain_extended_roots
+            .chunks(NUMBER_OF_POINTS_PER_PROOF)
+            .collect();
+
+        let commitment: G1Point = eth_commitment().into();
+        let proofs = eth_proofs();
+        let cells = eth_cells();
+
+        for k in 0..proofs.len() {
+            let input_points = chunked_bit_reversed_roots[k];
+            let proof: G1Point = proofs[k].into();
+            let coset_eval = &cells[k];
+
+            assert!(verify_multi_opening_naive(
+                &vk,
+                commitment,
+                proof,
+                &input_points,
+                coset_eval
+            ));
+        }
     }
 }
 
