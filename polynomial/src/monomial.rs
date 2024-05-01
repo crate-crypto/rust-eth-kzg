@@ -78,6 +78,84 @@ pub fn vanishing_poly(roots: &[Scalar]) -> Vec<Scalar> {
     poly
 }
 
+/// Interpolates a set of points to a given polynomial in monomial form.
+///
+/// Given a list of points (x_i, y_i), this method will return the lowest degree polynomial
+/// in monomial form that passes through all the points.
+///
+///
+// A simple O(n^2) algorithm (lagrange interpolation)
+// TODO: We could speed this up using derivative method.
+pub fn lagrange_interpolate(points: &[(Scalar, Scalar)]) -> Option<Vec<Scalar>> {
+    let max_degree_plus_one = points.len();
+    assert!(
+        max_degree_plus_one >= 2,
+        "should interpolate for degree >= 1"
+    );
+    let mut coeffs = vec![Scalar::from(0u64); max_degree_plus_one];
+    // external iterator
+    for (k, p_k) in points.iter().enumerate() {
+        let (x_k, y_k) = p_k;
+        // coeffs from 0 to max_degree - 1
+        let mut contribution = vec![Scalar::from(0u64); max_degree_plus_one];
+        let mut denominator = Scalar::from(1u64);
+        let mut max_contribution_degree = 0;
+        // internal iterator
+        for (j, p_j) in points.iter().enumerate() {
+            let (x_j, _) = p_j;
+            if j == k {
+                continue;
+            }
+
+            let mut diff = *x_k;
+            diff -= x_j;
+            denominator *= diff;
+
+            if max_contribution_degree == 0 {
+                max_contribution_degree = 1;
+                *contribution
+                    .get_mut(0)
+                    .expect("must have enough coefficients") -= x_j;
+                *contribution
+                    .get_mut(1)
+                    .expect("must have enough coefficients") += Scalar::from(1u64);
+            } else {
+                let mul_by_minus_x_j: Vec<Scalar> = contribution
+                    .iter()
+                    .map(|el| {
+                        let mut tmp = *el;
+                        tmp *= x_j;
+
+                        -tmp
+                    })
+                    .collect();
+
+                contribution.insert(0, Scalar::from(0u64));
+                contribution.truncate(max_degree_plus_one);
+
+                assert_eq!(mul_by_minus_x_j.len(), max_degree_plus_one);
+                for (i, c) in contribution.iter_mut().enumerate() {
+                    let other = mul_by_minus_x_j
+                        .get(i)
+                        .expect("should have enough elements");
+                    *c += other;
+                }
+            }
+        }
+
+        denominator = denominator.invert().unwrap();
+        for (i, this_contribution) in contribution.into_iter().enumerate() {
+            let c = coeffs.get_mut(i).expect("should have enough coefficients");
+            let mut tmp = this_contribution;
+            tmp *= denominator;
+            tmp *= y_k;
+            *c += tmp;
+        }
+    }
+
+    Some(coeffs)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -166,5 +244,19 @@ mod tests {
         for root in roots.iter() {
             assert_eq!(poly_eval(&poly, &root), Scalar::from(0u64));
         }
+    }
+
+    #[test]
+    fn polynomial_interpolation_smoke_test() {
+        // f(x) = 1 + 2x + 3x^2
+        // f(0) = 1, f(1) = 6, f(2) = 17
+        let points = vec![
+            (Scalar::from(0u64), Scalar::from(1u64)),
+            (Scalar::from(1u64), Scalar::from(6u64)),
+            (Scalar::from(2u64), Scalar::from(17u64)),
+        ];
+        let poly = lagrange_interpolate(&points).unwrap();
+        let expected = vec![Scalar::from(1u64), Scalar::from(2u64), Scalar::from(3u64)];
+        assert_eq!(poly, expected);
     }
 }
