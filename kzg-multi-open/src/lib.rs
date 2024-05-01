@@ -18,10 +18,13 @@ pub mod eth_trusted_setup;
 /// level.
 pub fn create_eth_commit_opening_keys() -> (CommitKey, OpeningKey) {
     let (g1s, g2s) = eth_trusted_setup::deserialize();
-    let generator = g1s[0];
+    // The setup needs 65 g1 elements for the opening key, in order
+    // to commit to the remainder polynomial.
+    let g1s_65 = g1s[0..65].to_vec();
 
     let ck = CommitKey::new(g1s);
-    let vk = OpeningKey::new(generator, g2s);
+
+    let vk = OpeningKey::new(g1s_65, g2s);
     (ck, vk)
 }
 
@@ -42,9 +45,9 @@ mod tests {
         // Just test that the trusted setup can be loaded/deserialized
         let (g1s, g2s) = eth_trusted_setup::deserialize();
         let generator = g1s[0];
-
+        let g1s_65 = g1s[0..65].to_vec();
         let _ck = CommitKey::new(g1s);
-        let _vk = OpeningKey::new(generator, g2s);
+        let _vk = OpeningKey::new(g1s_65, g2s);
     }
 
     #[test]
