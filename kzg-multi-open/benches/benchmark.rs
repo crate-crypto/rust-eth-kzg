@@ -37,8 +37,8 @@ pub fn bench_msm(c: &mut Criterion) {
 
 // Note: This is just here for reference. We can remove this once, we have finished
 // implementing the optimized version.
-// For prosperity: On my laptop, 64 proofs take about 1.6 seconds, 1 proof takes about 25 milliseconds.
-// This is all running on a single thread.
+// For prosperity: On my laptop, 128 proofs take about 3.2 seconds, 1 proof takes about 25 milliseconds.
+// This is on a single thread.
 pub fn bench_compute_proof_without_fk20(c: &mut Criterion) {
     const POLYNOMIAL_LEN: usize = 4096;
     let polynomial_4096 = vec![black_box(Scalar::random(&mut rand::thread_rng())); POLYNOMIAL_LEN];
@@ -77,7 +77,7 @@ pub fn bench_compute_proof_without_fk20(c: &mut Criterion) {
 
 /// This is here for reference, same as the above `bench_compute_proof_without_fk20`.
 ///
-/// For prosperity: On my laptop, 64 proofs take about 1.1 seconds to compute. This is also single-threaded.
+/// For prosperity: On my laptop, 128 proofs take about 1.167 seconds to compute. This is also single-threaded.
 pub fn bench_compute_proof_with_naive_fk20(c: &mut Criterion) {
     const POLYNOMIAL_LEN: usize = 4096;
     let polynomial_4096 = vec![black_box(Scalar::random(&mut rand::thread_rng())); POLYNOMIAL_LEN];
@@ -115,7 +115,7 @@ pub fn bench_compute_proof_with_naive_fk20(c: &mut Criterion) {
 
 criterion_group!(
     benches,
-    bench_compute_proof_without_fk20,
+    // bench_compute_proof_without_fk20,
     bench_compute_proof_with_naive_fk20
 );
 criterion_main!(benches);
