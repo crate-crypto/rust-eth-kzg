@@ -12,6 +12,7 @@ pub type G1Projective = blstrs::G1Projective;
 
 pub type G2Point = blstrs::G2Affine;
 pub type G2Projective = blstrs::G2Projective;
+pub type G2Prepared = blstrs::G2Prepared;
 
 pub type Scalar = blstrs::Scalar;
 
@@ -23,3 +24,10 @@ pub const SCALAR_SERIALIZED_SIZE: usize = 32;
 pub const G1_POINT_SERIALIZED_SIZE: usize = 48;
 /// The number of bytes needed to represent a compressed G2 point
 pub const G2_POINT_SERIALIZED_SIZE: usize = 96;
+
+pub fn multi_pairings(pairs: &[(&G1Point, &blstrs::G2Prepared)]) -> bool {
+    use group::Group;
+    use pairing::{MillerLoopResult, MultiMillerLoop};
+    let pairing_ = blstrs::Bls12::multi_miller_loop(pairs).final_exponentiation();
+    pairing_.is_identity().into()
+}
