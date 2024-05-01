@@ -40,7 +40,7 @@ mod eth_tests {
         },
         eth_trusted_setup,
         opening_key::OpeningKey,
-        proof::verify_multi_opening_naive,
+        proof::{compute_multi_opening_naive, verify_multi_opening_naive},
         reverse_bit_order,
     };
 
@@ -104,6 +104,42 @@ mod eth_tests {
                 &input_points,
                 coset_eval
             ));
+        }
+    }
+
+    #[test]
+    fn test_computing_proofs() {
+        // Setup
+        let (ck, _) = super::create_eth_commit_opening_keys();
+        const POLYNOMIAL_LEN: usize = 4096;
+        const NUMBER_OF_POINTS_TO_EVALUATE: usize = 2 * POLYNOMIAL_LEN;
+        let domain = Domain::new(POLYNOMIAL_LEN);
+
+        const NUMBER_OF_POINTS_PER_PROOF: usize = 64;
+        let domain_extended = Domain::new(NUMBER_OF_POINTS_TO_EVALUATE);
+        let mut domain_extended_roots = domain_extended.roots.clone();
+        reverse_bit_order(&mut domain_extended_roots);
+
+        let chunked_bit_reversed_roots: Vec<_> = domain_extended_roots
+            .chunks(NUMBER_OF_POINTS_PER_PROOF)
+            .collect();
+
+        let mut polynomial = eth_polynomial();
+        // Polynomial really corresponds to the evaluation form, so we need
+        // to apply bit reverse order and then IFFT to get the coefficients
+        reverse_bit_order(&mut polynomial);
+        let poly_coeff = domain.ifft_scalars(polynomial);
+
+        let proofs = eth_proofs();
+        let cells = eth_cells();
+        for k in 0..proofs.len() {
+            let input_points = chunked_bit_reversed_roots[k];
+            let proof: G1Point = proofs[k].clone().into();
+            let (quotient_comm, output_points) =
+                compute_multi_opening_naive(&ck, &poly_coeff, input_points);
+
+            assert_eq!(cells[k], output_points);
+            assert_eq!(proof, quotient_comm);
         }
     }
 }
