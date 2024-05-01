@@ -12,15 +12,15 @@ use crate::{commit_key::CommitKey, lincomb::g1_lincomb};
 /// Note: This is just doing a shifting of the polynomial coefficients. However,
 /// we refrain from calling this method `shift_polynomial` due to the specs
 /// naming a method with different functionality that name.
-pub fn divide_by_monomial_floor(poly: &PolyCoeff, degree: usize) -> Vec<Scalar> {
+pub fn divide_by_monomial_floor(poly: &PolyCoeff, degree: usize) -> &[Scalar] {
     let n = poly.len();
-    if degree >= n {
-        // If the degree of the monomial is greater than or equal to the number of coefficients,
-        // the division results in the zero polynomial
-        return Vec::new();
-    }
-
-    poly[degree..].to_vec()
+    // If the degree of the monomial is greater than or equal to the number of coefficients,
+    // the division results in the zero polynomial
+    assert!(
+        degree < n,
+        "degree should be less than the number of coefficients"
+    );
+    &poly[degree..]
 }
 
 /// Naively compute the `h`` polynomials for the FK20 proof.
@@ -28,7 +28,7 @@ pub fn divide_by_monomial_floor(poly: &PolyCoeff, degree: usize) -> Vec<Scalar> 
 /// See section 3.1.1 of the FK20 paper for more details.
 ///
 /// FK20 computes the commitments to these polynomials in 3.1.1.
-pub fn naive_compute_h_poly(polynomial: &PolyCoeff, l: usize) -> Vec<PolyCoeff> {
+pub fn naive_compute_h_poly(polynomial: &PolyCoeff, l: usize) -> Vec<&[Scalar]> {
     assert!(
         l.is_power_of_two(),
         "expected l to be a power of two (its the size of the cosets), found {}",
