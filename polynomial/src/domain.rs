@@ -175,7 +175,8 @@ fn fft_scalar(nth_root_of_unity: Scalar, points: &[Scalar]) -> Vec<Scalar> {
 ///
 /// Note: This is essentially multiple multi-scalar multiplications.
 ///
-/// TODO: Optimize this, currently very slow
+/// TODO: Optimize this, currently very slow -- using split-radix or radix-4 might reduce
+/// TODO: the number of multiplications.
 fn fft_g1(nth_root_of_unity: Scalar, points: &[G1Projective]) -> Vec<G1Projective> {
     let n = points.len();
     if n == 1 {
