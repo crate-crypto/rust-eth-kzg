@@ -2,6 +2,9 @@ use bls12_381::{ff::Field, group::Group, G1Projective};
 use bls12_381::{G2Projective, Scalar};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use kzg_multi_open::lincomb::{g1_lincomb, g1_lincomb_unsafe, g2_lincomb, g2_lincomb_unsafe};
+use kzg_multi_open::proof::compute_multi_opening_naive;
+use kzg_multi_open::{create_eth_commit_opening_keys, reverse_bit_order};
+use polynomial::domain::Domain;
 
 pub fn bench_msm(c: &mut Criterion) {
     const NUM_G1_ELEMENTS: usize = 4096;
@@ -31,5 +34,41 @@ pub fn bench_msm(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, bench_msm);
+pub fn bench_compute_proof(c: &mut Criterion) {
+    const POLYNOMIAL_LEN: usize = 4096;
+    let polynomial_4096 = vec![black_box(Scalar::random(&mut rand::thread_rng())); POLYNOMIAL_LEN];
+    let (ck, _) = create_eth_commit_opening_keys();
+    const NUMBER_OF_POINTS_TO_EVALUATE: usize = 2 * POLYNOMIAL_LEN;
+
+    const NUMBER_OF_POINTS_PER_PROOF: usize = 64;
+    let domain_extended = Domain::new(NUMBER_OF_POINTS_TO_EVALUATE);
+    let mut domain_extended_roots = domain_extended.roots.clone();
+    reverse_bit_order(&mut domain_extended_roots);
+
+    let chunked_bit_reversed_roots: Vec<_> = domain_extended_roots
+        .chunks(NUMBER_OF_POINTS_PER_PROOF)
+        .collect();
+
+    // When we switch to the more optimized version, we won't be able to
+    // manually specify the number of proofs.
+    // The results for the naive version are linear, so you can multiply the time taken
+    // to compute 1 proof by the number of proofs, you are interested in.
+    for num_proofs in [1, 2, 4, 8] {
+        c.bench_function(
+            &format!(
+                "computing proofs. POLY_SIZE {}, NUM_INPUT_POINTS {}, NUM_PROOFS {}",
+                POLYNOMIAL_LEN, NUMBER_OF_POINTS_PER_PROOF, num_proofs
+            ),
+            |b| {
+                b.iter(|| {
+                    for input_points in &chunked_bit_reversed_roots[0..num_proofs] {
+                        compute_multi_opening_naive(&ck, &polynomial_4096, input_points);
+                    }
+                })
+            },
+        );
+    }
+}
+
+criterion_group!(benches, bench_compute_proof);
 criterion_main!(benches);
