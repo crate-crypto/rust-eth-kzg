@@ -138,20 +138,10 @@ fn semi_toeplitz_fk20_h_polys(
     polynomial.reverse();
 
     let toeplitz_rows = take_every_nth(&polynomial, l);
-    let toeplitz_rows: Vec<Vec<_>> = toeplitz_rows
-        .into_iter()
-        .map(|v| v.into_iter().cloned().collect())
-        .collect();
 
     // Skip the last `l` points in the srs
     let srs_truncated: Vec<_> = commit_key.g1s.clone().into_iter().rev().skip(l).collect();
-    let srs_vectors = take_every_nth(&srs_truncated, l);
-
-    // TODO: remove, this is just a .cloned() method since g1_lincomb doesn't take reference
-    let mut srs_vectors: Vec<Vec<_>> = srs_vectors
-        .into_iter()
-        .map(|v| v.into_iter().cloned().collect())
-        .collect();
+    let mut srs_vectors = take_every_nth(&srs_truncated, l);
 
     // Pad srs vectors by the next power of two
     // TODO: prove that length is always l-1 and then we can just pad to `l` or add one identity element
@@ -181,9 +171,9 @@ fn semi_toeplitz_fk20_h_polys(
 /// Example: k = [a_0, a_1, a_3, a_4, a_5, a_6], l = 2
 /// Result = [[a_0, a_3, a_5], [a_1, a_4, a_6]]
 #[inline(always)]
-fn take_every_nth<T>(list: &[T], n: usize) -> Vec<Vec<&T>> {
+fn take_every_nth<T: Clone + Copy>(list: &[T], n: usize) -> Vec<Vec<T>> {
     (0..n)
-        .map(|i| list.iter().skip(i).step_by(n).collect())
+        .map(|i| list.iter().copied().skip(i).step_by(n).collect())
         .collect()
 }
 
@@ -203,7 +193,7 @@ mod tests {
     fn smoke_test_downsample() {
         let k = vec![5, 4, 3, 2];
         let downsampled_lists = take_every_nth(&k, 2);
-        let result = vec![vec![&5, &3], vec![&4, &2]];
+        let result = vec![vec![5, 3], vec![4, 2]];
         assert_eq!(downsampled_lists, result)
     }
 
