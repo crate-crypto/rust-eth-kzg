@@ -110,7 +110,7 @@ pub fn naive_fk20_open_multi_point(
 // matrices.
 fn semi_toeplitz_fk20_h_polys(
     commit_key: &CommitKey,
-    polynomial: &[Scalar],
+    mut polynomial: PolyCoeff,
     l: usize,
 ) -> Vec<G1Projective> {
     assert!(
@@ -133,24 +133,15 @@ fn semi_toeplitz_fk20_h_polys(
         k
     );
 
-    // Compute toeplitz rows for the h_polys
-    let mut polynomial = polynomial.to_vec();
+    // Reverse polynomial so highest coefficient is first.
+    // See 3.1.1 of the FK20 paper, for the ordering.
     polynomial.reverse();
 
+    // Compute the toeplitz rows for the `l` toeplitz matrices
     let toeplitz_rows = take_every_nth(&polynomial, l);
 
-    // Skip the last `l` points in the srs
-    let srs_truncated: Vec<_> = commit_key.g1s.clone().into_iter().rev().skip(l).collect();
-    let mut srs_vectors = take_every_nth(&srs_truncated, l);
-
-    // Pad srs vectors by the next power of two
-    // TODO: prove that length is always l-1 and then we can just pad to `l` or add one identity element
-    for srs_vector in &mut srs_vectors {
-        let pad_by = srs_vector.len().next_power_of_two();
-        srs_vector.resize(pad_by, G1Projective::identity());
-    }
+    // Compute the Toeplitz matrices
     let mut matrices = Vec::with_capacity(toeplitz_rows.len());
-
     // We want to do `l` toeplitz matrix multiplications
     for row in toeplitz_rows.into_iter() {
         // TODO: We could have a special constructor/Toeplitz struct for the column,
@@ -161,6 +152,20 @@ fn semi_toeplitz_fk20_h_polys(
         matrices.push(ToeplitzMatrix::new(row, toeplitz_column));
     }
 
+    // TODO: This will be cached as it does not change per proof.
+    // Compute the SRS vectors that we will multiply the toeplitz matrices by.
+    //
+    // Skip the last `l` points in the srs
+    let srs_truncated: Vec<_> = commit_key.g1s.clone().into_iter().rev().skip(l).collect();
+    let mut srs_vectors = take_every_nth(&srs_truncated, l);
+    // Pad srs vectors by the next power of two
+    // TODO: prove that length is always l-1 and then we can just pad to `l` or add one identity element
+    for srs_vector in &mut srs_vectors {
+        let pad_by = srs_vector.len().next_power_of_two();
+        srs_vector.resize(pad_by, G1Projective::identity());
+    }
+
+    // Compute `l` toeplitz matrix-vector multiplications and sum them together
     // TODO: This `BatchToeplitzMatrixVecMul`can be cached and reused for multiple proofs
     let bm = BatchToeplitzMatrixVecMul::new(srs_vectors);
     bm.sum_matrix_vector_mul(matrices)
@@ -219,7 +224,7 @@ mod tests {
             .collect::<Vec<_>>();
         // Add the identity element to h_polys to pad it to a power of two
         expected_comm_h_polys.push(bls12_381::G1Projective::identity());
-        let got_comm_h_polys = semi_toeplitz_fk20_h_polys(&commit_key, &poly, l);
+        let got_comm_h_polys = semi_toeplitz_fk20_h_polys(&commit_key, poly, l);
         assert_eq!(expected_comm_h_polys.len(), got_comm_h_polys.len());
         assert_eq!(expected_comm_h_polys, got_comm_h_polys);
     }
