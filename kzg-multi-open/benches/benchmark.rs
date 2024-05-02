@@ -1,6 +1,7 @@
 use bls12_381::{ff::Field, group::Group, G1Projective};
 use bls12_381::{G2Projective, Scalar};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use kzg_multi_open::consensus_specs_fixed_test_vector::eth_polynomial;
 use kzg_multi_open::fk20::naive_fk20_open_multi_point;
 use kzg_multi_open::lincomb::{g1_lincomb, g1_lincomb_unsafe, g2_lincomb, g2_lincomb_unsafe};
 use kzg_multi_open::proof::compute_multi_opening_naive;
@@ -80,7 +81,12 @@ pub fn bench_compute_proof_without_fk20(c: &mut Criterion) {
 /// For prosperity: On my laptop, 128 proofs take about 1.167 seconds to compute. This is also single-threaded.
 pub fn bench_compute_proof_with_naive_fk20(c: &mut Criterion) {
     const POLYNOMIAL_LEN: usize = 4096;
-    let polynomial_4096 = vec![black_box(Scalar::random(&mut rand::thread_rng())); POLYNOMIAL_LEN];
+
+    let mut polynomial_4096 = eth_polynomial();
+    reverse_bit_order(&mut polynomial_4096);
+    let domain = Domain::new(POLYNOMIAL_LEN);
+    let polynomial_4096 = domain.ifft_scalars(polynomial_4096);
+
     let (ck, _) = create_eth_commit_opening_keys();
     const NUMBER_OF_POINTS_TO_EVALUATE: usize = 2 * POLYNOMIAL_LEN;
 
@@ -117,7 +123,7 @@ pub fn bench_compute_proof_with_naive_fk20(c: &mut Criterion) {
 
 criterion_group!(
     benches,
-    bench_msm,
+    // bench_msm,
     // bench_compute_proof_without_fk20,
     bench_compute_proof_with_naive_fk20
 );
