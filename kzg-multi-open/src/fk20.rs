@@ -3,11 +3,8 @@
 
 use bls12_381::group::prime::PrimeCurveAffine;
 use bls12_381::group::Curve;
-use bls12_381::{G1Point, G1Projective, Scalar};
-use polynomial::{
-    domain::Domain,
-    monomial::{poly_eval, PolyCoeff},
-};
+use bls12_381::{G1Point, Scalar};
+use polynomial::{domain::Domain, monomial::PolyCoeff};
 
 use crate::{commit_key::CommitKey, reverse_bit_order};
 
