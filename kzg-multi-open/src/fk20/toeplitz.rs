@@ -14,6 +14,17 @@ pub(crate) struct CirculantMatrix {
     pub(crate) row: Vec<Scalar>,
 }
 
+impl ToeplitzMatrix {
+    pub fn new(row: Vec<Scalar>, col: Vec<Scalar>) -> Self {
+        assert!(
+            !row.is_empty() && !col.is_empty(),
+            "cannot initialize ToeplitzMatrix with empty row or col"
+        );
+
+        Self { row, col }
+    }
+}
+
 impl CirculantMatrix {
     // Embeds the Toeplitz matrix into a circulant matrix, increasing the
     // dimension by two.
@@ -26,7 +37,10 @@ impl CirculantMatrix {
             row: [tm.col.clone(), extension_col].concat(),
         }
     }
+}
 
+#[cfg(test)]
+impl CirculantMatrix {
     fn vector_mul_scalar(self, vector: Vec<Scalar>) -> Vec<Scalar> {
         let domain = Domain::new(vector.len() * 2);
         let m_fft = domain.fft_scalars(vector);
@@ -53,16 +67,8 @@ impl CirculantMatrix {
     }
 }
 
+#[cfg(test)]
 impl ToeplitzMatrix {
-    pub fn new(row: Vec<Scalar>, col: Vec<Scalar>) -> Self {
-        assert!(
-            !row.is_empty() && !col.is_empty(),
-            "cannot initialize ToeplitzMatrix with empty row or col"
-        );
-
-        Self { row, col }
-    }
-
     fn vector_mul_scalars(self, vector: Vec<Scalar>) -> Vec<Scalar> {
         let n = vector.len();
         assert_eq!(vector.len(), self.col.len());
