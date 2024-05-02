@@ -176,8 +176,7 @@ fn semi_toeplitz_fk20_h_polys(
         let mut toeplitz_column = vec![Scalar::from(0u64); row.len()];
         toeplitz_column[0] = row[0];
 
-        let toeplitz_matrix = ToeplitzMatrix::new(row, toeplitz_column);
-        let h_poly_column = DenseMatrix::from_toeplitz(toeplitz_matrix).vector_mul_g1(column);
+        let h_poly_column = ToeplitzMatrix::new(row, toeplitz_column).vector_mul_g1(column);
         h_points.push(h_poly_column)
     }
 
