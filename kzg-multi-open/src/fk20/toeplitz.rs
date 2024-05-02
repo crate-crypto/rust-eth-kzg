@@ -1,10 +1,58 @@
+// The abstractions in this file were taken and modified from: https://github.com/EspressoSystems/jellyfish/blob/8f48813ca52d964090dbf0de62f07f5e0c7e22c6/primitives/src/toeplitz.rs#L1
+
 use bls12_381::{G1Projective, Scalar};
+use polynomial::domain::Domain;
 
 use crate::lincomb::g1_lincomb;
 
+#[derive(Debug, Clone)]
 pub struct ToeplitzMatrix {
     row: Vec<Scalar>,
     col: Vec<Scalar>,
+}
+
+#[derive(Debug, Clone)]
+struct CirculantMatrix {
+    row: Vec<Scalar>,
+}
+
+impl CirculantMatrix {
+    // Embeds the Toeplitz matrix into a circulant matrix, increasing the
+    // dimension by two.
+    pub(crate) fn from_toeplitz(tm: ToeplitzMatrix) -> CirculantMatrix {
+        let mut extension_col = tm.row.clone();
+        extension_col.rotate_left(1);
+        extension_col.reverse();
+
+        CirculantMatrix {
+            row: [tm.col.clone(), extension_col].concat(),
+        }
+    }
+
+    fn vector_mul_scalar(self, vector: Vec<Scalar>) -> Vec<Scalar> {
+        let domain = Domain::new(vector.len() * 2);
+        let m_fft = domain.fft_scalars(vector);
+        let col_fft = domain.fft_scalars(self.row);
+
+        let mut evaluations = Vec::new();
+        for (a, b) in m_fft.into_iter().zip(col_fft) {
+            evaluations.push(a * b)
+        }
+
+        domain.ifft_scalars(evaluations)
+    }
+
+    fn vector_mul_g1(self, vector: Vec<G1Projective>) -> Vec<G1Projective> {
+        let domain = Domain::new(vector.len() * 2);
+        let m_fft = domain.fft_g1(vector);
+        let col_fft = domain.fft_scalars(self.row);
+
+        let mut evaluations = Vec::new();
+        for (a, b) in m_fft.into_iter().zip(col_fft) {
+            evaluations.push(a * b)
+        }
+        domain.ifft_g1(evaluations)
+    }
 }
 
 impl ToeplitzMatrix {
@@ -17,8 +65,23 @@ impl ToeplitzMatrix {
         Self { row, col }
     }
 
-    pub fn mul(&self, vector: &[Scalar]) -> Vec<Scalar> {
-        todo!()
+    fn vector_mul_scalars(self, vector: Vec<Scalar>) -> Vec<Scalar> {
+        let n = vector.len();
+        assert_eq!(vector.len(), self.col.len());
+        let cm = CirculantMatrix::from_toeplitz(self);
+        let circulant_result = cm.vector_mul_scalar(vector);
+
+        // We take the first half of the result, as this is the result of the Toeplitz matrix multiplication
+        circulant_result.into_iter().take(n).collect()
+    }
+
+    pub fn vector_mul_g1(self, vector: Vec<G1Projective>) -> Vec<G1Projective> {
+        let n = vector.len();
+        let cm = CirculantMatrix::from_toeplitz(self);
+        let circulant_result = cm.vector_mul_g1(vector);
+
+        // We take the first half of the result, as this is the result of the Toeplitz matrix multiplication
+        circulant_result.into_iter().take(n).collect()
     }
 
     pub fn sum_matrix_vector_mul(
@@ -169,6 +232,35 @@ mod tests {
             Scalar::from(10u64),
         ];
         let got = dm.vector_mul_scalar(vector);
+        assert_eq!(got, expected)
+    }
+
+    #[test]
+    fn smoke_test_circulant_matrix() {
+        let col = vec![
+            Scalar::from(1u64),
+            Scalar::from(2u64),
+            Scalar::from(3u64),
+            Scalar::from(4u64),
+        ];
+        let row = vec![
+            Scalar::from(1u64),
+            Scalar::from(5u64),
+            Scalar::from(6u64),
+            Scalar::from(7u64),
+        ];
+
+        let tm = ToeplitzMatrix::new(col, row);
+        let dm = DenseMatrix::from_toeplitz(tm.clone());
+
+        let vector = vec![
+            Scalar::from(1u64),
+            Scalar::from(2u64),
+            Scalar::from(3u64),
+            Scalar::from(4u64),
+        ];
+        let got = tm.vector_mul_scalars(vector.clone());
+        let expected = dm.vector_mul_scalar(vector);
         assert_eq!(got, expected)
     }
 }
