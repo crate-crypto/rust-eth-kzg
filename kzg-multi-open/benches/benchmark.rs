@@ -117,6 +117,7 @@ pub fn bench_compute_proof_with_naive_fk20(c: &mut Criterion) {
 
 criterion_group!(
     benches,
+    bench_msm,
     // bench_compute_proof_without_fk20,
     bench_compute_proof_with_naive_fk20
 );
