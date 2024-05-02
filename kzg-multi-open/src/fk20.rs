@@ -174,7 +174,7 @@ fn semi_toeplitz_fk20_h_polys(
 
     // TODO: This `BatchToeplitzMatrixVecMul`can be cached and reused for multiple proofs
     let bm = BatchToeplitzMatrixVecMul::new(srs_vectors);
-    bm.sum_matrix_vector_mul(&matrices)
+    bm.sum_matrix_vector_mul(matrices)
 }
 
 /// Given a vector `k` and an integer `l`
