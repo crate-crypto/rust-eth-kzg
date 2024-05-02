@@ -158,7 +158,7 @@ fn semi_toeplitz_fk20_h_polys(
         let pad_by = srs_vector.len().next_power_of_two();
         srs_vector.resize(pad_by, G1Projective::identity());
     }
-    let mut matrices = Vec::new();
+    let mut matrices = Vec::with_capacity(toeplitz_rows.len());
 
     // We want to do `l` toeplitz matrix multiplications
     for row in toeplitz_rows.into_iter() {
