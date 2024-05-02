@@ -53,6 +53,31 @@ impl CirculantMatrix {
         }
         domain.ifft_g1(evaluations)
     }
+
+    // Computes the sum of the matrix vector multiplication of the Toeplitz matrices and vectors
+    //
+    // ie this method computes \sum_{i}^{n} A_i* x_i
+    // This is faster than computing the matrix vector multiplication for each Toeplitz matrix and then summing the results
+    // since only one IFFT is done as opposed to `n`
+    pub fn sum_matrix_vector_mul_g1(
+        matrices: &[CirculantMatrix],
+        vectors: &[Vec<G1Projective>],
+    ) -> Vec<G1Projective> {
+        use bls12_381::group::Group;
+        let circulant_result_length = vectors[0].len() * 2;
+        let mut result = vec![G1Projective::identity(); circulant_result_length];
+
+        let domain = Domain::new(circulant_result_length);
+        for (matrix, vector) in matrices.iter().zip(vectors) {
+            let m_fft = domain.fft_g1(vector.to_vec());
+            let col_fft = domain.fft_scalars(matrix.row.clone());
+
+            for ((a, b), evals) in m_fft.into_iter().zip(col_fft).zip(result.iter_mut()) {
+                *evals += a * b;
+            }
+        }
+        domain.ifft_g1(result)
+    }
 }
 
 impl ToeplitzMatrix {
@@ -84,11 +109,22 @@ impl ToeplitzMatrix {
         circulant_result.into_iter().take(n).collect()
     }
 
-    pub fn sum_matrix_vector_mul(
+    // Computes the sum of the matrix vector multiplication of the Toeplitz matrices and vectors
+    pub fn sum_matrix_vector_mul_g1(
         matrices: &[ToeplitzMatrix],
-        vectors: &[&[Scalar]],
+        vectors: &[Vec<G1Projective>],
     ) -> Vec<G1Projective> {
-        todo!()
+        let n = vectors[0].len();
+        let circulant_matrices: Vec<CirculantMatrix> = matrices
+            .iter()
+            .map(|matrix| CirculantMatrix::from_toeplitz(matrix.clone()))
+            .collect();
+
+        let circulant_result =
+            CirculantMatrix::sum_matrix_vector_mul_g1(&circulant_matrices, vectors);
+
+        // We take the first half of the result, as this is the result of the Toeplitz matrix multiplication
+        circulant_result.into_iter().take(n).collect()
     }
 }
 
@@ -159,7 +195,8 @@ impl DenseMatrix {
 
 #[cfg(test)]
 mod tests {
-    use bls12_381::Scalar;
+    use bls12_381::group::Group;
+    use bls12_381::{G1Projective, Scalar};
 
     use crate::fk20::toeplitz::ToeplitzMatrix;
 
@@ -262,5 +299,49 @@ mod tests {
         let got = tm.vector_mul_scalars(vector.clone());
         let expected = dm.vector_mul_scalar(vector);
         assert_eq!(got, expected)
+    }
+
+    #[test]
+    fn smoke_aggregated_matrix_vector_mul() {
+        // Create the toeplitz matrices and vectors that we want to perform matrix-vector multiplication with
+        let mut toeplitz_matrices = Vec::new();
+        let mut vectors = Vec::new();
+
+        let num_matrices = 10;
+        for i in 0..num_matrices {
+            let col = vec![
+                Scalar::from((i + 1) as u64),
+                Scalar::from((i + 2) as u64),
+                Scalar::from((i + 3) as u64),
+                Scalar::from((i + 4) as u64),
+            ];
+            let row = vec![
+                Scalar::from((i + 1) as u64),
+                Scalar::from((i + 5) as u64),
+                Scalar::from((i + 6) as u64),
+                Scalar::from((i + 7) as u64),
+            ];
+            let vector = vec![
+                G1Projective::generator() * Scalar::from((i + 1) as u64),
+                G1Projective::generator() * Scalar::from((i + 2) as u64),
+                G1Projective::generator() * Scalar::from((i + 3) as u64),
+                G1Projective::generator() * Scalar::from((i + 4) as u64),
+            ];
+
+            vectors.push(vector);
+            toeplitz_matrices.push(ToeplitzMatrix::new(row, col));
+        }
+
+        let got_result = ToeplitzMatrix::sum_matrix_vector_mul_g1(&toeplitz_matrices, &vectors);
+
+        let mut expected_result = vec![G1Projective::identity(); got_result.len()];
+        for (matrix, vector) in toeplitz_matrices.into_iter().zip(vectors) {
+            let intermediate_result = matrix.vector_mul_g1(vector);
+            for (got, expected) in expected_result.iter_mut().zip(intermediate_result) {
+                *got += expected;
+            }
+        }
+
+        assert_eq!(expected_result, got_result)
     }
 }
