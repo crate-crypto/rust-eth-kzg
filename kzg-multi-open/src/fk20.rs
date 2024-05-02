@@ -112,16 +112,6 @@ fn semi_toeplitz_fk20_h_polys(
     polynomial: &[Scalar],
     l: usize,
 ) -> Vec<G1Projective> {
-    /// Given a vector `k` and an integer `l`
-    /// Where `l` is less than |k|. We return `l-downsampled` groups.
-    /// Example: k = [a_0, a_1, a_3, a_4, a_5, a_6], l = 2
-    /// Result = [[a_0, a_3, a_5], [a_1, a_4, a_6]]
-    fn take_every_nth<T>(list: &[T], n: usize) -> Vec<Vec<&T>> {
-        (0..n)
-            .map(|i| list.iter().skip(i).step_by(n).collect())
-            .collect()
-    }
-
     assert!(
         l.is_power_of_two(),
         "expected l to be a power of two (its the size of the cosets), found {}",
@@ -183,14 +173,36 @@ fn semi_toeplitz_fk20_h_polys(
     ToeplitzMatrix::sum_matrix_vector_mul_g1(&matrices, &srs_vectors)
 }
 
+/// Given a vector `k` and an integer `l`
+/// Where `l` is less than |k|. We return `l-downsampled` groups.
+/// Example: k = [a_0, a_1, a_3, a_4, a_5, a_6], l = 2
+/// Result = [[a_0, a_3, a_5], [a_1, a_4, a_6]]
+#[inline(always)]
+fn take_every_nth<T>(list: &[T], n: usize) -> Vec<Vec<&T>> {
+    (0..n)
+        .map(|i| list.iter().skip(i).step_by(n).collect())
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
         create_eth_commit_opening_keys,
-        fk20::{divide_by_monomial_floor, naive_compute_h_poly, semi_toeplitz_fk20_h_polys},
+        fk20::{
+            divide_by_monomial_floor, naive_compute_h_poly, semi_toeplitz_fk20_h_polys,
+            take_every_nth,
+        },
     };
     use bls12_381::group::Group;
     use bls12_381::Scalar;
+
+    #[test]
+    fn smoke_test_downsample() {
+        let k = vec![5, 4, 3, 2];
+        let downsampled_lists = take_every_nth(&k, 2);
+        let result = vec![vec![&5, &3], vec![&4, &2]];
+        assert_eq!(downsampled_lists, result)
+    }
 
     #[test]
     fn check_divide_by_monomial_floor() {
