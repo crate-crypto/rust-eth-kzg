@@ -1,6 +1,7 @@
 // [FK20] is a paper by Dmitry Khovratovich and Dankrad Feist that describes a method for
 // efficiently opening a set of points when the opening points are roots of unity.
 
+mod batch_toeplitz;
 mod toeplitz;
 
 use bls12_381::group::prime::PrimeCurveAffine;
@@ -9,7 +10,7 @@ use bls12_381::group::Group;
 use bls12_381::{G1Point, G1Projective, Scalar};
 use polynomial::{domain::Domain, monomial::PolyCoeff};
 
-use crate::fk20::toeplitz::{DenseMatrix, ToeplitzMatrix};
+use crate::fk20::toeplitz::ToeplitzMatrix;
 use crate::{commit_key::CommitKey, reverse_bit_order};
 
 /// This is doing \floor{f(x) / x^d}
