@@ -40,7 +40,6 @@ mod eth_tests {
             eth_cells, eth_commitment, eth_polynomial, eth_proofs,
         },
         eth_trusted_setup,
-        fk20::naive_fk20_open_multi_point,
         opening_key::OpeningKey,
         proof::{compute_multi_opening_naive, verify_multi_opening_naive},
         reverse_bit_order,
