@@ -79,6 +79,7 @@ impl BatchToeplitzMatrixVecMul {
 
 #[cfg(test)]
 mod tests {
+    use crate::fk20::batch_toeplitz::BatchToeplitzMatrixVecMul;
     use crate::fk20::toeplitz::ToeplitzMatrix;
     use bls12_381::group::Group;
     use bls12_381::{G1Projective, Scalar};
@@ -114,7 +115,8 @@ mod tests {
             toeplitz_matrices.push(ToeplitzMatrix::new(row, col));
         }
 
-        let got_result = ToeplitzMatrix::sum_matrix_vector_mul_g1(&toeplitz_matrices, &vectors);
+        let bm = BatchToeplitzMatrixVecMul::new(vectors.clone());
+        let got_result = bm.sum_matrix_vector_mul(&toeplitz_matrices);
 
         let mut expected_result = vec![G1Projective::identity(); got_result.len()];
         for (matrix, vector) in toeplitz_matrices.into_iter().zip(vectors) {
