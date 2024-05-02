@@ -10,6 +10,7 @@ use bls12_381::group::Group;
 use bls12_381::{G1Point, G1Projective, Scalar};
 use polynomial::{domain::Domain, monomial::PolyCoeff};
 
+use crate::fk20::batch_toeplitz::BatchToeplitzMatrixVecMul;
 use crate::fk20::toeplitz::ToeplitzMatrix;
 use crate::{commit_key::CommitKey, reverse_bit_order};
 
@@ -171,7 +172,9 @@ fn semi_toeplitz_fk20_h_polys(
         matrices.push(ToeplitzMatrix::new(row, toeplitz_column));
     }
 
-    ToeplitzMatrix::sum_matrix_vector_mul_g1(&matrices, &srs_vectors)
+    // TODO: This `BatchToeplitzMatrixVecMul`can be cached and reused for multiple proofs
+    let bm = BatchToeplitzMatrixVecMul::new(srs_vectors);
+    bm.sum_matrix_vector_mul(&matrices)
 }
 
 /// Given a vector `k` and an integer `l`
