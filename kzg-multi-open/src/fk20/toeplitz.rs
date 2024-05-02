@@ -3,8 +3,6 @@
 use bls12_381::{G1Projective, Scalar};
 use polynomial::domain::Domain;
 
-use crate::lincomb::g1_lincomb;
-
 #[derive(Debug, Clone)]
 pub struct ToeplitzMatrix {
     row: Vec<Scalar>,
@@ -125,6 +123,7 @@ impl DenseMatrix {
     }
 
     fn vector_mul_g1(self, vector: Vec<G1Projective>) -> Vec<G1Projective> {
+        use crate::lincomb::g1_lincomb;
         self.vector_mul(vector, g1_lincomb)
     }
 
