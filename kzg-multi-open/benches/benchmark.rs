@@ -92,6 +92,7 @@ pub fn bench_compute_proof_with_naive_fk20(c: &mut Criterion) {
     let chunked_bit_reversed_roots: Vec<_> = domain_extended_roots
         .chunks(NUMBER_OF_POINTS_PER_PROOF)
         .collect();
+    let proof_domain = Domain::new(chunked_bit_reversed_roots.len());
 
     c.bench_function(
         &format!(
@@ -104,9 +105,10 @@ pub fn bench_compute_proof_with_naive_fk20(c: &mut Criterion) {
             b.iter(|| {
                 naive_fk20_open_multi_point(
                     &ck,
+                    &proof_domain,
+                    &domain_extended,
                     &polynomial_4096,
                     NUMBER_OF_POINTS_PER_PROOF,
-                    &chunked_bit_reversed_roots,
                 )
             })
         },

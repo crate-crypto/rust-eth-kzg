@@ -164,6 +164,8 @@ mod eth_tests {
             .chunks(NUMBER_OF_POINTS_PER_PROOF)
             .collect();
 
+        const NUMBER_OF_PROOFS: usize = NUMBER_OF_POINTS_TO_EVALUATE / NUMBER_OF_POINTS_PER_PROOF;
+        let proof_domain = Domain::new(NUMBER_OF_PROOFS);
         let mut polynomial = eth_polynomial();
         // Polynomial really corresponds to the evaluation form, so we need
         // to apply bit reverse order and then IFFT to get the coefficients
@@ -172,9 +174,10 @@ mod eth_tests {
 
         let (got_proofs, got_set_of_output_points) = crate::fk20::naive_fk20_open_multi_point(
             &ck,
+            &proof_domain,
+            &domain_extended,
             &poly_coeff,
             NUMBER_OF_POINTS_PER_PROOF,
-            &chunked_bit_reversed_roots,
         );
 
         for k in 0..got_proofs.len() {
