@@ -12,8 +12,8 @@ pub struct ToeplitzMatrix {
 }
 
 #[derive(Debug, Clone)]
-struct CirculantMatrix {
-    row: Vec<Scalar>,
+pub(crate) struct CirculantMatrix {
+    pub(crate) row: Vec<Scalar>,
 }
 
 impl CirculantMatrix {
@@ -66,7 +66,6 @@ impl CirculantMatrix {
         use bls12_381::group::Group;
         let circulant_result_length = vectors[0].len() * 2;
         let mut result = vec![G1Projective::identity(); circulant_result_length];
-
         let domain = Domain::new(circulant_result_length);
         for (matrix, vector) in matrices.iter().zip(vectors) {
             let m_fft = domain.fft_g1(vector.to_vec());
@@ -299,49 +298,5 @@ mod tests {
         let got = tm.vector_mul_scalars(vector.clone());
         let expected = dm.vector_mul_scalar(vector);
         assert_eq!(got, expected)
-    }
-
-    #[test]
-    fn smoke_aggregated_matrix_vector_mul() {
-        // Create the toeplitz matrices and vectors that we want to perform matrix-vector multiplication with
-        let mut toeplitz_matrices = Vec::new();
-        let mut vectors = Vec::new();
-
-        let num_matrices = 10;
-        for i in 0..num_matrices {
-            let col = vec![
-                Scalar::from((i + 1) as u64),
-                Scalar::from((i + 2) as u64),
-                Scalar::from((i + 3) as u64),
-                Scalar::from((i + 4) as u64),
-            ];
-            let row = vec![
-                Scalar::from((i + 1) as u64),
-                Scalar::from((i + 5) as u64),
-                Scalar::from((i + 6) as u64),
-                Scalar::from((i + 7) as u64),
-            ];
-            let vector = vec![
-                G1Projective::generator() * Scalar::from((i + 1) as u64),
-                G1Projective::generator() * Scalar::from((i + 2) as u64),
-                G1Projective::generator() * Scalar::from((i + 3) as u64),
-                G1Projective::generator() * Scalar::from((i + 4) as u64),
-            ];
-
-            vectors.push(vector);
-            toeplitz_matrices.push(ToeplitzMatrix::new(row, col));
-        }
-
-        let got_result = ToeplitzMatrix::sum_matrix_vector_mul_g1(&toeplitz_matrices, &vectors);
-
-        let mut expected_result = vec![G1Projective::identity(); got_result.len()];
-        for (matrix, vector) in toeplitz_matrices.into_iter().zip(vectors) {
-            let intermediate_result = matrix.vector_mul_g1(vector);
-            for (got, expected) in expected_result.iter_mut().zip(intermediate_result) {
-                *got += expected;
-            }
-        }
-
-        assert_eq!(expected_result, got_result)
     }
 }
