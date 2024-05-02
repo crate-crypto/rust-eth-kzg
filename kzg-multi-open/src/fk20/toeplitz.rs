@@ -86,15 +86,14 @@ impl ToeplitzMatrix {
 }
 
 #[derive(Debug)]
-// Dense representation of a matrix
-// This should only be used for tests
-//
-// TODO: For now, we will be using it to fast track the ToeplitzMatrix multiplication
-// and then we will remove it.
+#[cfg(test)]
+/// Dense representation of a matrix
+/// This should only be used for tests
 struct DenseMatrix {
     inner: Vec<Vec<Scalar>>,
 }
 
+#[cfg(test)]
 impl DenseMatrix {
     /// Converts a `ToeplitzMatrix` into a `DenseMatrix`
     fn from_toeplitz(toeplitz: ToeplitzMatrix) -> DenseMatrix {
