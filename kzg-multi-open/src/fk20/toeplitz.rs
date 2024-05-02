@@ -75,7 +75,7 @@ impl ToeplitzMatrix {
         circulant_result.into_iter().take(n).collect()
     }
 
-    pub fn vector_mul_g1(self, vector: Vec<G1Projective>) -> Vec<G1Projective> {
+    pub(crate) fn vector_mul_g1(self, vector: Vec<G1Projective>) -> Vec<G1Projective> {
         let n = vector.len();
         let cm = CirculantMatrix::from_toeplitz(self);
         let circulant_result = cm.vector_mul_g1(vector);
@@ -91,13 +91,13 @@ impl ToeplitzMatrix {
 //
 // TODO: For now, we will be using it to fast track the ToeplitzMatrix multiplication
 // and then we will remove it.
-pub struct DenseMatrix {
+struct DenseMatrix {
     inner: Vec<Vec<Scalar>>,
 }
 
 impl DenseMatrix {
     /// Converts a `ToeplitzMatrix` into a `DenseMatrix`
-    pub fn from_toeplitz(toeplitz: ToeplitzMatrix) -> DenseMatrix {
+    fn from_toeplitz(toeplitz: ToeplitzMatrix) -> DenseMatrix {
         let rows = toeplitz.col.len();
         let cols = toeplitz.row.len();
         let mut matrix = vec![vec![Scalar::from(0u64); toeplitz.col.len()]; toeplitz.row.len()];
@@ -117,7 +117,7 @@ impl DenseMatrix {
     }
 
     /// Computes a matrix vector multiplication between `DenseMatrix` and `vector`
-    pub(crate) fn vector_mul_scalar(self, vector: Vec<Scalar>) -> Vec<Scalar> {
+    fn vector_mul_scalar(self, vector: Vec<Scalar>) -> Vec<Scalar> {
         fn inner_product(lhs: &[Scalar], rhs: &[Scalar]) -> Scalar {
             lhs.iter().zip(rhs).map(|(a, b)| a * b).sum()
         }
@@ -125,7 +125,7 @@ impl DenseMatrix {
         self.vector_mul(vector, inner_product)
     }
 
-    pub fn vector_mul_g1(self, vector: Vec<G1Projective>) -> Vec<G1Projective> {
+    fn vector_mul_g1(self, vector: Vec<G1Projective>) -> Vec<G1Projective> {
         self.vector_mul(vector, g1_lincomb)
     }
 
