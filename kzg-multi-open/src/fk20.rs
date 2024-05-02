@@ -65,7 +65,7 @@ pub fn naive_compute_h_poly(polynomial: &PolyCoeff, l: usize) -> Vec<&[Scalar]> 
     h_polys
 }
 
-/// Computes FK20 proofs over multiple cosets using the direct construction.
+/// Computes FK20 proofs over multiple cosets without using a toeplitz matrix.
 /// of the `h` polynomials and MSMs for computing the proofs.
 pub fn naive_fk20_open_multi_point(
     commit_key: &CommitKey,
@@ -79,7 +79,6 @@ pub fn naive_fk20_open_multi_point(
         .iter()
         .map(|h_poly| commit_key.commit_g1(h_poly))
         .collect::<Vec<_>>();
-
     let proofs = proof_domain.fft_g1(commitment_h_polys.clone());
 
     let mut proofs_affine = vec![G1Point::identity(); proofs.len()];
