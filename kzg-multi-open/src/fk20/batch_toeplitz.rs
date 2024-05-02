@@ -46,9 +46,10 @@ impl BatchToeplitzMatrixVecMul {
         }
     }
 
-    // Computes the sum of the matrix vector multiplication of the Toeplitz matrices and vectors
+    // Computes the aggregated sum of many Toeplitz matrix-vector multiplications.
     //
     // ie this method computes \sum_{i}^{n} A_i* x_i
+    //
     // This is faster than computing the matrix vector multiplication for each Toeplitz matrix and then summing the results
     // since only one IFFT is done as opposed to `n`
     pub fn sum_matrix_vector_mul(&self, matrices: &[ToeplitzMatrix]) -> Vec<G1Projective> {
@@ -64,7 +65,7 @@ impl BatchToeplitzMatrixVecMul {
             .map(|matrix| CirculantMatrix::from_toeplitz(matrix.clone()))
             .collect();
 
-        // Perform ciruclant matrix-vector multiplication between all of the matrices and vectors
+        // Perform circulant matrix-vector multiplication between all of the matrices and vectors
         // and sum them together.
         let mut result = vec![G1Projective::identity(); self.circulant_domain.roots.len()];
         for (matrix, vector) in circulant_matrices.into_iter().zip(&self.fft_vectors) {
