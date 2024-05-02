@@ -3,7 +3,7 @@
 
 use bls12_381::group::prime::PrimeCurveAffine;
 use bls12_381::group::Curve;
-use bls12_381::{G1Point, Scalar};
+use bls12_381::{G1Point, G1Projective, Scalar};
 use polynomial::{domain::Domain, monomial::PolyCoeff};
 
 use crate::{commit_key::CommitKey, reverse_bit_order};
@@ -98,11 +98,104 @@ pub fn naive_fk20_open_multi_point(
     (proofs_affine, set_of_output_points)
 }
 
+// This is in the spirit of the toeplitz construction, but does not use circulant matrices yet.
+// Checking it into github for prosperity purposes and for those looking to learn.
+//
+// This function will be slow because it is doing a matrix-vector multiplication for the toeplitz
+// matrices.
+fn semi_toeplitz_fk20_h_polys(
+    commit_key: &CommitKey,
+    polynomial: &[Scalar],
+    l: usize,
+) -> Vec<G1Projective> {
+    /// Given a vector `k` and an integer `l`
+    /// Where `l` is less than |k|. We return `l-downsampled` groups.
+    /// Example: k = [a_0, a_1, a_3, a_4, a_5, a_6], l = 2
+    /// Result = [[a_0, a_3, a_5], [a_1, a_4, a_6]]
+    fn take_every_nth<T>(list: &[T], n: usize) -> Vec<Vec<&T>> {
+        (0..n)
+            .map(|i| list.iter().skip(i).step_by(n).collect())
+            .collect()
+    }
+
+    assert!(
+        l.is_power_of_two(),
+        "expected l to be a power of two (its the size of the cosets), found {}",
+        l
+    );
+
+    let m = polynomial.len();
+    assert!(
+        m.is_power_of_two(),
+        "expected polynomial to have power of 2 number of evaluations. Found {}",
+        m
+    );
+
+    let k = m / l;
+    assert!(
+        k.is_power_of_two(),
+        "expected k to be a power of two, found {}",
+        k
+    );
+
+    // Compute toeplitz rows for the h_polys
+    let mut polynomial = polynomial.to_vec();
+    polynomial.reverse();
+
+    let toeplitz_rows = take_every_nth(&polynomial, l);
+    let toeplitz_rows: Vec<Vec<_>> = toeplitz_rows
+        .into_iter()
+        .map(|v| v.into_iter().cloned().collect())
+        .collect();
+
+    // Skip the last `l` points in the srs
+    let srs_truncated: Vec<_> = commit_key.g1s.clone().into_iter().rev().skip(l).collect();
+    let srs_vectors = take_every_nth(&srs_truncated, l);
+
+    // TODO: remove, this is just a .cloned() method since g1_lincomb doesn't take reference
+    let srs_vectors: Vec<Vec<_>> = srs_vectors
+        .into_iter()
+        .map(|v| v.into_iter().cloned().collect())
+        .collect();
+    let mut h_points = Vec::new();
+    // We want to do `l` toeplitz matrix multiplications
+    // Each toeplitz row, represents a toeplitz matrix
+    // We will commit to each row and shift it down by one
+    for (row, column) in toeplitz_rows.into_iter().zip(srs_vectors) {
+        let mut h_poly_column = Vec::new();
+        let mut shifted_row = row.clone();
+        // Compute toeplitz matrix
+        for _ in 0..shifted_row.len() {
+            let tmp = crate::lincomb::g1_lincomb(&column, &shifted_row);
+            h_poly_column.push(tmp);
+            // Shift the row down
+            shifted_row.pop();
+            shifted_row.insert(0, Scalar::from(0u64))
+        }
+        h_points.push(h_poly_column)
+    }
+
+    // Now we need to add the h_points together to get h_poly
+    use bls12_381::group::Group;
+    let max_len = h_points[0].len();
+    let mut h_points_summed = vec![bls12_381::G1Projective::identity(); max_len];
+    for h_points_vec in h_points {
+        for j in 0..max_len {
+            h_points_summed[j] += h_points_vec[j]
+        }
+    }
+
+    h_points_summed
+}
+
 #[cfg(test)]
 mod tests {
+    use crate::{
+        create_eth_commit_opening_keys,
+        fk20::{divide_by_monomial_floor, naive_compute_h_poly, semi_toeplitz_fk20_h_polys},
+    };
+    use bls12_381::group::Group;
     use bls12_381::Scalar;
-
-    use crate::fk20::divide_by_monomial_floor;
 
     #[test]
     fn check_divide_by_monomial_floor() {
@@ -110,5 +203,24 @@ mod tests {
         let poly = vec![Scalar::from(10u64), Scalar::from(1u64), Scalar::from(1u64)];
         let result = divide_by_monomial_floor(&poly, 1);
         assert_eq!(result, vec![Scalar::from(1u64), Scalar::from(1u64)]);
+    }
+
+    #[test]
+    fn check_consistency_of_toeplitz_h_polys() {
+        use bls12_381::ff::Field;
+        let poly = vec![Scalar::random(&mut rand::thread_rng()); 4096];
+        let l = 64;
+        let (commit_key, _) = create_eth_commit_opening_keys();
+
+        let h_polynomials = naive_compute_h_poly(&poly, l);
+        let mut expected_comm_h_polys = h_polynomials
+            .iter()
+            .map(|h_poly| commit_key.commit_g1(h_poly))
+            .collect::<Vec<_>>();
+        // Add the identity element to h_polys to pad it to a power of two
+        expected_comm_h_polys.push(bls12_381::G1Projective::identity());
+        let got_comm_h_polys = semi_toeplitz_fk20_h_polys(&commit_key, &poly, l);
+        assert_eq!(expected_comm_h_polys.len(), got_comm_h_polys.len());
+        assert_eq!(expected_comm_h_polys, got_comm_h_polys);
     }
 }
