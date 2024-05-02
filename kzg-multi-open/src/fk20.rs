@@ -1,10 +1,15 @@
 // [FK20] is a paper by Dmitry Khovratovich and Dankrad Feist that describes a method for
 // efficiently opening a set of points when the opening points are roots of unity.
 
-use bls12_381::{ff::Field, G1Point, Scalar};
-use polynomial::monomial::{poly_eval, PolyCoeff};
+use bls12_381::group::prime::PrimeCurveAffine;
+use bls12_381::group::Curve;
+use bls12_381::{G1Point, G1Projective, Scalar};
+use polynomial::{
+    domain::Domain,
+    monomial::{poly_eval, PolyCoeff},
+};
 
-use crate::{commit_key::CommitKey, lincomb::g1_lincomb};
+use crate::{commit_key::CommitKey, reverse_bit_order};
 
 /// This is doing \floor{f(x) / x^d}
 /// which essentially means removing the first d coefficients
@@ -64,44 +69,37 @@ pub fn naive_compute_h_poly(polynomial: &PolyCoeff, l: usize) -> Vec<&[Scalar]> 
 /// of the `h` polynomials and MSMs for computing the proofs.
 pub fn naive_fk20_open_multi_point(
     commit_key: &CommitKey,
+    proof_domain: &Domain,
+    ext_domain: &Domain,
     polynomial: &PolyCoeff,
     l: usize,
-    cosets: &[&[Scalar]],
 ) -> (Vec<G1Point>, Vec<Vec<Scalar>>) {
-    fn powers_of(scalar: &Scalar, max_degree: usize) -> Vec<Scalar> {
-        let mut powers = Vec::new();
-        powers.push(Scalar::from(1u64));
-        for i in 1..=max_degree {
-            powers.push(powers[i - 1] * scalar);
-        }
-        powers
-    }
-
     let h_polys = naive_compute_h_poly(polynomial, l);
-
     let commitment_h_polys = h_polys
         .iter()
         .map(|h_poly| commit_key.commit_g1(h_poly))
         .collect::<Vec<_>>();
 
-    let mut proofs = Vec::with_capacity(cosets.len());
-    let mut set_of_output_points = Vec::with_capacity(cosets.len());
+    let proofs = proof_domain.fft_g1(commitment_h_polys.clone());
 
-    for coset in cosets {
-        let coset_gen = coset[0].pow_vartime(&[l as u64]);
-        let powers = powers_of(&coset_gen, commitment_h_polys.len());
+    let mut proofs_affine = vec![G1Point::identity(); proofs.len()];
+    // TODO: This does not seem to be using the batch affine trick
+    bls12_381::G1Projective::batch_normalize(&proofs, &mut proofs_affine);
 
-        let output_points: Vec<_> = coset
-            .into_iter()
-            .map(|point| poly_eval(&polynomial, &point))
-            .collect();
-        let proof = g1_lincomb(&commitment_h_polys, &powers).into();
+    // Compute the evaluations of the polynomial at the cosets by doing an fft
+    let mut evaluations = ext_domain.fft_scalars(polynomial.clone());
+    reverse_bit_order(&mut evaluations);
+    let set_of_output_points: Vec<_> = evaluations
+        .chunks_exact(l)
+        .into_iter()
+        .map(|slice| slice.to_vec())
+        .collect();
 
-        proofs.push(proof);
-        set_of_output_points.push(output_points);
-    }
+    // reverse the order of the proofs, since fft_g1 was applied using
+    // the regular order.
+    reverse_bit_order(&mut proofs_affine);
 
-    (proofs, set_of_output_points)
+    (proofs_affine, set_of_output_points)
 }
 
 #[cfg(test)]
