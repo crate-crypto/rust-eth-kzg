@@ -5,6 +5,7 @@ mod toeplitz;
 
 use bls12_381::group::prime::PrimeCurveAffine;
 use bls12_381::group::Curve;
+use bls12_381::group::Group;
 use bls12_381::{G1Point, G1Projective, Scalar};
 use polynomial::{domain::Domain, monomial::PolyCoeff};
 
@@ -167,30 +168,19 @@ fn semi_toeplitz_fk20_h_polys(
         let pad_by = srs_vector.len().next_power_of_two();
         srs_vector.resize(pad_by, G1Projective::identity());
     }
-    let mut h_points = Vec::new();
+    let mut matrices = Vec::new();
 
     // We want to do `l` toeplitz matrix multiplications
-    for (row, column) in toeplitz_rows.into_iter().zip(srs_vectors) {
+    for row in toeplitz_rows.into_iter() {
         // TODO: We could have a special constructor/Toeplitz struct for the column,
         // TODO: if this allocation shows to be non-performant.
         let mut toeplitz_column = vec![Scalar::from(0u64); row.len()];
         toeplitz_column[0] = row[0];
 
-        let h_poly_column = ToeplitzMatrix::new(row, toeplitz_column).vector_mul_g1(column);
-        h_points.push(h_poly_column)
+        matrices.push(ToeplitzMatrix::new(row, toeplitz_column));
     }
 
-    // Now we need to add the h_points together to get h_poly
-    use bls12_381::group::Group;
-    let max_len = h_points[0].len();
-    let mut h_points_summed = vec![bls12_381::G1Projective::identity(); max_len];
-    for h_points_vec in h_points {
-        for j in 0..max_len {
-            h_points_summed[j] += h_points_vec[j]
-        }
-    }
-
-    h_points_summed
+    ToeplitzMatrix::sum_matrix_vector_mul_g1(&matrices, &srs_vectors)
 }
 
 #[cfg(test)]
