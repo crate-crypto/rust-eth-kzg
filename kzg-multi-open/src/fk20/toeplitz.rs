@@ -53,30 +53,6 @@ impl CirculantMatrix {
         }
         domain.ifft_g1(evaluations)
     }
-
-    // Computes the sum of the matrix vector multiplication of the Toeplitz matrices and vectors
-    //
-    // ie this method computes \sum_{i}^{n} A_i* x_i
-    // This is faster than computing the matrix vector multiplication for each Toeplitz matrix and then summing the results
-    // since only one IFFT is done as opposed to `n`
-    pub fn sum_matrix_vector_mul_g1(
-        matrices: &[CirculantMatrix],
-        vectors: &[Vec<G1Projective>],
-    ) -> Vec<G1Projective> {
-        use bls12_381::group::Group;
-        let circulant_result_length = vectors[0].len() * 2;
-        let mut result = vec![G1Projective::identity(); circulant_result_length];
-        let domain = Domain::new(circulant_result_length);
-        for (matrix, vector) in matrices.iter().zip(vectors) {
-            let m_fft = domain.fft_g1(vector.to_vec());
-            let col_fft = domain.fft_scalars(matrix.row.clone());
-
-            for ((a, b), evals) in m_fft.into_iter().zip(col_fft).zip(result.iter_mut()) {
-                *evals += a * b;
-            }
-        }
-        domain.ifft_g1(result)
-    }
 }
 
 impl ToeplitzMatrix {
@@ -103,24 +79,6 @@ impl ToeplitzMatrix {
         let n = vector.len();
         let cm = CirculantMatrix::from_toeplitz(self);
         let circulant_result = cm.vector_mul_g1(vector);
-
-        // We take the first half of the result, as this is the result of the Toeplitz matrix multiplication
-        circulant_result.into_iter().take(n).collect()
-    }
-
-    // Computes the sum of the matrix vector multiplication of the Toeplitz matrices and vectors
-    pub fn sum_matrix_vector_mul_g1(
-        matrices: &[ToeplitzMatrix],
-        vectors: &[Vec<G1Projective>],
-    ) -> Vec<G1Projective> {
-        let n = vectors[0].len();
-        let circulant_matrices: Vec<CirculantMatrix> = matrices
-            .iter()
-            .map(|matrix| CirculantMatrix::from_toeplitz(matrix.clone()))
-            .collect();
-
-        let circulant_result =
-            CirculantMatrix::sum_matrix_vector_mul_g1(&circulant_matrices, vectors);
 
         // We take the first half of the result, as this is the result of the Toeplitz matrix multiplication
         circulant_result.into_iter().take(n).collect()
@@ -194,8 +152,7 @@ impl DenseMatrix {
 
 #[cfg(test)]
 mod tests {
-    use bls12_381::group::Group;
-    use bls12_381::{G1Projective, Scalar};
+    use bls12_381::Scalar;
 
     use crate::fk20::toeplitz::ToeplitzMatrix;
 
