@@ -59,7 +59,7 @@ pub fn naive_compute_h_poly(polynomial: &PolyCoeff, l: usize) -> Vec<&[Scalar]> 
     let mut h_polys = Vec::with_capacity(k - 1);
     for index in 1..k {
         let degree = index * l;
-        let h_poly_i = divide_by_monomial_floor(&polynomial, degree);
+        let h_poly_i = divide_by_monomial_floor(polynomial, degree);
         h_polys.push(h_poly_i);
     }
 
@@ -93,7 +93,6 @@ pub fn naive_fk20_open_multi_point(
     reverse_bit_order(&mut evaluations);
     let set_of_output_points: Vec<_> = evaluations
         .chunks_exact(l)
-        .into_iter()
         .map(|slice| slice.to_vec())
         .collect();
 

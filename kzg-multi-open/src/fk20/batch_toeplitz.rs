@@ -62,7 +62,7 @@ impl BatchToeplitzMatrixVecMul {
         // Embed Toeplitz matrices into Circulant matrices
         let circulant_matrices: Vec<CirculantMatrix> = matrices
             .into_iter()
-            .map(|matrix| CirculantMatrix::from_toeplitz(matrix))
+            .map(CirculantMatrix::from_toeplitz)
             .collect();
 
         // Perform circulant matrix-vector multiplication between all of the matrices and vectors
@@ -71,7 +71,7 @@ impl BatchToeplitzMatrixVecMul {
         for (matrix, vector) in circulant_matrices.into_iter().zip(&self.fft_vectors) {
             let col_fft = self.circulant_domain.fft_scalars(matrix.row);
 
-            for ((a, b), evals) in vector.into_iter().zip(col_fft).zip(result.iter_mut()) {
+            for ((a, b), evals) in vector.iter().zip(col_fft).zip(result.iter_mut()) {
                 *evals += a * b;
             }
         }

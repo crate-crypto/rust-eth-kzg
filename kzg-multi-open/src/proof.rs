@@ -99,9 +99,9 @@ pub fn compute_multi_opening_naive(
         let mut k = Scalar::from(0u64);
 
         for coeff in poly.iter().rev() {
-            let t = *coeff + &k;
+            let t = *coeff + k;
             quotient.push(t);
-            k = z * &t;
+            k = z * t;
         }
 
         // Pop off the remainder term

@@ -16,17 +16,11 @@ pub fn eth_polynomial() -> Vec<Scalar> {
 }
 
 pub fn eth_cells() -> Vec<Vec<Scalar>> {
-    CELLS
-        .into_iter()
-        .map(|cell_str| convert_cell_to_scalars(cell_str))
-        .collect()
+    CELLS.into_iter().map(convert_cell_to_scalars).collect()
 }
 
 pub fn eth_proofs() -> Vec<G1Projective> {
-    PROOFS
-        .into_iter()
-        .map(|proof_str| deserialize_compressed_g1(proof_str))
-        .collect()
+    PROOFS.into_iter().map(deserialize_compressed_g1).collect()
 }
 
 fn convert_blob_to_polynomial(blob: &str) -> Vec<Scalar> {

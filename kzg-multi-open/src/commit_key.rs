@@ -1,4 +1,4 @@
-use crate::lincomb::{g1_lincomb, g1_lincomb_unsafe};
+use crate::lincomb::g1_lincomb;
 use bls12_381::{G1Projective, Scalar};
 use polynomial::domain::Domain;
 
@@ -47,7 +47,7 @@ impl CommitKey {
         // Note: We could use g1_lincomb_unsafe here, because we know that none of the points are the
         // identity element.
         // We use g1_lincomb because it is safer and the performance difference is negligible
-        g1_lincomb(&self.g1s[0..poly_coeff.len()], &poly_coeff)
+        g1_lincomb(&self.g1s[0..poly_coeff.len()], poly_coeff)
     }
 }
 
@@ -59,6 +59,6 @@ impl CommitKeyLagrange {
     /// Commit to a polynomial in lagrange form using the G1 group elements
     pub fn commit_g1(&self, polynomial: &[Scalar]) -> G1Projective {
         assert!(self.g1s.len() >= polynomial.len());
-        g1_lincomb(&self.g1s[0..polynomial.len()], &polynomial)
+        g1_lincomb(&self.g1s[0..polynomial.len()], polynomial)
     }
 }

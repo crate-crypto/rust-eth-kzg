@@ -9,13 +9,13 @@ pub fn g1_lincomb_unsafe(points: &[G1Projective], scalars: &[Scalar]) -> G1Proje
     // blst does not use multiple threads
     // This method as a whole seems to be non-optimal.
     // TODO: We should implement the naive bucket method and see if it is faster
-    G1Projective::multi_exp(&points, scalars)
+    G1Projective::multi_exp(points, scalars)
 }
 
 // A multi-scalar multiplication algorithm over G2 elements
 pub fn g2_lincomb_unsafe(points: &[G2Projective], scalars: &[Scalar]) -> G2Projective {
     assert_eq!(points.len(), scalars.len());
-    G2Projective::multi_exp(&points, scalars)
+    G2Projective::multi_exp(points, scalars)
 }
 
 /// This method is a safe wrapper around `g1_lincomb_unsafe`
@@ -23,9 +23,9 @@ pub fn g2_lincomb_unsafe(points: &[G2Projective], scalars: &[Scalar]) -> G2Proje
 pub fn g1_lincomb(points: &[G1Projective], scalars: &[Scalar]) -> G1Projective {
     let mut points_filtered = Vec::with_capacity(points.len());
     let mut scalars_filtered = Vec::with_capacity(scalars.len());
-    for (point, scalar) in points.into_iter().zip(scalars) {
+    for (point, scalar) in points.iter().zip(scalars) {
         let is_identity: bool = point.is_identity().into();
-        if is_identity == false {
+        if !is_identity {
             points_filtered.push(*point);
             scalars_filtered.push(*scalar);
         }
@@ -40,9 +40,9 @@ pub fn g1_lincomb(points: &[G1Projective], scalars: &[Scalar]) -> G1Projective {
 pub fn g2_lincomb(points: &[G2Projective], scalars: &[Scalar]) -> G2Projective {
     let mut points_filtered = Vec::with_capacity(points.len());
     let mut scalars_filtered = Vec::with_capacity(scalars.len());
-    for (point, scalar) in points.into_iter().zip(scalars) {
+    for (point, scalar) in points.iter().zip(scalars) {
         let is_identity: bool = point.is_identity().into();
-        if is_identity == false {
+        if !is_identity {
             points_filtered.push(*point);
             scalars_filtered.push(*scalar);
         }
