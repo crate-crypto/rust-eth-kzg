@@ -1,11 +1,14 @@
 // [FK20] is a paper by Dmitry Khovratovich and Dankrad Feist that describes a method for
 // efficiently opening a set of points when the opening points are roots of unity.
 
+mod toeplitz;
+
 use bls12_381::group::prime::PrimeCurveAffine;
 use bls12_381::group::Curve;
 use bls12_381::{G1Point, G1Projective, Scalar};
 use polynomial::{domain::Domain, monomial::PolyCoeff};
 
+use crate::fk20::toeplitz::{DenseMatrix, ToeplitzMatrix};
 use crate::{commit_key::CommitKey, reverse_bit_order};
 
 /// This is doing \floor{f(x) / x^d}
@@ -153,25 +156,28 @@ fn semi_toeplitz_fk20_h_polys(
     let srs_vectors = take_every_nth(&srs_truncated, l);
 
     // TODO: remove, this is just a .cloned() method since g1_lincomb doesn't take reference
-    let srs_vectors: Vec<Vec<_>> = srs_vectors
+    let mut srs_vectors: Vec<Vec<_>> = srs_vectors
         .into_iter()
         .map(|v| v.into_iter().cloned().collect())
         .collect();
+
+    // Pad srs vectors by the next power of two
+    // TODO: prove that length is always l-1 and then we can just pad to `l` or add one identity element
+    for srs_vector in &mut srs_vectors {
+        let pad_by = srs_vector.len().next_power_of_two();
+        srs_vector.resize(pad_by, G1Projective::identity());
+    }
     let mut h_points = Vec::new();
+
     // We want to do `l` toeplitz matrix multiplications
-    // Each toeplitz row, represents a toeplitz matrix
-    // We will commit to each row and shift it down by one
     for (row, column) in toeplitz_rows.into_iter().zip(srs_vectors) {
-        let mut h_poly_column = Vec::new();
-        let mut shifted_row = row.clone();
-        // Compute toeplitz matrix
-        for _ in 0..shifted_row.len() {
-            let tmp = crate::lincomb::g1_lincomb(&column, &shifted_row);
-            h_poly_column.push(tmp);
-            // Shift the row down
-            shifted_row.pop();
-            shifted_row.insert(0, Scalar::from(0u64))
-        }
+        // TODO: We could have a special constructor/Toeplitz struct for the column,
+        // TODO: if this allocation shows to be non-performant.
+        let mut toeplitz_column = vec![Scalar::from(0u64); row.len()];
+        toeplitz_column[0] = row[0];
+
+        let toeplitz_matrix = ToeplitzMatrix::new(row, toeplitz_column);
+        let h_poly_column = DenseMatrix::from_toeplitz(toeplitz_matrix).vector_mul_g1(column);
         h_points.push(h_poly_column)
     }
 
