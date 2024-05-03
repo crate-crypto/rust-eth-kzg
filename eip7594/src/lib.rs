@@ -1,4 +1,18 @@
-use constants::CELLS_PER_EXT_BLOB;
+use bls12_381::G1Point;
+use constants::{
+    BYTES_PER_COMMITMENT, CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL,
+    FIELD_ELEMENTS_PER_EXT_BLOB,
+};
+use kzg_multi_open::{
+    commit_key::{CommitKey, CommitKeyLagrange},
+    create_eth_commit_opening_keys,
+    fk20::FK20,
+    opening_key::OpeningKey,
+    reverse_bit_order,
+};
+use polynomial::domain::Domain;
+
+use crate::serialization::serialize_g1_compressed;
 
 // TODO: We can remove this once we hook up the consensus-specs fixed test vectors.
 pub mod consensus_specs_fixed_test_vector;
@@ -8,20 +22,105 @@ mod serialization;
 
 pub type Blob = Vec<u8>;
 pub type Cell = Vec<u8>;
-pub type KZGProof = Vec<u8>;
+pub type KZGProof = [u8; BYTES_PER_COMMITMENT];
+pub type KZGCommitment = [u8; BYTES_PER_COMMITMENT];
 pub type CellID = u64;
 pub type RowIndex = u64;
 pub type ColumnIndex = u64;
 pub type Bytes48 = Vec<u8>;
 
-pub fn compute_cells_and_kzg_proofs(
-    blob: Blob,
-) -> ([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]) {
-    todo!()
+// TODO: Split this struct into `ProvingContext` and `VerifyingContext`
+// TODO: and rename FK20 into `FK20Prover`
+pub struct EIP7594Context {
+    fk20: FK20,
+    // TODO: We don't need the commit key, since we use FK20 to compute the proofs
+    // TODO: and we use the lagrange variant to compute the commitment to the polynomial.
+    //
+    // TODO: We can remove it in a later commit, once the API has settled.
+    commit_key: CommitKey,
+    /// This is only used to save us from doing an IDFT when committing
+    /// to the polynomial.
+    commit_key_lagrange: CommitKeyLagrange,
+    opening_key: OpeningKey,
+
+    /// Domain used for converting the polynomial to the monomial form.
+    poly_domain: Domain,
 }
 
-pub fn compute_cells(blob: Blob) -> [Cell; CELLS_PER_EXT_BLOB] {
-    todo!()
+impl EIP7594Context {
+    pub fn new() -> Self {
+        let (commit_key, opening_key) = create_eth_commit_opening_keys();
+        let point_set_size = FIELD_ELEMENTS_PER_CELL;
+        let number_of_points_to_open = FIELD_ELEMENTS_PER_EXT_BLOB;
+        let fk20 = FK20::new(&commit_key, point_set_size, number_of_points_to_open);
+
+        let poly_domain = Domain::new(FIELD_ELEMENTS_PER_BLOB);
+
+        // TODO: We can just deserialize these instead of doing this ifft
+        let commit_key_lagrange = commit_key.clone().into_lagrange(&poly_domain);
+
+        EIP7594Context {
+            fk20,
+            commit_key,
+            opening_key,
+            poly_domain,
+            commit_key_lagrange,
+        }
+    }
+
+    pub fn blob_to_kzg_commitment(&self, blob: Blob) -> KZGCommitment {
+        let mut scalars = serialization::deserialize_blob_to_scalars(&blob);
+        reverse_bit_order(&mut scalars);
+
+        let commitment: G1Point = self.commit_key_lagrange.commit_g1(&scalars).into();
+        serialize_g1_compressed(&commitment)
+    }
+
+    pub fn compute_cells_and_kzg_proofs(
+        &self,
+        blob: Blob,
+    ) -> ([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]) {
+        // Deserialize the blob into scalars (lagrange form)
+        let mut scalars = serialization::deserialize_blob_to_scalars(&blob);
+        reverse_bit_order(&mut scalars);
+
+        let poly_coeff = self.poly_domain.ifft_scalars(scalars);
+        let (proofs, evaluations) = self.fk20.compute_multi_opening_proofs(poly_coeff);
+
+        let cells = evaluations
+            .iter()
+            .map(|eval| serialization::serialize_scalars_to_cell(eval))
+            .collect::<Vec<_>>();
+        let cells: [Cell; CELLS_PER_EXT_BLOB] = cells
+            .try_into()
+            .expect(&format!("expected {} number of cells", CELLS_PER_EXT_BLOB));
+
+        let proofs: Vec<_> = proofs.iter().map(serialize_g1_compressed).collect();
+        let proofs: [KZGProof; CELLS_PER_EXT_BLOB] = proofs
+            .try_into()
+            .expect(&format!("expected {} number of proofs", CELLS_PER_EXT_BLOB));
+
+        (cells, proofs)
+    }
+
+    pub fn compute_cells(&self, blob: Blob) -> [Cell; CELLS_PER_EXT_BLOB] {
+        // Deserialize the blob into scalars (lagrange form)
+        let mut scalars = serialization::deserialize_blob_to_scalars(&blob);
+        reverse_bit_order(&mut scalars);
+
+        let poly_coeff = self.poly_domain.ifft_scalars(scalars);
+        let evaluations = self.fk20.compute_evaluation_sets(poly_coeff);
+
+        let cells = evaluations
+            .iter()
+            .map(|eval| serialization::serialize_scalars_to_cell(eval))
+            .collect::<Vec<_>>();
+        let cells: [Cell; CELLS_PER_EXT_BLOB] = cells
+            .try_into()
+            .expect(&format!("expected {} number of cells", CELLS_PER_EXT_BLOB));
+
+        cells
+    }
 }
 
 pub fn verify_cell_kzg_proof(
@@ -58,25 +157,21 @@ mod tests {
     };
     use polynomial::domain::Domain;
 
-    use crate::consensus_specs_fixed_test_vector::{
-        eth_cells, eth_commitment, eth_polynomial, eth_proofs,
+    use crate::{
+        consensus_specs_fixed_test_vector::{
+            eth_cells, eth_commitment, eth_polynomial, eth_proofs, BLOB_STR, CELLS_STR, PROOFS_STR,
+        },
+        EIP7594Context,
     };
 
     #[test]
     fn test_polynomial_commitment_matches() {
-        // Setup
-        let (ck, _) = create_eth_commit_opening_keys();
-        const POLYNOMIAL_LEN: usize = 4096;
-        let domain = Domain::new(POLYNOMIAL_LEN);
-        let mut ck_lagrange = ck.into_lagrange(&domain);
-        // We need to apply the reverse bit order permutation to the g1s
-        // in order for it match the specs.
-        // TODO: Apply it to the polynomial instead (time to do it is about 26 microseconds)
-        reverse_bit_order(&mut ck_lagrange.g1s);
+        let ctx = EIP7594Context::new();
 
-        let polynomial = eth_polynomial();
-        let expected_commitment = eth_commitment();
-        let got_commitment = ck_lagrange.commit_g1(&polynomial);
+        let blob_bytes = hex::decode(BLOB_STR).unwrap();
+
+        let got_commitment = ctx.blob_to_kzg_commitment(blob_bytes);
+        let expected_commitment = eth_commitment().to_compressed();
 
         assert_eq!(got_commitment, expected_commitment);
     }
@@ -119,36 +214,24 @@ mod tests {
     #[test]
     fn test_computing_proofs() {
         // Setup
-        let (ck, _) = create_eth_commit_opening_keys();
-        const POLYNOMIAL_LEN: usize = 4096;
-        const NUMBER_OF_POINTS_TO_EVALUATE: usize = 2 * POLYNOMIAL_LEN;
-        let domain = Domain::new(POLYNOMIAL_LEN);
+        let ctx = EIP7594Context::new();
 
-        const NUMBER_OF_POINTS_PER_PROOF: usize = 64;
-        let domain_extended = Domain::new(NUMBER_OF_POINTS_TO_EVALUATE);
-        let mut domain_extended_roots = domain_extended.roots.clone();
-        reverse_bit_order(&mut domain_extended_roots);
+        let blob_bytes = hex::decode(BLOB_STR).unwrap();
 
-        let chunked_bit_reversed_roots: Vec<_> = domain_extended_roots
-            .chunks(NUMBER_OF_POINTS_PER_PROOF)
-            .collect();
+        let (got_cells, got_proofs) = ctx.compute_cells_and_kzg_proofs(blob_bytes);
 
-        let mut polynomial = eth_polynomial();
-        // Polynomial really corresponds to the evaluation form, so we need
-        // to apply bit reverse order and then IFFT to get the coefficients
-        reverse_bit_order(&mut polynomial);
-        let poly_coeff = domain.ifft_scalars(polynomial);
+        let expected_proofs = PROOFS_STR;
+        let expected_cells = CELLS_STR;
 
-        let proofs = eth_proofs();
-        let cells = eth_cells();
-        for k in 0..proofs.len() {
-            let input_points = chunked_bit_reversed_roots[k];
-            let proof: G1Point = proofs[k].clone().into();
-            let (quotient_comm, output_points) =
-                compute_multi_opening_naive(&ck, &poly_coeff, input_points);
+        for k in 0..expected_proofs.len() {
+            let expected_proof_str = expected_proofs[k];
+            let expected_cell_str = expected_cells[k];
 
-            assert_eq!(cells[k], output_points);
-            assert_eq!(proof, quotient_comm);
+            let got_proof_str = hex::encode(&got_proofs[k]);
+            let got_cells_str = hex::encode(&got_cells[k]);
+
+            assert_eq!(got_cells_str, expected_cell_str);
+            assert_eq!(got_proof_str, expected_proof_str);
         }
     }
 
