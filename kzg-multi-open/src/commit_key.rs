@@ -9,7 +9,7 @@ use polynomial::domain::Domain;
 /// - `i` ranges from 0 to `degree`.
 /// - `G` is some generator of the group
 pub struct CommitKey {
-    pub(crate) g1s: Vec<G1Projective>,
+    pub g1s: Vec<G1Projective>,
 }
 
 // The key that is used to commit to polynomials in lagrange form
@@ -20,7 +20,7 @@ pub struct CommitKey {
 /// -  L_i is the i'th lagrange polynomial
 /// - `G` is some generator of the group
 pub struct CommitKeyLagrange {
-    pub(crate) g1s: Vec<G1Projective>,
+    pub g1s: Vec<G1Projective>,
 }
 
 impl CommitKey {

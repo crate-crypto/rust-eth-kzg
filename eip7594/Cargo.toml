@@ -5,3 +5,15 @@ edition = "2021"
 
 [dependencies]
 kzg-multi-open = { workspace = true }
+bls12-381 = { workspace = true }
+polynomial = { workspace = true }
+hex = "0.4.3"
+
+
+[dev-dependencies]
+criterion = "0.5.1"
+rand = "0.8.4"
+
+[[bench]]
+name = "benchmark"
+harness = false
