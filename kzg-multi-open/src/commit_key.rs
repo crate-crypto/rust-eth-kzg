@@ -8,6 +8,7 @@ use polynomial::domain::Domain;
 ///  Where:
 /// - `i` ranges from 0 to `degree`.
 /// - `G` is some generator of the group
+#[derive(Debug, Clone)]
 pub struct CommitKey {
     pub g1s: Vec<G1Projective>,
 }
