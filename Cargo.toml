@@ -2,8 +2,9 @@
 
 resolver = "2"
 
-members = ["bls12-381", "kzg-multi-open", "polynomial"]
+members = ["bls12-381", "eip7594", "kzg-multi-open", "polynomial"]
 
 [workspace.dependencies]
 bls12-381 = { path = "./bls12-381" }
 polynomial = { path = "./polynomial" }
+kzg-multi-open = { path = "./kzg-multi-open" }
