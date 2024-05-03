@@ -33,3 +33,11 @@ pub const FIELD_ELEMENTS_PER_EXT_BLOB: usize = EXTENSION_FACTOR * FIELD_ELEMENTS
 ///
 /// Note: A cell is simply a list of `FIELD_ELEMENTS_PER_CELL` field elements.
 pub const CELLS_PER_EXT_BLOB: usize = FIELD_ELEMENTS_PER_EXT_BLOB / FIELD_ELEMENTS_PER_CELL;
+
+/// The number of bytes needed to represent a G1 element.
+pub(crate) const BYTES_PER_G1_POINT: usize = 48;
+
+/// The number of bytes needed to represent a commitment.
+///
+/// Note: commitments are G1 elements.
+pub const BYTES_PER_COMMITMENT: usize = BYTES_PER_G1_POINT;
