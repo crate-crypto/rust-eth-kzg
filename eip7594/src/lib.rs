@@ -1,4 +1,7 @@
+// TODO: We can remove this once we hook up the consensus-specs fixed test vectors.
 pub mod consensus_specs_fixed_test_vector;
+
+pub mod constants;
 
 #[cfg(test)]
 mod tests {
