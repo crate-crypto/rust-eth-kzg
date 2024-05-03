@@ -88,12 +88,10 @@ impl FK20 {
     pub fn compute_multi_opening_proofs(
         &self,
         polynomial: PolyCoeff,
-        l: usize,
     ) -> (Vec<G1Point>, Vec<Vec<Scalar>>) {
-        // TODO: reverse bit order on the polynomial
-
         // Compute proofs for the polynomial
-        let h_poly_commitments = self.compute_h_poly_commitments(polynomial.clone(), l);
+        let h_poly_commitments =
+            self.compute_h_poly_commitments(polynomial.clone(), self.point_set_size);
         let mut proofs = self.proof_domain.fft_g1(h_poly_commitments);
         // apply reverse bit order permutation, since fft_g1 was applied using
         // the regular order.
@@ -102,15 +100,19 @@ impl FK20 {
         // TODO: This does not seem to be using the batch affine trick
         bls12_381::G1Projective::batch_normalize(&proofs, &mut proofs_affine);
 
-        // Compute the evaluations of the polynomial at the cosets by doing an fft
-        let mut evaluations = self.ext_domain.fft_scalars(polynomial.clone());
-        reverse_bit_order(&mut evaluations);
-        let set_of_output_points: Vec<_> = evaluations
-            .chunks_exact(l)
-            .map(|slice| slice.to_vec())
-            .collect();
+        let set_of_output_points = self.compute_evaluation_sets(polynomial);
 
         (proofs_affine, set_of_output_points)
+    }
+
+    pub fn compute_evaluation_sets(&self, polynomial: PolyCoeff) -> Vec<Vec<Scalar>> {
+        // Compute the evaluations of the polynomial on the cosets by doing an fft
+        let mut evaluations = self.ext_domain.fft_scalars(polynomial);
+        reverse_bit_order(&mut evaluations);
+        evaluations
+            .chunks_exact(self.point_set_size)
+            .map(|slice| slice.to_vec())
+            .collect()
     }
 
     fn compute_h_poly_commitments(&self, mut polynomial: PolyCoeff, l: usize) -> Vec<G1Projective> {
@@ -221,7 +223,7 @@ mod tests {
             naive::fk20_open_multi_point(&commit_key, &proof_domain, &ext_domain, &poly, l);
 
         let fk20 = FK20::new(&commit_key, l, 2 * poly_len);
-        let (got_proofs, got_evaluations) = fk20.compute_multi_opening_proofs(poly, l);
+        let (got_proofs, got_evaluations) = fk20.compute_multi_opening_proofs(poly);
 
         assert_eq!(got_proofs.len(), expected_proofs.len());
         assert_eq!(got_evaluations.len(), expected_evaluations.len());
