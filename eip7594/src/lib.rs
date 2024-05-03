@@ -8,11 +8,14 @@ use kzg_multi_open::{
     create_eth_commit_opening_keys,
     fk20::FK20,
     opening_key::OpeningKey,
+    proof::verify_multi_opening_naive,
     reverse_bit_order,
 };
 use polynomial::domain::Domain;
 
-use crate::serialization::serialize_g1_compressed;
+use crate::serialization::{
+    deserialize_cell_to_scalars, deserialize_compressed_g1, serialize_g1_compressed,
+};
 
 // TODO: We can remove this once we hook up the consensus-specs fixed test vectors.
 pub mod consensus_specs_fixed_test_vector;
@@ -124,12 +127,27 @@ impl EIP7594Context {
 }
 
 pub fn verify_cell_kzg_proof(
+    opening_key: &OpeningKey,
     commitment_bytes: Bytes48,
     cell_id: CellID,
     cell: Cell,
     proof_bytes: Bytes48,
 ) -> bool {
-    todo!()
+    let commitment = deserialize_compressed_g1(&commitment_bytes);
+    let proof = deserialize_compressed_g1(&proof_bytes);
+
+    let domain_extended = Domain::new(FIELD_ELEMENTS_PER_EXT_BLOB);
+    let mut domain_extended_roots = domain_extended.roots;
+    reverse_bit_order(&mut domain_extended_roots);
+
+    let chunked_bit_reversed_roots: Vec<_> = domain_extended_roots
+        .chunks(FIELD_ELEMENTS_PER_CELL)
+        .collect();
+    let coset = chunked_bit_reversed_roots[cell_id as usize];
+
+    let output_points = deserialize_cell_to_scalars(&cell);
+
+    verify_multi_opening_naive(opening_key, commitment, proof, coset, &output_points)
 }
 
 pub fn verify_cell_kzg_proof_batch(
