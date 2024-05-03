@@ -5,19 +5,25 @@ pub(crate) fn hex_to_bytes(hex_str: &str) -> Vec<u8> {
     hex::decode(hex_str).expect("malformed hex string")
 }
 
-pub(crate) fn deserialize_blob_to_scalars(blob_bytes: &[u8]) -> Vec<Scalar> {
+fn deserialize_bytes_to_scalars(bytes: &[u8]) -> Vec<Scalar> {
     assert!(
-        blob_bytes.len() % BYTES_PER_FIELD_ELEMENT == 0,
+        bytes.len() % BYTES_PER_FIELD_ELEMENT == 0,
         "expected bytes to be a multiple of {BYTES_PER_FIELD_ELEMENT}",
     );
 
-    let bytes32s = blob_bytes.chunks_exact(BYTES_PER_FIELD_ELEMENT);
+    let bytes32s = bytes.chunks_exact(BYTES_PER_FIELD_ELEMENT);
 
     let mut scalars = Vec::with_capacity(bytes32s.len());
     for bytes32 in bytes32s {
         scalars.push(deserialize_scalar(bytes32))
     }
     scalars
+}
+pub(crate) fn deserialize_blob_to_scalars(blob_bytes: &[u8]) -> Vec<Scalar> {
+    deserialize_bytes_to_scalars(blob_bytes)
+}
+pub(crate) fn deserialize_cell_to_scalars(cell_bytes: &[u8]) -> Vec<Scalar> {
+    deserialize_bytes_to_scalars(cell_bytes)
 }
 
 pub(crate) fn deserialize_scalar(scalar_bytes: &[u8]) -> Scalar {
@@ -27,10 +33,10 @@ pub(crate) fn deserialize_scalar(scalar_bytes: &[u8]) -> Scalar {
     option_scalar.expect("Result: blob chunk is not a valid scalar")
 }
 
-pub(crate) fn deserialize_compressed_g1(point_bytes: &[u8]) -> G1Projective {
+pub(crate) fn deserialize_compressed_g1(point_bytes: &[u8]) -> G1Point {
     let point_bytes: [u8; BYTES_PER_G1_POINT] =
         point_bytes.try_into().expect("point should be 48 bytes");
-    G1Projective::from_compressed(&point_bytes).expect("cannot deserialize point")
+    G1Point::from_compressed(&point_bytes).expect("cannot deserialize point")
 }
 pub(crate) fn serialize_g1_compressed(point: &G1Point) -> [u8; BYTES_PER_G1_POINT] {
     point.to_compressed()
