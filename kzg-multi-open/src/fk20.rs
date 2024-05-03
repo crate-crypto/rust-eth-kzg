@@ -40,6 +40,10 @@ impl FK20 {
         let batch_toeplitz = BatchToeplitzMatrixVecMul::new(srs_vectors);
         FK20 { batch_toeplitz }
     }
+
+    pub fn compute_h_poly_commitments(&self, polynomial: PolyCoeff, l: usize) -> Vec<G1Projective> {
+        semi_toeplitz_fk20_h_polys(&self.batch_toeplitz, polynomial, l)
+    }
 }
 
 /// This is doing \floor{f(x) / x^d}
