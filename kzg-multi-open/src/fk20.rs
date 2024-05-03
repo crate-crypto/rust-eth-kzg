@@ -28,6 +28,8 @@ impl FK20 {
         let srs_truncated: Vec<_> = commit_key.g1s.clone().into_iter().rev().skip(l).collect();
         let mut srs_vectors = take_every_nth(&srs_truncated, l);
 
+        // TODO: We don't need to do this padding, since `BatchToeplitzMatrixVecMul` doesn't
+        // TODO necessitate it.
         // Pad srs vectors by the next power of two
         for srs_vector in &mut srs_vectors {
             let pad_by = srs_vector.len().next_power_of_two();
