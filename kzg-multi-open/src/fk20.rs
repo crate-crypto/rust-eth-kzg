@@ -20,15 +20,38 @@ use crate::{commit_key::CommitKey, reverse_bit_order};
 /// proof using the FK20 method.
 pub struct FK20 {
     batch_toeplitz: BatchToeplitzMatrixVecMul,
+    /// FK20 allows you to open multiple points at once. This is the number of points in
+    /// a particular set. In the FK20 paper, this is referred to as `l` (ELL).
+    /// TODO(Note): This has ramifications for the number of G2 points, but it is not checked
+    /// TODO: in the constructor here.
+    point_set_size: usize,
+    /// The number of points in total that we want to open a polynomial at.
+    number_of_points_to_open: usize,
+    proof_domain: Domain,
+    ext_domain: Domain,
 }
 
 impl FK20 {
-    pub fn new(commit_key: &CommitKey, l: usize) -> FK20 {
-        // Compute the SRS vectors that we will multiply the toeplitz matrices by.
+    pub fn new(
+        commit_key: &CommitKey,
+        point_set_size: usize,
+        number_of_points_to_open: usize,
+    ) -> FK20 {
+        assert!(point_set_size.is_power_of_two());
+        assert!(number_of_points_to_open.is_power_of_two());
+
+        // 1. Compute the SRS vectors that we will multiply the toeplitz matrices by.
         //
         // Skip the last `l` points in the srs
-        let srs_truncated: Vec<_> = commit_key.g1s.clone().into_iter().rev().skip(l).collect();
-        let mut srs_vectors = take_every_nth(&srs_truncated, l);
+        assert!(commit_key.g1s.len() > point_set_size);
+        let srs_truncated: Vec<_> = commit_key
+            .g1s
+            .clone()
+            .into_iter()
+            .rev()
+            .skip(point_set_size)
+            .collect();
+        let mut srs_vectors = take_every_nth(&srs_truncated, point_set_size);
 
         // TODO: We don't need to do this padding, since `BatchToeplitzMatrixVecMul` doesn't
         // TODO necessitate it.
@@ -40,21 +63,38 @@ impl FK20 {
 
         // Compute `l` toeplitz matrix-vector multiplications and sum them together
         let batch_toeplitz = BatchToeplitzMatrixVecMul::new(srs_vectors);
-        FK20 { batch_toeplitz }
+
+        // 2. Compute the domains needed to produce the proofs and the evaluations
+        //
+        // The size of the proof domain corresponds to the number of proofs that will be returned.
+        let proof_domain = Domain::new(number_of_points_to_open / point_set_size);
+        // The size of the extension domain corresponds to the number of points that we want to open
+        let ext_domain = Domain::new(number_of_points_to_open);
+
+        FK20 {
+            batch_toeplitz,
+            point_set_size,
+            number_of_points_to_open,
+            proof_domain,
+            ext_domain,
+        }
+    }
+
+    /// The number of proofs that will be produced.
+    pub fn num_proofs(&self) -> usize {
+        self.number_of_points_to_open / self.point_set_size
     }
 
     pub fn compute_multi_opening_proofs(
         &self,
         polynomial: PolyCoeff,
-        ext_domain: &Domain,
-        proof_domain: &Domain,
         l: usize,
     ) -> (Vec<G1Point>, Vec<Vec<Scalar>>) {
         // TODO: reverse bit order on the polynomial
 
         // Compute proofs for the polynomial
         let h_poly_commitments = self.compute_h_poly_commitments(polynomial.clone(), l);
-        let mut proofs = proof_domain.fft_g1(h_poly_commitments);
+        let mut proofs = self.proof_domain.fft_g1(h_poly_commitments);
         // apply reverse bit order permutation, since fft_g1 was applied using
         // the regular order.
         reverse_bit_order(&mut proofs);
@@ -63,7 +103,7 @@ impl FK20 {
         bls12_381::G1Projective::batch_normalize(&proofs, &mut proofs_affine);
 
         // Compute the evaluations of the polynomial at the cosets by doing an fft
-        let mut evaluations = ext_domain.fft_scalars(polynomial.clone());
+        let mut evaluations = self.ext_domain.fft_scalars(polynomial.clone());
         reverse_bit_order(&mut evaluations);
         let set_of_output_points: Vec<_> = evaluations
             .chunks_exact(l)
@@ -161,7 +201,7 @@ mod tests {
             .collect::<Vec<_>>();
         // Add the identity element to h_polys to pad it to a power of two
         expected_comm_h_polys.push(bls12_381::G1Projective::identity());
-        let fk20 = FK20::new(&commit_key, l);
+        let fk20 = FK20::new(&commit_key, l, 2 * 4096);
         let got_comm_h_polys = fk20.compute_h_poly_commitments(poly, l);
         assert_eq!(expected_comm_h_polys.len(), got_comm_h_polys.len());
         assert_eq!(expected_comm_h_polys, got_comm_h_polys);
@@ -174,15 +214,14 @@ mod tests {
         let poly = vec![Scalar::random(&mut rand::thread_rng()); poly_len];
         let l = 64;
         let (commit_key, _) = create_eth_commit_opening_keys();
-        let proof_domain = Domain::new(l);
+        let proof_domain = Domain::new(2 * poly_len / l);
         let ext_domain = Domain::new(2 * poly_len);
 
         let (expected_proofs, expected_evaluations) =
             naive::fk20_open_multi_point(&commit_key, &proof_domain, &ext_domain, &poly, l);
 
-        let fk20 = FK20::new(&commit_key, l);
-        let (got_proofs, got_evaluations) =
-            fk20.compute_multi_opening_proofs(poly, &ext_domain, &proof_domain, l);
+        let fk20 = FK20::new(&commit_key, l, 2 * poly_len);
+        let (got_proofs, got_evaluations) = fk20.compute_multi_opening_proofs(poly, l);
 
         assert_eq!(got_proofs.len(), expected_proofs.len());
         assert_eq!(got_evaluations.len(), expected_evaluations.len());
