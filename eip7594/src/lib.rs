@@ -1,7 +1,51 @@
+use constants::CELLS_PER_EXT_BLOB;
+
 // TODO: We can remove this once we hook up the consensus-specs fixed test vectors.
 pub mod consensus_specs_fixed_test_vector;
 
 pub mod constants;
+mod serialization;
+
+pub type Blob = Vec<u8>;
+pub type Cell = Vec<u8>;
+pub type KZGProof = Vec<u8>;
+pub type CellID = u64;
+pub type RowIndex = u64;
+pub type ColumnIndex = u64;
+pub type Bytes48 = Vec<u8>;
+
+pub fn compute_cells_and_kzg_proofs(
+    blob: Blob,
+) -> ([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]) {
+    todo!()
+}
+
+pub fn compute_cells(blob: Blob) -> [Cell; CELLS_PER_EXT_BLOB] {
+    todo!()
+}
+
+pub fn verify_cell_kzg_proof(
+    commitment_bytes: Bytes48,
+    cell_id: CellID,
+    cell: Cell,
+    proof_bytes: Bytes48,
+) -> bool {
+    todo!()
+}
+
+pub fn verify_cell_kzg_proof_batch(
+    row_commitments_bytes: Vec<Bytes48>,
+    row_indices: Vec<RowIndex>,
+    column_indices: Vec<ColumnIndex>,
+    cells: Vec<Cell>,
+    proofs_bytes: Vec<Bytes48>,
+) -> bool {
+    todo!()
+}
+
+pub fn recover_all_cells(cell_ids: Vec<CellID>, cells: Vec<Cell>) -> Vec<Cell> {
+    todo!()
+}
 
 #[cfg(test)]
 mod tests {
