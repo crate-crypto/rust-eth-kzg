@@ -1,7 +1,14 @@
+use crate::{
+    constants::{FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB},
+    serialization::{deserialize_cell_to_scalars, deserialize_compressed_g1},
+    Bytes48, Cell, CellID, ColumnIndex, RowIndex,
+};
 use bls12_381::Scalar;
-use kzg_multi_open::{create_eth_commit_opening_keys, opening_key::OpeningKey, proof::verify_multi_opening_naive, reverse_bit_order};
+use kzg_multi_open::{
+    create_eth_commit_opening_keys, opening_key::OpeningKey, proof::verify_multi_opening_naive,
+    reverse_bit_order,
+};
 use polynomial::domain::Domain;
-use crate::{constants::{FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB}, serialization::{deserialize_cell_to_scalars, deserialize_compressed_g1}, Bytes48, Cell, CellID, ColumnIndex, RowIndex};
 
 pub struct VerifierContext {
     opening_key: OpeningKey,
@@ -10,10 +17,9 @@ pub struct VerifierContext {
 }
 
 impl VerifierContext {
-
     pub fn new() -> VerifierContext {
-        let (_,opening_key) = create_eth_commit_opening_keys();
-        
+        let (_, opening_key) = create_eth_commit_opening_keys();
+
         let domain_extended = Domain::new(FIELD_ELEMENTS_PER_EXT_BLOB);
         let mut domain_extended_roots = domain_extended.roots;
         reverse_bit_order(&mut domain_extended_roots);
@@ -25,9 +31,8 @@ impl VerifierContext {
             .collect();
 
         VerifierContext {
-        opening_key,
+            opening_key,
             bit_reversed_cosets: cosets,
-            
         }
     }
     pub fn verify_cell_kzg_proof(
@@ -40,7 +45,6 @@ impl VerifierContext {
         let commitment = deserialize_compressed_g1(&commitment_bytes);
         let proof = deserialize_compressed_g1(&proof_bytes);
 
-  
         let coset = &self.bit_reversed_cosets[cell_id as usize];
 
         let output_points = deserialize_cell_to_scalars(&cell);
@@ -84,7 +88,52 @@ impl VerifierContext {
         true
     }
 
-    pub fn recover_all_cells(&self,cell_ids: Vec<CellID>, cells: Vec<Cell>) -> Vec<Cell> {
+    pub fn recover_all_cells(&self, cell_ids: Vec<CellID>, cells: Vec<Cell>) -> Vec<Cell> {
         todo!()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        consensus_specs_fixed_test_vector::{CELLS_STR, COMMITMENT_STR, PROOFS_STR},
+        verifier::VerifierContext,
+    };
+
+    #[test]
+    fn test_proofs_verify() {
+        // Setup
+        let ctx = VerifierContext::new();
+
+        let commitment_str = COMMITMENT_STR;
+        let commitment_bytes: [u8; 48] = hex::decode(commitment_str).unwrap().try_into().unwrap();
+
+        let proofs_str = PROOFS_STR;
+        let proofs_bytes: Vec<[u8; 48]> = proofs_str
+            .iter()
+            .map(|proof_str| hex::decode(proof_str).unwrap().try_into().unwrap())
+            .collect();
+
+        let cells_str = CELLS_STR;
+        let cells_bytes: Vec<Vec<u8>> = cells_str
+            .into_iter()
+            .map(|cell_str| hex::decode(cell_str).unwrap())
+            .collect();
+
+        for k in 0..proofs_bytes.len() {
+            let proof_bytes = proofs_bytes[k];
+            let cell_bytes = cells_bytes[k].clone();
+            let cell_id = k as u64;
+
+            assert!(ctx.verify_cell_kzg_proof(commitment_bytes, cell_id, cell_bytes, proof_bytes));
+        }
+
+        assert!(ctx.verify_cell_kzg_proof_batch(
+            vec![commitment_bytes; proofs_bytes.len()],
+            vec![0; proofs_bytes.len()],
+            (0..proofs_bytes.len()).map(|x| x as u64).collect(),
+            cells_bytes,
+            proofs_bytes,
+        ));
     }
 }
