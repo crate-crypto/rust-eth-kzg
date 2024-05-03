@@ -8,3 +8,4 @@ members = ["bls12-381", "eip7594", "kzg-multi-open", "polynomial"]
 bls12-381 = { path = "./bls12-381" }
 polynomial = { path = "./polynomial" }
 kzg-multi-open = { path = "./kzg-multi-open" }
+hex = "0.4.3"
