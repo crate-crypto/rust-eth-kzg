@@ -7,7 +7,7 @@ use kzg_multi_open::{
     commit_key::{CommitKey, CommitKeyLagrange},
     create_eth_commit_opening_keys,
     fk20::FK20,
-    opening_key::OpeningKey,
+    opening_key::{self, OpeningKey},
     proof::verify_multi_opening_naive,
     reverse_bit_order,
 };
@@ -30,7 +30,7 @@ pub type KZGCommitment = [u8; BYTES_PER_COMMITMENT];
 pub type CellID = u64;
 pub type RowIndex = u64;
 pub type ColumnIndex = u64;
-pub type Bytes48 = Vec<u8>;
+pub type Bytes48 = [u8; 48];
 
 // TODO: Split this struct into `ProvingContext` and `VerifyingContext`
 // TODO: and rename FK20 into `FK20Prover`
@@ -124,40 +124,66 @@ impl EIP7594Context {
 
         cells
     }
-}
 
-pub fn verify_cell_kzg_proof(
-    opening_key: &OpeningKey,
-    commitment_bytes: Bytes48,
-    cell_id: CellID,
-    cell: Cell,
-    proof_bytes: Bytes48,
-) -> bool {
-    let commitment = deserialize_compressed_g1(&commitment_bytes);
-    let proof = deserialize_compressed_g1(&proof_bytes);
+    pub fn verify_cell_kzg_proof(
+        &self,
+        commitment_bytes: Bytes48,
+        cell_id: CellID,
+        cell: Cell,
+        proof_bytes: Bytes48,
+    ) -> bool {
+        let commitment = deserialize_compressed_g1(&commitment_bytes);
+        let proof = deserialize_compressed_g1(&proof_bytes);
 
-    let domain_extended = Domain::new(FIELD_ELEMENTS_PER_EXT_BLOB);
-    let mut domain_extended_roots = domain_extended.roots;
-    reverse_bit_order(&mut domain_extended_roots);
+        let domain_extended = Domain::new(FIELD_ELEMENTS_PER_EXT_BLOB);
+        let mut domain_extended_roots = domain_extended.roots;
+        reverse_bit_order(&mut domain_extended_roots);
 
-    let chunked_bit_reversed_roots: Vec<_> = domain_extended_roots
-        .chunks(FIELD_ELEMENTS_PER_CELL)
-        .collect();
-    let coset = chunked_bit_reversed_roots[cell_id as usize];
+        let chunked_bit_reversed_roots: Vec<_> = domain_extended_roots
+            .chunks(FIELD_ELEMENTS_PER_CELL)
+            .collect();
+        let coset = chunked_bit_reversed_roots[cell_id as usize];
 
-    let output_points = deserialize_cell_to_scalars(&cell);
+        let output_points = deserialize_cell_to_scalars(&cell);
 
-    verify_multi_opening_naive(opening_key, commitment, proof, coset, &output_points)
-}
+        verify_multi_opening_naive(&self.opening_key, commitment, proof, coset, &output_points)
+    }
 
-pub fn verify_cell_kzg_proof_batch(
-    row_commitments_bytes: Vec<Bytes48>,
-    row_indices: Vec<RowIndex>,
-    column_indices: Vec<ColumnIndex>,
-    cells: Vec<Cell>,
-    proofs_bytes: Vec<Bytes48>,
-) -> bool {
-    todo!()
+    pub fn verify_cell_kzg_proof_batch(
+        &self,
+        row_commitments_bytes: Vec<Bytes48>,
+        row_indices: Vec<RowIndex>,
+        column_indices: Vec<ColumnIndex>,
+        cells: Vec<Cell>,
+        proofs_bytes: Vec<Bytes48>,
+    ) -> bool {
+        // TODO: This currently uses the naive method
+        //
+        // All inputs must have the same length according to the specs.
+        assert_eq!(row_commitments_bytes.len(), row_indices.len());
+        assert_eq!(row_commitments_bytes.len(), column_indices.len());
+        assert_eq!(row_commitments_bytes.len(), cells.len());
+        assert_eq!(row_commitments_bytes.len(), proofs_bytes.len());
+
+        for k in 0..row_commitments_bytes.len() {
+            let row_index = row_indices[k];
+            let row_commitment_bytes = row_commitments_bytes[row_index as usize];
+            let column_index = column_indices[k];
+            let cell = cells[k].clone();
+            let proof_bytes = proofs_bytes[k];
+
+            if !self.verify_cell_kzg_proof(
+                row_commitment_bytes,
+                column_index as u64,
+                cell,
+                proof_bytes,
+            ) {
+                return false;
+            }
+        }
+
+        true
+    }
 }
 
 pub fn recover_all_cells(cell_ids: Vec<CellID>, cells: Vec<Cell>) -> Vec<Cell> {
@@ -177,7 +203,8 @@ mod tests {
 
     use crate::{
         consensus_specs_fixed_test_vector::{
-            eth_cells, eth_commitment, eth_polynomial, eth_proofs, BLOB_STR, CELLS_STR, PROOFS_STR,
+            eth_cells, eth_commitment, eth_polynomial, eth_proofs, BLOB_STR, CELLS_STR,
+            COMMITMENT_STR, PROOFS_STR,
         },
         EIP7594Context,
     };
@@ -197,36 +224,38 @@ mod tests {
     #[test]
     fn test_proofs_verify() {
         // Setup
-        let (_, vk) = create_eth_commit_opening_keys();
-        const POLYNOMIAL_LEN: usize = 4096;
-        const NUMBER_OF_POINTS_TO_EVALUATE: usize = 2 * POLYNOMIAL_LEN;
+        let ctx = EIP7594Context::new();
 
-        const NUMBER_OF_POINTS_PER_PROOF: usize = 64;
-        let domain_extended = Domain::new(NUMBER_OF_POINTS_TO_EVALUATE);
-        let mut domain_extended_roots = domain_extended.roots.clone();
-        reverse_bit_order(&mut domain_extended_roots);
+        let commitment_str = COMMITMENT_STR;
+        let commitment_bytes: [u8; 48] = hex::decode(commitment_str).unwrap().try_into().unwrap();
 
-        let chunked_bit_reversed_roots: Vec<_> = domain_extended_roots
-            .chunks(NUMBER_OF_POINTS_PER_PROOF)
+        let proofs_str = PROOFS_STR;
+        let proofs_bytes: Vec<[u8; 48]> = proofs_str
+            .iter()
+            .map(|proof_str| hex::decode(proof_str).unwrap().try_into().unwrap())
             .collect();
 
-        let commitment: G1Point = eth_commitment().into();
-        let proofs = eth_proofs();
-        let cells = eth_cells();
+        let cells_str = CELLS_STR;
+        let cells_bytes: Vec<Vec<u8>> = cells_str
+            .into_iter()
+            .map(|cell_str| hex::decode(cell_str).unwrap())
+            .collect();
 
-        for k in 0..proofs.len() {
-            let input_points = chunked_bit_reversed_roots[k];
-            let proof: G1Point = proofs[k].into();
-            let coset_eval = &cells[k];
+        for k in 0..proofs_bytes.len() {
+            let proof_bytes = proofs_bytes[k];
+            let cell_bytes = cells_bytes[k].clone();
+            let cell_id = k as u64;
 
-            assert!(verify_multi_opening_naive(
-                &vk,
-                commitment,
-                proof,
-                &input_points,
-                coset_eval
-            ));
+            assert!(ctx.verify_cell_kzg_proof(commitment_bytes, cell_id, cell_bytes, proof_bytes));
         }
+
+        assert!(ctx.verify_cell_kzg_proof_batch(
+            vec![commitment_bytes; proofs_bytes.len()],
+            vec![0; proofs_bytes.len()],
+            (0..proofs_bytes.len()).map(|x| x as u64).collect(),
+            cells_bytes,
+            proofs_bytes,
+        ));
     }
 
     #[test]
