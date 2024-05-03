@@ -43,62 +43,79 @@ impl FK20 {
         FK20 { batch_toeplitz }
     }
 
-    pub fn compute_h_poly_commitments(&self, polynomial: PolyCoeff, l: usize) -> Vec<G1Projective> {
-        semi_toeplitz_fk20_h_polys(&self.batch_toeplitz, polynomial, l)
-    }
-}
+    pub fn compute_multi_opening_proofs(
+        &self,
+        polynomial: PolyCoeff,
+        ext_domain: &Domain,
+        proof_domain: &Domain,
+        l: usize,
+    ) -> (Vec<G1Point>, Vec<Vec<Scalar>>) {
+        // TODO: reverse bit order on the polynomial
 
-// This is in the spirit of the toeplitz construction, but does not use circulant matrices yet.
-// Checking it into github for prosperity purposes and for those looking to learn.
-//
-// This function will be slow because it is doing a matrix-vector multiplication for the toeplitz
-// matrices.
-fn semi_toeplitz_fk20_h_polys(
-    bm: &BatchToeplitzMatrixVecMul,
-    mut polynomial: PolyCoeff,
-    l: usize,
-) -> Vec<G1Projective> {
-    assert!(
-        l.is_power_of_two(),
-        "expected l to be a power of two (its the size of the cosets), found {}",
-        l
-    );
+        // Compute proofs for the polynomial
+        let h_poly_commitments = self.compute_h_poly_commitments(polynomial.clone(), l);
+        let mut proofs = proof_domain.fft_g1(h_poly_commitments);
+        // apply reverse bit order permutation, since fft_g1 was applied using
+        // the regular order.
+        reverse_bit_order(&mut proofs);
+        let mut proofs_affine = vec![G1Point::identity(); proofs.len()];
+        // TODO: This does not seem to be using the batch affine trick
+        bls12_381::G1Projective::batch_normalize(&proofs, &mut proofs_affine);
 
-    let m = polynomial.len();
-    assert!(
-        m.is_power_of_two(),
-        "expected polynomial to have power of 2 number of evaluations. Found {}",
-        m
-    );
+        // Compute the evaluations of the polynomial at the cosets by doing an fft
+        let mut evaluations = ext_domain.fft_scalars(polynomial.clone());
+        reverse_bit_order(&mut evaluations);
+        let set_of_output_points: Vec<_> = evaluations
+            .chunks_exact(l)
+            .map(|slice| slice.to_vec())
+            .collect();
 
-    let k = m / l;
-    assert!(
-        k.is_power_of_two(),
-        "expected k to be a power of two, found {}",
-        k
-    );
-
-    // Reverse polynomial so highest coefficient is first.
-    // See 3.1.1 of the FK20 paper, for the ordering.
-    polynomial.reverse();
-
-    // Compute the toeplitz rows for the `l` toeplitz matrices
-    let toeplitz_rows = take_every_nth(&polynomial, l);
-
-    // Compute the Toeplitz matrices
-    let mut matrices = Vec::with_capacity(toeplitz_rows.len());
-    // We want to do `l` toeplitz matrix multiplications
-    for row in toeplitz_rows.into_iter() {
-        // TODO: We could have a special constructor/Toeplitz struct for the column,
-        // TODO: if this allocation shows to be non-performant.
-        let mut toeplitz_column = vec![Scalar::from(0u64); row.len()];
-        toeplitz_column[0] = row[0];
-
-        matrices.push(ToeplitzMatrix::new(row, toeplitz_column));
+        (proofs_affine, set_of_output_points)
     }
 
-    // Compute `l` toeplitz matrix-vector multiplications and sum them together
-    bm.sum_matrix_vector_mul(matrices)
+    fn compute_h_poly_commitments(&self, mut polynomial: PolyCoeff, l: usize) -> Vec<G1Projective> {
+        assert!(
+            l.is_power_of_two(),
+            "expected l to be a power of two (its the size of the cosets), found {}",
+            l
+        );
+
+        let m = polynomial.len();
+        assert!(
+            m.is_power_of_two(),
+            "expected polynomial to have power of 2 number of evaluations. Found {}",
+            m
+        );
+
+        let k = m / l;
+        assert!(
+            k.is_power_of_two(),
+            "expected k to be a power of two, found {}",
+            k
+        );
+
+        // Reverse polynomial so highest coefficient is first.
+        // See 3.1.1 of the FK20 paper, for the ordering.
+        polynomial.reverse();
+
+        // Compute the toeplitz rows for the `l` toeplitz matrices
+        let toeplitz_rows = take_every_nth(&polynomial, l);
+
+        // Compute the Toeplitz matrices
+        let mut matrices = Vec::with_capacity(toeplitz_rows.len());
+        // We want to do `l` toeplitz matrix multiplications
+        for row in toeplitz_rows.into_iter() {
+            // TODO: We could have a special constructor/Toeplitz struct for the column,
+            // TODO: if this allocation shows to be non-performant.
+            let mut toeplitz_column = vec![Scalar::from(0u64); row.len()];
+            toeplitz_column[0] = row[0];
+
+            matrices.push(ToeplitzMatrix::new(row, toeplitz_column));
+        }
+
+        // Compute `l` toeplitz matrix-vector multiplications and sum them together
+        self.batch_toeplitz.sum_matrix_vector_mul(matrices)
+    }
 }
 
 /// Given a vector `k` and an integer `l`
@@ -116,10 +133,11 @@ fn take_every_nth<T: Clone + Copy>(list: &[T], n: usize) -> Vec<Vec<T>> {
 mod tests {
     use crate::{
         create_eth_commit_opening_keys,
-        fk20::{naive, semi_toeplitz_fk20_h_polys, take_every_nth, FK20},
+        fk20::{naive, take_every_nth, FK20},
     };
     use bls12_381::group::Group;
     use bls12_381::Scalar;
+    use polynomial::domain::Domain;
 
     #[test]
     fn smoke_test_downsample() {
@@ -144,8 +162,32 @@ mod tests {
         // Add the identity element to h_polys to pad it to a power of two
         expected_comm_h_polys.push(bls12_381::G1Projective::identity());
         let fk20 = FK20::new(&commit_key, l);
-        let got_comm_h_polys = semi_toeplitz_fk20_h_polys(&fk20.batch_toeplitz, poly, l);
+        let got_comm_h_polys = fk20.compute_h_poly_commitments(poly, l);
         assert_eq!(expected_comm_h_polys.len(), got_comm_h_polys.len());
         assert_eq!(expected_comm_h_polys, got_comm_h_polys);
+    }
+
+    #[test]
+    fn check_consistency_of_proofs_against_naive() {
+        use bls12_381::ff::Field;
+        let poly_len = 4096;
+        let poly = vec![Scalar::random(&mut rand::thread_rng()); poly_len];
+        let l = 64;
+        let (commit_key, _) = create_eth_commit_opening_keys();
+        let proof_domain = Domain::new(l);
+        let ext_domain = Domain::new(2 * poly_len);
+
+        let (expected_proofs, expected_evaluations) =
+            naive::fk20_open_multi_point(&commit_key, &proof_domain, &ext_domain, &poly, l);
+
+        let fk20 = FK20::new(&commit_key, l);
+        let (got_proofs, got_evaluations) =
+            fk20.compute_multi_opening_proofs(poly, &ext_domain, &proof_domain, l);
+
+        assert_eq!(got_proofs.len(), expected_proofs.len());
+        assert_eq!(got_evaluations.len(), expected_evaluations.len());
+
+        assert_eq!(got_evaluations, expected_evaluations);
+        assert_eq!(got_proofs, expected_proofs);
     }
 }
