@@ -2,7 +2,7 @@ use bls12_381::{ff::Field, group::Group, G1Projective};
 use bls12_381::{G2Projective, Scalar};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use kzg_multi_open::consensus_specs_fixed_test_vector::eth_polynomial;
-use kzg_multi_open::fk20::naive_fk20_open_multi_point;
+use kzg_multi_open::fk20::naive;
 use kzg_multi_open::lincomb::{g1_lincomb, g1_lincomb_unsafe, g2_lincomb, g2_lincomb_unsafe};
 use kzg_multi_open::proof::compute_multi_opening_naive;
 use kzg_multi_open::{create_eth_commit_opening_keys, reverse_bit_order};
@@ -109,7 +109,7 @@ pub fn bench_compute_proof_with_naive_fk20(c: &mut Criterion) {
         ),
         |b| {
             b.iter(|| {
-                naive_fk20_open_multi_point(
+                naive::fk20_open_multi_point(
                     &ck,
                     &proof_domain,
                     &domain_extended,

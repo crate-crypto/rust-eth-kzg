@@ -171,7 +171,7 @@ mod eth_tests {
         reverse_bit_order(&mut polynomial);
         let poly_coeff = domain.ifft_scalars(polynomial);
 
-        let (got_proofs, got_set_of_output_points) = crate::fk20::naive_fk20_open_multi_point(
+        let (got_proofs, got_set_of_output_points) = crate::fk20::naive::fk20_open_multi_point(
             &ck,
             &proof_domain,
             &domain_extended,
