@@ -2,7 +2,7 @@ use bls12_381::{G1Projective, Scalar};
 use polynomial::domain::Domain;
 
 use super::toeplitz::ToeplitzMatrix;
-use crate::fk20::toeplitz::CirculantMatrix;
+use crate::{fk20::toeplitz::CirculantMatrix, lincomb::g1_lincomb};
 use bls12_381::group::Group;
 
 /// BatchToeplitz is a structure that optimizes for the usecase where:
@@ -66,14 +66,22 @@ impl BatchToeplitzMatrixVecMul {
 
         // Perform circulant matrix-vector multiplication between all of the matrices and vectors
         // and sum them together.
-        let mut result = vec![G1Projective::identity(); self.circulant_domain.roots.len()];
-        for (matrix, vector) in circulant_matrices.zip(&self.fft_vectors) {
-            let col_fft = self.circulant_domain.fft_scalars(matrix.row);
+        //
+        // We note that the aggregation step can be converted into msm's of size `l`
+        let col_ffts : Vec<_>= circulant_matrices.into_iter().map(|matrix| self.circulant_domain.fft_scalars(matrix.row)).collect();
+        let mut msm_scalars = vec![vec![]; col_ffts[0].len()];
+        let mut msm_points = vec![vec![]; col_ffts[0].len()];
 
-            for ((a, b), evals) in vector.iter().zip(col_fft).zip(result.iter_mut()) {
-                *evals += a * b;
+        for (col_fft, vector) in col_ffts.iter().zip(&self.fft_vectors) {
+            for (i,(a, b)) in vector.iter().zip(col_fft).enumerate() {
+                msm_scalars[i].push(*b);
+                msm_points[i].push(*a);
             }
         }
+
+        let result : Vec<_>= msm_points.into_iter().zip(msm_scalars.into_iter()).map(|(points, scalars)|{
+            g1_lincomb(&points, &scalars)
+        }).collect();
         let circulant_sum = self.circulant_domain.ifft_g1(result);
 
         // Once the Circulant matrix-vector multiplication is done, we need to take the first half
