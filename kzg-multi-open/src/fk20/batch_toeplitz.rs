@@ -52,6 +52,7 @@ impl BatchToeplitzMatrixVecMul {
     //
     // This is faster than computing the matrix vector multiplication for each Toeplitz matrix and then summing the results
     // since only one IFFT is done as opposed to `n`
+    // TODO: This method should be refactored for better readability, once we are done applying optimizations
     pub fn sum_matrix_vector_mul(&self, matrices: Vec<ToeplitzMatrix>) -> Vec<G1Projective> {
         assert_eq!(
             matrices.len(),
