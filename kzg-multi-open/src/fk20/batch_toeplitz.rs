@@ -1,9 +1,8 @@
-use bls12_381::{G1Projective, Scalar};
+use bls12_381::G1Projective;
 use polynomial::domain::Domain;
 
 use super::toeplitz::ToeplitzMatrix;
 use crate::{fk20::toeplitz::CirculantMatrix, lincomb::g1_lincomb};
-use bls12_381::group::Group;
 
 /// BatchToeplitz is a structure that optimizes for the usecase where:
 /// - You need to do multiple matrix-vector multiplications and sum them together
@@ -81,6 +80,8 @@ impl BatchToeplitzMatrixVecMul {
         }
 
         let result : Vec<_>= msm_points.into_iter().zip(msm_scalars.into_iter()).map(|(points, scalars)|{
+            // TODO(Note): This could be changed to g1_lincomb_unsafe, however one needs to 
+            // TODO: be careful not to pad the SRS with the identity elements.
             g1_lincomb(&points, &scalars)
         }).collect();
         let circulant_sum = self.circulant_domain.ifft_g1(result);
