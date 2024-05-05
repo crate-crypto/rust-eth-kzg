@@ -129,7 +129,7 @@ impl DenseMatrix {
     }
 
     fn vector_mul_g1(self, vector: Vec<G1Projective>) -> Vec<G1Projective> {
-        use crate::lincomb::g1_lincomb;
+        use bls12_381::lincomb::g1_lincomb;
         self.vector_mul(vector, g1_lincomb)
     }
 

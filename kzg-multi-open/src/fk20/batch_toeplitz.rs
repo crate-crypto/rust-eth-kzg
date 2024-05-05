@@ -1,9 +1,9 @@
 use bls12_381::G1Projective;
+use bls12_381::lincomb::g1_lincomb;
 use polynomial::domain::Domain;
 
 use super::toeplitz::ToeplitzMatrix;
-use crate::{fk20::toeplitz::CirculantMatrix, lincomb::g1_lincomb};
-
+use crate::fk20::toeplitz::CirculantMatrix;
 /// BatchToeplitz is a structure that optimizes for the usecase where:
 /// - You need to do multiple matrix-vector multiplications and sum them together
 /// - The vector is known at compile time, so you can precompute it's FFT

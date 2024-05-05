@@ -3,7 +3,6 @@ use opening_key::OpeningKey;
 
 pub mod commit_key;
 pub mod fk20;
-pub mod lincomb;
 pub mod opening_key;
 pub mod proof;
 

@@ -1,4 +1,4 @@
-use crate::lincomb::g1_lincomb;
+use bls12_381::lincomb::g1_lincomb;
 use bls12_381::{G1Projective, Scalar};
 use polynomial::domain::Domain;
 
