@@ -1,4 +1,4 @@
-use bls12_381::G1Projective;
+use bls12_381::{G1Projective, Scalar};
 use polynomial::domain::Domain;
 
 use super::toeplitz::ToeplitzMatrix;
@@ -60,15 +60,14 @@ impl BatchToeplitzMatrixVecMul {
         );
 
         // Embed Toeplitz matrices into Circulant matrices
-        let circulant_matrices: Vec<CirculantMatrix> = matrices
+        let circulant_matrices = matrices
             .into_iter()
-            .map(CirculantMatrix::from_toeplitz)
-            .collect();
+            .map(CirculantMatrix::from_toeplitz);
 
         // Perform circulant matrix-vector multiplication between all of the matrices and vectors
         // and sum them together.
         let mut result = vec![G1Projective::identity(); self.circulant_domain.roots.len()];
-        for (matrix, vector) in circulant_matrices.into_iter().zip(&self.fft_vectors) {
+        for (matrix, vector) in circulant_matrices.zip(&self.fft_vectors) {
             let col_fft = self.circulant_domain.fft_scalars(matrix.row);
 
             for ((a, b), evals) in vector.iter().zip(col_fft).zip(result.iter_mut()) {
@@ -79,7 +78,7 @@ impl BatchToeplitzMatrixVecMul {
 
         // Once the Circulant matrix-vector multiplication is done, we need to take the first half
         // of the result, as this is the result of the Toeplitz matrix multiplication
-        circulant_sum.into_iter().take(self.n).collect()
+        circulant_sum[0..self.n].to_vec()
     }
 }
 
