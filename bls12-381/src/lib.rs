@@ -1,5 +1,5 @@
 pub mod batch_inversion;
-
+pub mod lincomb;
 // Re-exporting the blstrs crate
 // TODO: We could feature flag the different bls12-381 implementations
 

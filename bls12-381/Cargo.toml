@@ -13,7 +13,6 @@ pairing = { version = "0.23" }
 blstrs = "0.7.1"
 ff = "0.13.0"
 group = "0.13"
-
 [dev-dependencies]
 criterion = "0.5.1"
 rand = "0.8.4"
