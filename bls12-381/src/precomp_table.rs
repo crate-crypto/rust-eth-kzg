@@ -12,16 +12,17 @@ pub struct PrecomputedTable {
 
 impl PrecomputedTable {
     pub fn new(gen: G1Projective, base: usize) -> Self {
-        // NUM_BITS / base_bits
-        let num_rows = (256 / base) + 256 % base;
+        const NUM_BITS_SCALAR_NEAREST_POW_2: usize = 256;
+        let num_rows =
+            (NUM_BITS_SCALAR_NEAREST_POW_2 / base) + NUM_BITS_SCALAR_NEAREST_POW_2 % base;
 
-        // let num_rows = (1 << Scalar::NUM_BITS) / (1 << base);
-        // Rows will contain G_i, 2G_i,..., 2^base-1 G_i
+        // Rows will contain -2G_i, -G_i, G_i, 2G_i,..., 2^base-2 G_i
+        // ie they will contain half the number of points as the base
+        // The scalar range will then be -2^(base-1) to 2^(base-1) - 1
+        // instead of 0 to 2^base - 1
         let length_of_row = ((1 << base) - 1) / 2;
-        // The bottom row goes from 1 to 2^base-1
-        let bottom_row: Vec<G1Affine> = (1..(1 << base))
-            .map(|i| (gen * Scalar::from(i)).into())
-            .collect();
+
+        let bottom_row = Self::compute_sequential_powers_of_point(gen.into(), base - 1);
 
         let mut rows = vec![bottom_row];
 
@@ -31,7 +32,7 @@ impl PrecomputedTable {
             // To compute the next row, we take the last row and multiply every point by 2^base
             for i in 0..length_of_row {
                 let mut point: G1Projective = rows.last().unwrap()[i].into();
-                // double the previous row base times to get 2^base * previous point
+                // Double the previous row base times to get 2^base * previous point
                 for _ in 0..base {
                     point = point.double();
                 }
@@ -43,16 +44,97 @@ impl PrecomputedTable {
         PrecomputedTable { bases: rows, base }
     }
 
+    pub fn new_par(gen: G1Projective, base: usize) -> Self {
+        const NUM_BITS_SCALAR_NEAREST_POW_2: usize = 256;
+        let num_rows =
+            (NUM_BITS_SCALAR_NEAREST_POW_2 / base) + NUM_BITS_SCALAR_NEAREST_POW_2 % base;
+
+        // Rows will contain -2G_i, -G_i, G_i, 2G_i,..., 2^base-2 G_i
+        // ie they will contain half the number of points as the base
+        // The scalar range will then be -2^(base-1) to 2^(base-1) - 1
+        // instead of 0 to 2^base - 1
+        let length_of_row = ((1 << base) - 1) / 2;
+        // The start of each column will be G, 2^base G, 2^(2*base) G, ...
+        let mut column_elements_proj = vec![gen];
+        for _ in 1..num_rows {
+            let mut cur = *column_elements_proj.last().unwrap();
+            
+            // Compute 2^base * previous point
+            for _ in 0..base {
+                cur = cur.double();
+            }
+            column_elements_proj.push(cur);
+        }
+
+        use group::prime::PrimeCurveAffine;
+        use group::Curve;
+        let mut column_elements = vec![G1Affine::identity(); column_elements_proj.len()];
+        G1Projective::batch_normalize(&column_elements_proj, &mut column_elements);
+        
+        use rayon::prelude::*;
+
+        let rows: Vec<_> = column_elements
+            .into_par_iter()
+            // Minus one from base since we want the row length to be half the base,
+            // due to the signed digit representation
+            .map(|row_generator| Self::compute_sequential_powers_of_point(row_generator, base-1))
+            .collect();
+
+        for row in &rows {
+            assert_eq!(row.len(), length_of_row);
+        }
+
+        PrecomputedTable {
+            bases: rows,
+            base: base,
+        }
+    }
+
+    /// Computes [G, 2G, 3G, 4G, ..., 2^{base_exponent - 1} G]
+    fn compute_sequential_powers_of_point(gen: G1Affine, base_exponent: usize) -> Vec<G1Affine> {
+        let mut powers_of_g = Vec::with_capacity(1 << base_exponent);
+        let mut powers_of_two = Vec::new();
+
+        let mut cur = G1Projective::from(gen);
+        powers_of_two.push(cur);
+
+        for _ in 1..base_exponent {
+            cur = cur.double().into();
+            powers_of_two.push(cur.into());
+        }
+
+        powers_of_g.push(G1Projective::from(gen));
+        for i in 1..(1 << base_exponent) - 1 {
+            let mut temp = G1Projective::from(gen);
+            for j in 0..base_exponent {
+                if (i & (1 << j)) != 0 {
+                    temp = (temp + powers_of_two[j]).into();
+                }
+            }
+            powers_of_g.push(temp);
+        }
+        use group::prime::PrimeCurveAffine;
+        use group::Curve;
+        let mut powers_of_g_affine = vec![G1Affine::identity(); powers_of_g.len()];
+        G1Projective::batch_normalize(&powers_of_g, &mut powers_of_g_affine);
+
+        powers_of_g_affine
+    }
+
     pub fn scalar_mul(&self, scalar: Scalar) -> G1Projective {
         // Recode scalars
         use ff::PrimeField;
         let bigint = convert_scalar_to_arkworks_bigint(&scalar);
-        let scalar_bytes =
-            make_digits(&bigint, self.base, Scalar::NUM_BITS as usize);
+        let scalar_bytes = make_digits(&bigint, self.base, Scalar::NUM_BITS as usize);
 
         // Iterate over the precomputed table rows and scalar bytes simultaneously
         let mut result: G1Projective = G1Projective::identity();
-        for (row, byte) in self.bases.iter().zip(scalar_bytes).filter(|(_, digit)| *digit != 0) {
+        for (row, byte) in self
+            .bases
+            .iter()
+            .zip(scalar_bytes)
+            .filter(|(_, digit)| *digit != 0)
+        {
             // Add the corresponding precomputed point from the current row
             if byte < 0 {
                 result -= row[(-byte) as usize - 1];
@@ -68,9 +150,8 @@ impl PrecomputedTable {
     pub fn scalar_mul_batch_addition(&self, scalar: Scalar) -> G1Projective {
         use ff::PrimeField;
         let bigint = convert_scalar_to_arkworks_bigint(&scalar);
-        let scalar_bytes =
-            make_digits(&bigint, self.base, Scalar::NUM_BITS as usize);
-    
+        let scalar_bytes = make_digits(&bigint, self.base, Scalar::NUM_BITS as usize);
+
         // Iterate over the precomputed table rows and scalar bytes simultaneously
         let points_to_add: Vec<_> = self
             .bases
@@ -87,8 +168,7 @@ impl PrecomputedTable {
                 }
             })
             .collect();
-        let res = crate::batch_point_addition::batch_addition(points_to_add).into();
-        return res;
+        crate::batch_point_addition::batch_addition(points_to_add).into()
     }
 }
 
@@ -161,6 +241,7 @@ fn make_digits(a: &impl BigInteger, w: usize, num_bits: usize) -> impl Iterator<
 #[cfg(test)]
 mod tests {
     use crate::{precomp_table::PrecomputedTable, G1Projective, Scalar};
+    use blstrs::G1Affine;
     use ff::Field;
     use group::Group;
 
@@ -172,5 +253,31 @@ mod tests {
         let expected = G1Projective::generator() * scalar;
         let got = table.scalar_mul(scalar);
         assert_eq!(expected, got);
+    }
+
+    #[test]
+    fn test_compute_sequential_powers_of_g() {
+        let base_exponent = 8;
+        use group::prime::PrimeCurveAffine;
+        let generator = G1Affine::generator();
+        let got = PrecomputedTable::compute_sequential_powers_of_point(generator, base_exponent);
+
+        let expected: Vec<G1Affine> = (1..(1 << base_exponent))
+            .map(|i| (generator * Scalar::from(i)).into())
+            .collect::<Vec<_>>();
+
+        assert_eq!(expected.len(), got.len());
+        assert_eq!(expected, got);
+    }
+
+    #[test]
+    fn test_create_parallel_table() {
+        let table = PrecomputedTable::new(G1Projective::generator(), 9);
+
+        let par_table = PrecomputedTable::new_par(G1Projective::generator(), 9);
+
+        assert_eq!(table.bases.len(), par_table.bases.len());
+        assert_eq!(table.bases, par_table.bases);
+        assert_eq!(table.bases, par_table.bases);
     }
 }
