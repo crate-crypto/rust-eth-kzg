@@ -3,7 +3,7 @@ use ff::Field;
 
 /// Batch inversion of multiple elements
 /// This method will panic if one of the elements is zero
-pub fn batch_inverse(elements: &mut [Scalar]) {
+pub fn batch_inverse<F: ff::Field>(elements: &mut [F]) {
     batch_inversion(elements)
 }
 
@@ -47,15 +47,13 @@ fn batch_inversion(v: &mut [Scalar]) {
 }
 
 #[cfg(not(feature = "rayon"))]
-fn batch_inversion(v: &mut [Scalar]) {
+fn batch_inversion<F: ff::Field>(v: &mut [F]) {
     serial_batch_inversion(v);
 }
 
 /// Given a vector of field elements {v_i}, compute the vector {coeff * v_i^(-1)}
 /// This method is explicitly single core.
-fn serial_batch_inversion(v: &mut [Scalar]) {
-    use std::ops::MulAssign;
-
+fn serial_batch_inversion<F: ff::Field>(v: &mut [F]) {
     // Montgomery’s Trick and Fast Implementation of Masked AES
     // Genelle, Prouff and Quisquater
     // Section 3.2
@@ -63,7 +61,7 @@ fn serial_batch_inversion(v: &mut [Scalar]) {
 
     // First pass: compute [a, ab, abc, ...]
     let mut prod = Vec::with_capacity(v.len());
-    let mut tmp = Scalar::ONE;
+    let mut tmp = F::ONE;
     for f in v.iter().filter(|f| !f.is_zero_vartime()) {
         tmp.mul_assign(f);
         prod.push(tmp);
@@ -82,7 +80,7 @@ fn serial_batch_inversion(v: &mut [Scalar]) {
         // Ignore normalized elements
         .filter(|f| !f.is_zero_vartime())
         // Backwards, skip last element, fill in one for last term.
-        .zip(prod.into_iter().rev().skip(1).chain(Some(Scalar::ONE)))
+        .zip(prod.into_iter().rev().skip(1).chain(Some(F::ONE)))
     {
         // tmp := tmp * f; f := tmp * s = 1/f
         let new_tmp = tmp * *f;
