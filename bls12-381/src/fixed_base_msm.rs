@@ -1,6 +1,6 @@
-use std::cell::RefCell;
-use blstrs::{Fp, G1Affine};
 use crate::{G1Projective, Scalar};
+use blstrs::{Fp, G1Affine};
+use std::cell::RefCell;
 
 /// FixedBasedMSM computes a multi scalar multiplication by precomputing a table of points.
 /// It uses batch addition to amortize the cost of adding these points together.

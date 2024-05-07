@@ -6,14 +6,16 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rayon = { version = "1.3" }
+rayon = { workspace = true }
 pairing = { version = "0.23" }
-blst = "0.3.1"
+
 # blstrs related dependencies
+blst = {version = "0.3.1", default-features = false, features = ["portable", "no-threads"]}
 blstrs = {version = "0.7.1",features = ["__private_bench"]}
 ff = "0.13.0"
 group = "0.13"
 ark-ff ="0.4.0"
+
 [dev-dependencies]
 criterion = "0.5.1"
 rand = "0.8.4"

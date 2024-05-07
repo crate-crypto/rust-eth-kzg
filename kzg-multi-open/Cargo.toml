@@ -9,12 +9,7 @@ edition = "2021"
 bls12-381 = { workspace = true }
 polynomial = { workspace = true }
 hex = { workspace = true }
-rayon = "1.10.0"
-
-[dependencies.blst]
-version = "0.3.11"
-default-features = false
-features = ["portable", "no-threads"]
+rayon = { workspace = true }
 
 [dev-dependencies]
 criterion = "0.5.1"
