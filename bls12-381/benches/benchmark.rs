@@ -44,14 +44,13 @@ pub fn bench_precomputed_scalar_mul(c: &mut Criterion) {
         |b| b.iter(|| precomp.scalar_mul(scalar)),
     );
     c.bench_function(
-        &format!("bls12-381 precomputed scalar_mul(batch add) - base: {}", base),
+        &format!(
+            "bls12-381 precomputed scalar_mul(batch add) - base: {}",
+            base
+        ),
         |b| b.iter(|| precomp.scalar_mul_batch_addition(scalar)),
     );
 }
 
-criterion_group!(
-    benches,
-    bench_precomputed_scalar_mul,
-    batch_inversion
-);
+criterion_group!(benches, bench_precomputed_scalar_mul, batch_inversion);
 criterion_main!(benches);
