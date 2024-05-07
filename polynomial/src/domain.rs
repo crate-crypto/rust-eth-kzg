@@ -1,5 +1,7 @@
 use crate::monomial::PolyCoeff;
+use bls12_381::batch_point_addition::multi_batch_addition;
 use bls12_381::ff::{Field, PrimeField};
+use bls12_381::G1Point;
 use bls12_381::{
     group::Group,
     {G1Projective, Scalar},
@@ -94,7 +96,9 @@ impl Domain {
     pub fn fft_scalars(&self, mut points: PolyCoeff) -> Vec<Scalar> {
         // pad the points with zeroes
         points.resize(self.size(), Scalar::ZERO);
-        fft_scalar(self.generator, &points)
+        serial_fft(&mut points, &self.roots);
+        points
+        // fft_scalar(self.generator, &points)
     }
 
     /// Computes a DFT for the group elements(points) using the domain roots.
@@ -222,8 +226,276 @@ fn take_even_odd<T: Clone>(list: &[T]) -> (Vec<T>, Vec<T>) {
     (even, odd)
 }
 
+pub fn serial_fft<F: PrimeField>(a: &mut [F], omegas : &[F]) {
+    fn bitreverse(mut n: u32, l: u32) -> u32 {
+        let mut r = 0;
+        for _ in 0..l {
+            r = (r << 1) | (n & 1);
+            n >>= 1;
+        }
+        r
+    }
+
+    let n = a.len() as u32;
+    let log_n = n.next_power_of_two().ilog2();
+    assert_eq!(n, 1 << log_n);
+
+    for k in 0..n {
+        let rk = bitreverse(k, log_n);
+        if k < rk {
+            a.swap(rk as usize, k as usize);
+        }
+    }
+
+    let mut m = 1;
+    for _ in 0..log_n {
+        let w_m = omegas[(n / (2 * m)) as usize];
+
+        let mut k = 0;
+        while k < n {
+            let mut w = F::ONE;
+            for j in 0..m {
+                let mut t = a[(k + j + m) as usize];
+                t *= w;
+                let mut tmp = a[(k + j) as usize];
+                tmp -= t;
+                a[(k + j + m) as usize] = tmp;
+                a[(k + j) as usize] += t;
+                w *= w_m;
+            }
+
+            k += 2 * m;
+        }
+
+        m *= 2;
+    }
+}
+
+pub fn serial_fft_g1<G: Group>(a: &mut [G], omegas : &[G::Scalar],log_n: u32) {
+    fn bitreverse(mut n: u32, l: u32) -> u32 {
+        let mut r = 0;
+        for _ in 0..l {
+            r = (r << 1) | (n & 1);
+            n >>= 1;
+        }
+        r
+    }
+
+    let n = a.len() as u32;
+    assert_eq!(n, 1 << log_n);
+
+    for k in 0..n {
+        let rk = bitreverse(k, log_n);
+        if k < rk {
+            a.swap(rk as usize, k as usize);
+        }
+    }
+
+    let mut m = 1;
+    for _ in 0..log_n {
+        let w_m = omegas[(n / (2 * m)) as usize];
+
+        let mut k = 0;
+        while k < n {
+            let mut w = G::Scalar::ONE;
+            for j in 0..m {
+                let mut t = a[(k + j + m) as usize];
+                t *= w;
+                let mut tmp = a[(k + j) as usize];
+                tmp -= t;
+                a[(k + j + m) as usize] = tmp;
+                a[(k + j) as usize] += t;
+                w *= w_m;
+            }
+
+            k += 2 * m;
+        }
+
+        m *= 2;
+    }
+}
+pub fn serial_fft_g1_affine(a: &mut [G1Point], omegas : &[Scalar],log_n: u32) {
+    fn bitreverse(mut n: u32, l: u32) -> u32 {
+        let mut r = 0;
+        for _ in 0..l {
+            r = (r << 1) | (n & 1);
+            n >>= 1;
+        }
+        r
+    }
+
+    let n = a.len() as u32;
+    assert_eq!(n, 1 << log_n);
+
+    for k in 0..n {
+        let rk = bitreverse(k, log_n);
+        if k < rk {
+            a.swap(rk as usize, k as usize);
+        }
+    }
+
+    let mut m = 1;
+    for _ in 0..log_n {
+        let w_m = omegas[(n / (2 * m)) as usize];
+
+        let mut k = 0;
+        while k < n {
+            let mut w = Scalar::ONE;
+            for j in 0..m {
+                let mut t = a[(k + j + m) as usize];
+                t *= w;
+                let tmp = a[(k + j) as usize];
+                let values = multi_batch_addition(vec![vec![tmp,-t], vec![t,tmp]]);
+                a[(k + j) as usize] = values[1];
+                a[(k + j + m) as usize] = values[0];
+                w *= w_m;
+            }
+
+            k += 2 * m;
+        }
+
+        m *= 2;
+    }
+}
+
+pub fn fft_g1_radix4(a: &mut [G1Projective], omega: &Scalar, log_n: u32) {
+    fn bitreverse(mut n: u32, l: u32) -> u32 {
+        let mut r = 0;
+        for _ in 0..l {
+            r = (r << 1) | (n & 1);
+            n >>= 1;
+        }
+        r
+    }
+
+    let n = a.len() as u32;
+    assert_eq!(n, 1 << log_n);
+
+    for k in 0..n {
+        let rk = bitreverse(k, log_n);
+        if k < rk {
+            a.swap(rk as usize, k as usize);
+        }
+    }
+
+    let mut m = 1;
+    for _ in (0..log_n).step_by(2) {
+        let w_m = omega.pow_vartime(&[u64::from(n / (4 * m))]);
+        let w_m_squared = w_m.square();
+        let w_m_cubed = w_m * w_m_squared;
+
+        let mut k = 0;
+        while k < n {
+            let mut w = Scalar::ONE;
+            let mut w_squared = Scalar::ONE;
+            let mut w_cubed = Scalar::ONE;
+            for j in 0..m {
+                let mut t1 = a[(k + j + m) as usize];
+                let mut t2 = a[(k + j + 2 * m) as usize];
+                let mut t3 = a[(k + j + 3 * m) as usize];
+
+                t1 *= w;
+                t2 *= w_squared;
+                t3 *= w_cubed;
+
+                let tmp0 = a[(k + j) as usize];
+                let tmp1 = tmp0 + t1;
+                let tmp2 = tmp0 - t1;
+                let tmp3 = tmp0 + t2;
+                let tmp4 = tmp0 - t2;
+
+                a[(k + j) as usize] = tmp1 + t3;
+                a[(k + j + m) as usize] = tmp2 - t3;
+                a[(k + j + 2 * m) as usize] = tmp3 + t3;
+                a[(k + j + 3 * m) as usize] = tmp4 - t3;
+
+                w *= w_m;
+                w_squared *= w_m_squared;
+                w_cubed *= w_m_cubed;
+            }
+            k += 4 * m;
+        }
+
+        m *= 4;
+    }
+}
+pub fn fft_g1_radix4_affine(a: &mut [G1Point], omega: &Scalar, log_n: u32) {
+    fn bitreverse(mut n: u32, l: u32) -> u32 {
+        let mut r = 0;
+        for _ in 0..l {
+            r = (r << 1) | (n & 1);
+            n >>= 1;
+        }
+        r
+    }
+
+    let n = a.len() as u32;
+    assert_eq!(n, 1 << log_n);
+
+    for k in 0..n {
+        let rk = bitreverse(k, log_n);
+        if k < rk {
+            a.swap(rk as usize, k as usize);
+        }
+    }
+
+    let mut m = 1;
+    for _ in (0..log_n).step_by(2) {
+        let w_m = omega.pow_vartime(&[u64::from(n / (4 * m))]);
+        let w_m_squared = w_m.square();
+        let w_m_cubed = w_m * w_m_squared;
+
+        let mut k = 0;
+        while k < n {
+            let mut w = Scalar::ONE;
+            let mut w_squared = Scalar::ONE;
+            let mut w_cubed = Scalar::ONE;
+            for j in 0..m {
+                let mut t1 = a[(k + j + m) as usize];
+                let mut t2 = a[(k + j + 2 * m) as usize];
+                let mut t3 = a[(k + j + 3 * m) as usize];
+
+                t1 *= w;
+                t2 *= w_squared;
+                t3 *= w_cubed;
+
+                let tmp0 = a[(k + j) as usize];
+                let values = multi_batch_addition(vec![vec![tmp0, t1], vec![tmp0, -t1], vec![tmp0, t2], vec![tmp0, -t2]]);
+                // let tmp1 = tmp0 + t1;
+                // let tmp2 = tmp0 - t1;
+                // let tmp3 = tmp0 + t2;
+                // let tmp4 = tmp0 - t2;
+                
+                let tmp1 = values[0];
+                let tmp2 = values[1];
+                let tmp3 = values[2];
+                let tmp4 = values[3];
+                
+                let values = multi_batch_addition(vec![vec![tmp1, t3], vec![tmp2, -t3], vec![tmp3, t3], vec![tmp4, -t3]]);
+                // a[(k + j) as usize] = tmp1 + t3;
+                // a[(k + j + m) as usize] = tmp2 - t3;
+                // a[(k + j + 2 * m) as usize] = tmp3 + t3;
+                // a[(k + j + 3 * m) as usize] = tmp4 - t3;
+                a[(k + j) as usize] = values[0];
+                a[(k + j + m) as usize] = values[1];
+                a[(k + j + 2 * m) as usize] = values[2];
+                a[(k + j + 3 * m) as usize] = values[3];
+
+                w *= w_m;
+                w_squared *= w_m_squared;
+                w_cubed *= w_m_cubed;
+            }
+            k += 4 * m;
+        }
+
+        m *= 4;
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use bls12_381::G1Point;
+
     use crate::monomial::poly_eval;
 
     use super::*;
@@ -306,5 +578,47 @@ mod tests {
         }
 
         assert_eq!(domain.ifft_g1(dft_points), points);
+    }
+
+    #[test]
+    fn fft_smoke_tests() {
+        let mut k = (0..64).map(|_| Scalar::random(&mut rand::thread_rng())).collect::<Vec<_>>();
+        let k2 = k.clone();
+        let domain = Domain::new(64);
+        let now = std::time::Instant::now();
+        serial_fft(&mut k, &domain.roots);
+        println!("fft (serial) time: {:?}", now.elapsed());
+        let now = std::time::Instant::now();
+        let exp2 = domain.fft_scalars(k2);
+        println!("fft (recursive) time: {:?}", now.elapsed());
+        assert_eq!(exp2, k);
+    }
+
+    #[test]
+    fn fft_smoke_tests_g1() {
+        let mut k = (0..256).map(|_| G1Projective::random(&mut rand::thread_rng())).collect::<Vec<_>>();
+        let mut k2 = k.clone();
+        let mut k3 = k.clone();
+        use bls12_381::group::prime::PrimeCurveAffine;
+        use bls12_381::group::Curve;
+        let domain = Domain::new(256);
+        let mut k2_affine = vec![G1Point::identity(); k2.len()];
+        G1Projective::batch_normalize(&k2, &mut k2_affine);
+        
+        serial_fft_g1_affine(&mut k2_affine, &domain.roots, 8);
+        let now = std::time::Instant::now();
+        serial_fft_g1(&mut k, &domain.roots, 8);
+        println!("fft_g1 (serial) time: {:?}", now.elapsed());
+        let k2_proj : Vec<G1Projective> = k2_affine.iter().map(|p| p.into()).collect::<Vec<_>>();
+        let now = std::time::Instant::now();
+        let exp2 = domain.fft_g1(k2);
+        println!("fft_g1 (recursive) time: {:?}", now.elapsed());
+        
+        let now = std::time::Instant::now();
+        fft_g1_radix4(&mut k3, &domain.roots[1], 8);
+        println!("fft_g1 (serial radix-4) time: {:?}", now.elapsed());
+
+        assert_eq!(exp2, k2_proj);
+        // assert_eq!(exp2, k3);
     }
 }

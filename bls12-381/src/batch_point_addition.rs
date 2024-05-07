@@ -41,6 +41,48 @@ pub fn batch_addition(mut points: Vec<G1Affine>) -> G1Affine {
 
     points[0]
 }
+// This method assumes that adjacent points are not the same
+// This will lead to an inversion by zero
+pub fn batch_addition_mut(points: &mut [G1Affine]) -> G1Affine {
+    fn point_add(p1: G1Affine, p2: G1Affine, inv: &blstrs::Fp) -> G1Affine {
+        use ff::Field;
+
+        let lambda = (p2.y() - p1.y()) * inv;
+        let x = lambda.square() - p1.x() - p2.x();
+        let y = lambda * (p1.x() - x) - p1.y();
+        G1Affine::from_raw_unchecked(x, y, false)
+    }
+
+    if points.is_empty() {
+        use group::prime::PrimeCurveAffine;
+        return G1Affine::identity();
+    }
+
+    let mut stride = 1;
+
+    let mut new_differences = Vec::with_capacity(points.len());
+    while stride < points.len() {       
+        new_differences.clear();
+
+        for i in (0..points.len()).step_by(stride * 2) {
+            if i + stride < points.len() {
+                new_differences.push(points[i + stride].x() - points[i].x());
+            }
+        }
+        let now = std::time::Instant::now();
+        batch_inverse(&mut new_differences);
+        println!("Batch Inversion: {:?}", now.elapsed());
+        for (i, inv) in new_differences.iter().enumerate() {
+            let p1 = points[i * stride * 2];
+            let p2 = points[i * stride * 2 + stride];
+            points[i * stride * 2] = point_add(p1, p2, inv);
+        }
+
+        stride *= 2;
+    }
+
+    points[0]
+}
 
 // Similar to batch addition, however we amortize across different batches
 // TODO: Clean up -- This has a greater complexity than the regular algorithm

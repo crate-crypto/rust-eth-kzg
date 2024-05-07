@@ -7,7 +7,10 @@ pub struct PrecomputedTable {
     base: usize,
     // The first row signifies the bottom row, ie points of the form
     // G_i, 2G_i, 3_G_i, ..., 2^base-1 G_i
-    pub bases: Vec<Vec<G1Affine>>,
+    pub bases: Vec<G1Affine>,
+
+    // Length of each row
+    row_length: usize,
 }
 
 impl PrecomputedTable {
@@ -33,7 +36,7 @@ impl PrecomputedTable {
             for i in 0..length_of_row {
                 let mut point: G1Projective = rows.last().unwrap()[i].into();
                 // Double the previous row base times to get 2^base * previous point
-                for _ in 0..base {
+                for _ in 0..base - 1 {
                     point = point.double();
                 }
                 let point: G1Affine = point.into();
@@ -41,7 +44,11 @@ impl PrecomputedTable {
             }
             rows.push(row);
         }
-        PrecomputedTable { bases: rows, base }
+        PrecomputedTable {
+            bases: rows.into_iter().flatten().collect(),
+            base,
+            row_length: length_of_row,
+        }
     }
 
     pub fn new_par(gen: G1Projective, base: usize) -> Self {
@@ -58,9 +65,9 @@ impl PrecomputedTable {
         let mut column_elements_proj = vec![gen];
         for _ in 1..num_rows {
             let mut cur = *column_elements_proj.last().unwrap();
-            
+
             // Compute 2^base * previous point
-            for _ in 0..base {
+            for _ in 0..base - 1 {
                 cur = cur.double();
             }
             column_elements_proj.push(cur);
@@ -70,14 +77,14 @@ impl PrecomputedTable {
         use group::Curve;
         let mut column_elements = vec![G1Affine::identity(); column_elements_proj.len()];
         G1Projective::batch_normalize(&column_elements_proj, &mut column_elements);
-        
+
         use rayon::prelude::*;
 
         let rows: Vec<_> = column_elements
             .into_par_iter()
             // Minus one from base since we want the row length to be half the base,
             // due to the signed digit representation
-            .map(|row_generator| Self::compute_sequential_powers_of_point(row_generator, base-1))
+            .map(|row_generator| Self::compute_sequential_powers_of_point(row_generator, base - 1))
             .collect();
 
         for row in &rows {
@@ -85,8 +92,9 @@ impl PrecomputedTable {
         }
 
         PrecomputedTable {
-            bases: rows,
+            bases: rows.into_iter().flatten().collect(),
             base: base,
+            row_length: length_of_row,
         }
     }
 
@@ -124,23 +132,31 @@ impl PrecomputedTable {
     pub fn scalar_mul(&self, scalar: Scalar) -> G1Projective {
         // Recode scalars
         use ff::PrimeField;
+        let now = std::time::Instant::now();
         let bigint = convert_scalar_to_arkworks_bigint(&scalar);
-        let scalar_bytes = make_digits(&bigint, self.base, Scalar::NUM_BITS as usize);
-
+        let scalar_bytes = make_digits(&bigint, self.base - 1, Scalar::NUM_BITS as usize);
+        dbg!(scalar_bytes.collect::<Vec<i64>>());
+        let scalar_bytes = make_digits(&bigint, self.base - 1, Scalar::NUM_BITS as usize);
+        println!("Time to convert scalar: {:?}", now.elapsed());
         // Iterate over the precomputed table rows and scalar bytes simultaneously
         let mut result: G1Projective = G1Projective::identity();
-        for (row, byte) in self
-            .bases
-            .iter()
-            .zip(scalar_bytes)
-            .filter(|(_, digit)| *digit != 0)
-        {
+        for (row_index, byte) in scalar_bytes.enumerate().filter(|(_, digit)| *digit != 0) {
             // Add the corresponding precomputed point from the current row
             if byte < 0 {
-                result -= row[(-byte) as usize - 1];
+                let now = std::time::Instant::now();
+                let tmp = self.bases[(-byte) as usize - 1 + row_index * self.row_length];
+                println!("Time to get point: {:?}", now.elapsed());
+                let now = std::time::Instant::now();
+                result -= tmp;
+                println!("Time to add point: {:?}", now.elapsed());
             } else {
                 // Minus one because we skip the zero window
-                result += row[(byte as usize) - 1];
+                let now = std::time::Instant::now();
+                let tmp = self.bases[(byte as usize) - 1 + row_index * self.row_length];
+                println!("Time to get point: {:?}", now.elapsed());
+                let now = std::time::Instant::now();
+                result += tmp;
+                println!("Time to add point: {:?}", now.elapsed());
             }
         }
 
@@ -150,21 +166,19 @@ impl PrecomputedTable {
     pub fn scalar_mul_batch_addition(&self, scalar: Scalar) -> G1Projective {
         use ff::PrimeField;
         let bigint = convert_scalar_to_arkworks_bigint(&scalar);
-        let scalar_bytes = make_digits(&bigint, self.base, Scalar::NUM_BITS as usize);
+        let scalar_bytes = make_digits(&bigint, self.base - 1, Scalar::NUM_BITS as usize);
 
         // Iterate over the precomputed table rows and scalar bytes simultaneously
-        let points_to_add: Vec<_> = self
-            .bases
-            .iter()
-            .zip(scalar_bytes)
+        let points_to_add: Vec<_> = scalar_bytes
+            .enumerate()
             .filter(|(_, digit)| *digit != 0)
-            .map(|(row, digit)| {
+            .map(|(row_index, digit)| {
                 // Add the corresponding precomputed point from the current row
                 if digit < 0 {
                     // Minus one because we skip the zero window
-                    -row[(-digit) as usize - 1]
+                    -self.bases[(-digit) as usize - 1 + row_index * self.row_length]
                 } else {
-                    row[(digit) as usize - 1]
+                    self.bases[(digit) as usize - 1 + row_index * self.row_length]
                 }
             })
             .collect();
@@ -248,11 +262,27 @@ mod tests {
     #[test]
     fn smoke_test_precomp_table() {
         let table = PrecomputedTable::new(G1Projective::generator(), 9);
+        for i in 0..10_000 {
+            let scalar = Scalar::random(&mut rand::thread_rng());
+            dbg!(scalar.to_bytes_be());
+            let expected = G1Projective::generator() * scalar;
+            let got = table.scalar_mul(scalar);
+            assert_eq!(expected, got);
+        }
+    }
 
-        let scalar = Scalar::random(&mut rand::thread_rng());
+    #[test]
+    fn check_bug() {
+        let table = PrecomputedTable::new(G1Projective::generator(), 9);
+        // let scalar = Scalar::from_bytes_be(&[
+        //     1, 104, 131, 152, 164, 85, 161, 208, 61, 231, 140, 132, 127, 77, 195, 102, 31, 254,
+        //     194, 28, 121, 72, 125, 117, 198, 153, 89, 110, 205, 196, 144, 132,
+        // ]).unwrap();
+        let scalar = Scalar::from(128u64);
         let expected = G1Projective::generator() * scalar;
         let got = table.scalar_mul(scalar);
         assert_eq!(expected, got);
+        for i in 0..10_000 {}
     }
 
     #[test]
