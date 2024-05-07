@@ -1,9 +1,7 @@
 pub mod batch_inversion;
-pub mod lincomb;
-pub mod precomp_table;
 pub mod fixed_base_msm;
+pub mod lincomb;
 
-pub mod batch_point_addition;
 // Re-exporting the blstrs crate
 // TODO: We could feature flag the different bls12-381 implementations
 
