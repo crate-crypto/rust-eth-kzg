@@ -1,5 +1,6 @@
-use bls12_381::G1Projective;
+use bls12_381::fixed_base_msm::FixedBaseMSM;
 use bls12_381::lincomb::g1_lincomb;
+use bls12_381::G1Projective;
 use polynomial::domain::Domain;
 
 use super::toeplitz::ToeplitzMatrix;
@@ -13,6 +14,9 @@ pub struct BatchToeplitzMatrixVecMul {
     /// This means when we are computing the matrix-vector multiplication by embedding it
     /// into a circulant matrix, we will not need to do an FFT on the vector.
     fft_vectors: Vec<Vec<G1Projective>>,
+    /// Multiples of the fft_vectors that are precomputed for the fixed base msm
+    /// calculation.
+    precomputed_fft_vectors: Vec<FixedBaseMSM>,
     // This is the length of the vector that we are multiplying the matrix with.
     // and subsequently will be the length of the final result of the matrix-vector multiplication.
     n: usize,
@@ -37,11 +41,27 @@ impl BatchToeplitzMatrixVecMul {
             .into_iter()
             .map(|vector| circulant_domain.fft_g1(vector))
             .collect();
+        
+        let mut transposed_msm_vectors = vec![vec![]; n * 2];
+        for vector in &vectors {
+            for (i, a) in vector.iter().enumerate() {
+                transposed_msm_vectors[i].push(*a);
+            }
+        }
+        
+        let table_bits = 9;
+        let precomputed_table: Vec<_> = transposed_msm_vectors
+            .into_iter()
+            .map(|v| {
+                FixedBaseMSM::new(v, table_bits)
+            })
+            .collect();
 
         BatchToeplitzMatrixVecMul {
             n,
             fft_vectors: vectors,
             circulant_domain,
+            precomputed_fft_vectors: precomputed_table,
         }
     }
 
@@ -60,30 +80,32 @@ impl BatchToeplitzMatrixVecMul {
         );
 
         // Embed Toeplitz matrices into Circulant matrices
-        let circulant_matrices = matrices
-            .into_iter()
-            .map(CirculantMatrix::from_toeplitz);
+        let circulant_matrices = matrices.into_iter().map(CirculantMatrix::from_toeplitz);
 
         // Perform circulant matrix-vector multiplication between all of the matrices and vectors
         // and sum them together.
         //
         // We note that the aggregation step can be converted into msm's of size `l`
-        let col_ffts : Vec<_>= circulant_matrices.into_iter().map(|matrix| self.circulant_domain.fft_scalars(matrix.row)).collect();
-        let mut msm_scalars = vec![vec![]; col_ffts[0].len()];
-        let mut msm_points = vec![vec![]; col_ffts[0].len()];
+        let col_ffts = circulant_matrices
+            .into_iter()
+            .map(|matrix| self.circulant_domain.fft_scalars(matrix.row))
+            ;
+        let mut msm_scalars = vec![vec![]; self.n * 2];
 
-        for (col_fft, vector) in col_ffts.iter().zip(&self.fft_vectors) {
-            for (i,(a, b)) in vector.iter().zip(col_fft).enumerate() {
-                msm_scalars[i].push(*b);
-                msm_points[i].push(*a);
+        // Transpose the column ffts
+        for col_fft in col_ffts {
+            for (i, b) in col_fft.into_iter().enumerate() {
+                msm_scalars[i].push(b);
             }
         }
 
-        let result : Vec<_>= msm_points.into_iter().zip(msm_scalars.into_iter()).map(|(points, scalars)|{
-            // TODO(Note): This could be changed to g1_lincomb_unsafe, however one needs to 
-            // TODO: be careful not to pad the SRS with the identity elements.
-            g1_lincomb(&points, &scalars)
-        }).collect();
+        let result: Vec<_> = self.precomputed_fft_vectors
+            .iter()
+            .zip(msm_scalars.into_iter())
+            .map(|(points, scalars)| {
+                points.msm(scalars)
+            })
+            .collect();
         let circulant_sum = self.circulant_domain.ifft_g1(result);
 
         // Once the Circulant matrix-vector multiplication is done, we need to take the first half
