@@ -54,7 +54,6 @@ pub fn bench_compute_proof(c: &mut Criterion) {
         .chunks(NUMBER_OF_POINTS_PER_PROOF)
         .collect();
 
-
     // The results for the naive version are linear, so you can multiply the time taken
     // to compute 1 proof by the number of proofs, you are interested in.
     let num_proofs = 1;

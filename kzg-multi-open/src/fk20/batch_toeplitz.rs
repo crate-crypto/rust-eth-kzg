@@ -41,20 +41,18 @@ impl BatchToeplitzMatrixVecMul {
             .into_iter()
             .map(|vector| circulant_domain.fft_g1(vector))
             .collect();
-        
+
         let mut transposed_msm_vectors = vec![vec![]; n * 2];
         for vector in &vectors {
             for (i, a) in vector.iter().enumerate() {
                 transposed_msm_vectors[i].push(*a);
             }
         }
-        
+
         let table_bits = 9;
         let precomputed_table: Vec<_> = transposed_msm_vectors
             .into_iter()
-            .map(|v| {
-                FixedBaseMSM::new(v, table_bits)
-            })
+            .map(|v| FixedBaseMSM::new(v, table_bits))
             .collect();
 
         BatchToeplitzMatrixVecMul {
@@ -88,8 +86,7 @@ impl BatchToeplitzMatrixVecMul {
         // We note that the aggregation step can be converted into msm's of size `l`
         let col_ffts = circulant_matrices
             .into_iter()
-            .map(|matrix| self.circulant_domain.fft_scalars(matrix.row))
-            ;
+            .map(|matrix| self.circulant_domain.fft_scalars(matrix.row));
         let mut msm_scalars = vec![vec![]; self.n * 2];
 
         // Transpose the column ffts
@@ -99,12 +96,11 @@ impl BatchToeplitzMatrixVecMul {
             }
         }
 
-        let result: Vec<_> = self.precomputed_fft_vectors
+        let result: Vec<_> = self
+            .precomputed_fft_vectors
             .iter()
             .zip(msm_scalars.into_iter())
-            .map(|(points, scalars)| {
-                points.msm(scalars)
-            })
+            .map(|(points, scalars)| points.msm(scalars))
             .collect();
         let circulant_sum = self.circulant_domain.ifft_g1(result);
 
