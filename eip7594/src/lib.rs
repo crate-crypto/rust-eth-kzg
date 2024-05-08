@@ -9,6 +9,9 @@ mod serialization;
 pub mod verifier;
 
 pub type Blob = Vec<u8>;
+// TODO: doing this for now, since the js api will explicitly give us a slice and not a reference to a vector
+pub type BlobRef<'a> = &'a [u8]; 
+
 pub type Cell = Vec<u8>;
 pub type KZGProof = [u8; BYTES_PER_COMMITMENT];
 pub type KZGCommitment = [u8; BYTES_PER_COMMITMENT];

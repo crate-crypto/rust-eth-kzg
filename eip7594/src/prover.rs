@@ -13,11 +13,9 @@ use crate::{
     constants::{
         CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL,
         FIELD_ELEMENTS_PER_EXT_BLOB,
-    },
-    serialization::{
+    }, serialization::{
         self, deserialize_cell_to_scalars, deserialize_compressed_g1, serialize_g1_compressed,
-    },
-    Blob, Bytes48, Cell, CellID, ColumnIndex, KZGCommitment, KZGProof, RowIndex,
+    }, Blob, BlobRef, Bytes48, Cell, CellID, ColumnIndex, KZGCommitment, KZGProof, RowIndex
 };
 
 pub struct ProverContext {
@@ -55,8 +53,8 @@ impl ProverContext {
         }
     }
 
-    pub fn blob_to_kzg_commitment(&self, blob: Blob) -> KZGCommitment {
-        let mut scalars = serialization::deserialize_blob_to_scalars(&blob);
+    pub fn blob_to_kzg_commitment(&self, blob: BlobRef) -> KZGCommitment {
+        let mut scalars = serialization::deserialize_blob_to_scalars(blob);
         reverse_bit_order(&mut scalars);
 
         let commitment: G1Point = self.commit_key_lagrange.commit_g1(&scalars).into();
@@ -123,7 +121,7 @@ mod tests {
 
         let blob_bytes = hex::decode(BLOB_STR).unwrap();
 
-        let got_commitment = ctx.blob_to_kzg_commitment(blob_bytes);
+        let got_commitment = ctx.blob_to_kzg_commitment(&blob_bytes);
         let expected_commitment = eth_commitment().to_compressed();
 
         assert_eq!(got_commitment, expected_commitment);
