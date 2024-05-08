@@ -42,7 +42,7 @@ impl BatchToeplitzMatrixVecMul {
             .map(|vector| circulant_domain.fft_g1(vector))
             .collect();
 
-        let mut transposed_msm_vectors = vec![vec![]; n * 2];
+        let mut transposed_msm_vectors = vec![Vec::with_capacity(n); n * 2];
         for vector in &vectors {
             for (i, a) in vector.iter().enumerate() {
                 transposed_msm_vectors[i].push(*a);
@@ -87,7 +87,7 @@ impl BatchToeplitzMatrixVecMul {
         let col_ffts = circulant_matrices
             .into_iter()
             .map(|matrix| self.circulant_domain.fft_scalars(matrix.row));
-        let mut msm_scalars = vec![vec![]; self.n * 2];
+        let mut msm_scalars = vec![Vec::with_capacity(self.n); self.n * 2];
 
         // Transpose the column ffts
         for col_fft in col_ffts {
@@ -95,7 +95,6 @@ impl BatchToeplitzMatrixVecMul {
                 msm_scalars[i].push(b);
             }
         }
-
         let result: Vec<_> = self
             .precomputed_fft_vectors
             .iter()
