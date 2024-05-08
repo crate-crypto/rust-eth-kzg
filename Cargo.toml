@@ -7,6 +7,7 @@ members = [ "bindings/node","bls12-381", "eip7594", "kzg-multi-open", "polynomia
 [workspace.dependencies]
 bls12-381 = { path = "./bls12-381" }
 polynomial = { path = "./polynomial" }
+eip7594 = { path = "./eip7594" }
 kzg-multi-open = { path = "./kzg-multi-open" }
 hex = "0.4.3"
 rayon = "1.10.0"
