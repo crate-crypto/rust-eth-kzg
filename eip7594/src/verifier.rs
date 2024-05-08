@@ -1,7 +1,7 @@
 use crate::{
     constants::{FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB},
     serialization::{deserialize_cell_to_scalars, deserialize_compressed_g1},
-    Bytes48, Cell, CellID, ColumnIndex, RowIndex,
+    Bytes48, Bytes48Ref, Cell, CellID, CellRef, ColumnIndex, RowIndex,
 };
 use bls12_381::Scalar;
 use kzg_multi_open::{
@@ -37,17 +37,17 @@ impl VerifierContext {
     }
     pub fn verify_cell_kzg_proof(
         &self,
-        commitment_bytes: Bytes48,
+        commitment_bytes: Bytes48Ref,
         cell_id: CellID,
-        cell: Cell,
-        proof_bytes: Bytes48,
+        cell: CellRef,
+        proof_bytes: Bytes48Ref,
     ) -> bool {
-        let commitment = deserialize_compressed_g1(&commitment_bytes);
-        let proof = deserialize_compressed_g1(&proof_bytes);
+        let commitment = deserialize_compressed_g1(commitment_bytes);
+        let proof = deserialize_compressed_g1(proof_bytes);
 
         let coset = &self.bit_reversed_cosets[cell_id as usize];
 
-        let output_points = deserialize_cell_to_scalars(&cell);
+        let output_points = deserialize_cell_to_scalars(cell);
 
         verify_multi_opening_naive(&self.opening_key, commitment, proof, coset, &output_points)
     }
@@ -76,10 +76,10 @@ impl VerifierContext {
             let proof_bytes = proofs_bytes[k];
 
             if !self.verify_cell_kzg_proof(
-                row_commitment_bytes,
+                &row_commitment_bytes,
                 column_index as u64,
-                cell,
-                proof_bytes,
+                &cell,
+                &proof_bytes,
             ) {
                 return false;
             }
@@ -125,7 +125,12 @@ mod tests {
             let cell_bytes = cells_bytes[k].clone();
             let cell_id = k as u64;
 
-            assert!(ctx.verify_cell_kzg_proof(commitment_bytes, cell_id, cell_bytes, proof_bytes));
+            assert!(ctx.verify_cell_kzg_proof(
+                &commitment_bytes,
+                cell_id,
+                &cell_bytes,
+                &proof_bytes
+            ));
         }
 
         assert!(ctx.verify_cell_kzg_proof_batch(
