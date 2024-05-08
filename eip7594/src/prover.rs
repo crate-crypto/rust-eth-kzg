@@ -63,10 +63,10 @@ impl ProverContext {
 
     pub fn compute_cells_and_kzg_proofs(
         &self,
-        blob: Blob,
+        blob: BlobRef,
     ) -> ([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]) {
         // Deserialize the blob into scalars (lagrange form)
-        let mut scalars = serialization::deserialize_blob_to_scalars(&blob);
+        let mut scalars = serialization::deserialize_blob_to_scalars(blob);
         reverse_bit_order(&mut scalars);
 
         let poly_coeff = self.poly_domain.ifft_scalars(scalars);
@@ -88,9 +88,9 @@ impl ProverContext {
         (cells, proofs)
     }
 
-    pub fn compute_cells(&self, blob: Blob) -> [Cell; CELLS_PER_EXT_BLOB] {
+    pub fn compute_cells(&self, blob: BlobRef) -> [Cell; CELLS_PER_EXT_BLOB] {
         // Deserialize the blob into scalars (lagrange form)
-        let mut scalars = serialization::deserialize_blob_to_scalars(&blob);
+        let mut scalars = serialization::deserialize_blob_to_scalars(blob);
         reverse_bit_order(&mut scalars);
 
         let poly_coeff = self.poly_domain.ifft_scalars(scalars);
@@ -134,7 +134,7 @@ mod tests {
 
         let blob_bytes = hex::decode(BLOB_STR).unwrap();
 
-        let (got_cells, got_proofs) = ctx.compute_cells_and_kzg_proofs(blob_bytes);
+        let (got_cells, got_proofs) = ctx.compute_cells_and_kzg_proofs(&blob_bytes);
 
         let expected_proofs = PROOFS_STR;
         let expected_cells = CELLS_STR;
