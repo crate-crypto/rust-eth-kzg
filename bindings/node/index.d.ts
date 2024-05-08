@@ -13,4 +13,7 @@ export class CellsAndProofs {
   cells: Array<Uint8Array>
   proofs: Array<Uint8Array>
 }
-export class VerifierContextJs { }
+export class VerifierContextJs {
+  constructor()
+  verifyCellKzgProof(commitment: Uint8Array, cellId: bigint, cell: Uint8Array, proof: Uint8Array): boolean
+}

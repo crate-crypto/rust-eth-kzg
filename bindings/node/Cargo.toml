@@ -7,8 +7,8 @@ version = "0.0.0"
 crate-type = ["cdylib"]
 
 [dependencies]
-# Default enable napi4 feature, see https://nodejs.org/api/n-api.html#node-api-version-matrix
-napi = { version = "2.12.2", default-features = false, features = ["napi4"] }
+# Enable napi6 feature because we want `BigInt` as a proxy for u64
+napi = { version = "2.12.2", default-features = false, features = ["napi6"] }
 napi-derive = "2.12.2"
 eip7594 = { workspace = true }
 

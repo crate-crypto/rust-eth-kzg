@@ -1,4 +1,7 @@
-use napi::{bindgen_prelude::Uint8Array, *};
+use napi::{
+  bindgen_prelude::{BigInt, Uint8Array},
+  *,
+};
 use napi_derive::napi;
 
 use eip7594::{prover::ProverContext, verifier::VerifierContext};
@@ -67,4 +70,38 @@ impl ProverContextJs {
 #[napi]
 pub struct VerifierContextJs {
   inner: VerifierContext,
+}
+
+#[napi]
+impl VerifierContextJs {
+  #[napi(constructor)]
+  pub fn new() -> Self {
+    VerifierContextJs {
+      inner: VerifierContext::new(),
+    }
+  }
+
+  #[napi]
+  pub fn verify_cell_kzg_proof(
+    &self,
+    commitment: Uint8Array,
+    // Note: U64 cannot be used as an argument, see : https://napi.rs/docs/concepts/values.en#bigint
+    cell_id: BigInt,
+    cell: Uint8Array,
+    proof: Uint8Array,
+  ) -> Result<bool> {
+    let commitment = commitment.as_ref();
+    let cell = cell.as_ref();
+    let proof = proof.as_ref();
+
+    let (signed, cell_id_value, _) = cell_id.get_u128();
+    assert!(signed == false, "cell id should be an unsigned integer");
+
+    let cell_id_u64 = cell_id_value as u64;
+    Ok(
+      self
+        .inner
+        .verify_cell_kzg_proof(commitment, cell_id_u64, cell, proof),
+    )
+  }
 }
