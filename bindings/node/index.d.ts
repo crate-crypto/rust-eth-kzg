@@ -6,5 +6,11 @@
 export class ProverContextJs {
   constructor()
   blobToKzgCommitment(blob: Uint8Array): Uint8Array
+  computeCellsAndKzgProofs(blob: Uint8Array): CellsAndProofs
+  computeCells(blob: Uint8Array): Array<Uint8Array>
+}
+export class CellsAndProofs {
+  cells: Array<Uint8Array>
+  proofs: Array<Uint8Array>
 }
 export class VerifierContextJs { }
