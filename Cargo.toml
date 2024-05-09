@@ -2,7 +2,7 @@
 
 resolver = "2"
 
-members = [ "bindings/node","bls12-381", "eip7594", "kzg-multi-open", "polynomial"]
+members = [ "bindings/java", "bindings/node","bls12-381", "eip7594", "kzg-multi-open", "polynomial"]
 
 [workspace.dependencies]
 bls12-381 = { path = "./bls12-381" }

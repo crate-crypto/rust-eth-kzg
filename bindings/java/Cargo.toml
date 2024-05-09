@@ -1,0 +1,12 @@
+[package]
+name = "java_peerdas_kzg"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+jni = "^0.21.1"
+eip7594 = { workspace = true }
+hex = { workspace = true }
+
+[lib]
+crate_type = ["cdylib"]
