@@ -1,0 +1,13 @@
+[package]
+name = "c_peerdas_kzg"
+version = "0.1.0"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+libc = "0.2.2"
+eip7594 = { workspace = true }
+
+[build-dependencies]
+cbindgen = "0.26.0"
