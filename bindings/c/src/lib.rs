@@ -3,9 +3,23 @@ extern crate eip7594;
 pub use eip7594::constants::{
     BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, FIELD_ELEMENTS_PER_BLOB,
 };
-use eip7594::constants::{CELLS_PER_EXT_BLOB, NUM_PROOFS};
 use eip7594::prover::ProverContext as eip7594_ProverContext;
 use eip7594::verifier::VerifierContext as eip7594_VerifierContext;
+
+/// The total number of bytes needed to represent all of the proofs
+/// we generate for a blob.
+///
+/// Note: We have a test to ensure that this stays in sync with the
+/// constants in the eip7594 crate.
+/// Unfortunately, cbindgen doesn't allow us to use those constants directly.
+pub const NUM_BYTES_PROOFS: u64 = 6144;
+/// The number of bytes needed to represent all of the cells
+/// we generate for a blob.
+///
+/// Note: We have a test to ensure that this stays in sync with the
+/// constants in the eip7594 crate.
+/// Unfortunately, cbindgen doesn't allow us to use those constants directly.
+pub const NUM_BYTES_CELLS: u64 = 262144;
 
 // We re-define the structs so that they can be generated in the c-code as
 // opaque structs.
@@ -92,17 +106,17 @@ pub extern "C" fn compute_cells_and_kzg_proofs(
     // methods to allocate the output arrays.
     assert_eq!(
         cells_flattened.len() as u64,
-        num_bytes_cells(),
+        NUM_BYTES_CELLS,
         "This is a library bug. cells_flattened.len() != num_bytes_cells(), {} != {}",
         cells_flattened.len(),
-        num_bytes_cells()
+        NUM_BYTES_CELLS
     );
     assert_eq!(
         proofs_flattened.len() as u64,
-        num_bytes_proofs(),
+        NUM_BYTES_PROOFS,
         "This is a library bug. proofs_flattened.len() != num_bytes_proofs(), {} != {}",
         proofs_flattened.len(),
-        num_bytes_proofs()
+        NUM_BYTES_PROOFS
     );
 
     unsafe {
@@ -112,16 +126,6 @@ pub extern "C" fn compute_cells_and_kzg_proofs(
         let proofs_data_slice = std::slice::from_raw_parts_mut(out_proofs, proofs_flattened.len());
         proofs_data_slice.copy_from_slice(&proofs_flattened);
     }
-}
-
-#[no_mangle]
-pub const extern "C" fn num_bytes_cells() -> u64 {
-    (eip7594::constants::BYTES_PER_CELL * CELLS_PER_EXT_BLOB) as u64
-}
-
-#[no_mangle]
-pub const extern "C" fn num_bytes_proofs() -> u64 {
-    (BYTES_PER_COMMITMENT * NUM_PROOFS) as u64
 }
 
 #[no_mangle]
@@ -140,7 +144,23 @@ pub extern "C" fn verifier_context_free(ctx: *mut VerifierContext) {
     }
 }
 
-// This is present so it's easy to test that the code works natively in Rust via `cargo test`
+#[cfg(test)]
+mod tests {
+    use eip7594::constants::{
+        BYTES_PER_CELL, BYTES_PER_COMMITMENT, CELLS_PER_EXT_BLOB, NUM_PROOFS,
+    };
+
+    #[test]
+    fn test_num_bytes_proof_constant() {
+        assert_eq!(BYTES_PER_COMMITMENT * NUM_PROOFS, 6144);
+    }
+
+    #[test]
+    fn test_num_bytes_cell_constant() {
+        assert_eq!(BYTES_PER_CELL * CELLS_PER_EXT_BLOB, 262144);
+    }
+}
+
 #[cfg(test)]
 pub mod test {
 
@@ -164,8 +184,8 @@ pub mod test {
     fn prover_context_compute_cells_and_kzg_proofs() {
         let ctx = prover_context_new();
         let blob = vec![0u8; FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT];
-        let mut out_cells = vec![0u8; num_bytes_cells() as usize];
-        let mut out_proofs = vec![0u8; num_bytes_proofs() as usize];
+        let mut out_cells = vec![0u8; NUM_BYTES_CELLS as usize];
+        let mut out_proofs = vec![0u8; NUM_BYTES_PROOFS as usize];
         compute_cells_and_kzg_proofs(
             ctx,
             blob.as_ptr(),
