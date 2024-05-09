@@ -5,6 +5,7 @@ use std::path::PathBuf;
 const DIR_FOR_HEADER: &str = "lib";
 
 fn main() {
+    println!("cargo:rerun-if-changed=src/");
     let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
     let package_name = env::var("CARGO_PKG_NAME").unwrap();
     let output_file = PathBuf::from(&crate_dir)
