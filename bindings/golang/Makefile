@@ -8,9 +8,9 @@ build:
 # TODO: move this to the c crate 
 	@cp ../../target/release/libc_peerdas_kzg.a ../c/lib
 	@cp -R ../c/lib/ ./lib/
-	go build main.go
+	go build
 
-.PHONY: run
-run: build
-	@./main
+.PHONY: test
+test: build
+	go test -v
 
