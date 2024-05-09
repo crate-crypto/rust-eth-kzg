@@ -3,6 +3,9 @@ use constants::BYTES_PER_COMMITMENT;
 // TODO: We can remove this once we hook up the consensus-specs fixed test vectors.
 pub mod consensus_specs_fixed_test_vector;
 
+// TODO: The methods are currently not sanity checking the inputs. Example: we can pass &vec![4096] to compute_cells
+// TODO as a blob and it will panic later on in the program.
+
 pub mod constants;
 pub mod prover;
 mod serialization;
