@@ -1,6 +1,13 @@
+use std::collections::HashSet;
+
 use crate::{
-    constants::{FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB},
-    serialization::{deserialize_cell_to_scalars, deserialize_compressed_g1},
+    constants::{
+        BYTES_PER_CELL, CELLS_PER_EXT_BLOB, EXTENSION_FACTOR, FIELD_ELEMENTS_PER_CELL,
+        FIELD_ELEMENTS_PER_EXT_BLOB,
+    },
+    serialization::{
+        deserialize_cell_to_scalars, deserialize_compressed_g1, serialize_scalars_to_cell,
+    },
     Bytes48, Bytes48Ref, Cell, CellID, CellRef, ColumnIndex, RowIndex,
 };
 use bls12_381::Scalar;
@@ -8,10 +15,11 @@ use kzg_multi_open::{
     create_eth_commit_opening_keys, opening_key::OpeningKey, proof::verify_multi_opening_naive,
     reverse_bit_order,
 };
-use polynomial::domain::Domain;
+use polynomial::{domain::Domain, monomial::lagrange_interpolate};
 
 pub struct VerifierContext {
     opening_key: OpeningKey,
+    ext_domain: Domain,
     /// The cosets that we want to verify evaluations against.
     bit_reversed_cosets: Vec<Vec<Scalar>>,
 }
@@ -21,7 +29,7 @@ impl VerifierContext {
         let (_, opening_key) = create_eth_commit_opening_keys();
 
         let domain_extended = Domain::new(FIELD_ELEMENTS_PER_EXT_BLOB);
-        let mut domain_extended_roots = domain_extended.roots;
+        let mut domain_extended_roots = domain_extended.roots.clone();
         reverse_bit_order(&mut domain_extended_roots);
 
         let cosets: Vec<_> = domain_extended_roots
@@ -33,6 +41,7 @@ impl VerifierContext {
         VerifierContext {
             opening_key,
             bit_reversed_cosets: cosets,
+            ext_domain: domain_extended,
         }
     }
     pub fn verify_cell_kzg_proof(
@@ -89,16 +98,73 @@ impl VerifierContext {
     }
 
     pub fn recover_all_cells(&self, cell_ids: Vec<CellID>, cells: Vec<Cell>) -> Vec<Cell> {
-        todo!()
+        // Check if we have any duplicate cell ids
+        assert!(is_cell_ids_unique(&cell_ids), "cell ids must be unique");
+
+        assert_eq!(
+            cell_ids.len(),
+            cells.len(),
+            "cell ids is not equal to the number of cells"
+        );
+
+        // Check that we have enough cells to perform a reconstruction
+        assert!(CELLS_PER_EXT_BLOB / EXTENSION_FACTOR <= cell_ids.len());
+        assert!(cell_ids.len() <= CELLS_PER_EXT_BLOB);
+
+        // Check that each cell has the right amount of bytes
+        for cell in cells.iter() {
+            assert_eq!(cell.len(), BYTES_PER_CELL)
+        }
+
+        let evaluations = cells
+            .into_iter()
+            .map(|cell| deserialize_cell_to_scalars(&cell))
+            .flatten();
+
+        let received_cosets = cell_ids
+            .iter()
+            .map(|cell_id| &self.bit_reversed_cosets[*cell_id as usize])
+            .flatten()
+            .cloned();
+
+        let points: Vec<_> = received_cosets.zip(evaluations).collect();
+
+        let f_x = lagrange_interpolate(&points).expect("cannot interpolate points");
+
+        let recovered_points = self.ext_domain.fft_scalars(f_x);
+
+        recovered_points
+            .chunks_exact(FIELD_ELEMENTS_PER_CELL)
+            .map(|chunk| serialize_scalars_to_cell(chunk))
+            .collect()
     }
+}
+
+/// Check if all of the cell ids are unique
+fn is_cell_ids_unique(cell_ids: &[CellID]) -> bool {
+    let len_cell_ids_non_dedup = cell_ids.len();
+    let cell_ids_dedup: HashSet<_> = cell_ids.into_iter().collect();
+    cell_ids_dedup.len() == len_cell_ids_non_dedup
 }
 
 #[cfg(test)]
 mod tests {
     use crate::{
         consensus_specs_fixed_test_vector::{CELLS_STR, COMMITMENT_STR, PROOFS_STR},
-        verifier::VerifierContext,
+        verifier::{is_cell_ids_unique, VerifierContext},
     };
+
+    #[test]
+    fn test_cell_ids_unique() {
+        let cell_ids = vec![1, 2, 3];
+        assert!(is_cell_ids_unique(&cell_ids));
+        let cell_ids = vec![];
+        assert!(is_cell_ids_unique(&cell_ids));
+        let cell_ids = vec![1, 1, 2, 3];
+        assert!(!is_cell_ids_unique(&cell_ids));
+        let cell_ids = vec![0, 0, 0];
+        assert!(!is_cell_ids_unique(&cell_ids));
+    }
 
     #[test]
     fn test_proofs_verify() {
