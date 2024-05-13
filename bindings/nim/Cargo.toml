@@ -1,0 +1,12 @@
+[package]
+name = "nim_peerdas_kzg"
+version = "0.1.0"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+c_peerdas_kzg = { workspace = true }
+
+[build-dependencies]
+nbindgen = { git = "https://github.com/arnetheduck/nbindgen/" }
