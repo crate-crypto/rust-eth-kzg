@@ -3,7 +3,7 @@ name = "c_peerdas_kzg"
 version = "0.1.0"
 
 [lib]
-crate-type = ["staticlib"]
+crate-type = ["staticlib", "cdylib"]
 
 [dependencies]
 libc = "0.2.2"
