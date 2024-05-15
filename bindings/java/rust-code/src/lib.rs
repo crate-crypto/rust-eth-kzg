@@ -7,7 +7,7 @@ use jni::sys::{jboolean, jlong};
 use jni::JNIEnv;
 
 #[no_mangle]
-pub unsafe extern "system" fn Java_LibPeerDASKZG_proverContextNew(
+pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_proverContextNew(
     _env: JNIEnv,
     _class: JClass,
 ) -> jlong {
@@ -17,7 +17,7 @@ pub unsafe extern "system" fn Java_LibPeerDASKZG_proverContextNew(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn Java_LibPeerDASKZG_proverContextDestroy(
+pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_proverContextDestroy(
     _env: JNIEnv,
     _class: JClass,
     prover_context_ptr: jlong,
@@ -26,7 +26,7 @@ pub unsafe extern "system" fn Java_LibPeerDASKZG_proverContextDestroy(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn Java_LibPeerDASKZG_computeCells<'local>(
+pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_computeCells<'local>(
     env: JNIEnv<'local>,
     _class: JClass,
     prover_ptr: jlong,
@@ -46,7 +46,9 @@ pub unsafe extern "system" fn Java_LibPeerDASKZG_computeCells<'local>(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn Java_LibPeerDASKZG_computeCellsAndKZGProofs<'local>(
+pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_computeCellsAndKZGProofs<
+    'local,
+>(
     env: JNIEnv<'local>,
     _class: JClass,
     prover_ptr: jlong,
@@ -70,7 +72,9 @@ pub unsafe extern "system" fn Java_LibPeerDASKZG_computeCellsAndKZGProofs<'local
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn Java_LibPeerDASKZG_blobToKZGCommitment<'local>(
+pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_blobToKZGCommitment<
+    'local,
+>(
     env: JNIEnv<'local>,
     _class: JClass,
     prover_ptr: jlong,
@@ -84,7 +88,7 @@ pub unsafe extern "system" fn Java_LibPeerDASKZG_blobToKZGCommitment<'local>(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn Java_LibPeerDASKZG_verifierContextNew(
+pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_verifierContextNew(
     _env: JNIEnv,
     _class: JClass,
 ) -> jlong {
@@ -93,7 +97,7 @@ pub unsafe extern "system" fn Java_LibPeerDASKZG_verifierContextNew(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn Java_LibPeerDASKZG_verifierContextDestroy(
+pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_verifierContextDestroy(
     _env: JNIEnv,
     _class: JClass,
     verifier_context_ptr: jlong,
@@ -102,7 +106,9 @@ pub unsafe extern "system" fn Java_LibPeerDASKZG_verifierContextDestroy(
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn Java_LibPeerDASKZG_verifyCellKZGProof<'local>(
+pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_verifyCellKZGProof<
+    'local,
+>(
     env: JNIEnv<'local>,
     _class: JClass,
     verifier_ptr: jlong,

@@ -4,7 +4,7 @@ resolver = "2"
 
 members = [
     "bindings/c",
-    "bindings/java",
+    "bindings/java/rust-code",
     "bindings/node",
     "bls12-381",
     "eip7594",
@@ -17,5 +17,6 @@ bls12-381 = { path = "./bls12-381" }
 polynomial = { path = "./polynomial" }
 eip7594 = { path = "./eip7594" }
 kzg-multi-open = { path = "./kzg-multi-open" }
+c_peerdas_kzg = { path = "./bindings/c" }
 hex = "0.4.3"
 rayon = "1.10.0"
