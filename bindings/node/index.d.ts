@@ -6,6 +6,7 @@
 export class ProverContextJs {
   constructor()
   blobToKzgCommitment(blob: Uint8Array): Uint8Array
+  asyncBlobToKzgCommitment(blob: Uint8Array): Promise<Uint8Array>
   computeCellsAndKzgProofs(blob: Uint8Array): CellsAndProofs
   computeCells(blob: Uint8Array): Array<Uint8Array>
 }

@@ -1,6 +1,8 @@
+use std::sync::{Arc, Mutex};
+
 use napi::{
-  bindgen_prelude::{BigInt, Uint8Array},
-  *,
+  bindgen_prelude::{AsyncTask, BigInt, Env, Error, Uint8Array},
+  Result, Task, *,
 };
 use napi_derive::napi;
 
@@ -8,7 +10,7 @@ use eip7594::{prover::ProverContext, verifier::VerifierContext};
 
 #[napi]
 pub struct ProverContextJs {
-  inner: ProverContext,
+  inner: Arc<Mutex<ProverContext>>,
 }
 
 #[napi]
@@ -17,26 +19,70 @@ pub struct CellsAndProofs {
   pub proofs: Vec<Uint8Array>,
 }
 
+pub struct AsyncBlobToKzgCommitment {
+  blob: Uint8Array,
+  prover_context: Arc<Mutex<ProverContext>>,
+}
+
+#[napi]
+impl Task for AsyncBlobToKzgCommitment {
+  type Output = Uint8Array;
+  type JsValue = Uint8Array;
+
+  fn compute(&mut self) -> Result<Uint8Array> {
+    let blob = self.blob.as_ref();
+    let prover_context = self
+      .prover_context
+      .lock()
+      .map_err(|_| napi::Error::from_reason("Failed to acquire lock"))?;
+    let commitment = prover_context.blob_to_kzg_commitment(blob);
+    Ok(Uint8Array::from(&commitment))
+  }
+
+  fn resolve(&mut self, _env: Env, output: Self::Output) -> Result<Self::JsValue> {
+    Ok(output)
+  }
+}
+
 #[napi]
 impl ProverContextJs {
   #[napi(constructor)]
   pub fn new() -> Self {
     ProverContextJs {
-      inner: ProverContext::new(),
+      inner: Arc::new(Mutex::new(ProverContext::new())),
     }
   }
 
   #[napi]
   pub fn blob_to_kzg_commitment(&self, blob: Uint8Array) -> Result<Uint8Array> {
     let blob = blob.as_ref();
-    let commitment = self.inner.blob_to_kzg_commitment(blob);
+    let prover_context = self
+      .inner
+      .lock()
+      .map_err(|_| Error::from_reason("Failed to acquire lock"))?;
+    let commitment = prover_context.blob_to_kzg_commitment(blob);
     Ok(Uint8Array::from(&commitment))
+  }
+
+  #[napi]
+  pub fn async_blob_to_kzg_commitment(
+    &self,
+    blob: Uint8Array,
+  ) -> AsyncTask<AsyncBlobToKzgCommitment> {
+    AsyncTask::new(AsyncBlobToKzgCommitment {
+      blob,
+      prover_context: Arc::clone(&self.inner),
+    })
   }
 
   #[napi]
   pub fn compute_cells_and_kzg_proofs(&self, blob: Uint8Array) -> Result<CellsAndProofs> {
     let blob = blob.as_ref();
-    let (cells, proofs) = self.inner.compute_cells_and_kzg_proofs(blob);
+    let prover_context = self
+      .inner
+      .lock()
+      .map_err(|_| Error::from_reason("Failed to acquire lock"))?;
+    let (cells, proofs) = prover_context.compute_cells_and_kzg_proofs(blob);
 
     let cells_uint8array = cells
       .into_iter()
@@ -56,7 +102,11 @@ impl ProverContextJs {
   #[napi]
   pub fn compute_cells(&self, blob: Uint8Array) -> Result<Vec<Uint8Array>> {
     let blob = blob.as_ref();
-    let cells = self.inner.compute_cells(blob);
+    let prover_context = self
+      .inner
+      .lock()
+      .map_err(|_| Error::from_reason("Failed to acquire lock"))?;
+    let cells = prover_context.compute_cells(blob);
 
     let cells_uint8array = cells
       .into_iter()
