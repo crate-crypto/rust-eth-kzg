@@ -1,6 +1,8 @@
 use std::{env, path::PathBuf};
 
 /// Path to the java file that we will use to generate the java bindings from
+///
+/// Relative to the bindings folder.
 const PATH_TO_JAVA_BINDINGS_FILE: &str =
     "java-code/src/main/java/ethereum/cryptography/LibPeerDASKZG.java";
 
