@@ -6,6 +6,8 @@
 # TODO move this cross compile to another lib
 # cargo install cargo-zigbuild
 
+# TODO: Add require_install method to check that necessary tools are installed
+
 # For now we only do it for java
 cd bindings/java
 
