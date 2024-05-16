@@ -6,7 +6,18 @@ use napi::{
 };
 use napi_derive::napi;
 
-use eip7594::{prover::ProverContext, verifier::VerifierContext, KZGCommitment};
+use eip7594::{constants, prover::ProverContext, verifier::VerifierContext, KZGCommitment};
+
+#[napi]
+pub const BYTES_PER_CELL: u32 = constants::BYTES_PER_CELL as u32;
+#[napi]
+pub const BYTES_PER_COMMITMENT: u32 = constants::BYTES_PER_COMMITMENT as u32;
+#[napi]
+pub const BYTES_PER_FIELD_ELEMENT: u32 = constants::BYTES_PER_FIELD_ELEMENT as u32;
+#[napi]
+pub const FIELD_ELEMENTS_PER_BLOB: u32 = constants::FIELD_ELEMENTS_PER_BLOB as u32;
+#[napi]
+pub const FIELD_ELEMENTS_PER_CELL: u32 = constants::FIELD_ELEMENTS_PER_CELL as u32;
 
 pub struct AsyncBlobToKzgCommitment {
   blob: Uint8Array,
