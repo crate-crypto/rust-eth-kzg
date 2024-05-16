@@ -1,7 +1,4 @@
 {
-  "include": [
-    "__test__"
-  ],
   "exclude": [
     ".cargo",
     ".github",
