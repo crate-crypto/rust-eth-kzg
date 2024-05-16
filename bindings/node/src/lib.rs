@@ -2,7 +2,7 @@ use std::sync::{Arc, Mutex};
 
 use napi::{
   bindgen_prelude::{AsyncTask, BigInt, Env, Error, Uint8Array},
-  JsBoolean, Result, Task,
+  Result, Task,
 };
 use napi_derive::napi;
 
