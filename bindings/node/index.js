@@ -310,8 +310,8 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { ProverContextJs, CellsAndProofs, VerifierContextJs } = nativeBinding
+const { CellsAndProofs, ProverContextJs, VerifierContextJs } = nativeBinding
 
-module.exports.ProverContextJs = ProverContextJs
 module.exports.CellsAndProofs = CellsAndProofs
+module.exports.ProverContextJs = ProverContextJs
 module.exports.VerifierContextJs = VerifierContextJs
