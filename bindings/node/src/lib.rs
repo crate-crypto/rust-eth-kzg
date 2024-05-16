@@ -18,6 +18,9 @@ pub const BYTES_PER_FIELD_ELEMENT: u32 = constants::BYTES_PER_FIELD_ELEMENT as u
 pub const FIELD_ELEMENTS_PER_BLOB: u32 = constants::FIELD_ELEMENTS_PER_BLOB as u32;
 #[napi]
 pub const FIELD_ELEMENTS_PER_CELL: u32 = constants::FIELD_ELEMENTS_PER_CELL as u32;
+#[napi]
+pub const BYTES_PER_BLOB: u32 =
+  (constants::FIELD_ELEMENTS_PER_BLOB * constants::BYTES_PER_FIELD_ELEMENT) as u32;
 
 pub struct AsyncBlobToKzgCommitment {
   blob: Uint8Array,

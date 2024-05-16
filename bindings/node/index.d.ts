@@ -8,6 +8,7 @@ export const BYTES_PER_COMMITMENT: number
 export const BYTES_PER_FIELD_ELEMENT: number
 export const FIELD_ELEMENTS_PER_BLOB: number
 export const FIELD_ELEMENTS_PER_CELL: number
+export const BYTES_PER_BLOB: number
 export class CellsAndProofs {
   cells: Array<Uint8Array>
   proofs: Array<Uint8Array>
