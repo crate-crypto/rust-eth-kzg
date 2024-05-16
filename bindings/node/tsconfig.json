@@ -15,6 +15,9 @@
     "lib": [
       "ESNext",
     ],
+    "typeRoots": [
+      "node_modules/@types"
+    ],
     "noEmit": true,
     "esModuleInterop": true,
     "strict": true,
