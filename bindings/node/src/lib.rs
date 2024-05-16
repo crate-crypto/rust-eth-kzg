@@ -9,7 +9,9 @@ use napi_derive::napi;
 use eip7594::{prover::ProverContext, verifier::VerifierContext, KZGCommitment};
 
 pub struct AsyncBlobToKzgCommitment {
-  blob: Vec<u8>,
+  blob: Uint8Array,
+
+  // TODO: make this RwLock parking_lot crate
   prover_context: Arc<Mutex<ProverContext>>,
 }
 
@@ -45,7 +47,7 @@ pub struct CellsAndProofs {
 }
 
 pub struct AsyncComputeCellsAndKzgProofs {
-  blob: Vec<u8>,
+  blob: Uint8Array,
   prover_context: Arc<Mutex<ProverContext>>,
 }
 
@@ -81,7 +83,7 @@ impl Task for AsyncComputeCellsAndKzgProofs {
 }
 
 pub struct AsyncComputeCells {
-  blob: Vec<u8>,
+  blob: Uint8Array,
   prover_context: Arc<Mutex<ProverContext>>,
 }
 
@@ -140,7 +142,7 @@ impl ProverContextJs {
     blob: Uint8Array,
   ) -> AsyncTask<AsyncBlobToKzgCommitment> {
     AsyncTask::new(AsyncBlobToKzgCommitment {
-      blob: blob.to_vec(),
+      blob,
       prover_context: Arc::clone(&self.inner),
     })
   }
@@ -175,7 +177,7 @@ impl ProverContextJs {
     blob: Uint8Array,
   ) -> AsyncTask<AsyncComputeCellsAndKzgProofs> {
     AsyncTask::new(AsyncComputeCellsAndKzgProofs {
-      blob: blob.to_vec(),
+      blob,
       prover_context: Arc::clone(&self.inner),
     })
   }
@@ -200,7 +202,7 @@ impl ProverContextJs {
   #[napi]
   pub fn async_compute_cells(&self, blob: Uint8Array) -> AsyncTask<AsyncComputeCells> {
     AsyncTask::new(AsyncComputeCells {
-      blob: blob.to_vec(),
+      blob,
       prover_context: Arc::clone(&self.inner),
     })
   }
