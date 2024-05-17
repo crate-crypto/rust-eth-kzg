@@ -1,10 +1,9 @@
 package peerdas_kzg
 
-// Need to run `make build && make run`
-
 /*
-#cgo LDFLAGS: ./lib/libc_peerdas_kzg.a -ldl
-#include "./lib/c_peerdas_kzg.h"
+#cgo darwin,amd64 LDFLAGS: ./c_dist/darwin-aarch64/libc_peerdas_kzg.a -ldl
+#cgo darwin,arm64 LDFLAGS: ./c_dist/darwin-arm64/libc_peerdas_kzg.a -ldl
+#include "./c_dist/c_peerdas_kzg.h"
 */
 import "C"
 import "runtime"

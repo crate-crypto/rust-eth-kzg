@@ -13,4 +13,3 @@ build:
 .PHONY: test
 test: build
 	go test -v
-
