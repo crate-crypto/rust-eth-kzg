@@ -1,6 +1,5 @@
 use crate::{G1Projective, Scalar};
 use blstrs::{Fp, G1Affine};
-use std::cell::RefCell;
 
 /// FixedBasedMSM computes a multi scalar multiplication by precomputing a table of points.
 /// It uses batch addition to amortize the cost of adding these points together.
@@ -8,7 +7,7 @@ pub struct FixedBaseMSM {
     table: Vec<blst::blst_p1_affine>,
     wbits: usize,
     num_points: usize,
-    scratch_space: RefCell<Vec<blst::limb_t>>,
+    scratch_space_size: usize,
 }
 
 impl FixedBaseMSM {
@@ -31,13 +30,13 @@ impl FixedBaseMSM {
             blst::blst_p1s_mult_wbits_precompute(table.as_mut_ptr(), wbits, points, num_points)
         };
 
-        let scratch_size = unsafe { blst::blst_p1s_mult_wbits_scratch_sizeof(num_points) };
+        let scratch_space_size = unsafe { blst::blst_p1s_mult_wbits_scratch_sizeof(num_points) };
 
         FixedBaseMSM {
             table,
             wbits,
             num_points,
-            scratch_space: RefCell::new(Vec::with_capacity(scratch_size)),
+            scratch_space_size,
         }
     }
 
@@ -55,7 +54,7 @@ impl FixedBaseMSM {
             .map(|s| s as *const _ as *const u8)
             .collect();
 
-        let mut scratch_pad = self.scratch_space.borrow_mut();
+        let mut scratch_pad: Vec<blst::limb_t> = Vec::with_capacity(self.scratch_space_size);
 
         unsafe {
             blst::blst_p1s_mult_wbits(
