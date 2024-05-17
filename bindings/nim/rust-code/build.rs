@@ -11,8 +11,8 @@ fn main() {
     let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
     let crate_dir = PathBuf::from(crate_dir);
 
-    // Go up one directory to be at bindings parent directory
-    let parent = crate_dir.parent().unwrap().to_path_buf();
+    // Go up two directories to be at bindings parent directory
+    let parent = crate_dir.parent().unwrap().parent().unwrap().to_path_buf();
     let path_to_c_crate = parent.join("c");
 
     let package_name = env::var("CARGO_PKG_NAME").unwrap();
