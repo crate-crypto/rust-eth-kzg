@@ -24,7 +24,7 @@ repository = "https://github.com/crate-crypto/peerdas-kzg"
 # These names are essentially a way to achieve scoping when we publish to crates.io
 # Ideally we don't publish bls12_381 and polynomial, but crates.io requires 
 # all dependencies to be published and not local.
-bls12_381 = { package = "crate_crypto_internal_peerdas_bls12_381", version = "0.1.0", path = "bls12_381" }
+bls12_381 = { package = "bls12_381", version = "0.1.0", path = "bls12_381" }
 polynomial = { package = "crate_crypto_internal_peerdas_polynomial", version = "0.1.0", path = "polynomial" }
 eip7594 = { version = "0.1.0", path = "eip7594" }
 kzg_multi_open = { package = "crate_crypto_kzg_multi_open_fk20", version = "0.1.0", path = "kzg_multi_open" }
