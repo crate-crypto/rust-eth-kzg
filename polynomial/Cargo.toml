@@ -1,5 +1,5 @@
 [package]
-name = "crate_crypto_internal_peerdas_polynomial"
+name = "polynomial"
 version = "0.1.0"
 authors = { workspace = true }
 edition = { workspace = true }
