@@ -21,10 +21,10 @@ rust-version = "1.66"
 repository = "https://github.com/crate-crypto/peerdas-kzg"
 
 [workspace.dependencies]
-bls12_381 = { version = "0.1.0", path = "bls12_381" }
-polynomial = { version = "0.1.0", path = "polynomial" }
-eip7594 = { version = "0.1.0", path = "eip7594" }
-kzg_multi_open = { version = "0.1.0", path = "kzg_multi_open" }
-c_peerdas_kzg = { version = "0.1.0", path = "bindings/c" }
+bls12_381 = { version = "0.0.1", path = "bls12_381" }
+polynomial = { version = "0.0.1", path = "polynomial" }
+eip7594 = { version = "0.0.1", path = "eip7594" }
+kzg_multi_open = { version = "0.0.1", path = "kzg_multi_open" }
+c_peerdas_kzg = { version = "0.0.1", path = "bindings/c" }
 hex = "0.4.3"
 rayon = "1.10.0"
