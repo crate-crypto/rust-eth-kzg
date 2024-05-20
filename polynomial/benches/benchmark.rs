@@ -1,8 +1,8 @@
 use bls12_381::Scalar;
 use bls12_381::{ff::Field, group::Group, G1Projective};
+use crate_crypto_internal_peerdas_polynomial::monomial::lagrange_interpolate;
+use crate_crypto_internal_peerdas_polynomial::{domain::Domain, monomial::poly_eval};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use polynomial::monomial::lagrange_interpolate;
-use polynomial::{domain::Domain, monomial::poly_eval};
 
 pub fn bench_poly_eval(c: &mut Criterion) {
     const NUM_ELEMENTS: usize = 8192;
