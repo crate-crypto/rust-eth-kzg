@@ -9,7 +9,6 @@
         ".": {
             "release-type": "simple",
             "component": "peerdas_kzg",
-            "package-name": "peerdas_kzg",
             "include-component-in-tag": false,
             "extra-files": [
                 {
@@ -84,6 +83,9 @@
                 },
                 "bindings/nim/nim_code/nim_peerdas_kzg/nim_peerdas_kzg.nimble"
             ]
+        },
+        "bls12_381/Cargo.toml": {
+            "release-type": "rust"
         }
     },
     "plugins": [
