@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.0](https://github.com/crate-crypto/peerdas-kzg/compare/v0.1.0...v0.2.0) (2024-05-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* update crate names in release-please manifest
+
+### Miscellaneous Chores
+
+* Update crate names in release-please manifest ([c180947](https://github.com/crate-crypto/peerdas-kzg/commit/c18094731ba6e091b607faaac18b4e82f2f5b704))
+
 ## [0.1.0](https://github.com/crate-crypto/peerdas-kzg/compare/v0.0.1...v0.1.0) (2024-05-20)
 
 
