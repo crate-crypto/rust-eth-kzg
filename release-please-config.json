@@ -1,0 +1,67 @@
+{
+    "release-type": "simple",
+    "bump-minor-pre-major": true,
+    "bump-patch-for-minor-pre-major": true,
+    "prerelease": true,
+    "pull-request-title-pattern": "chore: Release ${version}",
+    "group-pull-request-title-pattern": "chore: Release ${version}",
+    "packages": {
+        ".": {
+            "release-type": "simple",
+            "component": "peerdas-kzg",
+            "package-name": "peerdas-kzg",
+            "include-component-in-tag": false,
+            "extra-files": [
+                {
+                    "type": "toml",
+                    "path": "Cargo.toml",
+                    "jsonpath": "$.workspace.dependencies.bls12-381.version"
+                },
+                {
+                    "type": "toml",
+                    "path": "Cargo.toml",
+                    "jsonpath": "$.workspace.dependencies.polynomial.version"
+                },
+                {
+                    "type": "toml",
+                    "path": "Cargo.toml",
+                    "jsonpath": "$.workspace.dependencies.eip7594.version"
+                },
+                {
+                    "type": "toml",
+                    "path": "Cargo.toml",
+                    "jsonpath": "$.workspace.dependencies.kzg-multi-open.version"
+                },
+                {
+                    "type": "toml",
+                    "path": "Cargo.toml",
+                    "jsonpath": "$.workspace.dependencies.c_peerdas_kzg.version"
+                },
+                {
+                    "type": "toml",
+                    "path": "bindings/node/Cargo.toml",
+                    "jsonpath": "$.version"
+                },
+                {
+                    "type": "json",
+                    "path": "bindings/node/package.json",
+                    "jsonpath": "$.version"
+                },
+                {
+                    "type": "toml",
+                    "path": "bindings/java/rust-code/Cargo.toml",
+                    "jsonpath": "$.version"
+                },
+                "bindings/nim/nim-code/nim_peerdas_kzg/nim_peerdas_kzg.nimble"
+            ]
+        }
+    },
+    "plugins": [
+        "sentence-case",
+        {
+            "type": "cargo-workspace",
+            "merge": false
+        }
+    ],
+    "bootstrap-sha": "3c20752cfd6ce7956b289dec9a67e48556a8e907"
+}

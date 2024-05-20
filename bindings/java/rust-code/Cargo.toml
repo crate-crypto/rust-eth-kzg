@@ -1,7 +1,12 @@
 [package]
 name = "java_peerdas_kzg"
 version = "0.1.0"
-edition = "2021"
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+rust-version = { workspace = true }
+repository = { workspace = true }
+
 
 [dependencies]
 jni = "^0.21.1"

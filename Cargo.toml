@@ -1,7 +1,5 @@
 [workspace]
 
-resolver = "2"
-
 members = [
     "bindings/c",
     "bindings/java/rust-code",
@@ -13,11 +11,21 @@ members = [
     "polynomial",
 ]
 
+resolver = "2"
+
+[workspace.package]
+authors = ["Kevaundray Wedderburn <kev@the.dev>"]
+edition = "2021"
+license = "MIT"
+rust-version = "1.66"
+repository = "https://github.com/crate-crypto/peerdas-kzg"
+
+
 [workspace.dependencies]
-bls12-381 = { path = "./bls12-381" }
-polynomial = { path = "./polynomial" }
-eip7594 = { path = "./eip7594" }
-kzg-multi-open = { path = "./kzg-multi-open" }
-c_peerdas_kzg = { path = "./bindings/c" }
+bls12-381 = { version = "0.1.0", path = "./bls12-381" }
+polynomial = { version = "0.1.0", path = "./polynomial" }
+eip7594 = { version = "0.1.0", path = "./eip7594" }
+kzg-multi-open = { version = "0.1.0", path = "./kzg-multi-open" }
+c_peerdas_kzg = { version = "0.1.0", path = "./bindings/c" }
 hex = "0.4.3"
 rayon = "1.10.0"
