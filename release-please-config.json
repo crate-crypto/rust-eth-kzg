@@ -65,7 +65,7 @@
         "bindings/nim/rust_code": {
             "component": "nim_bindings"
         },
-        "bindings/java/rust_code/": {
+        "bindings/java/rust_code": {
             "component": "java_bindings"
         }
     },
