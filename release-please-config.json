@@ -8,8 +8,8 @@
     "packages": {
         ".": {
             "release-type": "simple",
-            "component": "peerdas-kzg",
-            "package-name": "peerdas-kzg",
+            "component": "peerdas_kzg",
+            "package-name": "peerdas_kzg",
             "include-component-in-tag": false,
             "extra-files": [
                 {
@@ -19,8 +19,18 @@
                 },
                 {
                     "type": "toml",
+                    "path": "bls12_381/Cargo.toml",
+                    "jsonpath": "$.version"
+                },
+                {
+                    "type": "toml",
                     "path": "Cargo.toml",
                     "jsonpath": "$.workspace.dependencies.polynomial.version"
+                },
+                {
+                    "type": "toml",
+                    "path": "polynomial/Cargo.toml",
+                    "jsonpath": "$.version"
                 },
                 {
                     "type": "toml",
@@ -29,13 +39,28 @@
                 },
                 {
                     "type": "toml",
+                    "path": "eip7594/Cargo.toml",
+                    "jsonpath": "$.version"
+                },
+                {
+                    "type": "toml",
                     "path": "Cargo.toml",
                     "jsonpath": "$.workspace.dependencies.kzg_multi_open.version"
                 },
                 {
                     "type": "toml",
+                    "path": "kzg_multi_open/Cargo.toml",
+                    "jsonpath": "$.version"
+                },
+                {
+                    "type": "toml",
                     "path": "Cargo.toml",
                     "jsonpath": "$.workspace.dependencies.c_peerdas_kzg.version"
+                },
+                {
+                    "type": "toml",
+                    "path": "c_peerdas_kzg/Cargo.toml",
+                    "jsonpath": "$.version"
                 },
                 {
                     "type": "toml",
@@ -45,6 +70,11 @@
                 {
                     "type": "json",
                     "path": "bindings/node/package.json",
+                    "jsonpath": "$.version"
+                },
+                {
+                    "type": "toml",
+                    "path": "bindings/nim/rust_code/Cargo.toml",
                     "jsonpath": "$.version"
                 },
                 {
