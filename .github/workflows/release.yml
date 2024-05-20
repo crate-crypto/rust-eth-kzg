@@ -15,7 +15,8 @@ jobs:
     steps:
       - name: Run release-please
         id: release
-        uses: google-github-actions/release-please-action@v3
+        uses: google-github-actions/release-please-action@v4
         with:
           token: ${{ secrets.RELEASE_TOKEN }}
-          command: manifest
+          manifest-file: .release-please-manifest.json
+          target-branch: release-test-branch
