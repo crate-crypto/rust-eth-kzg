@@ -8,7 +8,7 @@
     "packages": {
         ".": {
             "release-type": "simple",
-            "component": "peerdas_kzg",
+            "component": "root",
             "include-component-in-tag": false,
             "extra-files": [
                 {
@@ -18,18 +18,8 @@
                 },
                 {
                     "type": "toml",
-                    "path": "bls12_381/Cargo.toml",
-                    "jsonpath": "$.version"
-                },
-                {
-                    "type": "toml",
                     "path": "Cargo.toml",
                     "jsonpath": "$.workspace.dependencies.polynomial.version"
-                },
-                {
-                    "type": "toml",
-                    "path": "polynomial/Cargo.toml",
-                    "jsonpath": "$.version"
                 },
                 {
                     "type": "toml",
@@ -38,18 +28,8 @@
                 },
                 {
                     "type": "toml",
-                    "path": "eip7594/Cargo.toml",
-                    "jsonpath": "$.version"
-                },
-                {
-                    "type": "toml",
                     "path": "Cargo.toml",
                     "jsonpath": "$.workspace.dependencies.kzg_multi_open.version"
-                },
-                {
-                    "type": "toml",
-                    "path": "kzg_multi_open/Cargo.toml",
-                    "jsonpath": "$.version"
                 },
                 {
                     "type": "toml",
@@ -57,28 +37,8 @@
                     "jsonpath": "$.workspace.dependencies.c_peerdas_kzg.version"
                 },
                 {
-                    "type": "toml",
-                    "path": "bindings/c/Cargo.toml",
-                    "jsonpath": "$.version"
-                },
-                {
-                    "type": "toml",
-                    "path": "bindings/node/Cargo.toml",
-                    "jsonpath": "$.version"
-                },
-                {
                     "type": "json",
                     "path": "bindings/node/package.json",
-                    "jsonpath": "$.version"
-                },
-                {
-                    "type": "toml",
-                    "path": "bindings/nim/rust_code/Cargo.toml",
-                    "jsonpath": "$.version"
-                },
-                {
-                    "type": "toml",
-                    "path": "bindings/java/rust_code/Cargo.toml",
                     "jsonpath": "$.version"
                 },
                 "bindings/nim/nim_code/nim_peerdas_kzg/nim_peerdas_kzg.nimble"
@@ -86,6 +46,27 @@
         },
         "bls12_381": {
             "component": "bls12_381"
+        },
+        "polynomial": {
+            "component": "polynomial"
+        },
+        "bindings/c": {
+            "component": "c_bindings"
+        },
+        "kzg_multi_open": {
+            "component": "kzg_multi_open"
+        },
+        "eip7594": {
+            "component": "eip7594"
+        },
+        "bindings/node": {
+            "component": "node_bindings"
+        },
+        "bindings/nim/rust_code": {
+            "component": "nim_bindings"
+        },
+        "bindings/java/rust_code/": {
+            "component": "java_bindings"
         }
     },
     "plugins": [
@@ -93,6 +74,21 @@
         {
             "type": "cargo-workspace",
             "merge": false
+        },
+        {
+            "type": "linked-versions",
+            "groupName": "peerdas",
+            "components": [
+                "root",
+                "bls12_381",
+                "polynomial",
+                "c_bindings",
+                "kzg_multi_open",
+                "eip7594",
+                "node_bindings",
+                "nim_bindings",
+                "java_bindings"
+            ]
         }
     ],
     "bootstrap-sha": "3c20752cfd6ce7956b289dec9a67e48556a8e907"
