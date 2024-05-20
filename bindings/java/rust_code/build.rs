@@ -4,7 +4,7 @@ use std::{env, path::PathBuf};
 ///
 /// Relative to the bindings folder.
 const PATH_TO_JAVA_BINDINGS_FILE: &str =
-    "java-code/src/main/java/ethereum/cryptography/LibPeerDASKZG.java";
+    "java_code/src/main/java/ethereum/cryptography/LibPeerDASKZG.java";
 
 fn main() {
     let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();

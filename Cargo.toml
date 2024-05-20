@@ -2,12 +2,12 @@
 
 members = [
     "bindings/c",
-    "bindings/java/rust-code",
+    "bindings/java/rust_code",
     "bindings/node",
-    "bindings/nim/rust-code",
+    "bindings/nim/rust_code",
     "bls12_381",
     "eip7594",
-    "kzg-multi-open",
+    "kzg_multi_open",
     "polynomial",
 ]
 
@@ -25,7 +25,7 @@ repository = "https://github.com/crate-crypto/peerdas-kzg"
 bls12_381 = { version = "0.1.0", path = "./bls12_381" }
 polynomial = { version = "0.1.0", path = "./polynomial" }
 eip7594 = { version = "0.1.0", path = "./eip7594" }
-kzg-multi-open = { version = "0.1.0", path = "./kzg-multi-open" }
+kzg_multi_open = { version = "0.1.0", path = "./kzg_multi_open" }
 c_peerdas_kzg = { version = "0.1.0", path = "./bindings/c" }
 hex = "0.4.3"
 rayon = "1.10.0"

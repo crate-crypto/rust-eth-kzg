@@ -30,7 +30,7 @@
                 {
                     "type": "toml",
                     "path": "Cargo.toml",
-                    "jsonpath": "$.workspace.dependencies.kzg-multi-open.version"
+                    "jsonpath": "$.workspace.dependencies.kzg_multi_open.version"
                 },
                 {
                     "type": "toml",
@@ -49,10 +49,10 @@
                 },
                 {
                     "type": "toml",
-                    "path": "bindings/java/rust-code/Cargo.toml",
+                    "path": "bindings/java/rust_code/Cargo.toml",
                     "jsonpath": "$.version"
                 },
-                "bindings/nim/nim-code/nim_peerdas_kzg/nim_peerdas_kzg.nimble"
+                "bindings/nim/nim_code/nim_peerdas_kzg/nim_peerdas_kzg.nimble"
             ]
         }
     },

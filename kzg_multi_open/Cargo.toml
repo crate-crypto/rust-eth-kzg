@@ -1,5 +1,5 @@
 [package]
-name = "kzg-multi-open"
+name = "kzg_multi_open"
 version = "0.1.0"
 authors = { workspace = true }
 edition = { workspace = true }

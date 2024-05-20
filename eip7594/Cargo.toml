@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-kzg-multi-open = { workspace = true }
+kzg_multi_open = { workspace = true }
 bls12_381 = { workspace = true }
 polynomial = { workspace = true }
 hex = { workspace = true }
