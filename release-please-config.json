@@ -1,5 +1,5 @@
 {
-    "release-type": "simple",
+    "release-type": "rust",
     "bump-minor-pre-major": true,
     "bump-patch-for-minor-pre-major": true,
     "prerelease": true,
@@ -84,8 +84,7 @@
                 "bindings/nim/nim_code/nim_peerdas_kzg/nim_peerdas_kzg.nimble"
             ]
         },
-        "bls12_381/Cargo.toml": {
-            "release-type": "rust",
+        "bls12_381": {
             "component": "bls12_381"
         }
     },
