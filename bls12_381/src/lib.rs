@@ -3,7 +3,7 @@ pub mod fixed_base_msm;
 pub mod lincomb;
 
 // Re-exporting the blstrs crate
-// TODO: We could feature flag the different bls12-381 implementations
+// TODO: We could feature flag the different bls12_381 implementations
 
 // Re-export ff and group, so other crates do not need to directly import(and independently version) them
 pub use ff;

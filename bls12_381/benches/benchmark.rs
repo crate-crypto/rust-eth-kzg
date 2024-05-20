@@ -6,7 +6,7 @@ pub fn batch_inversion(c: &mut Criterion) {
     const NUM_ELEMENTS: usize = 8192;
 
     c.bench_function(
-        &format!("bls12-381 batch_inversion size: {}", NUM_ELEMENTS),
+        &format!("bls12_381 batch_inversion size: {}", NUM_ELEMENTS),
         |b| {
             b.iter(|| {
                 let mut elements =
@@ -18,7 +18,7 @@ pub fn batch_inversion(c: &mut Criterion) {
 
     c.bench_function(
         &format!(
-            "bls12-381 batch_inversion_zero_check size: {}",
+            "bls12_381 batch_inversion_zero_check size: {}",
             NUM_ELEMENTS
         ),
         |b| {

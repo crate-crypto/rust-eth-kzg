@@ -15,7 +15,7 @@
                 {
                     "type": "toml",
                     "path": "Cargo.toml",
-                    "jsonpath": "$.workspace.dependencies.bls12-381.version"
+                    "jsonpath": "$.workspace.dependencies.bls12_381.version"
                 },
                 {
                     "type": "toml",

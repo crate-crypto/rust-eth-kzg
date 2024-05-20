@@ -5,7 +5,7 @@ members = [
     "bindings/java/rust-code",
     "bindings/node",
     "bindings/nim/rust-code",
-    "bls12-381",
+    "bls12_381",
     "eip7594",
     "kzg-multi-open",
     "polynomial",
@@ -22,7 +22,7 @@ repository = "https://github.com/crate-crypto/peerdas-kzg"
 
 
 [workspace.dependencies]
-bls12-381 = { version = "0.1.0", path = "./bls12-381" }
+bls12_381 = { version = "0.1.0", path = "./bls12_381" }
 polynomial = { version = "0.1.0", path = "./polynomial" }
 eip7594 = { version = "0.1.0", path = "./eip7594" }
 kzg-multi-open = { version = "0.1.0", path = "./kzg-multi-open" }
