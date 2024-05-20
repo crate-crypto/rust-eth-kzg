@@ -20,7 +20,6 @@ license = "MIT"
 rust-version = "1.66"
 repository = "https://github.com/crate-crypto/peerdas-kzg"
 
-
 [workspace.dependencies]
 bls12_381 = { version = "0.1.0", path = "bls12_381" }
 polynomial = { version = "0.1.0", path = "polynomial" }
