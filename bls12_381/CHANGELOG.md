@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.0](https://github.com/crate-crypto/peerdas-kzg/compare/bls12_381-v0.0.1...bls12_381-v0.1.0) (2024-05-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* add namespace to internal crates and kzg crate
+
+### Miscellaneous Chores
+
+* Add namespace to internal crates and kzg crate ([57ed80e](https://github.com/crate-crypto/peerdas-kzg/commit/57ed80e4122c56cfc1868afdd27cbb7f79bba88d))
+
 ## 0.0.1 (2024-05-20)
 
 
