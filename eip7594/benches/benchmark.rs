@@ -1,7 +1,8 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use eip7594::consensus_specs_fixed_test_vector::eth_polynomial;
-use kzg_multi_open::{create_eth_commit_opening_keys, fk20::naive, reverse_bit_order};
-use polynomial::domain::Domain;
+use kzg_multi_open::{
+    create_eth_commit_opening_keys, fk20::naive, polynomial::domain::Domain, reverse_bit_order,
+};
 
 /// This is here for reference, same as the above `bench_compute_proof_without_fk20`.
 pub fn bench_compute_proof_with_naive_fk20(c: &mut Criterion) {

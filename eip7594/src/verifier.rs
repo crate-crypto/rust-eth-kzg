@@ -12,10 +12,12 @@ use crate::{
 };
 use bls12_381::Scalar;
 use kzg_multi_open::{
-    create_eth_commit_opening_keys, opening_key::OpeningKey, proof::verify_multi_opening_naive,
+    create_eth_commit_opening_keys,
+    opening_key::OpeningKey,
+    polynomial::{domain::Domain, monomial::lagrange_interpolate},
+    proof::verify_multi_opening_naive,
     reverse_bit_order,
 };
-use polynomial::{domain::Domain, monomial::lagrange_interpolate};
 
 pub struct VerifierContext {
     opening_key: OpeningKey,

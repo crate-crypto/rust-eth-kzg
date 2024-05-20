@@ -10,7 +10,6 @@ repository = { workspace = true }
 [dependencies]
 kzg_multi_open = { workspace = true }
 bls12_381 = { workspace = true }
-polynomial = { workspace = true }
 hex = { workspace = true }
 
 

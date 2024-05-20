@@ -4,18 +4,20 @@ use kzg_multi_open::{
     create_eth_commit_opening_keys,
     fk20::FK20,
     opening_key::OpeningKey,
+    polynomial::domain::Domain,
     proof::verify_multi_opening_naive,
     reverse_bit_order,
 };
-use polynomial::domain::Domain;
 
 use crate::{
     constants::{
         CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL,
         FIELD_ELEMENTS_PER_EXT_BLOB,
-    }, serialization::{
+    },
+    serialization::{
         self, deserialize_cell_to_scalars, deserialize_compressed_g1, serialize_g1_compressed,
-    }, Blob, BlobRef, Bytes48, Cell, CellID, ColumnIndex, KZGCommitment, KZGProof, RowIndex
+    },
+    Blob, BlobRef, Bytes48, Cell, CellID, ColumnIndex, KZGCommitment, KZGProof, RowIndex,
 };
 
 pub struct ProverContext {

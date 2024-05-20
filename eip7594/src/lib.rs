@@ -28,11 +28,11 @@ pub type Bytes48 = [u8; 48];
 
 #[cfg(test)]
 mod tests {
+    use kzg_multi_open::polynomial::domain::Domain;
     use kzg_multi_open::{
         create_eth_commit_opening_keys, fk20::naive, proof::compute_multi_opening_naive,
         reverse_bit_order,
     };
-    use polynomial::domain::Domain;
 
     use crate::consensus_specs_fixed_test_vector::eth_polynomial;
 

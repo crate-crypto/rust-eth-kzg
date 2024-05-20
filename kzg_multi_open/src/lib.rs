@@ -6,6 +6,9 @@ pub mod fk20;
 pub mod opening_key;
 pub mod proof;
 
+// Re-export the polynomial crate
+pub use polynomial;
+
 // TODO: We can replace this with a file being embedded in the future.
 // This is simply the trusted setup file from the ethereum ceremony
 pub mod eth_trusted_setup;
