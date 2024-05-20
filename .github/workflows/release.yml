@@ -21,3 +21,5 @@ jobs:
       - name: Run release-please
         id: release
         uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.RELEASE_TOKEN }}
