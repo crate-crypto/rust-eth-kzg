@@ -1,7 +1,11 @@
 [package]
 name = "bls12-381"
 version = "0.1.0"
-edition = "2021"
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+rust-version = { workspace = true }
+repository = { workspace = true }
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -10,11 +14,14 @@ rayon = { workspace = true }
 pairing = { version = "0.23" }
 
 # blstrs related dependencies
-blst = {version = "0.3.1", default-features = false, features = ["portable", "no-threads"]}
-blstrs = {version = "0.7.1",features = ["__private_bench"]}
+blst = { version = "0.3.1", default-features = false, features = [
+    "portable",
+    "no-threads",
+] }
+blstrs = { version = "0.7.1", features = ["__private_bench"] }
 ff = "0.13.0"
 group = "0.13"
-ark-ff ="0.4.0"
+ark-ff = "0.4.0"
 
 [dev-dependencies]
 criterion = "0.5.1"
@@ -23,4 +30,3 @@ rand = "0.8.4"
 [[bench]]
 name = "benchmark"
 harness = false
-
