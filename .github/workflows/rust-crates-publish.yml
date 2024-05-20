@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: The commit reference to checkout
+        description: The reference (branch/tag/commit) to checkout
         required: true
 
 jobs:
