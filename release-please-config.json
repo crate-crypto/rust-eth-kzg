@@ -85,7 +85,8 @@
             ]
         },
         "bls12_381/Cargo.toml": {
-            "release-type": "rust"
+            "release-type": "rust",
+            "component": "bls12_381"
         }
     },
     "plugins": [
