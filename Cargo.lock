@@ -129,6 +129,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "bls12_381"
+version = "0.1.0"
+dependencies = [
+ "ark-ff",
+ "blst",
+ "blstrs",
+ "criterion",
+ "ff",
+ "group",
+ "pairing",
+ "rand",
+ "rayon",
+]
+
+[[package]]
 name = "blst"
 version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -322,25 +337,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "crate_crypto_internal_peerdas_bls12_381"
-version = "0.1.0"
-dependencies = [
- "ark-ff",
- "blst",
- "blstrs",
- "criterion",
- "ff",
- "group",
- "pairing",
- "rand",
- "rayon",
-]
-
-[[package]]
 name = "crate_crypto_internal_peerdas_polynomial"
 version = "0.1.0"
 dependencies = [
- "crate_crypto_internal_peerdas_bls12_381",
+ "bls12_381",
  "criterion",
  "rand",
 ]
@@ -349,7 +349,7 @@ dependencies = [
 name = "crate_crypto_kzg_multi_open_fk20"
 version = "0.1.0"
 dependencies = [
- "crate_crypto_internal_peerdas_bls12_381",
+ "bls12_381",
  "crate_crypto_internal_peerdas_polynomial",
  "criterion",
  "hex",
@@ -468,7 +468,7 @@ dependencies = [
 name = "eip7594"
 version = "0.1.0"
 dependencies = [
- "crate_crypto_internal_peerdas_bls12_381",
+ "bls12_381",
  "crate_crypto_kzg_multi_open_fk20",
  "criterion",
  "hex",
