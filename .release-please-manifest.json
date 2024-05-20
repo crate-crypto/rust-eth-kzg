@@ -1,3 +1,11 @@
 {
-    ".": "0.0.1"
+    ".": "0.0.1",
+    "bls12_381": "0.0.1",
+    "bindings/c": "0.0.1",
+    "eip7594": "0.0.1",
+    "bindings/java/rust_code": "0.0.1",
+    "kzg_multi_open": "0.0.1",
+    "bindings/nim/rust_code": "0.0.1",
+    "bindings/node": "0.0.1",
+    "polynomial": "0.0.1"
 }
