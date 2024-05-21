@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.2.2](https://github.com/crate-crypto/peerdas-kzg/compare/v0.2.1...v0.2.2) (2024-05-21)
+
+
+### Features
+
+* Add publishing code for other crates ([e0eadd9](https://github.com/crate-crypto/peerdas-kzg/commit/e0eadd95f05f6cc93f0b7b8efe78ea3f51ba0f11))
+* **release-please:** Remove release-type and change component name ([422d7fb](https://github.com/crate-crypto/peerdas-kzg/commit/422d7fb64fb888af1d996cb4cc769a30fcffed84))
+
+
+### Bug Fixes
+
+* Add back cargo-workspace ([435d3b2](https://github.com/crate-crypto/peerdas-kzg/commit/435d3b2b0438bd317e1ef1687d8462fbc8529457))
+* Add rlib to c bindings since it is being imported by nim rust crate ([b157a88](https://github.com/crate-crypto/peerdas-kzg/commit/b157a88c43f4aa523097184530e9e8efa1b379e2))
+* PR requires pull-request-title-pattern ([fb3e327](https://github.com/crate-crypto/peerdas-kzg/commit/fb3e3271def98391598325ffc26ba61ef1cab82c))
+* **release-please:** Remove cargo-workspace plugin ([015c005](https://github.com/crate-crypto/peerdas-kzg/commit/015c0054c079743385dd86494f0b7ee3942ba60f))
+* Remove all configuration from the root package ([e3181fa](https://github.com/crate-crypto/peerdas-kzg/commit/e3181faada94e6e90a0f6f621127905eea397f24))
+* Remove component from tag for all components ([1d130d5](https://github.com/crate-crypto/peerdas-kzg/commit/1d130d5c2ef3f18467f2166bcd6861451d173e4a))
+* Root package must be set as simple or release-please will look for a Cargo.toml file and err ([d25f836](https://github.com/crate-crypto/peerdas-kzg/commit/d25f83661690ff949e6fecf11e054c28bf0790f2))
+* Run PR title check on Pull requests only ([078cf18](https://github.com/crate-crypto/peerdas-kzg/commit/078cf18d5a7ae538ae1ec8f88abe85b024326520))
+* Use "." as the root package ([11279ee](https://github.com/crate-crypto/peerdas-kzg/commit/11279eeecace869b59a16fcfa4439373c7b83644))
+
 ## [0.2.1](https://github.com/crate-crypto/peerdas-kzg/compare/v0.2.0...v0.2.1) (2024-05-21)
 
 
