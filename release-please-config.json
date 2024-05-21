@@ -114,6 +114,10 @@
         }
     },
     "plugins": [
+        {
+            "type": "cargo-workspace",
+            "merge": false
+        },
         "sentence-case",
         {
             "type": "linked-versions",
