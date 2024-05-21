@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/crate-crypto/peerdas-kzg/compare/bls12_381-v0.1.0...bls12_381-v0.2.0) (2024-05-21)
+
+
+### Miscellaneous Chores
+
+* **bls12_381:** Synchronize peerdas versions
+
 ## [0.1.0](https://github.com/crate-crypto/peerdas-kzg/compare/bls12_381-v0.0.1...bls12_381-v0.1.0) (2024-05-20)
 
 
