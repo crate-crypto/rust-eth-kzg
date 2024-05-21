@@ -25,11 +25,11 @@ jobs:
           toolchain: 1.66.0
 
       # These steps are in a specific order so crate dependencies are updated first
-      # - name: Publish bls12_381
-      #   run: |
-      #     cargo publish --package crate_crypto_internal_peerdas_bls12_381
-      #   env:
-      #     CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_RELEASE_TOKEN }}
+      - name: Publish bls12_381
+        run: |
+          cargo publish --package crate_crypto_internal_peerdas_bls12_381
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_RELEASE_TOKEN }}
 
       - name: Publish polynomial
         run: |
