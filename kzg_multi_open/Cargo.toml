@@ -1,5 +1,6 @@
 [package]
 name = "crate_crypto_kzg_multi_open_fk20"
+description = "This crate provides a multi-opening algorithm for KZG10 using FK20"
 version = "0.1.0"
 authors = { workspace = true }
 edition = { workspace = true }
