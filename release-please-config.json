@@ -45,7 +45,14 @@
             ]
         },
         "bls12_381": {
-            "component": "bls12_381"
+            "component": "bls12_381",
+            "extra-files": [
+                {
+                    "type": "toml",
+                    "path": "bls12_381/Cargo.toml",
+                    "jsonpath": "$.version"
+                }
+            ]
         },
         "polynomial": {
             "component": "polynomial"
