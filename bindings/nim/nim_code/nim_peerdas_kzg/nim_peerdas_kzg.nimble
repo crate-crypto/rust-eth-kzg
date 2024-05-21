@@ -1,7 +1,7 @@
 # Package
 
 # x-release-please-start-version
-version       = "0.2.6"
+version       = "0.3.0"
 # x-release-please-end
 
 author        = "Kevaundray Wedderburn"
