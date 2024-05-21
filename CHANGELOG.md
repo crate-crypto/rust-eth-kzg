@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.6](https://github.com/crate-crypto/peerdas-kzg/compare/v0.2.5...v0.2.6) (2024-05-21)
+
+
+### Bug Fixes
+
+* Remove run prefix ([13d0a6c](https://github.com/crate-crypto/peerdas-kzg/commit/13d0a6c9d412f3848a4d6fdd843b1030eed82f78))
+
 ## [0.2.5](https://github.com/crate-crypto/peerdas-kzg/compare/v0.2.4...v0.2.5) (2024-05-21)
 
 
