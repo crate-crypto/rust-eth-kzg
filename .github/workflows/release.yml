@@ -3,6 +3,7 @@ name: Release
 permissions:
   contents: write
   pull-requests: write
+  actions: write
 
 on:
   push:
@@ -36,3 +37,4 @@ jobs:
                     workflow: rust-crates-publish.yml
                     ref: master
                     inputs: '{ "ref": "${{ needs.release-please.outputs.tag-name }}" }'
+                    token: ${{ secrets.RELEASE_TOKEN }}
