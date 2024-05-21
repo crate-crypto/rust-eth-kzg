@@ -6,11 +6,7 @@
     "pull-request-title-pattern": "chore: Release ${version}",
     "group-pull-request-title-pattern": "chore: Release ${version}",
     "packages": {
-        ".": {
-            "release-type": "simple",
-            "component": "peerdas",
-            "include-component-in-tag": false
-        },
+        ".": {},
         "bls12_381": {
             "component": "bls12_381",
             "extra-files": [
@@ -113,7 +109,6 @@
             "groupName": "peerdas",
             "components": [
                 ".",
-                "peerdas",
                 "bls12_381",
                 "polynomial",
                 "c_bindings",
