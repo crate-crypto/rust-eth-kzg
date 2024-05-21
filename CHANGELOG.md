@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.5](https://github.com/crate-crypto/peerdas-kzg/compare/v0.2.4...v0.2.5) (2024-05-21)
+
+
+### Bug Fixes
+
+* Remove file structure and add prefix to workflows ([0e5f747](https://github.com/crate-crypto/peerdas-kzg/commit/0e5f747f8b4137dd7b47c2525ee6eb97bebdb23c))
+
 ## [0.2.4](https://github.com/crate-crypto/peerdas-kzg/compare/v0.2.3...v0.2.4) (2024-05-21)
 
 
