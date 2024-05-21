@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/crate-crypto/peerdas-kzg/compare/bls12_381-v0.2.0...bls12_381-v0.2.1) (2024-05-21)
+
+
+### Bug Fixes
+
+* Comment in bls12_381 Cargo.toml ([abaa2cc](https://github.com/crate-crypto/peerdas-kzg/commit/abaa2ccd8aa5ede857c8a474da2a4489c943dd33))
+
 ## [0.2.0](https://github.com/crate-crypto/peerdas-kzg/compare/bls12_381-v0.1.0...bls12_381-v0.2.0) (2024-05-21)
 
 

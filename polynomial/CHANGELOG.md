@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/crate-crypto/peerdas-kzg/compare/polynomial-v0.2.0...polynomial-v0.2.1) (2024-05-21)
+
+
+### Miscellaneous Chores
+
+* **polynomial:** Synchronize peerdas versions
+
 ## [0.2.0](https://github.com/crate-crypto/peerdas-kzg/compare/polynomial-v0.1.0...polynomial-v0.2.0) (2024-05-21)
 
 

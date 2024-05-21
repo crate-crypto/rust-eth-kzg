@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.2.1](https://github.com/crate-crypto/peerdas-kzg/compare/v0.2.0...v0.2.1) (2024-05-21)
+
+
+### Bug Fixes
+
+* Comment in bls12_381 Cargo.toml ([abaa2cc](https://github.com/crate-crypto/peerdas-kzg/commit/abaa2ccd8aa5ede857c8a474da2a4489c943dd33))
+* Explicitly pass the RELEASE-TOKEN when dispatching workflows ([e1e99b3](https://github.com/crate-crypto/peerdas-kzg/commit/e1e99b326d91d0ca2f6dd812511e14cc0f0a24f6))
+* Formatting ([08aa75f](https://github.com/crate-crypto/peerdas-kzg/commit/08aa75fbebc33d75c634788ab6323695f42e3c9e))
+* Move bls12_381 extra-file change into bls12_381 component ([14e9ce9](https://github.com/crate-crypto/peerdas-kzg/commit/14e9ce9a8e2d268bd5d3f6017ab09a650b9713fe))
+
 ## [0.2.0](https://github.com/crate-crypto/peerdas-kzg/compare/v0.1.0...v0.2.0) (2024-05-21)
 
 

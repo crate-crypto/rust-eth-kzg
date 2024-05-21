@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/crate-crypto/peerdas-kzg/compare/eip7594-v0.2.0...eip7594-v0.2.1) (2024-05-21)
+
+
+### Miscellaneous Chores
+
+* **eip7594:** Synchronize peerdas versions
+
 ## [0.2.0](https://github.com/crate-crypto/peerdas-kzg/compare/eip7594-v0.1.0...eip7594-v0.2.0) (2024-05-21)
 
 

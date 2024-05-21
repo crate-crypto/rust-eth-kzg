@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/crate-crypto/peerdas-kzg/compare/kzg_multi_open-v0.2.0...kzg_multi_open-v0.2.1) (2024-05-21)
+
+
+### Miscellaneous Chores
+
+* **kzg_multi_open:** Synchronize peerdas versions
+
 ## [0.2.0](https://github.com/crate-crypto/peerdas-kzg/compare/kzg_multi_open-v0.1.0...kzg_multi_open-v0.2.0) (2024-05-21)
 
 
