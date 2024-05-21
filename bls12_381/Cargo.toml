@@ -1,5 +1,6 @@
 [package]
 name = "crate_crypto_internal_peerdas_bls12_381"
+description = "This crate provides the internal implementation of the BLS12-381 curve for the Peerdas project."
 version = "0.2.0"
 authors = { workspace = true }
 edition = { workspace = true }
