@@ -1,0 +1,22 @@
+name: Publish C# bindings
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: The reference (branch/tag/commit) to checkout
+        required: true
+
+jobs:
+  publish:
+    name: Publish c# bindings
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: TODO c# bindings code
+        run: |
+          run: echo "Code to publish c# bindings needs to be setup reference input: ${{ inputs.ref }}"

@@ -34,7 +34,63 @@ jobs:
             -   name: Dispatch to publish workflow
                 uses: benc-uk/workflow-dispatch@v1
                 with:
-                    workflow: rust-crates-publish.yml
+                    workflow: release/rust-crates-publish.yml
+                    ref: master
+                    inputs: '{ "ref": "${{ needs.release-please.outputs.tag-name }}" }'
+                    token: ${{ secrets.RELEASE_TOKEN }}
+
+  publish-node-bindings:
+        name: Publish node bindings
+        needs: [release-please]
+        if: ${{ needs.release-please.outputs.tag-name }}
+        runs-on: ubuntu-latest
+        steps:
+            -   name: Dispatch to publish workflow
+                uses: benc-uk/workflow-dispatch@v1
+                with:
+                    workflow: release/node-bindings-publish.yml
+                    ref: master
+                    inputs: '{ "ref": "${{ needs.release-please.outputs.tag-name }}" }'
+                    token: ${{ secrets.RELEASE_TOKEN }}
+
+  publish-java-bindings:
+        name: Publish java bindings
+        needs: [release-please]
+        if: ${{ needs.release-please.outputs.tag-name }}
+        runs-on: ubuntu-latest
+        steps:
+            -   name: Dispatch to publish workflow
+                uses: benc-uk/workflow-dispatch@v1
+                with:
+                    workflow: release/java-bindings-publish.yml
+                    ref: master
+                    inputs: '{ "ref": "${{ needs.release-please.outputs.tag-name }}" }'
+                    token: ${{ secrets.RELEASE_TOKEN }}
+
+  publish-csharp-bindings:
+        name: Publish c# bindings
+        needs: [release-please]
+        if: ${{ needs.release-please.outputs.tag-name }}
+        runs-on: ubuntu-latest
+        steps:
+            -   name: Dispatch to publish workflow
+                uses: benc-uk/workflow-dispatch@v1
+                with:
+                    workflow: release/csharp-bindings-publish.yml
+                    ref: master
+                    inputs: '{ "ref": "${{ needs.release-please.outputs.tag-name }}" }'
+                    token: ${{ secrets.RELEASE_TOKEN }}
+
+  publish-nim-bindings:
+        name: Publish nim bindings
+        needs: [release-please]
+        if: ${{ needs.release-please.outputs.tag-name }}
+        runs-on: ubuntu-latest
+        steps:
+            -   name: Dispatch to publish workflow
+                uses: benc-uk/workflow-dispatch@v1
+                with:
+                    workflow: release/nim-bindings-publish.yml
                     ref: master
                     inputs: '{ "ref": "${{ needs.release-please.outputs.tag-name }}" }'
                     token: ${{ secrets.RELEASE_TOKEN }}

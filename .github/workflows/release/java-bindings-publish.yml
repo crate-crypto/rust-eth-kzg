@@ -1,0 +1,22 @@
+name: Publish Java bindings
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: The reference (branch/tag/commit) to checkout
+        required: true
+
+jobs:
+  publish:
+    name: Publish java bindings
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: TODO java bindings code
+        run: |
+          run: echo "Code to publish java bindings needs to be setup reference input: ${{ inputs.ref }}"
