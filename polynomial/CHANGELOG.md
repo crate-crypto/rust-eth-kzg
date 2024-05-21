@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.0](https://github.com/crate-crypto/peerdas-kzg/compare/polynomial-v0.1.0...polynomial-v0.2.0) (2024-05-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* rollback scope package naming for release-please
+
+### Miscellaneous Chores
+
+* Rollback scope package naming for release-please ([9e7f047](https://github.com/crate-crypto/peerdas-kzg/commit/9e7f04724119ca97fd49cf992dad4b23d6da6387))
+
 ## [0.1.0](https://github.com/crate-crypto/peerdas-kzg/compare/polynomial-v0.0.1...polynomial-v0.1.0) (2024-05-20)
 
 

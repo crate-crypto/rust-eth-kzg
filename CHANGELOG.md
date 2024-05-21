@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.0](https://github.com/crate-crypto/peerdas-kzg/compare/v0.1.0...v0.2.0) (2024-05-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* rollback scope package naming for release-please
+* update crate names in release-please manifest
+
+### Miscellaneous Chores
+
+* Rollback scope package naming for release-please ([9e7f047](https://github.com/crate-crypto/peerdas-kzg/commit/9e7f04724119ca97fd49cf992dad4b23d6da6387))
+* Update crate names in release-please manifest ([c180947](https://github.com/crate-crypto/peerdas-kzg/commit/c18094731ba6e091b607faaac18b4e82f2f5b704))
+
 ## [0.1.0](https://github.com/crate-crypto/peerdas-kzg/compare/v0.0.1...v0.1.0) (2024-05-20)
 
 
