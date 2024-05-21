@@ -116,7 +116,7 @@
             "type": "linked-versions",
             "groupName": "peerdas",
             "components": [
-                "peerdas",
+                ".",
                 "bls12_381",
                 "polynomial",
                 "c_bindings",
