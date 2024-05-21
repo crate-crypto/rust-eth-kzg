@@ -1,5 +1,5 @@
 [package]
-name = "kzg_multi_open"
+name = "crate_crypto_kzg_multi_open_fk20"
 version = "0.1.0"
 authors = { workspace = true }
 edition = { workspace = true }
