@@ -1,11 +1,11 @@
 {
-    ".": "0.2.0",
-    "bls12_381": "0.2.0",
-    "bindings/c": "0.2.0",
-    "eip7594": "0.2.0",
-    "bindings/java/rust_code": "0.2.0",
-    "kzg_multi_open": "0.2.0",
-    "bindings/nim/rust_code": "0.2.0",
-    "bindings/node": "0.2.0",
-    "polynomial": "0.2.0"
+    ".": "0.2.1",
+    "bls12_381": "0.2.1",
+    "bindings/c": "0.2.1",
+    "eip7594": "0.2.1",
+    "bindings/java/rust_code": "0.2.1",
+    "kzg_multi_open": "0.2.1",
+    "bindings/nim/rust_code": "0.2.1",
+    "bindings/node": "0.2.1",
+    "polynomial": "0.2.1"
 }

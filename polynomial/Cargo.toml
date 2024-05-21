@@ -1,7 +1,7 @@
 [package]
 name = "crate_crypto_internal_peerdas_polynomial"
 description = "This crate provides utility methods that are needed for Polynomial objects"
-version = "0.2.0"
+version = "0.2.1"
 authors = { workspace = true }
 edition = { workspace = true }
 license = { workspace = true }
