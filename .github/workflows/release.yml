@@ -34,7 +34,7 @@ jobs:
             -   name: Dispatch to publish workflow
                 uses: benc-uk/workflow-dispatch@v1
                 with:
-                    workflow: releases/rust-crates-publish.yml
+                    workflow: release-rust-crates.yml
                     ref: master
                     inputs: '{ "ref": "${{ needs.release-please.outputs.tag-name }}" }'
                     token: ${{ secrets.RELEASE_TOKEN }}
@@ -48,7 +48,7 @@ jobs:
             -   name: Dispatch to publish workflow
                 uses: benc-uk/workflow-dispatch@v1
                 with:
-                    workflow: releases/node-bindings-publish.yml
+                    workflow: release-node-bindings.yml
                     ref: master
                     inputs: '{ "ref": "${{ needs.release-please.outputs.tag-name }}" }'
                     token: ${{ secrets.RELEASE_TOKEN }}
@@ -62,7 +62,7 @@ jobs:
             -   name: Dispatch to publish workflow
                 uses: benc-uk/workflow-dispatch@v1
                 with:
-                    workflow: releases/java-bindings-publish.yml
+                    workflow: release-java-bindings.yml
                     ref: master
                     inputs: '{ "ref": "${{ needs.release-please.outputs.tag-name }}" }'
                     token: ${{ secrets.RELEASE_TOKEN }}
@@ -76,7 +76,7 @@ jobs:
             -   name: Dispatch to publish workflow
                 uses: benc-uk/workflow-dispatch@v1
                 with:
-                    workflow: releases/csharp-bindings-publish.yml
+                    workflow: release-csharp-bindings.yml
                     ref: master
                     inputs: '{ "ref": "${{ needs.release-please.outputs.tag-name }}" }'
                     token: ${{ secrets.RELEASE_TOKEN }}
@@ -90,7 +90,7 @@ jobs:
             -   name: Dispatch to publish workflow
                 uses: benc-uk/workflow-dispatch@v1
                 with:
-                    workflow: releases/nim-bindings-publish.yml
+                    workflow: release-nim-bindings.yml
                     ref: master
                     inputs: '{ "ref": "${{ needs.release-please.outputs.tag-name }}" }'
                     token: ${{ secrets.RELEASE_TOKEN }}
