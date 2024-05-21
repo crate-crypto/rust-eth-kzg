@@ -1,6 +1,6 @@
 [package]
 name = "crate_crypto_internal_peerdas_bls12_381"
-description = "This crate provides the internal implementation of the BLS12-381 curve for the Peerdas project."
+description = "This crate provides the internal implementation of the BLS12-381 curve for the PeerDAS project."
 version = "0.2.0"
 authors = { workspace = true }
 edition = { workspace = true }
@@ -19,6 +19,7 @@ blst = { version = "0.3.1", default-features = false, features = [
     "portable",
     "no-threads",
 ] }
+# __private_bench feature is used to allow us to access the base field
 blstrs = { version = "0.7.1", features = ["__private_bench"] }
 ff = "0.13.0"
 group = "0.13"
