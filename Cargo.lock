@@ -176,7 +176,7 @@ checksum = "514de17de45fdb8dc022b1a7975556c53c86f9f0aa5f534b98977b171857c2c9"
 
 [[package]]
 name = "c_peerdas_kzg"
-version = "0.2.2"
+version = "0.2.0"
 dependencies = [
  "cbindgen",
  "eip7594",
@@ -323,7 +323,7 @@ dependencies = [
 
 [[package]]
 name = "crate_crypto_internal_peerdas_bls12_381"
-version = "0.2.1"
+version = "0.2.0"
 dependencies = [
  "ark-ff",
  "blst",
@@ -338,7 +338,7 @@ dependencies = [
 
 [[package]]
 name = "crate_crypto_internal_peerdas_polynomial"
-version = "0.2.1"
+version = "0.2.0"
 dependencies = [
  "crate_crypto_internal_peerdas_bls12_381",
  "criterion",
@@ -347,7 +347,7 @@ dependencies = [
 
 [[package]]
 name = "crate_crypto_kzg_multi_open_fk20"
-version = "0.2.1"
+version = "0.2.0"
 dependencies = [
  "crate_crypto_internal_peerdas_bls12_381",
  "crate_crypto_internal_peerdas_polynomial",
@@ -466,7 +466,7 @@ dependencies = [
 
 [[package]]
 name = "eip7594"
-version = "0.2.1"
+version = "0.2.0"
 dependencies = [
  "crate_crypto_internal_peerdas_bls12_381",
  "crate_crypto_kzg_multi_open_fk20",
@@ -635,7 +635,7 @@ checksum = "49f1f14873335454500d59611f1cf4a4b0f786f9ac11f4312a78e4cf2566695b"
 
 [[package]]
 name = "java_peerdas_kzg"
-version = "0.2.1"
+version = "0.2.0"
 dependencies = [
  "eip7594",
  "hex",
@@ -784,7 +784,7 @@ dependencies = [
 
 [[package]]
 name = "nim_peerdas_kzg"
-version = "0.2.2"
+version = "0.2.0"
 dependencies = [
  "c_peerdas_kzg",
  "nbindgen",
@@ -864,7 +864,7 @@ checksum = "de3145af08024dea9fa9914f381a17b8fc6034dfb00f3a84013f7ff43f29ed4c"
 
 [[package]]
 name = "peerdas-kzg"
-version = "0.2.1"
+version = "0.2.0"
 dependencies = [
  "eip7594",
  "napi",

@@ -17,6 +17,7 @@ resolver = "2"
 authors = ["Kevaundray Wedderburn <kev@the.dev>"]
 edition = "2021"
 license = "MIT"
+version = "0.2.0"
 rust-version = "1.66"
 repository = "https://github.com/crate-crypto/peerdas-kzg"
 

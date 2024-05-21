@@ -1,139 +1,51 @@
 {
-    "release-type": "rust",
+    "release-type": "simple",
     "bump-minor-pre-major": true,
     "bump-patch-for-minor-pre-major": true,
     "prerelease": true,
-    "pull-request-title-pattern": "chore: Release ${version}",
-    "group-pull-request-title-pattern": "chore: Release ${version}",
+    "pull-request-title-pattern": "chore: Release (${version})",
+    "group-pull-request-title-pattern": "chore: Release (${version})",
     "packages": {
         ".": {
-            "release-type": "simple",
-            "include-component-in-tag": false
-        },
-        "bls12_381": {
+            "component": "root",
             "include-component-in-tag": false,
-            "component": "bls12_381",
             "extra-files": [
                 {
                     "type": "toml",
-                    "path": "bls12_381/Cargo.toml",
-                    "jsonpath": "$.version"
+                    "path": "Cargo.toml",
+                    "jsonpath": "$.workspace.package.version"
                 },
                 {
                     "type": "toml",
                     "path": "Cargo.toml",
                     "jsonpath": "$.workspace.dependencies.bls12_381.version"
-                }
-            ]
-        },
-        "polynomial": {
-            "include-component-in-tag": false,
-            "component": "polynomial",
-            "extra-files": [
-                {
-                    "type": "toml",
-                    "path": "polynomial/Cargo.toml",
-                    "jsonpath": "$.version"
                 },
                 {
                     "type": "toml",
                     "path": "Cargo.toml",
                     "jsonpath": "$.workspace.dependencies.polynomial.version"
-                }
-            ]
-        },
-        "bindings/c": {
-            "include-component-in-tag": false,
-            "component": "c_bindings",
-            "extra-files": [
-                {
-                    "type": "toml",
-                    "path": "bindings/c/Cargo.toml",
-                    "jsonpath": "$.version"
                 },
                 {
                     "type": "toml",
                     "path": "Cargo.toml",
                     "jsonpath": "$.workspace.dependencies.c_peerdas_kzg.version"
-                }
-            ]
-        },
-        "kzg_multi_open": {
-            "include-component-in-tag": false,
-            "component": "kzg_multi_open",
-            "extra-files": [
-                {
-                    "type": "toml",
-                    "path": "kzg_multi_open/Cargo.toml",
-                    "jsonpath": "$.version"
                 },
                 {
                     "type": "toml",
                     "path": "Cargo.toml",
                     "jsonpath": "$.workspace.dependencies.kzg_multi_open.version"
-                }
-            ]
-        },
-        "eip7594": {
-            "include-component-in-tag": false,
-            "component": "eip7594",
-            "extra-files": [
-                {
-                    "type": "toml",
-                    "path": "eip7594/Cargo.toml",
-                    "jsonpath": "$.version"
                 },
                 {
                     "type": "toml",
                     "path": "Cargo.toml",
                     "jsonpath": "$.workspace.dependencies.eip7594.version"
-                }
-            ]
-        },
-        "bindings/node": {
-            "include-component-in-tag": false,
-            "component": "node_bindings",
-            "extra-files": [
-                {
-                    "type": "json",
-                    "path": "bindings/node/package.json",
-                    "jsonpath": "$.version"
-                }
-            ]
-        },
-        "bindings/nim/rust_code": {
-            "include-component-in-tag": false,
-            "component": "nim_bindings",
-            "extra-files": [
+                },
                 "bindings/nim/nim_code/nim_peerdas_kzg/nim_peerdas_kzg.nimble"
             ]
-        },
-        "bindings/java/rust_code": {
-            "include-component-in-tag": false,
-            "component": "java_bindings"
         }
     },
     "plugins": [
-        {
-            "type": "cargo-workspace",
-            "merge": false
-        },
-        "sentence-case",
-        {
-            "type": "linked-versions",
-            "groupName": "peerdas",
-            "components": [
-                ".",
-                "bls12_381",
-                "polynomial",
-                "c_bindings",
-                "kzg_multi_open",
-                "eip7594",
-                "node_bindings",
-                "nim_bindings",
-                "java_bindings"
-            ]
-        }
+        "sentence-case"
     ],
     "bootstrap-sha": "3c20752cfd6ce7956b289dec9a67e48556a8e907"
 }
