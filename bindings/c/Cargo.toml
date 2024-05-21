@@ -9,7 +9,7 @@ repository = { workspace = true }
 
 
 [lib]
-crate-type = ["staticlib", "cdylib"]
+crate-type = ["staticlib", "cdylib", "rlib"]
 
 [dependencies]
 libc = "0.2.2"
