@@ -9,35 +9,7 @@
         ".": {
             "release-type": "simple",
             "component": "root",
-            "include-component-in-tag": false,
-            "extra-files": [
-                {
-                    "type": "toml",
-                    "path": "Cargo.toml",
-                    "jsonpath": "$.workspace.dependencies.polynomial.version"
-                },
-                {
-                    "type": "toml",
-                    "path": "Cargo.toml",
-                    "jsonpath": "$.workspace.dependencies.eip7594.version"
-                },
-                {
-                    "type": "toml",
-                    "path": "Cargo.toml",
-                    "jsonpath": "$.workspace.dependencies.kzg_multi_open.version"
-                },
-                {
-                    "type": "toml",
-                    "path": "Cargo.toml",
-                    "jsonpath": "$.workspace.dependencies.c_peerdas_kzg.version"
-                },
-                {
-                    "type": "json",
-                    "path": "bindings/node/package.json",
-                    "jsonpath": "$.version"
-                },
-                "bindings/nim/nim_code/nim_peerdas_kzg/nim_peerdas_kzg.nimble"
-            ]
+            "include-component-in-tag": false
         },
         "bls12_381": {
             "component": "bls12_381",
@@ -55,22 +27,80 @@
             ]
         },
         "polynomial": {
-            "component": "polynomial"
+            "component": "polynomial",
+            "extra-files": [
+                {
+                    "type": "toml",
+                    "path": "polynomial/Cargo.toml",
+                    "jsonpath": "$.version"
+                },
+                {
+                    "type": "toml",
+                    "path": "Cargo.toml",
+                    "jsonpath": "$.workspace.dependencies.polynomial.version"
+                }
+            ]
         },
         "bindings/c": {
-            "component": "c_bindings"
+            "component": "c_bindings",
+            "extra-files": [
+                {
+                    "type": "toml",
+                    "path": "bindings/c/Cargo.toml",
+                    "jsonpath": "$.version"
+                },
+                {
+                    "type": "toml",
+                    "path": "Cargo.toml",
+                    "jsonpath": "$.workspace.dependencies.c_peerdas_kzg.version"
+                }
+            ]
         },
         "kzg_multi_open": {
-            "component": "kzg_multi_open"
+            "component": "kzg_multi_open",
+            "extra-files": [
+                {
+                    "type": "toml",
+                    "path": "kzg_multi_open/Cargo.toml",
+                    "jsonpath": "$.version"
+                },
+                {
+                    "type": "toml",
+                    "path": "Cargo.toml",
+                    "jsonpath": "$.workspace.dependencies.kzg_multi_open.version"
+                }
+            ]
         },
         "eip7594": {
-            "component": "eip7594"
+            "component": "eip7594",
+            "extra-files": [
+                {
+                    "type": "toml",
+                    "path": "eip7594/Cargo.toml",
+                    "jsonpath": "$.version"
+                },
+                {
+                    "type": "toml",
+                    "path": "Cargo.toml",
+                    "jsonpath": "$.workspace.dependencies.eip7594.version"
+                }
+            ]
         },
         "bindings/node": {
-            "component": "node_bindings"
+            "component": "node_bindings",
+            "extra-files": [
+                {
+                    "type": "json",
+                    "path": "bindings/node/package.json",
+                    "jsonpath": "$.version"
+                }
+            ]
         },
         "bindings/nim/rust_code": {
-            "component": "nim_bindings"
+            "component": "nim_bindings",
+            "extra-files": [
+                "bindings/nim/nim_code/nim_peerdas_kzg/nim_peerdas_kzg.nimble"
+            ]
         },
         "bindings/java/rust_code": {
             "component": "java_bindings"
