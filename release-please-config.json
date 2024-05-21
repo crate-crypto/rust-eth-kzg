@@ -7,9 +7,11 @@
     "group-pull-request-title-pattern": "chore: Release ${version}",
     "packages": {
         ".": {
-            "release-type": "simple"
+            "release-type": "simple",
+            "include-component-in-tag": false
         },
         "bls12_381": {
+            "include-component-in-tag": false,
             "component": "bls12_381",
             "extra-files": [
                 {
@@ -25,6 +27,7 @@
             ]
         },
         "polynomial": {
+            "include-component-in-tag": false,
             "component": "polynomial",
             "extra-files": [
                 {
@@ -40,6 +43,7 @@
             ]
         },
         "bindings/c": {
+            "include-component-in-tag": false,
             "component": "c_bindings",
             "extra-files": [
                 {
@@ -55,6 +59,7 @@
             ]
         },
         "kzg_multi_open": {
+            "include-component-in-tag": false,
             "component": "kzg_multi_open",
             "extra-files": [
                 {
@@ -70,6 +75,7 @@
             ]
         },
         "eip7594": {
+            "include-component-in-tag": false,
             "component": "eip7594",
             "extra-files": [
                 {
@@ -85,6 +91,7 @@
             ]
         },
         "bindings/node": {
+            "include-component-in-tag": false,
             "component": "node_bindings",
             "extra-files": [
                 {
@@ -95,12 +102,14 @@
             ]
         },
         "bindings/nim/rust_code": {
+            "include-component-in-tag": false,
             "component": "nim_bindings",
             "extra-files": [
                 "bindings/nim/nim_code/nim_peerdas_kzg/nim_peerdas_kzg.nimble"
             ]
         },
         "bindings/java/rust_code": {
+            "include-component-in-tag": false,
             "component": "java_bindings"
         }
     },
