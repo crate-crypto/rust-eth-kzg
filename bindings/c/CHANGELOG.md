@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/crate-crypto/peerdas-kzg/compare/v0.2.1...v0.2.2) (2024-05-21)
+
+
+### Bug Fixes
+
+* Add rlib to c bindings since it is being imported by nim rust crate ([b157a88](https://github.com/crate-crypto/peerdas-kzg/commit/b157a88c43f4aa523097184530e9e8efa1b379e2))
+
 ## [0.2.1](https://github.com/crate-crypto/peerdas-kzg/compare/c_bindings-v0.2.0...c_bindings-v0.2.1) (2024-05-21)
 
 

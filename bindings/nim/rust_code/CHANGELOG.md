@@ -1,5 +1,7 @@
 # Changelog
 
+
+
 ## [0.2.1](https://github.com/crate-crypto/peerdas-kzg/compare/nim_bindings-v0.2.0...nim_bindings-v0.2.1) (2024-05-21)
 
 
