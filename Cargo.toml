@@ -25,7 +25,7 @@ repository = "https://github.com/crate-crypto/peerdas-kzg"
 # Ideally we don't publish bls12_381 and polynomial, but crates.io requires 
 # all dependencies to be published and not local.
 bls12_381 = { version = "0.1.0", path = "bls12_381" }
-polynomial = { version = "0.1.0", path = "polynomial" }
+polynomial = { package = "crate_crypto_internal_peerdas_polynomial", version = "0.1.0", path = "polynomial" }
 eip7594 = { version = "0.1.0", path = "eip7594" }
 kzg_multi_open = { version = "0.1.0", path = "kzg_multi_open" }
 c_peerdas_kzg = { version = "0.1.0", path = "bindings/c" }

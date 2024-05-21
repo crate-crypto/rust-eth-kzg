@@ -337,6 +337,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "crate_crypto_internal_peerdas_polynomial"
+version = "0.1.0"
+dependencies = [
+ "bls12_381",
+ "criterion",
+ "rand",
+]
+
+[[package]]
 name = "criterion"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -657,9 +666,9 @@ name = "kzg_multi_open"
 version = "0.1.0"
 dependencies = [
  "bls12_381",
+ "crate_crypto_internal_peerdas_polynomial",
  "criterion",
  "hex",
- "polynomial",
  "rand",
  "rayon",
 ]
@@ -889,15 +898,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "38f6d39893cca0701371e3c27294f09797214b86f1fb951b89ade8ec04e2abab"
 dependencies = [
  "plotters-backend",
-]
-
-[[package]]
-name = "polynomial"
-version = "0.1.0"
-dependencies = [
- "bls12_381",
- "criterion",
- "rand",
 ]
 
 [[package]]
