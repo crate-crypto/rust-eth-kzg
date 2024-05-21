@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.4](https://github.com/crate-crypto/peerdas-kzg/compare/v0.2.3...v0.2.4) (2024-05-21)
+
+
+### Bug Fixes
+
+* Change file name to releases to not conflict with the yml file ([4f549e9](https://github.com/crate-crypto/peerdas-kzg/commit/4f549e94c27d58c1c28f47aeef1ab3e1e54f81e8))
+
 ## [0.2.3](https://github.com/crate-crypto/peerdas-kzg/compare/v0.2.2...v0.2.3) (2024-05-21)
 
 
