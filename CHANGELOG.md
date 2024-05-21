@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/crate-crypto/peerdas-kzg/compare/v0.2.2...v0.2.3) (2024-05-21)
+
+
+### Bug Fixes
+
+* Change bootstrap commit ([3f59841](https://github.com/crate-crypto/peerdas-kzg/commit/3f598415a8d27cc73fa3d12c9d15b2e1a1afdd25))
+
 ## [0.2.2](https://github.com/crate-crypto/peerdas-kzg/compare/v0.2.1...v0.2.2) (2024-05-21)
 
 
