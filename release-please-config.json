@@ -8,7 +8,7 @@
     "packages": {
         ".": {
             "release-type": "simple",
-            "component": "root",
+            "component": "peerdas",
             "include-component-in-tag": false
         },
         "bls12_381": {
@@ -116,7 +116,7 @@
             "type": "linked-versions",
             "groupName": "peerdas",
             "components": [
-                "root",
+                "peerdas",
                 "bls12_381",
                 "polynomial",
                 "c_bindings",
