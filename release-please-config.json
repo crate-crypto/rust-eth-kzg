@@ -14,11 +14,6 @@
                 {
                     "type": "toml",
                     "path": "Cargo.toml",
-                    "jsonpath": "$.workspace.dependencies.bls12_381.version"
-                },
-                {
-                    "type": "toml",
-                    "path": "Cargo.toml",
                     "jsonpath": "$.workspace.dependencies.polynomial.version"
                 },
                 {
@@ -51,6 +46,11 @@
                     "type": "toml",
                     "path": "bls12_381/Cargo.toml",
                     "jsonpath": "$.version"
+                },
+                {
+                    "type": "toml",
+                    "path": "Cargo.toml",
+                    "jsonpath": "$.workspace.dependencies.bls12_381.version"
                 }
             ]
         },
