@@ -14,12 +14,12 @@
                 {
                     "type": "toml",
                     "path": "Cargo.toml",
-                    "jsonpath": "$.workspace.dependencies.crate_crypto_internal_peerdas_bls12_381.version"
+                    "jsonpath": "$.workspace.dependencies.bls12_381.version"
                 },
                 {
                     "type": "toml",
                     "path": "Cargo.toml",
-                    "jsonpath": "$.workspace.dependencies.crate_crypto_internal_peerdas_polynomial.version"
+                    "jsonpath": "$.workspace.dependencies.polynomial.version"
                 },
                 {
                     "type": "toml",
@@ -29,7 +29,7 @@
                 {
                     "type": "toml",
                     "path": "Cargo.toml",
-                    "jsonpath": "$.workspace.dependencies.crate_crypto_kzg_multi_open_fk20.version"
+                    "jsonpath": "$.workspace.dependencies.kzg_multi_open.version"
                 },
                 {
                     "type": "toml",
