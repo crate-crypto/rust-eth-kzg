@@ -19,4 +19,4 @@ jobs:
 
       - name: TODO nim bindings code
         run: |
-          run: echo "Code to publish nim bindings needs to be setup reference input: ${{ inputs.ref }}"
+               echo "Code to publish nim bindings needs to be setup reference input: ${{ inputs.ref }}"

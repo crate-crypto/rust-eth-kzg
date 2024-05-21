@@ -19,4 +19,4 @@ jobs:
 
       - name: TODO java bindings code
         run: |
-          run: echo "Code to publish java bindings needs to be setup reference input: ${{ inputs.ref }}"
+              echo "Code to publish java bindings needs to be setup reference input: ${{ inputs.ref }}"

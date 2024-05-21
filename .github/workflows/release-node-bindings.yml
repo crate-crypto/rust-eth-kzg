@@ -19,4 +19,4 @@ jobs:
 
       - name: TODO node bindings code
         run: |
-          run: echo "Code to publish node bindings needs to be setup reference input: ${{ inputs.ref }}"
+              echo "Code to publish node bindings needs to be setup reference input: ${{ inputs.ref }}"

@@ -19,4 +19,4 @@ jobs:
 
       - name: TODO c# bindings code
         run: |
-          run: echo "Code to publish c# bindings needs to be setup reference input: ${{ inputs.ref }}"
+              echo "Code to publish c# bindings needs to be setup reference input: ${{ inputs.ref }}"
