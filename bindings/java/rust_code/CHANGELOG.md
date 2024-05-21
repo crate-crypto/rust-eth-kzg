@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/crate-crypto/peerdas-kzg/compare/java_bindings-v0.1.0...java_bindings-v0.2.0) (2024-05-21)
+
+
+### Miscellaneous Chores
+
+* **java_bindings:** Synchronize peerdas versions
+
 ## [0.1.0](https://github.com/crate-crypto/peerdas-kzg/compare/java_bindings-v0.0.1...java_bindings-v0.1.0) (2024-05-20)
 
 
