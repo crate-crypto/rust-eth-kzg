@@ -1,9 +1,10 @@
 #!/bin/bash
 
-chmod a+x scripts/compile_all_targets_c.sh
-
-# First compile the c code to make sure we have the libraries
-sh scripts/compile_all_targets_c.sh
-
-# Copy the static lib + headers into the c sharp bindings folder
-cp -R ./bindings/c/build ./bindings/csharp/runtimes
+OUT_DIR="./bindings/csharp/runtimes"
+LIB_TYPE="dynamic"
+LIB_NAME="c_peerdas_kzg"
+./scripts/compile_to_native.sh Darwin arm64 $LIB_NAME $LIB_TYPE $OUT_DIR
+./scripts/compile_to_native.sh Darwin x86_64 $LIB_NAME $LIB_TYPE $OUT_DIR
+./scripts/compile_to_native.sh Windows x86_64 $LIB_NAME $LIB_TYPE $OUT_DIR
+./scripts/compile_to_native.sh Linux x86_64 $LIB_NAME $LIB_TYPE $OUT_DIR
+./scripts/compile_to_native.sh Linux arm64 $LIB_NAME $LIB_TYPE $OUT_DIR
