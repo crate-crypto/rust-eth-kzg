@@ -46,6 +46,19 @@ STATIC_LIB_NAME=""
 DYNAMIC_LIB_NAME=""
 TARGET_NAME=""
 
+# Check for Windows OS and ensure ARCH is x86_64
+# We don't support 32-bit Windows builds -- nothing technical
+# just a simplification to avoid dealing with 32-bit builds
+# plus languages like java want you to package all possible
+# dlls for all possible architectures which means we are saving 
+# some space by not supporting 32-bit builds
+if [[ "$OS" == "MINGW64_NT" || "$OS" == "CYGWIN_NT" ]]; then
+    if [[ "$ARCH" != "x86_64" ]]; then
+        echo "Error: On Windows, the architecture must be x86_64."
+        exit 1
+    fi
+fi
+
 case "$OS" in
     "Darwin")
         case "$ARCH" in
@@ -87,7 +100,7 @@ case "$OS" in
                 ;;
         esac
         ;;
-    "MINGW64_NT"|"CYGWIN_NT")
+    "MINGW64_NT"|"CYGWIN_NT"|"Windows")
         TARGET_NAME="x86_64-pc-windows-gnu"
         STATIC_LIB_NAME="lib${LIB_NAME}.a"
         DYNAMIC_LIB_NAME="${LIB_NAME}.dll"
