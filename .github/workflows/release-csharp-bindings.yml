@@ -24,7 +24,8 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.x'
-          - name: Setup Python
+      
+      - name: Setup Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.x'
