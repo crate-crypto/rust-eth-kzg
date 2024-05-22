@@ -10,12 +10,12 @@ on:
 jobs:
   publish:
     name: Publish C# bindings
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: master
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@1.74.1
@@ -24,16 +24,33 @@ jobs:
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.x'
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install Homebrew
+        run: |
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+      - name: Install mingw-w64
+        run: |
+          brew install mingw-w64
 
       - name: Strip leading v from tagged version
       # Strip the leading v from the tag name. It should be of the form v0.1.2
       # dotnet requires it to be of the form 0.1.2
-        run: echo "VERSION=${{ inputs.ref }}" | sed 's/^v//' >> $GITHUB_ENV
+        run: echo "VERSION=$(echo "${{ inputs.ref }}" | sed 's/^v//')" >> $GITHUB_ENV
 
       - name: Run compile script
         run: |
           chmod +x scripts/compile_all_targets_c_sharp.sh
           scripts/compile_all_targets_c_sharp.sh
+
+      - name: Restore NuGet packages
+        working-directory: bindings/csharp
+        run: dotnet restore
 
       - name: Package with dotnet pack
         working-directory: bindings/csharp
