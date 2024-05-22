@@ -1,41 +1,14 @@
 #!/bin/bash
 
-# Install zig build and compile for all the relevant targets
-# This should likely only be ran in the CI
+# 
+# Compile dynamic libraries for all relevant targets
+# and place them in the `./bindings/java/java_code/src/main/resources` directory
 
-# TODO move this cross compile to another lib
-# cargo install cargo-zigbuild
-
-# TODO: Add require_install method to check that necessary tools are installed
-
-# For now we only do it for java
-cd bindings/java
-
-# rustup target add x86_64-unknown-linux-gnu
-# cargo build --target=x86_64-unknown-linux-gnu
-
-# rustup target add aarch64-unknown-linux-gnu
-# cargo build --target=aarch64-unknown-linux-gnu
-
-rustup target add aarch64-apple-darwin
-cargo build --target=aarch64-apple-darwin
-
-rustup target add x86_64-apple-darwin
-cargo build --target=x86_64-apple-darwin
-
-rustup target add x86_64-pc-windows-gnu
-cargo build --target=x86_64-pc-windows-gnu
-
-cd ../..
-
-# mkdir -p ./bindings/java/java_code/src/main/resources/x86_64-unknown-linux-gnu
-# mkdir -p ./bindings/java/java_code/src/main/resources/aarch64-unknown-linux-gnu
-mkdir -p ./bindings/java/java_code/src/main/resources/aarch64-apple-darwin
-mkdir -p ./bindings/java/java_code/src/main/resources/x86_64-apple-darwin
-mkdir -p ./bindings/java/java_code/src/main/resources/x86_64-pc-windows-gnu
-
-# cp -R ./target/x86_64-unknown-linux-gnu/debug/libjava_peerdas_kzg.so ./bindings/java/java_code/src/main/resources/x86_64-unknown-linux-gnu/
-# cp -R ./target/aarch64-unknown-linux-gnu/debug/libjava_peerdas_kzg.so ./bindings/java/java_code/src/main/resources/aarch64-unknown-linux-gnu/
-cp -R ./target/aarch64-apple-darwin/debug/libjava_peerdas_kzg.dylib ./bindings/java/java_code/src/main/resources/aarch64-apple-darwin/
-cp -R ./target/x86_64-apple-darwin/debug/libjava_peerdas_kzg.dylib ./bindings/java/java_code/src/main/resources/x86_64-apple-darwin/
-cp -R ./target/x86_64-pc-windows-gnu/debug/java_peerdas_kzg.dll ./bindings/java/java_code/src/main/resources/x86_64-pc-windows-gnu/
+OUT_DIR="./bindings/java/java_code/src/main/resources"
+LIB_TYPE="dynamic"
+LIB_NAME="java_peerdas_kzg"
+./scripts/compile_to_native.sh Darwin arm64 $LIB_NAME $LIB_TYPE $OUT_DIR
+./scripts/compile_to_native.sh Darwin x86_64 $LIB_NAME $LIB_TYPE $OUT_DIR
+./scripts/compile_to_native.sh Windows x86_64 $LIB_NAME $LIB_TYPE $OUT_DIR
+./scripts/compile_to_native.sh Linux x86_64 $LIB_NAME $LIB_TYPE $OUT_DIR
+./scripts/compile_to_native.sh Linux arm64 $LIB_NAME $LIB_TYPE $OUT_DIR
