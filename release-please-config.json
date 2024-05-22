@@ -40,7 +40,12 @@
                     "path": "Cargo.toml",
                     "jsonpath": "$.workspace.dependencies.eip7594.version"
                 },
-                "bindings/nim/nim_code/nim_peerdas_kzg/nim_peerdas_kzg.nimble"
+                "bindings/nim/nim_code/nim_peerdas_kzg/nim_peerdas_kzg.nimble",
+                {
+                    "type": "xml",
+                    "path": "bindings/csharp/PeerDASKZG.csproj",
+                    "xpath": "//Project/PropertyGroup/Version"
+                }
             ]
         }
     },
