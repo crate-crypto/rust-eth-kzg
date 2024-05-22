@@ -30,12 +30,16 @@ if [[ "$1" == "-h" || "$1" == "--help" ]]; then
     usage
 fi
 
+# Determine the script's directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 # Determine the operating system, architecture, library name, library type, and output directory if not provided
 OS="${1:-$(uname)}"
 ARCH="${2:-$(uname -m)}"
 LIB_NAME="${3:-c_peerdas_kzg}"
 LIB_TYPE="${4:-both}"
-OUT_DIR="${5:-./bindings/c/build}"
+OUT_DIR="${5:-$PROJECT_ROOT/bindings/c/build}"
 echo "Detected/Provided OS: $OS"
 echo "Detected/Provided architecture: $ARCH"
 echo "Library name: $LIB_NAME"
@@ -112,7 +116,7 @@ case "$OS" in
 esac
 
 echo "Compiling for target: $TARGET_NAME"
-./scripts/check_if_rustup_target_installed.sh $TARGET_NAME
+$SCRIPT_DIR/check_if_rustup_target_installed.sh $TARGET_NAME
 
 # Check the exit code 
 if [ $? -eq 0 ]; then
@@ -129,9 +133,9 @@ mkdir -p "$OUT_DIR/$TARGET_NAME"
 
 # Copy the libraries to the specified output directory
 if [ "$LIB_TYPE" == "static" ] || [ "$LIB_TYPE" == "both" ]; then
-    cp -R target/$TARGET_NAME/release/$STATIC_LIB_NAME "$OUT_DIR/$TARGET_NAME/"
+    cp -R $PROJECT_ROOT/target/$TARGET_NAME/release/$STATIC_LIB_NAME "$OUT_DIR/$TARGET_NAME/"
 fi
 
 if [ "$LIB_TYPE" == "dynamic" ] || [ "$LIB_TYPE" == "both" ]; then
-    cp -R target/$TARGET_NAME/release/$DYNAMIC_LIB_NAME "$OUT_DIR/$TARGET_NAME/"
+    cp -R $PROJECT_ROOT/target/$TARGET_NAME/release/$DYNAMIC_LIB_NAME "$OUT_DIR/$TARGET_NAME/"
 fi
