@@ -32,7 +32,7 @@ jobs:
       - name: Strip leading v from tagged version
         run: |
           echo "Original ref: ${{ inputs.ref }}"
-          echo "VERSION=${{ inputs.ref }}" | sed 's/^v//' >> $GITHUB_ENV
+          echo "VERSION=$(echo "${{ inputs.ref }}" | sed 's/^v//')" >> $GITHUB_ENV
           echo "Modified VERSION: ${{ env.VERSION }}"
 
       - name: Run compile script
