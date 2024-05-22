@@ -9,7 +9,7 @@ on:
 
 jobs:
   publish:
-    name: Publish c# bindings
+    name: Publish C# bindings
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -17,6 +17,28 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
 
-      - name: TODO c# bindings code
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@1.74.1
+
+      - name: Install .NET SDK
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.x'
+
+      - name: Strip leading v from tagged version
+      # Strip the leading v from the tag name. It should be of the form v0.1.2
+      # dotnet requires it to be of the form 0.1.2
+        run: echo "VERSION=${{ inputs.ref }}" | sed 's/^v//' >> $GITHUB_ENV
+
+      - name: Run compile script
         run: |
-              echo "Code to publish c# bindings needs to be setup reference input: ${{ inputs.ref }}"
+          chmod +x scripts/compile_all_targets_c_sharp.sh
+          scripts/compile_all_targets_c_sharp.sh
+
+      - name: Package with dotnet pack
+        working-directory: bindings/csharp
+        run: dotnet pack -c release --no-restore -o nupkgs -p:Version=${{ env.VERSION }} -p:ContinuousIntegrationBuild=true
+        
+      - name: Publish to Nuget
+        working-directory: bindings/csharp
+        run: dotnet nuget push nupkgs/*.nupkg --api-key ${{ secrets.NUGET_RELEASE_TOKEN }} --source https://api.nuget.org/v3/index.json
