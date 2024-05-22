@@ -35,6 +35,10 @@ jobs:
           chmod +x scripts/compile_all_targets_c_sharp.sh
           scripts/compile_all_targets_c_sharp.sh
 
+      - name: Restore NuGet packages
+        working-directory: bindings/csharp
+        run: dotnet restore
+
       - name: Package with dotnet pack
         working-directory: bindings/csharp
         run: dotnet pack -c release --no-restore -o nupkgs -p:Version=${{ env.VERSION }} -p:ContinuousIntegrationBuild=true
