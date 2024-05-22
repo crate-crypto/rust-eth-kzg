@@ -3,6 +3,8 @@
 # When developing locally, one should call this script to 
 # build the necessary binaries needed for the other languages 
 # to interact with the rust library.
+# Note: This is specifically for libraries that need to have a compiled
+# dynamic or static library.
 
 # Determine the script's directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
