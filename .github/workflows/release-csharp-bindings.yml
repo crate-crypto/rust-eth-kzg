@@ -34,9 +34,18 @@ jobs:
         run: |
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-      - name: Install mingw-w64
+      - name: Install mingw-w64 for Windows cross-compilation
         run: |
           brew install mingw-w64
+      
+      - name: Install linker for x86_64-unknown-linux-gnu
+        run: |
+          brew install SergioBenitez/osxct/x86_64-unknown-linux-gnu
+    
+      - name: Install linker for aarch64-unknown-linux-gnu
+        run: |
+          brew tap messense/homebrew-macos-cross-toolchains
+          brew install aarch64-unknown-linux-gnu
 
       - name: Strip leading v from tagged version
       # Strip the leading v from the tag name. It should be of the form v0.1.2
