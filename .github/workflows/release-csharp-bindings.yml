@@ -15,7 +15,7 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: master
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@1.74.1
