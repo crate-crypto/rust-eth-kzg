@@ -8,18 +8,10 @@ permissions:
   id-token: write
 'on':
   workflow_dispatch:
-  push:
-    branches:
-      - master
-    tags-ignore:
-      - '**'
-    paths-ignore:
-      - '**/*.md'
-      - LICENSE
-      - '**/*.gitignore'
-      - .editorconfig
-      - docs/**
-  pull_request: null
+    inputs:
+      ref:
+        description: The reference (branch/tag/commit) to checkout
+        required: true
 
 jobs:
   build:
@@ -51,6 +43,8 @@ jobs:
         working-directory: bindings/node
     steps:
       - uses: actions/checkout@v4
+        with:
+            ref: ${{ inputs.ref }}
       - name: Move config.toml
         run: |
           # Move up two directories to the root of the workspace
@@ -58,6 +52,8 @@ jobs:
 
           mv .cargo/config.node.cross.toml .cargo/config.toml
       - uses: actions/checkout@v4
+        with:
+            ref: ${{ inputs.ref }}
       - name: Setup node
         uses: actions/setup-node@v4
         if: ${{ !matrix.settings.docker }}
@@ -140,6 +136,8 @@ jobs:
         working-directory: bindings/node
     steps:
       - uses: actions/checkout@v4
+        with:
+            ref: ${{ inputs.ref }}
       - name: Setup node
         uses: actions/setup-node@v4
         with:
@@ -174,6 +172,8 @@ jobs:
         working-directory: bindings/node
     steps:
       - uses: actions/checkout@v4
+        with:
+            ref: ${{ inputs.ref }}
       - name: Setup node
         uses: actions/setup-node@v4
         with:
@@ -207,6 +207,8 @@ jobs:
         working-directory: bindings/node
     steps:
       - uses: actions/checkout@v4
+        with:
+            ref: ${{ inputs.ref }}
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -247,6 +249,8 @@ jobs:
         working-directory: bindings/node
     steps:
       - uses: actions/checkout@v4
+        with:
+            ref: ${{ inputs.ref }}
       - name: Setup node
         uses: actions/setup-node@v4
         with:
@@ -267,16 +271,13 @@ jobs:
       - name: Publish
         run: |
           npm config set provenance true
-          if git log -1 --pretty=%B | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+$";
-          then
-            echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+          if [[ ${{ inputs.ref }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             npm publish --access public
-          elif git log -1 --pretty=%B | grep "^[0-9]\+\.[0-9]\+\.[0-9]\+";
-          then
-            echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+          elif [[ ${{ inputs.ref }} =~ ^[a-zA-Z0-9_-]+$ ]]; then
             npm publish --tag next --access public
           else
-            echo "Not a release, skipping publish"
+            echo "Invalid ref format. Skipping publish."
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
