@@ -24,3 +24,11 @@ OUT_DIR="$PROJECT_ROOT/bindings/csharp/runtimes"
 LIB_TYPE="dynamic"
 LIB_NAME="c_peerdas_kzg"
 $PROJECT_ROOT/scripts/compile_to_native.sh $OS $ARCH $LIB_NAME $LIB_TYPE $OUT_DIR
+
+# Compile Rust code for golang
+OUT_DIR="$PROJECT_ROOT/bindings/golang/build"
+LIB_TYPE="static"
+LIB_NAME="c_peerdas_kzg"
+$PROJECT_ROOT/scripts/compile_to_native.sh $OS $ARCH $LIB_NAME $LIB_TYPE $OUT_DIR
+# Copy header file
+cp $PROJECT_ROOT/bindings/c/build/c_peerdas_kzg.h $OUT_DIR
