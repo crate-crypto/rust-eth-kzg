@@ -1,0 +1,19 @@
+name: Test Node bindings
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build
+      working-directory: bindings/node
+      run: yarn && yarn install && yarn build
+    - name: Run tests
+      working-directory: bindings/node
+      run: yarn test
