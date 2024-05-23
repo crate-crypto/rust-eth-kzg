@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 
 use napi::{
   bindgen_prelude::{AsyncTask, BigInt, Env, Error, Uint8Array},
@@ -26,7 +26,7 @@ pub struct AsyncBlobToKzgCommitment {
   blob: Uint8Array,
 
   // TODO: make this RwLock parking_lot crate
-  prover_context: Arc<Mutex<ProverContext>>,
+  prover_context: Arc<RwLock<ProverContext>>,
 }
 
 #[napi]
@@ -38,7 +38,7 @@ impl Task for AsyncBlobToKzgCommitment {
     let blob = self.blob.as_ref();
     let prover_context = self
       .prover_context
-      .lock()
+      .read()
       .map_err(|_| napi::Error::from_reason("Failed to acquire lock"))?;
     let commitment = prover_context.blob_to_kzg_commitment(blob);
     Ok(commitment)
@@ -62,7 +62,7 @@ pub struct CellsAndProofs {
 
 pub struct AsyncComputeCellsAndKzgProofs {
   blob: Uint8Array,
-  prover_context: Arc<Mutex<ProverContext>>,
+  prover_context: Arc<RwLock<ProverContext>>,
 }
 
 #[napi]
@@ -74,7 +74,7 @@ impl Task for AsyncComputeCellsAndKzgProofs {
     let blob = self.blob.as_ref();
     let prover_context = self
       .prover_context
-      .lock()
+      .read()
       .map_err(|_| Error::from_reason("Failed to acquire lock"))?;
     let (cells, proofs) = prover_context.compute_cells_and_kzg_proofs(blob);
 
@@ -98,7 +98,7 @@ impl Task for AsyncComputeCellsAndKzgProofs {
 
 pub struct AsyncComputeCells {
   blob: Uint8Array,
-  prover_context: Arc<Mutex<ProverContext>>,
+  prover_context: Arc<RwLock<ProverContext>>,
 }
 
 #[napi]
@@ -110,7 +110,7 @@ impl Task for AsyncComputeCells {
     let blob = self.blob.as_ref();
     let prover_context = self
       .prover_context
-      .lock()
+      .read()
       .map_err(|_| Error::from_reason("Failed to acquire lock"))?;
     let cells = prover_context.compute_cells(blob);
     Ok(cells)
@@ -127,7 +127,7 @@ impl Task for AsyncComputeCells {
 
 #[napi]
 pub struct ProverContextJs {
-  inner: Arc<Mutex<ProverContext>>,
+  inner: Arc<RwLock<ProverContext>>,
 }
 
 #[napi]
@@ -135,7 +135,7 @@ impl ProverContextJs {
   #[napi(constructor)]
   pub fn new() -> Self {
     ProverContextJs {
-      inner: Arc::new(Mutex::new(ProverContext::new())),
+      inner: Arc::new(RwLock::new(ProverContext::new())),
     }
   }
 
@@ -144,7 +144,7 @@ impl ProverContextJs {
     let blob = blob.as_ref();
     let prover_context = self
       .inner
-      .lock()
+      .read()
       .map_err(|_| Error::from_reason("Failed to acquire lock"))?;
     let commitment = prover_context.blob_to_kzg_commitment(blob);
     Ok(Uint8Array::from(&commitment))
@@ -166,7 +166,7 @@ impl ProverContextJs {
     let blob = blob.as_ref();
     let prover_context = self
       .inner
-      .lock()
+      .read()
       .map_err(|_| Error::from_reason("Failed to acquire lock"))?;
     let (cells, proofs) = prover_context.compute_cells_and_kzg_proofs(blob);
 
@@ -201,7 +201,7 @@ impl ProverContextJs {
     let blob = blob.as_ref();
     let prover_context = self
       .inner
-      .lock()
+      .read()
       .map_err(|_| Error::from_reason("Failed to acquire lock"))?;
     let cells = prover_context.compute_cells(blob);
 
@@ -227,7 +227,7 @@ pub struct AsyncVerifyCellKzgProof {
   cell_id: u64,
   cell: Vec<u8>,
   proof: Vec<u8>,
-  verifier_context: Arc<Mutex<VerifierContext>>,
+  verifier_context: Arc<RwLock<VerifierContext>>,
 }
 
 #[napi]
@@ -241,7 +241,7 @@ impl Task for AsyncVerifyCellKzgProof {
     let proof = self.proof.as_ref();
     let verifier_context = self
       .verifier_context
-      .lock()
+      .read()
       .map_err(|_| Error::from_reason("Failed to acquire lock"))?;
     Ok(verifier_context.verify_cell_kzg_proof(commitment, self.cell_id, cell, proof))
   }
@@ -253,7 +253,7 @@ impl Task for AsyncVerifyCellKzgProof {
 
 #[napi]
 pub struct VerifierContextJs {
-  inner: Arc<Mutex<VerifierContext>>,
+  inner: Arc<RwLock<VerifierContext>>,
 }
 
 #[napi]
@@ -261,7 +261,7 @@ impl VerifierContextJs {
   #[napi(constructor)]
   pub fn new() -> Self {
     VerifierContextJs {
-      inner: Arc::new(Mutex::new(VerifierContext::new())),
+      inner: Arc::new(RwLock::new(VerifierContext::new())),
     }
   }
 
@@ -282,7 +282,7 @@ impl VerifierContextJs {
     assert!(signed == false, "cell id should be an unsigned integer");
     let verifier_context = self
       .inner
-      .lock()
+      .read()
       .map_err(|_| Error::from_reason("Failed to acquire lock"))?;
 
     let cell_id_u64 = cell_id_value as u64;
