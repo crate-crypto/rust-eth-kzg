@@ -134,9 +134,9 @@ jobs:
           - '18'
           - '20'
     runs-on: ${{ matrix.settings.host }}
-    # defaults:
-    #   run:
-    #     working-directory: bindings/node
+    defaults:
+      run:
+        working-directory: bindings/node
     steps:
       - uses: actions/checkout@v4
       - name: Setup node
@@ -147,7 +147,7 @@ jobs:
           cache-dependency-path: 'bindings/node'
           architecture: x64
       - name: Install dependencies
-        run: cd bindings/node && yarn install
+        run: yarn install
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
