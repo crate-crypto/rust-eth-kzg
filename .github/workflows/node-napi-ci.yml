@@ -9,7 +9,7 @@ permissions:
 'on':
   push:
     branches:
-      - master
+      - kw/node-ci-fix
     tags-ignore:
       - '**'
     paths-ignore:
