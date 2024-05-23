@@ -409,6 +409,28 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@crate-crypto/peerdas-kzg@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "@crate-crypto/peerdas-kzg@workspace:."
+  dependencies:
+    "@napi-rs/cli": ^2.18.3
+    "@types/jest": ^29.1.2
+    "@types/node": ^20.12.12
+    "@typescript-eslint/eslint-plugin": ^6.14.0
+    "@typescript-eslint/parser": ^6.14.0
+    eslint: ^8.55.0
+    eslint-plugin-import: ^2.29.0
+    eslint-plugin-jest: ^28.5.0
+    eslint-plugin-node: ^11.1.0
+    eslint-plugin-prettier: ^5.0.1
+    jest: ^29.1.2
+    prettier: ^3.2.5
+    ts-jest: ^29.1.2
+    ts-node: ^10.9.2
+    typescript: ^5.2.2
+  languageName: unknown
+  linkType: soft
+
 "@cspotcode/source-map-support@npm:^0.8.0":
   version: 0.8.1
   resolution: "@cspotcode/source-map-support@npm:0.8.1"
@@ -4500,28 +4522,6 @@ __metadata:
   checksum: 5b1e2daa247062061325b8fdbfd1fb56dde0a448fb1455453276ea18c60685bdad23a445dc148cf87bc216be1573357509b7d4060494a6fd768c7efad833ee45
   languageName: node
   linkType: hard
-
-"peerdas-kzg@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "peerdas-kzg@workspace:."
-  dependencies:
-    "@napi-rs/cli": ^2.18.3
-    "@types/jest": ^29.1.2
-    "@types/node": ^20.12.12
-    "@typescript-eslint/eslint-plugin": ^6.14.0
-    "@typescript-eslint/parser": ^6.14.0
-    eslint: ^8.55.0
-    eslint-plugin-import: ^2.29.0
-    eslint-plugin-jest: ^28.5.0
-    eslint-plugin-node: ^11.1.0
-    eslint-plugin-prettier: ^5.0.1
-    jest: ^29.1.2
-    prettier: ^3.2.5
-    ts-jest: ^29.1.2
-    ts-node: ^10.9.2
-    typescript: ^5.2.2
-  languageName: unknown
-  linkType: soft
 
 "picocolors@npm:^1.0.0, picocolors@npm:^1.0.1":
   version: 1.0.1
