@@ -45,6 +45,11 @@
                     "type": "xml",
                     "path": "bindings/csharp/PeerDASKZG.csproj",
                     "xpath": "//Project/PropertyGroup/Version"
+                },
+                {
+                    "type": "json",
+                    "path": "bindings/node/package.json",
+                    "jsonpath": "$.version"
                 }
             ]
         }
