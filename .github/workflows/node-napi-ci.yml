@@ -1,4 +1,4 @@
-name: CI
+name: Node Napi CI
 env:
   DEBUG: napi:*
   APP_NAME: peerdas-kzg
@@ -9,7 +9,7 @@ permissions:
 'on':
   push:
     branches:
-      - main
+      - master
     tags-ignore:
       - '**'
     paths-ignore:
@@ -27,23 +27,23 @@ jobs:
         settings:
           - host: macos-latest
             target: x86_64-apple-darwin
-            build: yarn build --target x86_64-apple-darwin
+            build: cd bindings/node && yarn build --target x86_64-apple-darwin
           - host: windows-latest
             build: |-
               mv .cargo/config.node.cross.toml .cargo/config.toml &&
-              yarn build --target x86_64-pc-windows-msvc
+              cd bindings/node && yarn build --target x86_64-pc-windows-msvc
             target: x86_64-pc-windows-msvc
           - host: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian
-            build: yarn build --target x86_64-unknown-linux-gnu
+            build: cd bindings/node && yarn build --target x86_64-unknown-linux-gnu
           - host: macos-latest
             target: aarch64-apple-darwin
-            build: yarn build --target aarch64-apple-darwin
+            build: cd bindings/node && yarn build --target aarch64-apple-darwin
           - host: ubuntu-latest
             target: aarch64-unknown-linux-gnu
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian-aarch64
-            build: yarn build --target aarch64-unknown-linux-gnu
+            build: cd bindings/node && yarn build --target aarch64-unknown-linux-gnu
           - host: ubuntu-latest
             target: aarch64-unknown-linux-musl
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
@@ -51,7 +51,7 @@ jobs:
               set -e &&
               mv .cargo/config.node.cross.toml .cargo/config.toml &&
               rustup target add aarch64-unknown-linux-musl &&
-              yarn build --target aarch64-unknown-linux-musl
+              cd bindings/node && yarn build --target aarch64-unknown-linux-musl
     name: stable - ${{ matrix.settings.target }} - node@20
     runs-on: ${{ matrix.settings.host }}
     steps:
@@ -88,10 +88,10 @@ jobs:
         shell: bash
       - name: Setup node x86
         if: matrix.settings.target == 'i686-pc-windows-msvc'
-        run: yarn config set supportedArchitectures.cpu "ia32"
+        run: cd bindings/node && yarn config set supportedArchitectures.cpu "ia32"
         shell: bash
       - name: Install dependencies
-        run: yarn install
+        run: cd bindings/node && yarn install
       - name: Setup node x86
         uses: actions/setup-node@v4
         if: matrix.settings.target == 'i686-pc-windows-msvc'
@@ -141,7 +141,7 @@ jobs:
           cache: yarn
           architecture: x64
       - name: Install dependencies
-        run: yarn install
+        run: cd bindings/node && yarn install
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -151,7 +151,7 @@ jobs:
         run: ls -R .
         shell: bash
       - name: Test bindings
-        run: yarn test
+        run: cd bindings/node && yarn test
   test-linux-x64-gnu-binding:
     name: Test bindings on Linux-x64-gnu - node@${{ matrix.node }}
     needs:
@@ -171,7 +171,7 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: yarn
       - name: Install dependencies
-        run: yarn install
+        run: cd bindings/node && yarn install
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -181,7 +181,7 @@ jobs:
         run: ls -R .
         shell: bash
       - name: Test bindings
-        run: docker run --rm -v $(pwd):/build -w /build node:${{ matrix.node }}-slim yarn test
+        run: docker run --rm -v $(pwd):/build -w /build node:${{ matrix.node }}-slim cd bindings/node && yarn test
   test-linux-aarch64-gnu-binding:
     name: Test bindings on aarch64-unknown-linux-gnu - node@${{ matrix.node }}
     needs:
@@ -205,6 +205,7 @@ jobs:
         shell: bash
       - name: Install dependencies
         run: |
+          cd bindings/node
           yarn config set supportedArchitectures.cpu "arm64"
           yarn config set supportedArchitectures.libc "glibc"
           yarn install
@@ -220,7 +221,7 @@ jobs:
           options: '--platform linux/arm64 -v ${{ github.workspace }}:/build -w /build'
           run: |
             set -e
-            yarn test
+            cd bindings/node && yarn test
             ls -la
   test-linux-aarch64-musl-binding:
     name: Test bindings on aarch64-unknown-linux-musl - node@${{ matrix.node }}
@@ -239,6 +240,7 @@ jobs:
         shell: bash
       - name: Install dependencies
         run: |
+          cd bindings/node
           yarn config set supportedArchitectures.cpu "arm64"
           yarn config set supportedArchitectures.libc "musl"
           yarn install
@@ -254,7 +256,7 @@ jobs:
           options: '--platform linux/arm64 -v ${{ github.workspace }}:/build -w /build'
           run: |
             set -e
-            yarn test
+            cd bindings/node && yarn test
   publish:
     name: Publish
     runs-on: ubuntu-latest
@@ -271,13 +273,13 @@ jobs:
           node-version: 20
           cache: yarn
       - name: Install dependencies
-        run: yarn install
+        run: cd bindings/node && yarn install
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
       - name: Move artifacts
-        run: yarn artifacts
+        run: cd bindings/node && yarn artifacts
       - name: List packages
         run: ls -R ./npm
         shell: bash
