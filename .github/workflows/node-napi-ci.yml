@@ -59,6 +59,7 @@ jobs:
       - name: Move config.toml
         # working-directory: ../.. # Move to the root of the repository
         run: |
+          cd ../..
           pwd
           ls -R
           ls bindings
