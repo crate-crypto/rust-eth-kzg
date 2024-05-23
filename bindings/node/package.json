@@ -1,5 +1,5 @@
 {
-  "name": "peerdas-kzg",
+  "name": "@crate-crypto/peerdas-kzg",
   "version": "0.2.0",
   "scripts": {
     "artifacts": "napi artifacts",
