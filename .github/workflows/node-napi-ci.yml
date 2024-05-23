@@ -65,6 +65,7 @@ jobs:
         with:
           node-version: 20
           cache: yarn
+          cache-dependency-path: 'bindings/node'
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         if: ${{ !matrix.settings.docker }}
@@ -101,6 +102,7 @@ jobs:
         with:
           node-version: 20
           cache: yarn
+          cache-dependency-path: 'bindings/node'
           architecture: x86
       - name: Build in docker
         uses: addnab/docker-run-action@v3
@@ -145,6 +147,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: yarn
+          cache-dependency-path: 'bindings/node'
           architecture: x64
       - name: Install dependencies
         run: yarn install
@@ -179,6 +182,7 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
           cache: yarn
+          cache-dependency-path: 'bindings/node'
       - name: Install dependencies
         run: yarn install
       - name: Download artifacts
@@ -288,6 +292,7 @@ jobs:
         with:
           node-version: 20
           cache: yarn
+          cache-dependency-path: 'bindings/node'
       - name: Install dependencies
         run: yarn install
       - name: Download all artifacts
