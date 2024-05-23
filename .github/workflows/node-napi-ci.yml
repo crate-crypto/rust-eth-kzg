@@ -60,7 +60,8 @@ jobs:
         working-directory: ../.. # Move to the root of the repository
         run: |
           pwd
-          find .cargo
+          ls bindings
+          # find .cargo
           mv .cargo/config.node.cross.toml .cargo/config.toml
       - uses: actions/checkout@v4
       - name: Setup node
