@@ -134,9 +134,9 @@ jobs:
           - '18'
           - '20'
     runs-on: ${{ matrix.settings.host }}
-    defaults:
-      run:
-        working-directory: bindings/node
+    # defaults:
+    #   run:
+    #     working-directory: bindings/node
     steps:
       - uses: actions/checkout@v4
       - name: Setup node
@@ -169,9 +169,9 @@ jobs:
           - '18'
           - '20'
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: bindings/node
+    # defaults:
+    #   run:
+    #     working-directory: bindings/node
     steps:
       - uses: actions/checkout@v4
       - name: Setup node
@@ -203,9 +203,9 @@ jobs:
           - '18'
           - '20'
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: bindings/node
+    # defaults:
+    #   run:
+    #     working-directory: bindings/node
     steps:
       - uses: actions/checkout@v4
       - name: Download artifacts
@@ -242,9 +242,9 @@ jobs:
       - test-macOS-windows-binding
       - test-linux-x64-gnu-binding
       - test-linux-aarch64-gnu-binding
-    defaults:
-      run:
-        working-directory: bindings/node
+    # defaults:
+    #   run:
+    #     working-directory: bindings/node
     steps:
       - uses: actions/checkout@v4
       - name: Setup node
