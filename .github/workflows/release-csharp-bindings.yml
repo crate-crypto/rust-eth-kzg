@@ -46,6 +46,9 @@ jobs:
         run: |
           brew tap messense/homebrew-macos-cross-toolchains
           brew install aarch64-unknown-linux-gnu
+      - name: Rename cross.toml file so cargo uses the correct linkers
+        run: |
+          mv .cargo/config.cross.toml .cargo/config.toml
 
       - name: Strip leading v from tagged version
       # Strip the leading v from the tag name. It should be of the form v0.1.2
