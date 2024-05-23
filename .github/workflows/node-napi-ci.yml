@@ -34,19 +34,20 @@ jobs:
           - host: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian
-            build: yarn build --target x86_64-unknown-linux-gnu
+            build: cd bindings/node && yarn build --target x86_64-unknown-linux-gnu
           - host: macos-latest
             target: aarch64-apple-darwin
             build: yarn build --target aarch64-apple-darwin
           - host: ubuntu-latest
             target: aarch64-unknown-linux-gnu
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian-aarch64
-            build: yarn build --target aarch64-unknown-linux-gnu
+            build: cd bindings/node && yarn build --target aarch64-unknown-linux-gnu
           - host: ubuntu-latest
             target: aarch64-unknown-linux-musl
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
             build: |-
               set -e &&
+              cd bindings/node && 
               rustup target add aarch64-unknown-linux-musl &&
               yarn build --target aarch64-unknown-linux-musl
     name: stable - ${{ matrix.settings.target }} - node@20
@@ -57,13 +58,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Move config.toml
-        # working-directory: ../.. # Move to the root of the repository
         run: |
+          # Move up two directories to the root of the workspace
           cd ../..
-          pwd
-          ls -R
-          ls bindings
-          # find .cargo
+
           mv .cargo/config.node.cross.toml .cargo/config.toml
       - uses: actions/checkout@v4
       - name: Setup node
