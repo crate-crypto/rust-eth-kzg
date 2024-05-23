@@ -29,7 +29,9 @@ jobs:
             target: x86_64-apple-darwin
             build: yarn build --target x86_64-apple-darwin
           - host: windows-latest
-            build: yarn build --target x86_64-pc-windows-msvc
+            build: |-
+              mv .cargo/config.node.cross.toml .cargo/config.toml &&
+              yarn build --target x86_64-pc-windows-msvc
             target: x86_64-pc-windows-msvc
           - host: ubuntu-latest
             target: x86_64-unknown-linux-gnu
@@ -47,6 +49,7 @@ jobs:
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
             build: |-
               set -e &&
+              mv .cargo/config.node.cross.toml .cargo/config.toml &&
               rustup target add aarch64-unknown-linux-musl &&
               yarn build --target aarch64-unknown-linux-musl
     name: stable - ${{ matrix.settings.target }} - node@20
