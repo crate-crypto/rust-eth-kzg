@@ -58,7 +58,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Move config.toml
         working-directory: ../.. # Move to the root of the repository
-        run: mv .cargo/config.node.cross.toml .cargo/config.toml
+        run: |
+          ls -R
+          mv .cargo/config.node.cross.toml .cargo/config.toml
       - uses: actions/checkout@v4
       - name: Setup node
         uses: actions/setup-node@v4
