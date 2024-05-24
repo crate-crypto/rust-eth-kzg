@@ -7,10 +7,15 @@ version       = "0.3.0"
 author        = "Kevaundray Wedderburn"
 description   = "PeerDas KZG bindings"
 license       = "MIT"
-srcDir        = "src"
 
 import src/utils
-binDir = getInstallDir()
+
+const staticLibInstallDir = getInstallDir()
+
+installDirs   = @[
+  "src",
+  staticLibInstallDir,
+]
 
 # Dependencies
 
