@@ -3,10 +3,10 @@ name: Test Nim bindings
 on:
   push:
     branches:
-      - master
+      - kw/add-nim-tests
   pull_request:
     branches:
-      - master
+      - kw/add-nim-tests
   workflow_dispatch:
 
 jobs:
