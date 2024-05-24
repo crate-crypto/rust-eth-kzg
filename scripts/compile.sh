@@ -44,5 +44,7 @@ LIB_NAME="c_peerdas_kzg"
 # architecture it needs.
 if [[ "$OS" == "Darwin" ]]; then
     ARCH_MODIFIED="universal"
+else
+    ARCH_MODIFIED=$ARCH
 fi
 $PROJECT_ROOT/scripts/compile_to_native.sh $OS $ARCH_MODIFIED $LIB_NAME $LIB_TYPE $OUT_DIR
