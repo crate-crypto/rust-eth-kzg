@@ -24,8 +24,13 @@ jobs:
         run: |
           chmod +x ./scripts/compile.sh
           ./scripts/compile.sh
-      
-      - name: Run Nim tests
-        working-directory: bindings/nim
-        run: |
-          nimble test
+
+      - name: Setup Nim 
+        uses: jiro4989/setup-nim-action@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Nim project
+        run: nimble build -Y
+
+      - name: Test Nim project
+        run: nimble test -Y
