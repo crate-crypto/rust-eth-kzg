@@ -1,0 +1,43 @@
+name: Compile Rust and Test C#
+
+on:
+  push:
+    branches:
+      - kw/add-csharp-tests
+  pull_request:
+    branches:
+      - kw/add-csharp-tests
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Run compile script
+        run: |
+          chmod +x ./scripts/compile.sh
+          ./scripts/compile.sh
+      
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore .NET dependencies
+        run: dotnet restore
+        working-directory: bindings/csharp
+
+      - name: Build .NET project
+        run: dotnet build --no-restore
+        working-directory: bindings/csharp
+
+      - name: Run .NET tests
+        run: dotnet test --no-build --verbosity normal
+        working-directory: bindings/csharp
