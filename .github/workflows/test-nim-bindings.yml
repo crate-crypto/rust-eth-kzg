@@ -29,8 +29,11 @@ jobs:
         uses: jiro4989/setup-nim-action@v1
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build Nim project
-        run: nimble build -Y
 
+      - name: Build Nim project
+        working-directory: bindings/nim/nim_code
+        run: nimble build -Y
+        
       - name: Test Nim project
+        working-directory: bindings/nim/nim_code
         run: nimble test -Y
