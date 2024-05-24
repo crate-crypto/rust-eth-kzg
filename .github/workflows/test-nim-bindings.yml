@@ -1,0 +1,35 @@
+name: Test Nim bindings
+
+on:
+  push:
+    branches:
+      - kw/add-nim-tests
+  pull_request:
+    branches:
+      - kw/add-nim-tests
+  workflow_dispatch:
+
+jobs:
+  build-and-test-nim-bindings:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Run compile script
+        run: |
+          chmod +x ./scripts/compile.sh
+          ./scripts/compile.sh
+
+      - name: Setup Nim 
+        uses: jiro4989/setup-nim-action@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+        
+      - name: Test Nim project
+        working-directory: bindings/nim/nim_code
+        run: nimble test -Y
