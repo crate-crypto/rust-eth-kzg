@@ -1,0 +1,39 @@
+name: Compile Rust and Test Java
+
+on:
+  push:
+    branches:
+      - kw/add-java-tests
+  pull_request:
+    branches:
+      - kw/add-java-tests
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Run compile script
+        run: |
+          chmod +x ./scripts/compile.sh
+          ./scripts/compile.sh
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build with Gradle
+        run: ./gradlew build
+        working-directory: bindings/java/java_code
+
+      - name: Run Gradle tests
+        run: ./gradlew test
+        working-directory: bindings/java/java_code
