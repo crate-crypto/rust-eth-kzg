@@ -9,6 +9,8 @@ description   = "PeerDas KZG bindings"
 license       = "MIT"
 srcDir        = "src"
 
+import src/utils
+binDir = getInstallDir()
 
 # Dependencies
 
