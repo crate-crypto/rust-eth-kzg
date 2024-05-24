@@ -1,4 +1,4 @@
-name: Compile Rust and Test Java
+name: Test Java bindings
 
 on:
   push:

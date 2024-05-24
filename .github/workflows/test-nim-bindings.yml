@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-test-nim-bindings:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:

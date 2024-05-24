@@ -1,4 +1,4 @@
-name: Compile Rust and Test C#
+name: Test C# bindings
 
 on:
   push:
