@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 # Function to display usage information
 usage() {
     echo "Usage: $0 [OS] [ARCH] [LIB_NAME] [LIB_TYPE] [OUT_DIR]"
@@ -12,7 +11,7 @@ usage() {
     echo
     echo "Arguments:"
     echo "  OS        Operating system (e.g., Linux, Darwin, MINGW64_NT)"
-    echo "  ARCH      Architecture (e.g., x86_64, arm64)"
+    echo "  ARCH      Architecture (e.g., x86_64, arm64, universal)"
     echo "  LIB_NAME  Library name (e.g., c_peerdas_kzg)"
     echo "  LIB_TYPE  Library type to copy (static, dynamic, or both)"
     echo "  OUT_DIR   Output directory for the compiled libraries"
@@ -21,9 +20,9 @@ usage() {
     echo "  $0                                        # Uses the system's OS and architecture, copies both libraries to the default directory with the default library name"
     echo "  $0 Linux x86_64 my_lib static             # Compiles for Linux on x86_64 and copies only static libraries to the default directory with the library name 'my_lib'"
     echo "  $0 Darwin arm64 my_lib dynamic ./out/dir  # Compiles for macOS on ARM (Apple Silicon) and copies only dynamic libraries to './out/dir' with the library name 'my_lib'"
+    echo "  $0 Darwin universal my_lib both ./out/dir # Compiles a universal binary for macOS and copies both static and dynamic libraries to './out/dir' with the library name 'my_lib'"
     exit 1
 }
-
 
 # Check for help flag
 if [[ "$1" == "-h" || "$1" == "--help" ]]; then
@@ -50,12 +49,22 @@ STATIC_LIB_NAME=""
 DYNAMIC_LIB_NAME=""
 TARGET_NAME=""
 
+# Function to check if a Rust target is installed
+check_rust_target_installed() {
+    local target=$1
+    echo "Compiling for target: $target"
+    $SCRIPT_DIR/check_if_rustup_target_installed.sh $target
+
+    # Check the exit code 
+    if [ $? -eq 0 ]; then
+        echo "The default Rust target is installed for $target."
+    else
+        echo "The default Rust target is not installed for $target."
+        exit 1
+    fi
+}
+
 # Check for Windows OS and ensure ARCH is x86_64
-# We don't support 32-bit Windows builds -- nothing technical
-# just a simplification to avoid dealing with 32-bit builds
-# plus languages like java want you to package all possible
-# dlls for all possible architectures which means we are saving 
-# some space by not supporting 32-bit builds
 if [[ "$OS" == "MINGW64_NT" || "$OS" == "CYGWIN_NT" ]]; then
     if [[ "$ARCH" != "x86_64" ]]; then
         echo "Error: On Windows, the architecture must be x86_64."
@@ -75,6 +84,12 @@ case "$OS" in
             "x86_64")
                 # Copy static and shared libraries for macOS Intel
                 TARGET_NAME="x86_64-apple-darwin"
+                STATIC_LIB_NAME="lib${LIB_NAME}.a"
+                DYNAMIC_LIB_NAME="lib${LIB_NAME}.dylib"
+                ;;
+            "universal")
+                # Build universal binary for macOS
+                TARGET_NAME="universal-apple-darwin"
                 STATIC_LIB_NAME="lib${LIB_NAME}.a"
                 DYNAMIC_LIB_NAME="lib${LIB_NAME}.dylib"
                 ;;
@@ -115,27 +130,40 @@ case "$OS" in
         ;;
 esac
 
-echo "Compiling for target: $TARGET_NAME"
-$SCRIPT_DIR/check_if_rustup_target_installed.sh $TARGET_NAME
+# Build for universal mac target if selected
+if [[ "$ARCH" == "universal" ]]; then
 
-# Check the exit code 
-if [ $? -eq 0 ]; then
-  echo "The default Rust target is installed."
+    check_rust_target_installed "x86_64-apple-darwin"
+    check_rust_target_installed "aarch64-apple-darwin"
+
+    cargo build --release --target=x86_64-apple-darwin
+    cargo build --release --target=aarch64-apple-darwin
+
+    # Create the universal binary
+    mkdir -p "$OUT_DIR/$TARGET_NAME"
+    lipo -create -output "$OUT_DIR/$TARGET_NAME/$STATIC_LIB_NAME" \
+        "$PROJECT_ROOT/target/x86_64-apple-darwin/release/$STATIC_LIB_NAME" \
+        "$PROJECT_ROOT/target/aarch64-apple-darwin/release/$STATIC_LIB_NAME"
+
+    lipo -create -output "$OUT_DIR/$TARGET_NAME/$DYNAMIC_LIB_NAME" \
+        "$PROJECT_ROOT/target/x86_64-apple-darwin/release/$DYNAMIC_LIB_NAME" \
+        "$PROJECT_ROOT/target/aarch64-apple-darwin/release/$DYNAMIC_LIB_NAME"
 else
-  echo "The default Rust target is not installed."
-  exit 1
+
+    check_rust_target_installed "$TARGET_NAME"
+    cargo build --release --target=$TARGET_NAME
+
+    # Create the output directory if it doesn't exist
+    mkdir -p "$OUT_DIR/$TARGET_NAME"
+
+    # Copy the libraries to the specified output directory
+    if [ "$LIB_TYPE" == "static" ] || [ "$LIB_TYPE" == "both" ]; then
+        cp -R "$PROJECT_ROOT/target/$TARGET_NAME/release/$STATIC_LIB_NAME" "$OUT_DIR/$TARGET_NAME/"
+    fi
+
+    if [ "$LIB_TYPE" == "dynamic" ] || [ "$LIB_TYPE" == "both" ]; then
+        cp -R "$PROJECT_ROOT/target/$TARGET_NAME/release/$DYNAMIC_LIB_NAME" "$OUT_DIR/$TARGET_NAME/"
+    fi
 fi
 
-cargo build --release --target=$TARGET_NAME
-
-# Create the output directory if it doesn't exist
-mkdir -p "$OUT_DIR/$TARGET_NAME"
-
-# Copy the libraries to the specified output directory
-if [ "$LIB_TYPE" == "static" ] || [ "$LIB_TYPE" == "both" ]; then
-    cp -R $PROJECT_ROOT/target/$TARGET_NAME/release/$STATIC_LIB_NAME "$OUT_DIR/$TARGET_NAME/"
-fi
-
-if [ "$LIB_TYPE" == "dynamic" ] || [ "$LIB_TYPE" == "both" ]; then
-    cp -R $PROJECT_ROOT/target/$TARGET_NAME/release/$DYNAMIC_LIB_NAME "$OUT_DIR/$TARGET_NAME/"
-fi
+echo "Build completed for target: $TARGET_NAME"

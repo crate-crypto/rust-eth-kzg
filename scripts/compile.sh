@@ -32,3 +32,17 @@ LIB_NAME="c_peerdas_kzg"
 $PROJECT_ROOT/scripts/compile_to_native.sh $OS $ARCH $LIB_NAME $LIB_TYPE $OUT_DIR
 # Copy header file
 cp $PROJECT_ROOT/bindings/c/build/c_peerdas_kzg.h $OUT_DIR
+
+# Compile Rust code for nimble
+OUT_DIR="$PROJECT_ROOT/bindings/nim/nim_code/build"
+LIB_TYPE="static"
+LIB_NAME="c_peerdas_kzg"
+
+# Check if the OS is Darwin (macOS) and set ARCH_MODIFIED to universal if true.
+# nim has issues with M1s where they will install an x86_64 version of nim 
+# on an arm chip, so we need compile a universal binary so that nim can use whichever
+# architecture it needs.
+if [[ "$OS" == "Darwin" ]]; then
+    ARCH_MODIFIED="universal"
+fi
+$PROJECT_ROOT/scripts/compile_to_native.sh $OS $ARCH_MODIFIED $LIB_NAME $LIB_TYPE $OUT_DIR
