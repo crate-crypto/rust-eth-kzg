@@ -1,0 +1,35 @@
+name: Test Go bindings
+
+on:
+  push:
+    branches:
+      - kw/add-go-tests
+  pull_request:
+    branches:
+      - kw/add-go-tests
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Run compile script
+        run: |
+          chmod +x ./scripts/compile.sh
+          ./scripts/compile.sh
+      
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.20'
+
+      - name: Run Go tests
+        run: go test ./...
+        working-directory: bindings/golang
