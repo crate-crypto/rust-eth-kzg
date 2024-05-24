@@ -3,10 +3,10 @@ name: Compile Rust and Test Java
 on:
   push:
     branches:
-      - kw/add-java-tests
+      - master
   pull_request:
     branches:
-      - kw/add-java-tests
+      - master
   workflow_dispatch:
 
 jobs:

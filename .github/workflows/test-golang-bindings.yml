@@ -3,10 +3,10 @@ name: Test Go bindings
 on:
   push:
     branches:
-      - kw/add-go-tests
+      - master
   pull_request:
     branches:
-      - kw/add-go-tests
+      - master
   workflow_dispatch:
 
 jobs:
