@@ -25,9 +25,6 @@ jobs:
           chmod +x ./scripts/compile.sh
           ./scripts/compile.sh
       
-      - name: Checkout repository again for Go
-        uses: actions/checkout@v3
-      
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
