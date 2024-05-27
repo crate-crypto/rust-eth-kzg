@@ -51,30 +51,14 @@ impl ReedSolomon {
         codeword_with_errors: Vec<Scalar>,
         missing_indices: Erasures,
     ) -> Vec<Scalar> {
-        recover_polynomial_evaluations_erasures(
-            &self.domain_extended,
-            codeword_with_errors,
-            missing_indices,
-        )
-    }
-
-    pub fn recover_polynomial_codeword_cells_erasures(
-        &self,
-        codeword_with_errors: Vec<Scalar>,
-        missing_indices: Erasures,
-    ) -> Vec<Scalar> {
-        recover_polynomial_evaluations_erasures(
-            &self.domain_extended,
-            codeword_with_errors,
-            missing_indices,
-        )
+        recover_polynomial_evaluations(&self.domain_extended, codeword_with_errors, missing_indices)
     }
 }
 
-/// Given a set of evaluations and a list of its missing indices,
+/// Given a set of evaluations and a list of its erasures,
 /// This method will return the polynomial in coefficient form
 /// with the missing indices filled in (recovered).
-fn recover_polynomial_coefficient_erasures(
+fn recover_polynomial_coefficient(
     domain_extended: &Domain,
     data_eval: Vec<Scalar>,
     missing_indices: Erasures,
@@ -108,13 +92,13 @@ fn recover_polynomial_coefficient_erasures(
     domain_extended.coset_ifft_scalars(coset_quotient_eval)
 }
 
-fn recover_polynomial_evaluations_erasures(
+fn recover_polynomial_evaluations(
     domain_extended: &Domain,
     evaluations: Vec<Scalar>,
     missing_indices: Erasures,
 ) -> Vec<Scalar> {
     let polynomial_coeff =
-        recover_polynomial_coefficient_erasures(domain_extended, evaluations, missing_indices);
+        recover_polynomial_coefficient(domain_extended, evaluations, missing_indices);
 
     domain_extended.fft_scalars(polynomial_coeff)
 }
@@ -169,11 +153,8 @@ fn smoke_test_recovery() {
     evaluations[1] = Scalar::from(0);
     evaluations[2] = Scalar::from(0);
 
-    let _recovered_polynomial = recover_polynomial_coefficient_erasures(
-        &domain,
-        evaluations,
-        Erasures::Indices(vec![1, 2]),
-    );
+    let _recovered_polynomial =
+        recover_polynomial_coefficient(&domain, evaluations, Erasures::Indices(vec![1, 2]));
 }
 
 #[test]
