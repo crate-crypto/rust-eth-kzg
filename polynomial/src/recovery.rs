@@ -46,12 +46,6 @@ impl ReedSolomon {
         self.domain_extended.fft_scalars(poly_coefficient_form)
     }
 
-    // TODO: used in tests for debugging, will delete after
-    #[cfg(test)]
-    pub fn encode_no_check(&self, poly_coefficient_form: Vec<Scalar>) -> Vec<Scalar> {
-        self.domain_extended.fft_scalars(poly_coefficient_form)
-    }
-
     pub fn recover_polynomial_codeword(
         &self,
         codeword_with_errors: Vec<Scalar>,
@@ -123,51 +117,6 @@ fn recover_polynomial_evaluations_erasures(
         recover_polynomial_coefficient_erasures(domain_extended, evaluations, missing_indices);
 
     domain_extended.fft_scalars(polynomial_coeff)
-}
-
-fn recover_polynomial_dummy_example(data_poly_coeffs: Vec<Scalar>) -> Vec<Scalar> {
-    let domain_extended = Domain::new(data_poly_coeffs.len() * 2);
-
-    // Encode the data by doing an fft
-
-    let mut data_eval = domain_extended.fft_scalars(data_poly_coeffs);
-
-    // Lose some of the data and record where we lost the data
-    data_eval[1] = Scalar::from(0);
-    data_eval[2] = Scalar::from(0);
-
-    // Compute Z(X) which is the polynomial that vanishes on all
-    // of the missing points
-
-    let z_x = vanishing_poly(&vec![
-        domain_extended.roots[1].clone(),
-        domain_extended.roots[2].clone(),
-    ]);
-    let z_x_eval = domain_extended.fft_scalars(z_x.clone());
-
-    // Compute Z(X)_eval which is the vanishing polynomial evaluated
-    // at the missing points
-
-    // Compute (D * Z)(X) or (E * Z)(X) (same polynomials)
-    let ez_eval: Vec<_> = z_x_eval
-        .iter()
-        .zip(data_eval)
-        .map(|(zx, d)| zx * d)
-        .collect();
-    //
-
-    let dz_poly = domain_extended.ifft_scalars(ez_eval);
-
-    let coset_z_x_eval = domain_extended.coset_fft_scalars(z_x);
-    let coset_dz_eval = domain_extended.coset_fft_scalars(dz_poly);
-
-    let coset_quotient_eval: Vec<_> = coset_dz_eval
-        .iter()
-        .zip(coset_z_x_eval)
-        .map(|(d, zx)| d * zx.invert().unwrap())
-        .collect();
-
-    domain_extended.coset_ifft_scalars(coset_quotient_eval)
 }
 
 fn construct_vanishing_poly_from_erasures(
