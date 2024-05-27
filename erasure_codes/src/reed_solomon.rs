@@ -107,11 +107,6 @@ fn construct_vanishing_poly_from_erasures(
     erasures: Erasures,
     domain_extended: &Domain,
 ) -> Vec<Scalar> {
-    // Encode the data by doing an fft
-    const CELLS_PER_EXT_BLOB: usize = 128;
-    const FIELD_ELEMENTS_PER_EXT_BLOB: usize = 8192;
-    const FIELD_ELEMENTS_PER_CELL: usize = 64;
-
     match erasures {
         Erasures::Indices(indices) => {
             let z_x_missing_indices_roots: Vec<_> = indices
@@ -122,15 +117,17 @@ fn construct_vanishing_poly_from_erasures(
             vanishing_poly(&z_x_missing_indices_roots)
         }
         Erasures::Cells { cell_size, cells } => {
-            let domain = Domain::new(CELLS_PER_EXT_BLOB);
+            let domain_extended_size = domain_extended.roots.len();
+            let num_cells_per_extended_polynomial = domain_extended_size / cell_size;
+            let domain = Domain::new(num_cells_per_extended_polynomial);
 
             let z_x_missing_indices_roots: Vec<_> =
                 cells.iter().map(|index| domain.roots[*index]).collect();
             let short_zero_poly = vanishing_poly(&z_x_missing_indices_roots);
 
-            let mut z_x = vec![Scalar::ZERO; FIELD_ELEMENTS_PER_EXT_BLOB];
+            let mut z_x = vec![Scalar::ZERO; domain_extended_size];
             for (i, coeff) in short_zero_poly.into_iter().enumerate() {
-                z_x[i * FIELD_ELEMENTS_PER_CELL] = coeff;
+                z_x[i * cell_size] = coeff;
             }
             z_x
         }
