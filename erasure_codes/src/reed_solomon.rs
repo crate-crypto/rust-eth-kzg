@@ -135,26 +135,6 @@ fn construct_vanishing_poly_from_erasures(
 }
 
 #[test]
-fn smoke_test_recovery() {
-    let poly_coeff = vec![
-        Scalar::from(1),
-        Scalar::from(2),
-        Scalar::from(4),
-        Scalar::from(8),
-    ];
-
-    let domain = Domain::new(poly_coeff.len() * 2);
-    let mut evaluations = domain.fft_scalars(poly_coeff.clone());
-
-    // add errors into evaluations
-    evaluations[1] = Scalar::from(0);
-    evaluations[2] = Scalar::from(0);
-
-    let _recovered_polynomial =
-        recover_polynomial_coefficient(&domain, evaluations, Erasures::Indices(vec![1, 2]));
-}
-
-#[test]
 fn smoke_test_recovery_no_errors() {
     let rs = ReedSolomon::new(16, 2);
     let poly_coeff: Vec<_> = (0..15).map(|i| -Scalar::from(i)).collect();
