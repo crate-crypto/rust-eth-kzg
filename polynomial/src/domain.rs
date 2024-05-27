@@ -97,6 +97,21 @@ impl Domain {
         fft_scalar(self.generator, &points)
     }
 
+    /// Evaluates a polynomial at the points in the domain multiplied by a coset
+    /// generator `g`.
+    pub fn coset_fft_scalars(&self, mut points: PolyCoeff) -> Vec<Scalar> {
+        // pad the points with zeroes
+        points.resize(self.size(), Scalar::ZERO);
+        // Coset generator
+        let coset_gen = Scalar::MULTIPLICATIVE_GENERATOR;
+        let mut coset_scale = Scalar::ONE;
+        for point in points.iter_mut() {
+            *point = *point * coset_scale;
+            coset_scale = coset_scale * coset_gen;
+        }
+        fft_scalar(self.generator, &points)
+    }
+
     /// Computes a DFT for the group elements(points) using the domain roots.
     pub fn fft_g1(&self, mut points: Vec<G1Projective>) -> Vec<G1Projective> {
         // pad the points with zeroes
@@ -139,6 +154,18 @@ impl Domain {
         }
 
         return ifft_scalar;
+    }
+    /// Interpolates a polynomial over the coset of a domain
+    pub fn coset_ifft_scalars(&self, points: Vec<Scalar>) -> Vec<Scalar> {
+        let mut coset_coeffs = self.ifft_scalars(points);
+        // Coset generator
+        let coset_gen = Scalar::MULTIPLICATIVE_GENERATOR.invert().unwrap();
+        let mut coset_scale = Scalar::ONE;
+        for element in coset_coeffs.iter_mut() {
+            *element = *element * coset_scale;
+            coset_scale = coset_scale * coset_gen;
+        }
+        return coset_coeffs;
     }
 }
 
@@ -272,6 +299,18 @@ mod tests {
         // Evaluate the polynomial at the domain points
         let got_evals = domain.fft_scalars(poly_coeff.clone());
         assert_eq!(got_evals, evaluations);
+    }
+
+    #[test]
+    fn test_polynomial_coset_fft() {
+        let polynomial = vec![Scalar::random(&mut rand::thread_rng()); 32];
+
+        let domain = Domain::new(32);
+
+        let coset_evals = domain.coset_fft_scalars(polynomial.clone());
+        let got_poly = domain.coset_ifft_scalars(coset_evals);
+
+        assert_eq!(got_poly, polynomial);
     }
 
     #[test]
