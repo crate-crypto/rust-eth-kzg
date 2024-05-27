@@ -337,6 +337,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "crate_crypto_internal_peerdas_erasure_codes"
+version = "0.3.0"
+dependencies = [
+ "crate_crypto_internal_peerdas_bls12_381",
+ "crate_crypto_internal_peerdas_polynomial",
+]
+
+[[package]]
 name = "crate_crypto_internal_peerdas_polynomial"
 version = "0.3.0"
 dependencies = [
@@ -469,6 +477,7 @@ name = "eip7594"
 version = "0.3.0"
 dependencies = [
  "crate_crypto_internal_peerdas_bls12_381",
+ "crate_crypto_internal_peerdas_erasure_codes",
  "crate_crypto_kzg_multi_open_fk20",
  "criterion",
  "hex",

@@ -2,8 +2,8 @@ use std::collections::HashSet;
 
 use crate::{
     constants::{
-        BYTES_PER_CELL, CELLS_PER_EXT_BLOB, EXTENSION_FACTOR, FIELD_ELEMENTS_PER_CELL,
-        FIELD_ELEMENTS_PER_EXT_BLOB,
+        BYTES_PER_CELL, CELLS_PER_EXT_BLOB, EXTENSION_FACTOR, FIELD_ELEMENTS_PER_BLOB,
+        FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB,
     },
     serialization::{
         deserialize_cell_to_scalars, deserialize_compressed_g1, serialize_scalars_to_cell,
@@ -11,17 +11,14 @@ use crate::{
     Bytes48, Bytes48Ref, Cell, CellID, CellRef, ColumnIndex, RowIndex,
 };
 use bls12_381::Scalar;
+use erasure_codes::reed_solomon::Erasures;
 use kzg_multi_open::{
-    create_eth_commit_opening_keys,
-    opening_key::OpeningKey,
-    polynomial::{domain::Domain, monomial::lagrange_interpolate},
-    proof::verify_multi_opening_naive,
-    reverse_bit_order,
+    create_eth_commit_opening_keys, opening_key::OpeningKey, polynomial::domain::Domain,
+    proof::verify_multi_opening_naive, reverse_bit_order,
 };
 
 pub struct VerifierContext {
     opening_key: OpeningKey,
-    ext_domain: Domain,
     /// The cosets that we want to verify evaluations against.
     bit_reversed_cosets: Vec<Vec<Scalar>>,
 }
@@ -43,7 +40,6 @@ impl VerifierContext {
         VerifierContext {
             opening_key,
             bit_reversed_cosets: cosets,
-            ext_domain: domain_extended,
         }
     }
     pub fn verify_cell_kzg_proof(
@@ -100,6 +96,8 @@ impl VerifierContext {
     }
 
     pub fn recover_all_cells(&self, cell_ids: Vec<CellID>, cells: Vec<Cell>) -> Vec<Cell> {
+        // TODO: We should check that code does not assume that the CellIDs are sorted.
+
         // Check if we have any duplicate cell ids
         assert!(is_cell_ids_unique(&cell_ids), "cell ids must be unique");
 
@@ -118,24 +116,58 @@ impl VerifierContext {
             assert_eq!(cell.len(), BYTES_PER_CELL)
         }
 
-        let evaluations = cells
+        pub fn bit_reverse_spec_compliant(n: u32, l: u32) -> u32 {
+            let num_bits = l.trailing_zeros();
+            n.reverse_bits() >> (32 - num_bits)
+        }
+
+        // Find out what cells are missing and bit reverse their index
+        // so we can figure out what cells are missing in the "normal order"
+        let cell_ids_received: HashSet<_> = cell_ids.iter().collect();
+        let mut missing_cell_ids = Vec::new();
+        for i in 0..CELLS_PER_EXT_BLOB {
+            if !cell_ids_received.contains(&(i as u64)) {
+                missing_cell_ids
+                    .push(bit_reverse_spec_compliant(i as u32, CELLS_PER_EXT_BLOB as u32) as usize);
+            }
+        }
+
+        let coset_evaluations: Vec<_> = cells
             .into_iter()
             .map(|cell| deserialize_cell_to_scalars(&cell))
-            .flatten();
+            .collect();
 
-        let received_cosets = cell_ids
-            .iter()
-            .map(|cell_id| &self.bit_reversed_cosets[*cell_id as usize])
-            .flatten()
-            .cloned();
+        // Fill in the missing coset_evaluation_sets in bit-reversed order
+        // and flatten the evaluations
+        //
+        let mut coset_evaluations_flattened_rbo =
+            vec![Scalar::from(0); FIELD_ELEMENTS_PER_EXT_BLOB];
 
-        let points: Vec<_> = received_cosets.zip(evaluations).collect();
+        for (cell_id, coset_evals) in cell_ids.into_iter().zip(coset_evaluations) {
+            let start = (cell_id as usize) * FIELD_ELEMENTS_PER_CELL;
+            let end = start + FIELD_ELEMENTS_PER_CELL;
 
-        let f_x = lagrange_interpolate(&points).expect("cannot interpolate points");
+            coset_evaluations_flattened_rbo[start..end].copy_from_slice(coset_evals.as_slice());
+        }
 
-        let recovered_points = self.ext_domain.fft_scalars(f_x);
+        let mut coset_evaluations_flattened = coset_evaluations_flattened_rbo;
+        reverse_bit_order(&mut coset_evaluations_flattened);
 
-        recovered_points
+        // We now have the evaluations in normal order and we know the indices/erasures that are missing
+        // in normal order.
+        let rs = erasure_codes::ReedSolomon::new(FIELD_ELEMENTS_PER_BLOB, EXTENSION_FACTOR);
+        let mut recovered_codeword = rs.recover_polynomial_codeword(
+            coset_evaluations_flattened,
+            Erasures::Cells {
+                cell_size: FIELD_ELEMENTS_PER_CELL,
+                cells: missing_cell_ids,
+            },
+        );
+
+        // Reverse the order of the recovered points to be in bit-reversed order
+        reverse_bit_order(&mut recovered_codeword);
+
+        recovered_codeword
             .chunks_exact(FIELD_ELEMENTS_PER_CELL)
             .map(|chunk| serialize_scalars_to_cell(chunk))
             .collect()
@@ -151,8 +183,12 @@ fn is_cell_ids_unique(cell_ids: &[CellID]) -> bool {
 
 #[cfg(test)]
 mod tests {
+
+    use std::ops::Range;
+
     use crate::{
         consensus_specs_fixed_test_vector::{CELLS_STR, COMMITMENT_STR, PROOFS_STR},
+        constants::CELLS_PER_EXT_BLOB,
         verifier::{is_cell_ids_unique, VerifierContext},
     };
 
@@ -208,5 +244,37 @@ mod tests {
             cells_bytes,
             proofs_bytes,
         ));
+    }
+
+    #[test]
+    fn test_recover_all_cells() {
+        let ctx = VerifierContext::new();
+        let num_cells_to_keep = CELLS_PER_EXT_BLOB / 2;
+
+        fn generate_unique_random_numbers(range: Range<u64>, n: usize) -> Vec<u64> {
+            use rand::prelude::SliceRandom;
+            let mut numbers: Vec<_> = range.into_iter().collect();
+            numbers.shuffle(&mut rand::thread_rng());
+            numbers.into_iter().take(n).collect()
+        }
+
+        let cell_ids_to_keep = generate_unique_random_numbers(0..128, num_cells_to_keep);
+        let cells_as_hex_strings: Vec<_> = cell_ids_to_keep
+            .iter()
+            .map(|cell_id| CELLS_STR[*cell_id as usize])
+            .collect();
+        let cells_to_keep: Vec<_> = cells_as_hex_strings
+            .into_iter()
+            .map(|cell_str| hex::decode(cell_str).unwrap())
+            .collect();
+
+        let all_cells: Vec<_> = CELLS_STR
+            .into_iter()
+            .map(|cell_str| hex::decode(cell_str).unwrap())
+            .collect();
+
+        let recovered_cells = ctx.recover_all_cells(cell_ids_to_keep, cells_to_keep);
+
+        assert_eq!(recovered_cells, all_cells);
     }
 }
