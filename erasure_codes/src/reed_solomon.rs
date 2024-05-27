@@ -1,7 +1,7 @@
 use bls12_381::{batch_inversion::batch_inverse, Scalar};
 
-use crate::{domain::Domain, monomial::vanishing_poly};
 use bls12_381::ff::Field;
+use polynomial::{domain::Domain, monomial::vanishing_poly};
 
 // The erasures can be either indices of the polynomial
 // or groups of indices
@@ -160,7 +160,7 @@ fn smoke_test_recovery() {
 #[test]
 fn smoke_test_recovery_no_errors() {
     let rs = ReedSolomon::new(16, 2);
-    let poly_coeff = vec![Scalar::random(&mut rand::thread_rng()); 15];
+    let poly_coeff: Vec<_> = (0..15).map(|i| -Scalar::from(i)).collect();
 
     let codewords = rs.encode(poly_coeff);
     assert_eq!(codewords.len(), 32);

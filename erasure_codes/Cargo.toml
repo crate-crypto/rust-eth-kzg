@@ -1,0 +1,13 @@
+[package]
+name = "crate_crypto_internal_peerdas_erasure_codes"
+description = "This crate provides an implementation of erasure encoding and decoding"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+rust-version = { workspace = true }
+repository = { workspace = true }
+
+[dependencies]
+bls12_381 = { workspace = true }
+polynomial = { workspace = true }

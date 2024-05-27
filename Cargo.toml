@@ -9,6 +9,7 @@ members = [
     "eip7594",
     "kzg_multi_open",
     "polynomial",
+    "erasure_codes",
 ]
 
 resolver = "2"
@@ -27,6 +28,7 @@ repository = "https://github.com/crate-crypto/peerdas-kzg"
 # all dependencies to be published and not local.
 bls12_381 = { package = "crate_crypto_internal_peerdas_bls12_381", version = "0.3.0", path = "bls12_381" }
 polynomial = { package = "crate_crypto_internal_peerdas_polynomial", version = "0.3.0", path = "polynomial" }
+erasure_codes = { package = "crate_crypto_internal_peerdas_erasure_codes", version = "0.3.0", path = "erasure_codes" }
 eip7594 = { version = "0.3.0", path = "eip7594" }
 kzg_multi_open = { package = "crate_crypto_kzg_multi_open_fk20", version = "0.3.0", path = "kzg_multi_open" }
 c_peerdas_kzg = { version = "0.3.0", path = "bindings/c" }
