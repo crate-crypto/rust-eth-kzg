@@ -22,6 +22,11 @@ pub struct Domain {
     // Inverse of the generator
     // This is cached for IFFT
     pub generator_inv: Scalar,
+    // Element used to generate a coset
+    // of the domain
+    coset_generator: Scalar,
+    // Inverse of the coset generator
+    coset_generator_inv: Scalar,
 }
 
 impl Domain {
@@ -49,12 +54,19 @@ impl Domain {
             roots.push(prev_root * generator)
         }
 
+        let coset_generator = Scalar::MULTIPLICATIVE_GENERATOR;
+        let coset_generator_inv = coset_generator
+            .invert()
+            .expect("coset generator should not be zero");
+
         Self {
             roots,
             domain_size: size_as_scalar,
             domain_size_inv: size_as_scalar_inv,
             generator,
             generator_inv,
+            coset_generator,
+            coset_generator_inv,
         }
     }
 
@@ -102,12 +114,11 @@ impl Domain {
     pub fn coset_fft_scalars(&self, mut points: PolyCoeff) -> Vec<Scalar> {
         // pad the points with zeroes
         points.resize(self.size(), Scalar::ZERO);
-        // Coset generator
-        let coset_gen = Scalar::MULTIPLICATIVE_GENERATOR;
+
         let mut coset_scale = Scalar::ONE;
         for point in points.iter_mut() {
             *point = *point * coset_scale;
-            coset_scale = coset_scale * coset_gen;
+            coset_scale = coset_scale * self.coset_generator;
         }
         fft_scalar(self.generator, &points)
     }
@@ -158,12 +169,11 @@ impl Domain {
     /// Interpolates a polynomial over the coset of a domain
     pub fn coset_ifft_scalars(&self, points: Vec<Scalar>) -> Vec<Scalar> {
         let mut coset_coeffs = self.ifft_scalars(points);
-        // Coset generator
-        let coset_gen = Scalar::MULTIPLICATIVE_GENERATOR.invert().unwrap();
+
         let mut coset_scale = Scalar::ONE;
         for element in coset_coeffs.iter_mut() {
             *element = *element * coset_scale;
-            coset_scale = coset_scale * coset_gen;
+            coset_scale = coset_scale * self.coset_generator_inv;
         }
         return coset_coeffs;
     }
