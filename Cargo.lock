@@ -342,6 +342,8 @@ version = "0.3.0"
 dependencies = [
  "crate_crypto_internal_peerdas_bls12_381",
  "crate_crypto_internal_peerdas_polynomial",
+ "criterion",
+ "rand",
 ]
 
 [[package]]
