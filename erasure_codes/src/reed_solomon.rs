@@ -33,6 +33,11 @@ impl ReedSolomon {
         total_codeword_len - min_num_evaluations_needed
     }
 
+    /// The number of scalars in the reed solomon encoded polynomial
+    pub fn extended_polynomial_length(&self) -> usize {
+        self.poly_len * self.expansion_factor
+    }
+
     /// Reed solomon encodes a polynomial by evaluating it at `expansion_factor`
     /// more points than is needed.
     pub fn encode(&self, poly_coefficient_form: Vec<Scalar>) -> Vec<Scalar> {
@@ -71,6 +76,13 @@ fn recover_polynomial_coefficient(
     // at the missing points
     let z_x_eval = domain_extended.fft_scalars(z_x.clone());
 
+    assert_eq!(
+        z_x_eval.len(),
+        data_eval.len(),
+        "incorrect length for encoded data, expected {}, found {}",
+        z_x_eval.len(),
+        data_eval.len()
+    );
     // Compute (D * Z)(X) or (E * Z)(X) (same polynomials)
     let ez_eval: Vec<_> = z_x_eval
         .iter()
