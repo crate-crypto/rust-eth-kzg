@@ -11,3 +11,11 @@ repository = { workspace = true }
 [dependencies]
 bls12_381 = { workspace = true }
 polynomial = { workspace = true }
+
+[dev-dependencies]
+criterion = "0.5.1"
+rand = "0.8.4"
+
+[[bench]]
+name = "benchmark"
+harness = false
