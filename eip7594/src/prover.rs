@@ -12,9 +12,14 @@ use crate::{
         CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL,
         FIELD_ELEMENTS_PER_EXT_BLOB,
     },
-    serialization::{self, serialize_g1_compressed},
+    serialization::{self, serialize_g1_compressed, SerializationError},
     BlobRef, Cell, KZGCommitment, KZGProof,
 };
+
+#[derive(Debug)]
+pub enum ProverError {
+    Serialization(SerializationError),
+}
 
 pub struct ProverContext {
     fk20: FK20,
@@ -51,20 +56,22 @@ impl ProverContext {
         }
     }
 
-    pub fn blob_to_kzg_commitment(&self, blob: BlobRef) -> KZGCommitment {
-        let mut scalars = serialization::deserialize_blob_to_scalars(blob);
+    pub fn blob_to_kzg_commitment(&self, blob: BlobRef) -> Result<KZGCommitment, ProverError> {
+        let mut scalars =
+            serialization::deserialize_blob_to_scalars(blob).map_err(ProverError::Serialization)?;
         reverse_bit_order(&mut scalars);
 
         let commitment: G1Point = self.commit_key_lagrange.commit_g1(&scalars).into();
-        serialize_g1_compressed(&commitment)
+        Ok(serialize_g1_compressed(&commitment))
     }
 
     pub fn compute_cells_and_kzg_proofs(
         &self,
         blob: BlobRef,
-    ) -> ([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]) {
+    ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
         // Deserialize the blob into scalars (lagrange form)
-        let mut scalars = serialization::deserialize_blob_to_scalars(blob);
+        let mut scalars =
+            serialization::deserialize_blob_to_scalars(blob).map_err(ProverError::Serialization)?;
         reverse_bit_order(&mut scalars);
 
         let poly_coeff = self.poly_domain.ifft_scalars(scalars);
@@ -83,12 +90,13 @@ impl ProverContext {
             .try_into()
             .expect(&format!("expected {} number of proofs", CELLS_PER_EXT_BLOB));
 
-        (cells, proofs)
+        Ok((cells, proofs))
     }
 
-    pub fn compute_cells(&self, blob: BlobRef) -> [Cell; CELLS_PER_EXT_BLOB] {
+    pub fn compute_cells(&self, blob: BlobRef) -> Result<[Cell; CELLS_PER_EXT_BLOB], ProverError> {
         // Deserialize the blob into scalars (lagrange form)
-        let mut scalars = serialization::deserialize_blob_to_scalars(blob);
+        let mut scalars =
+            serialization::deserialize_blob_to_scalars(blob).map_err(ProverError::Serialization)?;
         reverse_bit_order(&mut scalars);
 
         let poly_coeff = self.poly_domain.ifft_scalars(scalars);
@@ -102,7 +110,7 @@ impl ProverContext {
             .try_into()
             .expect(&format!("expected {} number of cells", CELLS_PER_EXT_BLOB));
 
-        cells
+        Ok(cells)
     }
 }
 
@@ -119,7 +127,7 @@ mod tests {
 
         let blob_bytes = hex::decode(BLOB_STR).unwrap();
 
-        let got_commitment = ctx.blob_to_kzg_commitment(&blob_bytes);
+        let got_commitment = ctx.blob_to_kzg_commitment(&blob_bytes).unwrap();
         let expected_commitment = eth_commitment().to_compressed();
 
         assert_eq!(got_commitment, expected_commitment);
@@ -132,7 +140,7 @@ mod tests {
 
         let blob_bytes = hex::decode(BLOB_STR).unwrap();
 
-        let (got_cells, got_proofs) = ctx.compute_cells_and_kzg_proofs(&blob_bytes);
+        let (got_cells, got_proofs) = ctx.compute_cells_and_kzg_proofs(&blob_bytes).unwrap();
 
         let expected_proofs = PROOFS_STR;
         let expected_cells = CELLS_STR;

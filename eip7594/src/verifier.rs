@@ -7,6 +7,7 @@ use crate::{
     },
     serialization::{
         deserialize_cell_to_scalars, deserialize_compressed_g1, serialize_scalars_to_cell,
+        SerializationError,
     },
     Bytes48, Bytes48Ref, Cell, CellID, CellRef, ColumnIndex, RowIndex,
 };
@@ -16,6 +17,12 @@ use kzg_multi_open::{
     create_eth_commit_opening_keys, opening_key::OpeningKey, polynomial::domain::Domain,
     proof::verify_multi_opening_naive, reverse_bit_order,
 };
+
+#[derive(Debug)]
+pub enum VerifierError {
+    Serialization(SerializationError),
+    InvalidProof,
+}
 
 pub struct VerifierContext {
     opening_key: OpeningKey,
@@ -48,15 +55,23 @@ impl VerifierContext {
         cell_id: CellID,
         cell: CellRef,
         proof_bytes: Bytes48Ref,
-    ) -> bool {
-        let commitment = deserialize_compressed_g1(commitment_bytes);
-        let proof = deserialize_compressed_g1(proof_bytes);
+    ) -> Result<(), VerifierError> {
+        let commitment =
+            deserialize_compressed_g1(commitment_bytes).map_err(VerifierError::Serialization)?;
+        let proof = deserialize_compressed_g1(proof_bytes).map_err(VerifierError::Serialization)?;
 
         let coset = &self.bit_reversed_cosets[cell_id as usize];
 
-        let output_points = deserialize_cell_to_scalars(cell);
+        let output_points =
+            deserialize_cell_to_scalars(cell).map_err(VerifierError::Serialization)?;
 
-        verify_multi_opening_naive(&self.opening_key, commitment, proof, coset, &output_points)
+        let ok =
+            verify_multi_opening_naive(&self.opening_key, commitment, proof, coset, &output_points);
+        if ok {
+            Ok(())
+        } else {
+            Err(VerifierError::InvalidProof)
+        }
     }
 
     pub fn verify_cell_kzg_proof_batch(
@@ -66,7 +81,7 @@ impl VerifierContext {
         column_indices: Vec<ColumnIndex>,
         cells: Vec<Cell>,
         proofs_bytes: Vec<Bytes48>,
-    ) -> bool {
+    ) -> Result<(), VerifierError> {
         // TODO: This currently uses the naive method
         //
         // All inputs must have the same length according to the specs.
@@ -82,20 +97,24 @@ impl VerifierContext {
             let cell = cells[k].clone();
             let proof_bytes = proofs_bytes[k];
 
-            if !self.verify_cell_kzg_proof(
+            if let Err(err) = self.verify_cell_kzg_proof(
                 &row_commitment_bytes,
                 column_index as u64,
                 &cell,
                 &proof_bytes,
             ) {
-                return false;
+                return Err(err);
             }
         }
 
-        true
+        Ok(())
     }
 
-    pub fn recover_all_cells(&self, cell_ids: Vec<CellID>, cells: Vec<Cell>) -> Vec<Cell> {
+    pub fn recover_all_cells(
+        &self,
+        cell_ids: Vec<CellID>,
+        cells: Vec<Cell>,
+    ) -> Result<Vec<Cell>, VerifierError> {
         // TODO: We should check that code does not assume that the CellIDs are sorted.
 
         // Check if we have any duplicate cell ids
@@ -132,10 +151,11 @@ impl VerifierContext {
             }
         }
 
-        let coset_evaluations: Vec<_> = cells
+        let coset_evaluations: Result<Vec<_>, _> = cells
             .into_iter()
             .map(|cell| deserialize_cell_to_scalars(&cell))
             .collect();
+        let coset_evaluations = coset_evaluations.map_err(VerifierError::Serialization)?;
 
         // Fill in the missing coset_evaluation_sets in bit-reversed order
         // and flatten the evaluations
@@ -167,10 +187,10 @@ impl VerifierContext {
         // Reverse the order of the recovered points to be in bit-reversed order
         reverse_bit_order(&mut recovered_codeword);
 
-        recovered_codeword
+        Ok(recovered_codeword
             .chunks_exact(FIELD_ELEMENTS_PER_CELL)
             .map(|chunk| serialize_scalars_to_cell(chunk))
-            .collect()
+            .collect())
     }
 }
 
@@ -229,21 +249,20 @@ mod tests {
             let cell_bytes = cells_bytes[k].clone();
             let cell_id = k as u64;
 
-            assert!(ctx.verify_cell_kzg_proof(
-                &commitment_bytes,
-                cell_id,
-                &cell_bytes,
-                &proof_bytes
-            ));
+            assert!(ctx
+                .verify_cell_kzg_proof(&commitment_bytes, cell_id, &cell_bytes, &proof_bytes)
+                .is_ok());
         }
 
-        assert!(ctx.verify_cell_kzg_proof_batch(
-            vec![commitment_bytes; proofs_bytes.len()],
-            vec![0; proofs_bytes.len()],
-            (0..proofs_bytes.len()).map(|x| x as u64).collect(),
-            cells_bytes,
-            proofs_bytes,
-        ));
+        assert!(ctx
+            .verify_cell_kzg_proof_batch(
+                vec![commitment_bytes; proofs_bytes.len()],
+                vec![0; proofs_bytes.len()],
+                (0..proofs_bytes.len()).map(|x| x as u64).collect(),
+                cells_bytes,
+                proofs_bytes,
+            )
+            .is_ok());
     }
 
     #[test]
@@ -273,7 +292,9 @@ mod tests {
             .map(|cell_str| hex::decode(cell_str).unwrap())
             .collect();
 
-        let recovered_cells = ctx.recover_all_cells(cell_ids_to_keep, cells_to_keep);
+        let recovered_cells = ctx
+            .recover_all_cells(cell_ids_to_keep, cells_to_keep)
+            .unwrap();
 
         assert_eq!(recovered_cells, all_cells);
     }
