@@ -1,7 +1,6 @@
-use std::fs;
-
 use common::collect_test_files;
 use serde_::TestVector;
+use std::fs;
 
 mod common;
 
@@ -9,6 +8,7 @@ mod serde_ {
     use super::common::{blob_from_hex, bytes48_from_hex, cell_from_hex};
     use eip7594::{Blob, Bytes48, Cell};
     use serde::Deserialize;
+
     #[derive(Deserialize)]
     struct YamlInput {
         blob: String,
