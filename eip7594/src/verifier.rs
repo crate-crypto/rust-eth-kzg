@@ -9,7 +9,7 @@ use crate::{
         deserialize_cell_to_scalars, deserialize_compressed_g1, serialize_scalars_to_cell,
         SerializationError,
     },
-    Bytes48, Bytes48Ref, Cell, CellID, CellRef, ColumnIndex, RowIndex,
+    Bytes48Ref, Cell, CellID, CellRef, ColumnIndex, RowIndex,
 };
 use bls12_381::Scalar;
 use erasure_codes::reed_solomon::Erasures;
@@ -41,9 +41,19 @@ pub enum VerifierError {
     },
     CellIDOutOfRange {
         cell_id: CellID,
-        max_cell_id: CellID,
+        max_number_of_cells: u64,
+    },
+    InvalidRowID {
+        row_id: u64,
+        max_number_of_rows: u64,
     },
     InvalidProof,
+    BatchVerificationInputsMustHaveSameLength {
+        row_indices_len: usize,
+        column_indices_len: usize,
+        cells_len: usize,
+        proofs_len: usize,
+    },
 }
 
 pub struct VerifierContext {
@@ -100,25 +110,47 @@ impl VerifierContext {
 
     pub fn verify_cell_kzg_proof_batch(
         &self,
-        row_commitments_bytes: Vec<Bytes48>,
+        row_commitments_bytes: Vec<Bytes48Ref>,
         row_indices: Vec<RowIndex>,
         column_indices: Vec<ColumnIndex>,
-        cells: Vec<Cell>,
-        proofs_bytes: Vec<Bytes48>,
+        cells: Vec<CellRef>,
+        proofs_bytes: Vec<Bytes48Ref>,
     ) -> Result<(), VerifierError> {
         // TODO: This currently uses the naive method
         //
         // All inputs must have the same length according to the specs.
-        assert_eq!(row_commitments_bytes.len(), row_indices.len());
-        assert_eq!(row_commitments_bytes.len(), column_indices.len());
-        assert_eq!(row_commitments_bytes.len(), cells.len());
-        assert_eq!(row_commitments_bytes.len(), proofs_bytes.len());
+        let same_length = (row_indices.len() == column_indices.len())
+            & (row_indices.len() == cells.len())
+            & (row_indices.len() == proofs_bytes.len());
+        if !same_length {
+            return Err(VerifierError::BatchVerificationInputsMustHaveSameLength {
+                row_indices_len: row_indices.len(),
+                column_indices_len: column_indices.len(),
+                cells_len: cells.len(),
+                proofs_len: proofs_bytes.len(),
+            });
+        }
+
+        // Check that the row indices are within the correct range
+        for row_index in &row_indices {
+            if *row_index >= row_commitments_bytes.len() as u64 {
+                return Err(VerifierError::InvalidRowID {
+                    row_id: *row_index,
+                    max_number_of_rows: row_commitments_bytes.len() as u64,
+                });
+            }
+        }
+
+        let row_commitments_bytes: Vec<_> = row_indices
+            .iter()
+            .map(|row_index| row_commitments_bytes[*row_index as usize])
+            .collect();
 
         for k in 0..row_commitments_bytes.len() {
             let row_index = row_indices[k];
             let row_commitment_bytes = row_commitments_bytes[row_index as usize];
             let column_index = column_indices[k];
-            let cell = cells[k].clone();
+            let cell = cells[k];
             let proof_bytes = proofs_bytes[k];
 
             if let Err(err) = self.verify_cell_kzg_proof(
@@ -142,6 +174,11 @@ impl VerifierContext {
         // TODO: We should check that code does not assume that the CellIDs are sorted.
 
         sanity_check_cells_and_cell_ids(&cell_ids, &cells)?;
+
+        // Check that we have no duplicate cell IDs
+        if !is_cell_ids_unique(&cell_ids) {
+            return Err(VerifierError::CellIDsNotUnique);
+        }
 
         // Check that we have enough cells to perform a reconstruction
         if !(CELLS_PER_EXT_BLOB / EXTENSION_FACTOR <= cell_ids.len()) {
@@ -230,11 +267,6 @@ fn sanity_check_cells_and_cell_ids(
     cell_ids: &[CellID],
     cells: &[CellRef],
 ) -> Result<(), VerifierError> {
-    // Check that we have no duplicate cell IDs
-    if !is_cell_ids_unique(&cell_ids) {
-        return Err(VerifierError::CellIDsNotUnique);
-    }
-
     // Check that the number of cell IDs is equal to the number of cells
     if cell_ids.len() != cells.len() {
         return Err(VerifierError::CellIDsNotEqualToNumberOfCells {
@@ -248,7 +280,7 @@ fn sanity_check_cells_and_cell_ids(
         if *cell_id >= (CELLS_PER_EXT_BLOB as u64) {
             return Err(VerifierError::CellIDOutOfRange {
                 cell_id: *cell_id,
-                max_cell_id: (CELLS_PER_EXT_BLOB - 1) as u64,
+                max_number_of_cells: CELLS_PER_EXT_BLOB as u64,
             });
         }
     }
@@ -321,11 +353,11 @@ mod tests {
 
         assert!(ctx
             .verify_cell_kzg_proof_batch(
-                vec![commitment_bytes; proofs_bytes.len()],
+                vec![&commitment_bytes; proofs_bytes.len()],
                 vec![0; proofs_bytes.len()],
                 (0..proofs_bytes.len()).map(|x| x as u64).collect(),
-                cells_bytes,
-                proofs_bytes,
+                cells_bytes.iter().map(|cell| cell.as_slice()).collect(),
+                proofs_bytes.iter().map(|v| v.as_slice()).collect(),
             )
             .is_ok());
     }
