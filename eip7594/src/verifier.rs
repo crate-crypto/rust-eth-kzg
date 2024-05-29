@@ -21,6 +21,28 @@ use kzg_multi_open::{
 #[derive(Debug)]
 pub enum VerifierError {
     Serialization(SerializationError),
+    CellIDsNotEqualToNumberOfCells {
+        num_cell_ids: usize,
+        num_cells: usize,
+    },
+    CellIDsNotUnique,
+    NotEnoughCellsToReconstruct {
+        num_cells_received: usize,
+        min_cells_needed: usize,
+    },
+    TooManyCellsHaveBeenGiven {
+        num_cells_received: usize,
+        max_cells_needed: usize,
+    },
+    CellDoesNotContainEnoughBytes {
+        cell_id: CellID,
+        num_bytes: usize,
+        expected_num_bytes: usize,
+    },
+    CellIDOutOfRange {
+        cell_id: CellID,
+        max_cell_id: CellID,
+    },
     InvalidProof,
 }
 
@@ -117,22 +139,55 @@ impl VerifierContext {
     ) -> Result<Vec<Cell>, VerifierError> {
         // TODO: We should check that code does not assume that the CellIDs are sorted.
 
-        // Check if we have any duplicate cell ids
-        assert!(is_cell_ids_unique(&cell_ids), "cell ids must be unique");
+        // Check that we have no duplicate cell IDs
+        if !is_cell_ids_unique(&cell_ids) {
+            return Err(VerifierError::CellIDsNotUnique);
+        }
 
-        assert_eq!(
-            cell_ids.len(),
-            cells.len(),
-            "cell ids is not equal to the number of cells"
-        );
+        // Check that the number of cell IDs is equal to the number of cells
+        if cell_ids.len() != cells.len() {
+            return Err(VerifierError::CellIDsNotEqualToNumberOfCells {
+                num_cell_ids: cell_ids.len(),
+                num_cells: cells.len(),
+            });
+        }
+
+        // Check that the Cell IDs are within the expected range
+        for cell_id in cell_ids.iter() {
+            if *cell_id >= (CELLS_PER_EXT_BLOB as u64) {
+                return Err(VerifierError::CellIDOutOfRange {
+                    cell_id: *cell_id,
+                    max_cell_id: (CELLS_PER_EXT_BLOB - 1) as u64,
+                });
+            }
+        }
 
         // Check that we have enough cells to perform a reconstruction
-        assert!(CELLS_PER_EXT_BLOB / EXTENSION_FACTOR <= cell_ids.len());
-        assert!(cell_ids.len() <= CELLS_PER_EXT_BLOB);
+        if !(CELLS_PER_EXT_BLOB / EXTENSION_FACTOR <= cell_ids.len()) {
+            return Err(VerifierError::NotEnoughCellsToReconstruct {
+                num_cells_received: cell_ids.len(),
+                min_cells_needed: CELLS_PER_EXT_BLOB / EXTENSION_FACTOR,
+            });
+        }
+
+        // Check that we don't have too many cells
+        // ie more than we initially generated
+        if cell_ids.len() > CELLS_PER_EXT_BLOB {
+            return Err(VerifierError::TooManyCellsHaveBeenGiven {
+                num_cells_received: cell_ids.len(),
+                max_cells_needed: CELLS_PER_EXT_BLOB,
+            });
+        }
 
         // Check that each cell has the right amount of bytes
-        for cell in cells.iter() {
-            assert_eq!(cell.len(), BYTES_PER_CELL)
+        for (i, cell) in cells.iter().enumerate() {
+            if cell.len() != BYTES_PER_CELL {
+                return Err(VerifierError::CellDoesNotContainEnoughBytes {
+                    cell_id: cell_ids[i],
+                    num_bytes: cell.len(),
+                    expected_num_bytes: BYTES_PER_CELL,
+                });
+            }
         }
 
         pub fn bit_reverse_spec_compliant(n: u32, l: u32) -> u32 {
