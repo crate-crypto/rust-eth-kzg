@@ -34,7 +34,7 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_computeCe
 ) -> JByteArray<'local> {
     let prover_ctx = &mut *(prover_ptr as *mut ProverContext);
     let blob = env.convert_byte_array(blob).unwrap();
-    let cells = prover_ctx.compute_cells(&blob);
+    let cells = prover_ctx.compute_cells(&blob).unwrap();
 
     let flattened_cells = cells
         .iter()
@@ -58,7 +58,7 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_computeCe
 
     let blob = env.convert_byte_array(blob).unwrap();
 
-    let (cells, proofs) = prover_ctx.compute_cells_and_kzg_proofs(&blob);
+    let (cells, proofs) = prover_ctx.compute_cells_and_kzg_proofs(&blob).unwrap();
 
     let flattened_proofs_and_cells: Vec<u8> = cells
         .into_iter()
@@ -82,7 +82,7 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_blobToKZG
 ) -> JByteArray<'local> {
     let prover_ctx = &mut *(prover_ptr as *mut ProverContext);
     let blob = env.convert_byte_array(blob).unwrap();
-    let commitment = prover_ctx.blob_to_kzg_commitment(&blob);
+    let commitment = prover_ctx.blob_to_kzg_commitment(&blob).unwrap();
 
     return env.byte_array_from_slice(&commitment).unwrap();
 }
@@ -124,10 +124,9 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_verifyCel
     let cell = env.convert_byte_array(&cell).unwrap();
     let proof_bytes = env.convert_byte_array(&proof_bytes).unwrap();
 
-    return jboolean::from(verifier_ctx.verify_cell_kzg_proof(
-        &commitment_bytes,
-        cell_id,
-        &cell,
-        &proof_bytes,
-    ));
+    return jboolean::from(
+        verifier_ctx
+            .verify_cell_kzg_proof(&commitment_bytes, cell_id, &cell, &proof_bytes)
+            .is_ok(),
+    );
 }

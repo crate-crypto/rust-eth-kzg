@@ -40,7 +40,7 @@ impl Task for AsyncBlobToKzgCommitment {
       .prover_context
       .read()
       .map_err(|_| napi::Error::from_reason("Failed to acquire lock"))?;
-    let commitment = prover_context.blob_to_kzg_commitment(blob);
+    let commitment = prover_context.blob_to_kzg_commitment(blob).unwrap();
     Ok(commitment)
   }
 
@@ -76,7 +76,7 @@ impl Task for AsyncComputeCellsAndKzgProofs {
       .prover_context
       .read()
       .map_err(|_| Error::from_reason("Failed to acquire lock"))?;
-    let (cells, proofs) = prover_context.compute_cells_and_kzg_proofs(blob);
+    let (cells, proofs) = prover_context.compute_cells_and_kzg_proofs(blob).unwrap();
 
     Ok(NativeCellsAndProofs { cells, proofs })
   }
@@ -112,7 +112,7 @@ impl Task for AsyncComputeCells {
       .prover_context
       .read()
       .map_err(|_| Error::from_reason("Failed to acquire lock"))?;
-    let cells = prover_context.compute_cells(blob);
+    let cells = prover_context.compute_cells(blob).unwrap();
     Ok(cells)
   }
 
@@ -146,7 +146,7 @@ impl ProverContextJs {
       .inner
       .read()
       .map_err(|_| Error::from_reason("Failed to acquire lock"))?;
-    let commitment = prover_context.blob_to_kzg_commitment(blob);
+    let commitment = prover_context.blob_to_kzg_commitment(blob).unwrap();
     Ok(Uint8Array::from(&commitment))
   }
 
@@ -168,7 +168,7 @@ impl ProverContextJs {
       .inner
       .read()
       .map_err(|_| Error::from_reason("Failed to acquire lock"))?;
-    let (cells, proofs) = prover_context.compute_cells_and_kzg_proofs(blob);
+    let (cells, proofs) = prover_context.compute_cells_and_kzg_proofs(blob).unwrap();
 
     let cells_uint8array = cells
       .into_iter()
@@ -203,7 +203,7 @@ impl ProverContextJs {
       .inner
       .read()
       .map_err(|_| Error::from_reason("Failed to acquire lock"))?;
-    let cells = prover_context.compute_cells(blob);
+    let cells = prover_context.compute_cells(blob).unwrap();
 
     let cells_uint8array = cells
       .into_iter()
@@ -243,7 +243,11 @@ impl Task for AsyncVerifyCellKzgProof {
       .verifier_context
       .read()
       .map_err(|_| Error::from_reason("Failed to acquire lock"))?;
-    Ok(verifier_context.verify_cell_kzg_proof(commitment, self.cell_id, cell, proof))
+    Ok(
+      verifier_context
+        .verify_cell_kzg_proof(commitment, self.cell_id, cell, proof)
+        .is_ok(),
+    )
   }
 
   fn resolve(&mut self, _env: Env, output: Self::Output) -> Result<Self::JsValue> {
@@ -286,7 +290,11 @@ impl VerifierContextJs {
       .map_err(|_| Error::from_reason("Failed to acquire lock"))?;
 
     let cell_id_u64 = cell_id_value as u64;
-    Ok(verifier_context.verify_cell_kzg_proof(commitment, cell_id_u64, cell, proof))
+    Ok(
+      verifier_context
+        .verify_cell_kzg_proof(commitment, cell_id_u64, cell, proof)
+        .is_ok(),
+    )
   }
 
   #[napi]

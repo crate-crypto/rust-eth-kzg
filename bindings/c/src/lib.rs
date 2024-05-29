@@ -59,7 +59,7 @@ pub extern "C" fn blob_to_kzg_commitment(ctx: *const ProverContext, blob: *const
         (blob_slice, ctx_ref)
     };
 
-    let commitment = ctx.0.blob_to_kzg_commitment(blob);
+    let commitment = ctx.0.blob_to_kzg_commitment(blob).unwrap();
 
     unsafe {
         let commitment_data_slice = std::slice::from_raw_parts_mut(out, BYTES_PER_COMMITMENT);
@@ -87,7 +87,7 @@ pub extern "C" fn compute_cells_and_kzg_proofs(
         (blob_slice, ctx_ref)
     };
 
-    let (cells, proofs) = ctx.0.compute_cells_and_kzg_proofs(blob);
+    let (cells, proofs) = ctx.0.compute_cells_and_kzg_proofs(blob).unwrap();
     // TODO: This is not consistent with the node way of returning cells and proofs.
     // TODO: This may be fine, because node lives at a higher level and has richer features due to napi
     let cells_flattened: Vec<_> = cells
