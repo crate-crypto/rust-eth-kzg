@@ -76,7 +76,9 @@ fn test_recover_all_cells() {
         let yaml_data = fs::read_to_string(test_file).unwrap();
         let test = TestVector::from_str(&yaml_data);
 
-        match verifier_context.recover_all_cells(test.input_cell_ids, test.input_cells) {
+        let input_cells = test.input_cells.iter().map(|v| v.as_slice()).collect();
+
+        match verifier_context.recover_all_cells(test.input_cell_ids, input_cells) {
             Ok(cells) => {
                 let expected_cells = test.output_cells.unwrap();
 
