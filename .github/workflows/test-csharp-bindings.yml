@@ -22,7 +22,6 @@ jobs:
 
       - name: Run compile script
         run: |
-          chmod +x ./scripts/compile.sh
           ./scripts/compile.sh
       
       - name: Set up .NET
