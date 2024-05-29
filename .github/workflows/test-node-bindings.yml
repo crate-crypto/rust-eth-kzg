@@ -9,12 +9,25 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
     steps:
-    - uses: actions/checkout@v4
-    - name: Build
-      working-directory: bindings/node
-      run: yarn && yarn install && yarn build
-    - name: Run tests
-      working-directory: bindings/node
-      run: yarn test
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Build
+        working-directory: bindings/node
+        run: yarn && yarn install && yarn build
+
+      - name: Run tests
+        working-directory: bindings/node
+        run: yarn test
