@@ -10,15 +10,15 @@ mod serde_ {
     use eip7594::{Blob, Bytes48, Cell};
     use serde::Deserialize;
     #[derive(Deserialize)]
-    pub struct YamlInput {
+    struct YamlInput {
         blob: String,
     }
 
-    pub type YamlOutput = (Vec<String>, Vec<String>);
+    type YamlOutput = (Vec<String>, Vec<String>);
 
     #[derive(Deserialize)]
     struct YamlTestVector {
-        pub input: YamlInput,
+        input: YamlInput,
         output: Option<YamlOutput>,
     }
 
