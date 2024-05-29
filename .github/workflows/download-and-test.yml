@@ -22,9 +22,12 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: example-artifact
-          path: example.txt
+          # name: example-artifact
+          # path: example.txt
           run-id: ${{ github.event.inputs.run_id }}
+      
+      - name: Display structure of downloaded files
+        run: ls -R
 
       - name: Display file content
         run: cat example.txt
