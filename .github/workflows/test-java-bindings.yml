@@ -11,7 +11,11 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
       - name: Checkout repository
@@ -21,9 +25,8 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Run compile script
-        run: |
-          chmod +x ./scripts/compile.sh
-          ./scripts/compile.sh
+        run: ./scripts/compile.sh
+      
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
