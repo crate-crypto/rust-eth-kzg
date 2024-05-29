@@ -1,6 +1,12 @@
 use eip7594::Blob;
 use eip7594::{Bytes48, Cell};
 
+/// Data from the test input could also be malformed,
+/// So we use this type to represent that.
+/// For example, although a proof should be 48 bytes, the test input
+/// could give us 47.
+pub type UnsafeBytes = Vec<u8>;
+
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -44,9 +50,12 @@ pub fn blob_from_hex(blob: &str) -> Blob {
     hex::decode(blob).unwrap()
 }
 
-pub fn bytes48_from_hex(bytes48: &str) -> Bytes48 {
-    let bytes48 = remove_hex_prefix(&bytes48);
-    hex::decode(bytes48).unwrap().try_into().unwrap()
+pub fn bytes_from_hex(bytes: &str) -> Vec<u8> {
+    let bytes = remove_hex_prefix(&bytes);
+    hex::decode(bytes).unwrap()
+}
+pub fn bytes48_from_hex(bytes: &str) -> Bytes48 {
+    bytes_from_hex(bytes).try_into().unwrap()
 }
 
 pub fn cell_from_hex(cell: &str) -> Cell {
