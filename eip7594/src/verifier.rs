@@ -78,6 +78,8 @@ impl VerifierContext {
         cell: CellRef,
         proof_bytes: Bytes48Ref,
     ) -> Result<(), VerifierError> {
+        sanity_check_cells_and_cell_ids(&[cell_id], &[cell])?;
+
         let commitment =
             deserialize_compressed_g1(commitment_bytes).map_err(VerifierError::Serialization)?;
         let proof = deserialize_compressed_g1(proof_bytes).map_err(VerifierError::Serialization)?;
@@ -135,60 +137,11 @@ impl VerifierContext {
     pub fn recover_all_cells(
         &self,
         cell_ids: Vec<CellID>,
-        cells: Vec<Cell>,
+        cells: Vec<CellRef>,
     ) -> Result<Vec<Cell>, VerifierError> {
         // TODO: We should check that code does not assume that the CellIDs are sorted.
 
-        // Check that we have no duplicate cell IDs
-        if !is_cell_ids_unique(&cell_ids) {
-            return Err(VerifierError::CellIDsNotUnique);
-        }
-
-        // Check that the number of cell IDs is equal to the number of cells
-        if cell_ids.len() != cells.len() {
-            return Err(VerifierError::CellIDsNotEqualToNumberOfCells {
-                num_cell_ids: cell_ids.len(),
-                num_cells: cells.len(),
-            });
-        }
-
-        // Check that the Cell IDs are within the expected range
-        for cell_id in cell_ids.iter() {
-            if *cell_id >= (CELLS_PER_EXT_BLOB as u64) {
-                return Err(VerifierError::CellIDOutOfRange {
-                    cell_id: *cell_id,
-                    max_cell_id: (CELLS_PER_EXT_BLOB - 1) as u64,
-                });
-            }
-        }
-
-        // Check that we have enough cells to perform a reconstruction
-        if !(CELLS_PER_EXT_BLOB / EXTENSION_FACTOR <= cell_ids.len()) {
-            return Err(VerifierError::NotEnoughCellsToReconstruct {
-                num_cells_received: cell_ids.len(),
-                min_cells_needed: CELLS_PER_EXT_BLOB / EXTENSION_FACTOR,
-            });
-        }
-
-        // Check that we don't have too many cells
-        // ie more than we initially generated
-        if cell_ids.len() > CELLS_PER_EXT_BLOB {
-            return Err(VerifierError::TooManyCellsHaveBeenGiven {
-                num_cells_received: cell_ids.len(),
-                max_cells_needed: CELLS_PER_EXT_BLOB,
-            });
-        }
-
-        // Check that each cell has the right amount of bytes
-        for (i, cell) in cells.iter().enumerate() {
-            if cell.len() != BYTES_PER_CELL {
-                return Err(VerifierError::CellDoesNotContainEnoughBytes {
-                    cell_id: cell_ids[i],
-                    num_bytes: cell.len(),
-                    expected_num_bytes: BYTES_PER_CELL,
-                });
-            }
-        }
+        sanity_check_cells_and_cell_ids(&cell_ids, &cells)?;
 
         pub fn bit_reverse_spec_compliant(n: u32, l: u32) -> u32 {
             let num_bits = l.trailing_zeros();
@@ -254,6 +207,63 @@ fn is_cell_ids_unique(cell_ids: &[CellID]) -> bool {
     let len_cell_ids_non_dedup = cell_ids.len();
     let cell_ids_dedup: HashSet<_> = cell_ids.into_iter().collect();
     cell_ids_dedup.len() == len_cell_ids_non_dedup
+}
+
+fn sanity_check_cells_and_cell_ids(
+    cell_ids: &[CellID],
+    cells: &[CellRef],
+) -> Result<(), VerifierError> {
+    // Check that we have no duplicate cell IDs
+    if !is_cell_ids_unique(&cell_ids) {
+        return Err(VerifierError::CellIDsNotUnique);
+    }
+
+    // Check that the number of cell IDs is equal to the number of cells
+    if cell_ids.len() != cells.len() {
+        return Err(VerifierError::CellIDsNotEqualToNumberOfCells {
+            num_cell_ids: cell_ids.len(),
+            num_cells: cells.len(),
+        });
+    }
+
+    // Check that the Cell IDs are within the expected range
+    for cell_id in cell_ids.iter() {
+        if *cell_id >= (CELLS_PER_EXT_BLOB as u64) {
+            return Err(VerifierError::CellIDOutOfRange {
+                cell_id: *cell_id,
+                max_cell_id: (CELLS_PER_EXT_BLOB - 1) as u64,
+            });
+        }
+    }
+
+    // Check that we have enough cells to perform a reconstruction
+    if !(CELLS_PER_EXT_BLOB / EXTENSION_FACTOR <= cell_ids.len()) {
+        return Err(VerifierError::NotEnoughCellsToReconstruct {
+            num_cells_received: cell_ids.len(),
+            min_cells_needed: CELLS_PER_EXT_BLOB / EXTENSION_FACTOR,
+        });
+    }
+
+    // Check that we don't have too many cells
+    // ie more than we initially generated
+    if cell_ids.len() > CELLS_PER_EXT_BLOB {
+        return Err(VerifierError::TooManyCellsHaveBeenGiven {
+            num_cells_received: cell_ids.len(),
+            max_cells_needed: CELLS_PER_EXT_BLOB,
+        });
+    }
+
+    // Check that each cell has the right amount of bytes
+    for (i, cell) in cells.iter().enumerate() {
+        if cell.len() != BYTES_PER_CELL {
+            return Err(VerifierError::CellDoesNotContainEnoughBytes {
+                cell_id: cell_ids[i],
+                num_bytes: cell.len(),
+                expected_num_bytes: BYTES_PER_CELL,
+            });
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -348,7 +358,10 @@ mod tests {
             .collect();
 
         let recovered_cells = ctx
-            .recover_all_cells(cell_ids_to_keep, cells_to_keep)
+            .recover_all_cells(
+                cell_ids_to_keep,
+                cells_to_keep.iter().map(|v| v.as_slice()).collect(),
+            )
             .unwrap();
 
         assert_eq!(recovered_cells, all_cells);
