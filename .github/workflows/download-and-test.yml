@@ -24,6 +24,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: foobar
+          github-token: ${{ secrets.WORKFLOW_SHARING_TOKEN }}
           # name: example-artifact
           # path: example.txt
           run-id: ${{ inputs.run_id }}
