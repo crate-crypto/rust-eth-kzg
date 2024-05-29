@@ -43,6 +43,9 @@ LIB_NAME="c_peerdas_kzg"
 # on an arm chip, so we need compile a universal binary so that nim can use whichever
 # architecture it needs.
 if [[ "$OS" == "Darwin" ]]; then
+    # Install both targets for mac, so that it won't fail in CI
+    rustup target add x86_64-apple-darwin
+    rustup target add aarch64-apple-darwin
     ARCH_MODIFIED="universal"
 else
     ARCH_MODIFIED=$ARCH
