@@ -1,6 +1,7 @@
 name: Download and Process
 
 on:
+  pull_request:
   workflow_dispatch:
     inputs:
       run_id:
