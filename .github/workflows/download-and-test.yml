@@ -15,6 +15,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+            ref: kw/ci-release-workflow-revamp
 
       - name: Download artifact
         uses: actions/download-artifact@v4
