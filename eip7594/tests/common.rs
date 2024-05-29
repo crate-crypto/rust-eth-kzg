@@ -1,4 +1,3 @@
-use eip7594::Blob;
 use eip7594::{Bytes48, Cell};
 
 /// Data from the test input could also be malformed,
@@ -43,11 +42,6 @@ fn remove_hex_prefix(s: &str) -> &str {
                 if there are discrepancies."
         );
     }
-}
-
-pub fn blob_from_hex(blob: &str) -> Blob {
-    let blob = remove_hex_prefix(&blob);
-    hex::decode(blob).unwrap()
 }
 
 pub fn bytes_from_hex(bytes: &str) -> Vec<u8> {

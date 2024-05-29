@@ -5,7 +5,7 @@ use std::fs;
 mod common;
 
 mod serde_ {
-    use super::common::{blob_from_hex, cell_from_hex};
+    use super::common::{bytes_from_hex, cell_from_hex};
     use eip7594::{Blob, Cell};
     use serde::Deserialize;
 
@@ -39,7 +39,7 @@ mod serde_ {
             let input = yaml_test_vector.input.blob;
             let output = yaml_test_vector.output;
 
-            let input = blob_from_hex(&input);
+            let input = bytes_from_hex(&input);
 
             let output = match output {
                 Some(cells) => {
