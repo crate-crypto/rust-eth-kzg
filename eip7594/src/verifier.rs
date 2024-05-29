@@ -137,11 +137,28 @@ impl VerifierContext {
     pub fn recover_all_cells(
         &self,
         cell_ids: Vec<CellID>,
-        cells: Vec<CellRef>,
+        cells: Vec<CellRef>, // TODO: We could use an AsRef here or use a strongly typed array
     ) -> Result<Vec<Cell>, VerifierError> {
         // TODO: We should check that code does not assume that the CellIDs are sorted.
 
         sanity_check_cells_and_cell_ids(&cell_ids, &cells)?;
+
+        // Check that we have enough cells to perform a reconstruction
+        if !(CELLS_PER_EXT_BLOB / EXTENSION_FACTOR <= cell_ids.len()) {
+            return Err(VerifierError::NotEnoughCellsToReconstruct {
+                num_cells_received: cell_ids.len(),
+                min_cells_needed: CELLS_PER_EXT_BLOB / EXTENSION_FACTOR,
+            });
+        }
+
+        // Check that we don't have too many cells
+        // ie more than we initially generated
+        if cell_ids.len() > CELLS_PER_EXT_BLOB {
+            return Err(VerifierError::TooManyCellsHaveBeenGiven {
+                num_cells_received: cell_ids.len(),
+                max_cells_needed: CELLS_PER_EXT_BLOB,
+            });
+        }
 
         pub fn bit_reverse_spec_compliant(n: u32, l: u32) -> u32 {
             let num_bits = l.trailing_zeros();
@@ -234,23 +251,6 @@ fn sanity_check_cells_and_cell_ids(
                 max_cell_id: (CELLS_PER_EXT_BLOB - 1) as u64,
             });
         }
-    }
-
-    // Check that we have enough cells to perform a reconstruction
-    if !(CELLS_PER_EXT_BLOB / EXTENSION_FACTOR <= cell_ids.len()) {
-        return Err(VerifierError::NotEnoughCellsToReconstruct {
-            num_cells_received: cell_ids.len(),
-            min_cells_needed: CELLS_PER_EXT_BLOB / EXTENSION_FACTOR,
-        });
-    }
-
-    // Check that we don't have too many cells
-    // ie more than we initially generated
-    if cell_ids.len() > CELLS_PER_EXT_BLOB {
-        return Err(VerifierError::TooManyCellsHaveBeenGiven {
-            num_cells_received: cell_ids.len(),
-            max_cells_needed: CELLS_PER_EXT_BLOB,
-        });
     }
 
     // Check that each cell has the right amount of bytes
