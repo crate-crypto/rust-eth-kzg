@@ -49,7 +49,7 @@ public class LibPeerDASKZG {
 
         if (osName.contains("win")) {
             if (osArch.contains("x86_64")) {
-                libraryResourcePath = "/x86_64-windows-pc-gnu/" + PLATFORM_NATIVE_LIBRARY_NAME;
+                libraryResourcePath = "/x86_64-pc-windows-gnu/" + PLATFORM_NATIVE_LIBRARY_NAME;
             } else if (osArch.contains("x86")) {
                 // TODO: Remove this and just don't support 32-bit Windows
                 libraryResourcePath = "/i686-pc-windows-gnu/" + PLATFORM_NATIVE_LIBRARY_NAME;
