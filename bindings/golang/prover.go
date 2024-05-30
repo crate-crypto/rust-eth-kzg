@@ -5,6 +5,7 @@ package peerdas_kzg
 #cgo darwin,arm64 LDFLAGS: ./build/aarch64-apple-darwin/libc_peerdas_kzg.a
 #cgo linux,amd64 LDFLAGS: ./build/x86_64-unknown-linux-gnu/libc_peerdas_kzg.a
 #cgo linux,arm64 LDFLAGS: ./build/aarch64-unknown-linux-gnu/libc_peerdas_kzg.a
+#cgo windows LDFLAGS: ./build/x86_64-pc-windows-gnu/libc_peerdas_kzg.a
 #include "./build/c_peerdas_kzg.h"
 */
 import "C"
