@@ -21,6 +21,9 @@ jobs:
 
       - name: Remove java folder
         run: rm -rf bindings/java
+  
+      - name: Remove node folder
+        run: rm -rf bindings/node
 
       - name: Download artifact
         uses: actions/download-artifact@v4
@@ -29,6 +32,17 @@ jobs:
           name: java-artifact
           github-token: ${{ secrets.WORKFLOW_SHARING_TOKEN }}
           run-id: ${{ inputs.run_id }}
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          path: bindings/node
+          name: node-artifact
+          github-token: ${{ secrets.WORKFLOW_SHARING_TOKEN }}
+          run-id: ${{ inputs.run_id }}
       
+      - name: Display structure of downloaded files
+        run: ls -R bindings/node
+
       - name: Display structure of downloaded files
         run: ls -R bindings/java
