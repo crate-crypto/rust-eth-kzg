@@ -26,6 +26,7 @@ jobs:
 
       - name: Run compile script
         run: ./scripts/compile.sh
+        shell: bash
 
       - name: Setup Nim
         uses: jiro4989/setup-nim-action@v1

@@ -26,7 +26,8 @@ jobs:
 
       - name: Run compile script
         run: ./scripts/compile.sh
-      
+        shell: bash
+
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
