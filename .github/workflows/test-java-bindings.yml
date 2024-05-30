@@ -16,8 +16,6 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-    env:
-      GRADLE_OPTS: "--scan-agreement=yes"
 
     steps:
       - name: Checkout repository
