@@ -6,6 +6,8 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 cd $PROJECT_ROOT/bindings/node
 
+npm install -g @napi-rs/cli
+
 napi build --platform --release --target x86_64-unknown-linux-gnu
 napi build --platform --release --target aarch64-unknown-linux-gnu
 napi build --platform --release --target x86_64-pc-windows-gnu
