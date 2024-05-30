@@ -26,7 +26,8 @@ jobs:
 
       - name: Run compile script
         run: ./scripts/compile.sh
-      
+        shell: bash
+        
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
