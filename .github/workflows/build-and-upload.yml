@@ -26,6 +26,15 @@ jobs:
       - name: Compile all node builds
         run: .github/scripts/compile_all_targets_node.sh
 
+      - name: Compile all java builds 
+        run: .github/scripts/compile_all_targets_java.sh
+    
+      - name: Compile all csharp builds
+        run: .github/scripts/compile_all_targets_c_sharp.sh
+
+      - name: Compile all c builds
+        run: .github/scripts/compile_all_targets_c.sh
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
