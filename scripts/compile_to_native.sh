@@ -119,7 +119,7 @@ case "$OS" in
                 ;;
         esac
         ;;
-    "MINGW64_NT"|"CYGWIN_NT"|"Windows")
+    MINGW64_NT-*|CYGWIN_NT-*|"Windows")
         TARGET_NAME="x86_64-pc-windows-gnu"
         STATIC_LIB_NAME="lib${LIB_NAME}.a"
         DYNAMIC_LIB_NAME="${LIB_NAME}.dll"
