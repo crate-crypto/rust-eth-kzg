@@ -9,7 +9,7 @@ on:
 
 jobs:
   upload:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     steps:
       - name: Checkout repository
@@ -19,6 +19,12 @@ jobs:
 
       - name: Create example.txt
         run: echo "This is an example file." > example.txt
+    
+      - name: Install all rust targets needed
+        run: .github/scripts/install_all_targets.sh
+
+      - name: Compile all node builds
+        run: .github/scripts/compile_all_targets_node.sh
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
