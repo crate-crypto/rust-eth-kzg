@@ -34,8 +34,8 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Build with Gradle
-        run: ./gradlew build --scan
+      - name: Build with Gradle (no tests)
+        run: ./gradlew build -x test
         working-directory: bindings/java/java_code
 
       - name: Run Gradle tests
