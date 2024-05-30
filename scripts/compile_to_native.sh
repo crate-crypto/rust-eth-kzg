@@ -119,6 +119,8 @@ case "$OS" in
                 ;;
         esac
         ;;
+        # Github runners will return MINGW64_NT-10.0-20348
+        # so we add a wildcard to match the prefix
     MINGW64_NT-*|CYGWIN_NT-*|"Windows")
         TARGET_NAME="x86_64-pc-windows-gnu"
         STATIC_LIB_NAME="lib${LIB_NAME}.a"
