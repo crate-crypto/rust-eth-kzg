@@ -81,10 +81,6 @@ namespace DynamicLibraryLoader
         {
             long result1 = RustLibrary.CallableFromC(10);
             Console.WriteLine($"Result from callable_from_c: {result1}");
-
-            // long result2 = RustLibrary.AnotherFunction(10);
-
-            // Console.ReadKey();
         }
     }
 }
