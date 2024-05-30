@@ -35,11 +35,29 @@ jobs:
       - name: Compile all c builds
         run: .github/scripts/compile_all_targets_c.sh
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload Node artifact
+        uses: actions/upload-artifact@v3
         with:
-          name: example-artifact
-          path: example.txt
+          name: node-artifact
+          path: bindings/node
+
+      - name: Upload Java artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: java-artifact
+          path: bindings/java
+
+      - name: Upload CSharp artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: csharp-artifact
+          path: bindings/csharp
+
+      - name: Upload C artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: c-artifact
+          path: bindings/c
 
       - name: Dispatch to test workflow
         uses: benc-uk/workflow-dispatch@v1
