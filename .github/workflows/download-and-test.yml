@@ -18,19 +18,17 @@ jobs:
         uses: actions/checkout@v4
         with:
             ref: kw/ci-release-workflow-revamp
-      - name: Make a new dir called foobar
-        run: mkdir foobar
+
+      - name: Remove java folder
+        run: rm -rf bindings/java
+
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          path: foobar
+          path: bindings/java
+          name: java-artifact
           github-token: ${{ secrets.WORKFLOW_SHARING_TOKEN }}
-          # name: example-artifact
-          # path: example.txt
           run-id: ${{ inputs.run_id }}
       
       - name: Display structure of downloaded files
-        run: ls -R foobar
-
-      # - name: Display file content
-      #   run: cat example.txt
+        run: ls -R bindings/java
