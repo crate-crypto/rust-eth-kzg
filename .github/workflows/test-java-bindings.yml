@@ -16,6 +16,8 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
+    env:
+      GRADLE_OPTS: "--scan-agreement=yes"
 
     steps:
       - name: Checkout repository
@@ -27,7 +29,7 @@ jobs:
       - name: Run compile script
         run: ./scripts/compile.sh
         shell: bash
-        
+
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
@@ -39,5 +41,5 @@ jobs:
         working-directory: bindings/java/java_code
 
       - name: Run Gradle tests
-        run: ./gradlew test
+        run: ./gradlew test --scan
         working-directory: bindings/java/java_code
