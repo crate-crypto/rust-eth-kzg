@@ -13,6 +13,7 @@ else:
 const libpath = getInstallDir() / libName
 
 {.passL: libpath.}
+
 when defined(windows):
   {.passL: "-lws2_32".}
   {.passL: "-lntdll".}
