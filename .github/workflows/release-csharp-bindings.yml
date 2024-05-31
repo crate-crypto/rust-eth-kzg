@@ -62,13 +62,13 @@ jobs:
           scripts/compile_all_targets_c_sharp.sh
 
       - name: Restore NuGet packages
-        working-directory: bindings/csharp
+        working-directory: bindings/csharp/PeerDASKZG.bindings
         run: dotnet restore
 
       - name: Package with dotnet pack
-        working-directory: bindings/csharp
+        working-directory: bindings/csharp/PeerDASKZG.bindings
         run: dotnet pack -c release --no-restore -o nupkgs -p:Version=${{ env.VERSION }} -p:ContinuousIntegrationBuild=true
         
       - name: Publish to Nuget
-        working-directory: bindings/csharp
+        working-directory: bindings/csharp/PeerDASKZG.bindings
         run: dotnet nuget push nupkgs/*.nupkg --api-key ${{ secrets.NUGET_RELEASE_TOKEN }} --source https://api.nuget.org/v3/index.json
