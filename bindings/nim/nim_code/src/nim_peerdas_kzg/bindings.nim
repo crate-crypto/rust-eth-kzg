@@ -17,14 +17,3 @@ when defined(windows):
   {.passL: "-lws2_32".}
   {.passL: "-lntdll".}
   {.passL: "-luserenv".}
-
-proc add_from_rust(a: cint, b: cint): cint {.importc: "add123456789".}
-
-# type
-#   ProverContext* = pointer
-
-# proc prover_context_new*(): ProverContext {.importc: "prover_context_new", cdecl.}
-
-proc add_from_rust_wrapper*(a: int, b: int): int =
-  ## Adds two numbers together.
-  return add_from_rust(cint(a), cint(b))
