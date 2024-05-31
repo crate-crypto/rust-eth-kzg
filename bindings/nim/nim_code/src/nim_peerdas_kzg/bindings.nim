@@ -4,7 +4,9 @@ import ../header
 export header
 
 when defined(windows):
-  const libName = "c_peerdas_kzg.lib"
+  # For gnu toolchain, the name is .a
+  # This will need to be changed if we switch to the msvc toolchain
+  const libName = "libc_peerdas_kzg.a"
 else:
   const libName = "libc_peerdas_kzg.a"
 
