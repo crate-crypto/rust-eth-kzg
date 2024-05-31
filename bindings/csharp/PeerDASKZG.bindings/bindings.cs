@@ -4,7 +4,7 @@ using System.Runtime.Loader;
 
 namespace PeerDASKZG;
 
-public static class PeerDASKZG
+public static partial class PeerDASKZG
 {
     // When the static methods are called, .NET will look for the library in some
     // conventional locations. If it cannot find it, it will then trigger 
@@ -53,25 +53,22 @@ public static class PeerDASKZG
         return IntPtr.Zero;
     }
 
-    [DllImport("c_peerdas_kzg", EntryPoint = "callable_from_c", CallingConvention = CallingConvention.Cdecl)]
-    public static extern long CallableFromC(long input);
-
     [DllImport("c_peerdas_kzg", EntryPoint = "prover_context_new", CallingConvention = CallingConvention.Cdecl)]
-    public static extern IntPtr ProverContextNew();
+    private static extern IntPtr ProverContextNew();
 
     [DllImport("c_peerdas_kzg", EntryPoint = "prover_context_free", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void ProverContextFree(IntPtr ctx);
+    private static extern void ProverContextFree(IntPtr ctx);
 
     [DllImport("c_peerdas_kzg", EntryPoint = "blob_to_kzg_commitment", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void BlobToKzgCommitment(IntPtr ctx, byte[] blob, byte[] outCommitment);
+    private static extern void BlobToKzgCommitment(IntPtr ctx, byte[] blob, byte[] outCommitment);
 
     [DllImport("c_peerdas_kzg", EntryPoint = "compute_cells_and_kzg_proofs", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void ComputeCellsAndKzgProofs(IntPtr ctx, byte[] blob, byte[] outCells, byte[] outProofs);
+    private static extern void ComputeCellsAndKzgProofs(IntPtr ctx, byte[] blob, byte[] outCells, byte[] outProofs);
 
     [DllImport("c_peerdas_kzg", EntryPoint = "verifier_context_new", CallingConvention = CallingConvention.Cdecl)]
-    public static extern IntPtr VerifierContextNew();
+    private static extern IntPtr VerifierContextNew();
 
     [DllImport("c_peerdas_kzg", EntryPoint = "verifier_context_free", CallingConvention = CallingConvention.Cdecl)]
-    public static extern void VerifierContextFree(IntPtr ctx);
+    private static extern void VerifierContextFree(IntPtr ctx);
 }
 
