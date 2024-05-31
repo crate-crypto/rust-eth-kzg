@@ -13,6 +13,10 @@ else:
 const libpath = getInstallDir() / libName
 
 {.passL: libpath.}
+when defined(windows):
+  {.passL: "-lws2_32".}
+  {.passL: "-lntdll".}
+  {.passL: "-luserenv".}
 
 proc add_from_rust(a: cint, b: cint): cint {.importc: "add123456789".}
 
