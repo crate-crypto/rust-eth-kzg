@@ -54,21 +54,21 @@ public static partial class PeerDASKZG
     }
 
     [DllImport("c_peerdas_kzg", EntryPoint = "prover_context_new", CallingConvention = CallingConvention.Cdecl)]
-    private static extern IntPtr ProverContextNew();
+    private static extern IntPtr InternalProverContextNew();
 
     [DllImport("c_peerdas_kzg", EntryPoint = "prover_context_free", CallingConvention = CallingConvention.Cdecl)]
-    private static extern void ProverContextFree(IntPtr ctx);
+    private static extern void InternalProverContextFree(IntPtr ctx);
 
     [DllImport("c_peerdas_kzg", EntryPoint = "blob_to_kzg_commitment", CallingConvention = CallingConvention.Cdecl)]
-    private static extern void BlobToKzgCommitment(IntPtr ctx, byte[] blob, byte[] outCommitment);
+    private static extern void InternalBlobToKzgCommitment(IntPtr ctx, byte[] blob, byte[] outCommitment);
 
     [DllImport("c_peerdas_kzg", EntryPoint = "compute_cells_and_kzg_proofs", CallingConvention = CallingConvention.Cdecl)]
-    private static extern void ComputeCellsAndKzgProofs(IntPtr ctx, byte[] blob, byte[] outCells, byte[] outProofs);
+    private static extern void InternalComputeCellsAndKzgProofs(IntPtr ctx, byte[] blob, byte[] outCells, byte[] outProofs);
 
     [DllImport("c_peerdas_kzg", EntryPoint = "verifier_context_new", CallingConvention = CallingConvention.Cdecl)]
-    private static extern IntPtr VerifierContextNew();
+    private static extern IntPtr InternalVerifierContextNew();
 
     [DllImport("c_peerdas_kzg", EntryPoint = "verifier_context_free", CallingConvention = CallingConvention.Cdecl)]
-    private static extern void VerifierContextFree(IntPtr ctx);
+    private static extern void InternalVerifierContextFree(IntPtr ctx);
 }
 
