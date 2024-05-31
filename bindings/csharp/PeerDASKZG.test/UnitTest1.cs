@@ -1,3 +1,5 @@
+using PeerDASKZG;
+
 namespace PeerDASKZG.test;
 
 public class Tests
@@ -8,8 +10,9 @@ public class Tests
     }
 
     [Test]
-    public void Test1()
+    public void TestSmoke()
     {
+        PeerDASKZG.ProverContextNew();
         Assert.AreEqual(true, true);
     }
 }
