@@ -22,6 +22,16 @@ pub const NUM_BYTES_PROOFS: u64 = 6144;
 /// Unfortunately, cbindgen doesn't allow us to use those constants directly.
 pub const NUM_BYTES_CELLS: u64 = 262144;
 
+/*
+
+A note on safety:
+
+- It is the callers responsibility to ensure that the pointers that get passed in point to the minimum number of bytes required, to dereference them safely.
+    - If the pointers, point to region of memory that is less than the minimum number of bytes required, then this method will read from random memory.
+    - If the pointers point to a region of memory that is more than the minimum number of bytes required, then this method will essentially truncate the memory region.
+
+*/
+
 // We re-define the structs so that they can be generated in the c-code as
 // opaque structs.
 // TODO: try type aliasing
@@ -53,7 +63,6 @@ pub enum CResult {
 /// Safety:
 /// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
 /// - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
-///   If it is more, this method will truncate the memory region. If it is less, then this method will read from random memory.
 /// - The caller must ensure that `out` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
 #[no_mangle]
 pub extern "C" fn blob_to_kzg_commitment(
@@ -88,16 +97,19 @@ pub extern "C" fn blob_to_kzg_commitment(
     CResult::Ok
 }
 
+/// Safety:
+/// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+/// - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
+/// - The caller must ensure that `out_cells` points to a region of memory that is at least `NUM_BYTES_CELLS` bytes.
 #[no_mangle]
-pub extern "C" fn compute_cells_and_kzg_proofs(
+pub extern "C" fn compute_cells(
     ctx: *const ProverContext,
     blob: *const u8,
     out_cells: *mut u8,
-    out_proofs: *mut u8,
-) {
+) -> CResult {
     // Check if pointers are null
-    if ctx.is_null() || blob.is_null() || out_cells.is_null() || out_proofs.is_null() {
-        return;
+    if ctx.is_null() || blob.is_null() || out_cells.is_null() {
+        return CResult::Err;
     }
 
     let (blob, ctx) = unsafe {
@@ -107,7 +119,64 @@ pub extern "C" fn compute_cells_and_kzg_proofs(
         (blob_slice, ctx_ref)
     };
 
-    let (cells, proofs) = ctx.0.compute_cells_and_kzg_proofs(blob).unwrap();
+    let cells = match ctx.0.compute_cells(blob) {
+        Ok(cells) => cells,
+        Err(_) => return CResult::Err,
+    };
+
+    let cells_flattened: Vec<_> = cells
+        .iter()
+        .flat_map(|cell| cell.into_iter())
+        .copied()
+        .collect();
+
+    // Check that these are the correct sizes because callers will use these
+    // methods to allocate the output arrays.
+    assert_eq!(
+        cells_flattened.len() as u64,
+        NUM_BYTES_CELLS,
+        "This is a library bug. cells_flattened.len() != num_bytes_cells(), {} != {}",
+        cells_flattened.len(),
+        NUM_BYTES_CELLS
+    );
+
+    unsafe {
+        let cells_data_slice = std::slice::from_raw_parts_mut(out_cells, cells_flattened.len());
+        cells_data_slice.copy_from_slice(&cells_flattened);
+    }
+
+    CResult::Ok
+}
+
+/// Safety:
+/// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+/// - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
+/// - The caller must ensure that `out_cells` points to a region of memory that is at least `NUM_BYTES_CELLS` bytes.
+/// - The caller must ensure that `out_proofs` points to a region of memory that is at least `NUM_BYTES_PROOFS` bytes.
+#[no_mangle]
+pub extern "C" fn compute_cells_and_kzg_proofs(
+    ctx: *const ProverContext,
+    blob: *const u8,
+    out_cells: *mut u8,
+    out_proofs: *mut u8,
+) -> CResult {
+    // Check if pointers are null
+    if ctx.is_null() || blob.is_null() || out_cells.is_null() || out_proofs.is_null() {
+        return CResult::Err;
+    }
+
+    let (blob, ctx) = unsafe {
+        let blob_slice = std::slice::from_raw_parts(blob, BYTES_PER_BLOB);
+        let ctx_ref = &*ctx;
+
+        (blob_slice, ctx_ref)
+    };
+
+    let (cells, proofs) = match ctx.0.compute_cells_and_kzg_proofs(blob) {
+        Ok(cells_and_proofs) => cells_and_proofs,
+        Err(_) => return CResult::Err,
+    };
+
     // TODO: This is not consistent with the node way of returning cells and proofs.
     // TODO: This may be fine, because node lives at a higher level and has richer features due to napi
     let cells_flattened: Vec<_> = cells
@@ -146,6 +215,8 @@ pub extern "C" fn compute_cells_and_kzg_proofs(
         let proofs_data_slice = std::slice::from_raw_parts_mut(out_proofs, proofs_flattened.len());
         proofs_data_slice.copy_from_slice(&proofs_flattened);
     }
+
+    CResult::Ok
 }
 
 #[no_mangle]
