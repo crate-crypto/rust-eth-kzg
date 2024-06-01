@@ -16,7 +16,7 @@ proc prover_context_free*(ctx: ptr ProverContext): void {.importc: "prover_conte
 
 proc blob_to_kzg_commitment*(ctx: ptr ProverContext,
                              blob: pointer,
-                             outx: pointer): void {.importc: "blob_to_kzg_commitment".}
+                             outx: pointer): uint8 {.importc: "blob_to_kzg_commitment".}
 
 proc compute_cells_and_kzg_proofs*(ctx: ptr ProverContext,
                                    blob: pointer,
