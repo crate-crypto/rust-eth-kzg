@@ -28,8 +28,10 @@ public static partial class PeerDASKZG
             RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "aarch64-unknown-linux-gnu" :
             RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && RuntimeInformation.ProcessArchitecture == Architecture.X64 ? "x86_64-apple-darwin" :
             RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "aarch64-apple-darwin" :
-            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.ProcessArchitecture == Architecture.X64 ? "x86_64-pc-windows-msvc" :
-            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "aarch64-pc-windows-msvc" :
+            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.ProcessArchitecture == Architecture.X64 ? "x86_64-pc-windows-gnu" :
+            // Windows on ARM doesn't seem to be massively supported in nethermind. Check the secp256k1 bindings for example.
+            // We can add support for it later if needed.
+            // RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && RuntimeInformation.ProcessArchitecture == Architecture.Arm64 ? "aarch64-pc-windows-msvc" :
             "";
 
         string extension =
@@ -60,7 +62,7 @@ public static partial class PeerDASKZG
     private static extern void InternalProverContextFree(IntPtr ctx);
 
     [DllImport("c_peerdas_kzg", EntryPoint = "blob_to_kzg_commitment", CallingConvention = CallingConvention.Cdecl)]
-    private static extern void InternalBlobToKzgCommitment(IntPtr ctx, byte[] blob, byte[] outCommitment);
+    private static extern Result InternalBlobToKzgCommitment(IntPtr ctx, byte[] blob, byte[] outCommitment);
 
     [DllImport("c_peerdas_kzg", EntryPoint = "compute_cells_and_kzg_proofs", CallingConvention = CallingConvention.Cdecl)]
     private static extern void InternalComputeCellsAndKzgProofs(IntPtr ctx, byte[] blob, byte[] outCells, byte[] outProofs);
@@ -70,5 +72,12 @@ public static partial class PeerDASKZG
 
     [DllImport("c_peerdas_kzg", EntryPoint = "verifier_context_free", CallingConvention = CallingConvention.Cdecl)]
     private static extern void InternalVerifierContextFree(IntPtr ctx);
+
+    private enum Result
+    {
+        Ok,
+        Err,
+
+    }
 }
 
