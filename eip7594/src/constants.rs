@@ -17,6 +17,9 @@ pub const FIELD_ELEMENTS_PER_CELL: usize = 64;
 /// Note: This is originally specified in the 4844 specs.
 pub const FIELD_ELEMENTS_PER_BLOB: usize = 4096;
 
+/// The number of bytes needed to represent a blob.
+pub const BYTES_PER_BLOB: usize = FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT;
+
 /// The number of bytes needed to represent a cell.
 pub const BYTES_PER_CELL: usize = FIELD_ELEMENTS_PER_CELL * BYTES_PER_FIELD_ELEMENT;
 
