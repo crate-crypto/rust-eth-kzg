@@ -1,5 +1,6 @@
 extern crate eip7594;
 
+use eip7594::constants::BYTES_PER_BLOB;
 pub use eip7594::constants::{
     BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, FIELD_ELEMENTS_PER_BLOB,
 };
@@ -43,28 +44,48 @@ pub extern "C" fn prover_context_free(ctx: *mut ProverContext) {
     }
 }
 
+#[repr(C)]
+pub enum CResult {
+    Ok,
+    Err,
+}
+
+/// Safety:
+/// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+/// - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
+///   If it is more, this method will truncate the memory region. If it is less, then this method will read from random memory.
+/// - The caller must ensure that `out` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
 #[no_mangle]
-pub extern "C" fn blob_to_kzg_commitment(ctx: *const ProverContext, blob: *const u8, out: *mut u8) {
+pub extern "C" fn blob_to_kzg_commitment(
+    ctx: *const ProverContext,
+    blob: *const u8,
+    out: *mut u8,
+) -> CResult {
     if ctx.is_null() || blob.is_null() || out.is_null() {
         // TODO: We have ommited the error handling for null pointers at the moment.
         // TODO: Likely will panic in this case.
-        return;
+        return CResult::Err;
     }
 
     let (blob, ctx) = unsafe {
-        let blob_slice =
-            std::slice::from_raw_parts(blob, FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT);
+        // Note: If `blob` points to a slice that is more than the number of bytes for a blob
+        // This method will not panic and will instead truncate the memory region.
+        let blob_slice = std::slice::from_raw_parts(blob, BYTES_PER_BLOB);
         let ctx_ref = &*ctx;
 
         (blob_slice, ctx_ref)
     };
-
-    let commitment = ctx.0.blob_to_kzg_commitment(blob).unwrap();
+    let commitment = match ctx.0.blob_to_kzg_commitment(blob) {
+        Ok(commitment) => commitment,
+        Err(_) => return CResult::Err,
+    };
 
     unsafe {
         let commitment_data_slice = std::slice::from_raw_parts_mut(out, BYTES_PER_COMMITMENT);
         commitment_data_slice.copy_from_slice(&commitment);
     }
+
+    CResult::Ok
 }
 
 #[no_mangle]
@@ -80,8 +101,7 @@ pub extern "C" fn compute_cells_and_kzg_proofs(
     }
 
     let (blob, ctx) = unsafe {
-        let blob_slice =
-            std::slice::from_raw_parts(blob, FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT);
+        let blob_slice = std::slice::from_raw_parts(blob, BYTES_PER_BLOB);
         let ctx_ref = &*ctx;
 
         (blob_slice, ctx_ref)
@@ -175,7 +195,7 @@ pub mod test {
     #[test]
     fn prover_context_blob_to_kzg_commitment() {
         let ctx = prover_context_new();
-        let blob = vec![0u8; FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT];
+        let blob = vec![0u8; BYTES_PER_BLOB];
         let mut out = vec![0u8; BYTES_PER_COMMITMENT];
         blob_to_kzg_commitment(ctx, blob.as_ptr(), out.as_mut_ptr());
     }
@@ -183,7 +203,7 @@ pub mod test {
     #[test]
     fn prover_context_compute_cells_and_kzg_proofs() {
         let ctx = prover_context_new();
-        let blob = vec![0u8; FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT];
+        let blob = vec![0u8; BYTES_PER_BLOB];
         let mut out_cells = vec![0u8; NUM_BYTES_CELLS as usize];
         let mut out_proofs = vec![0u8; NUM_BYTES_PROOFS as usize];
         compute_cells_and_kzg_proofs(
