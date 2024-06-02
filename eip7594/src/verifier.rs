@@ -108,8 +108,12 @@ impl VerifierContext {
         }
     }
 
+    // TODO: take a slice instead of vectors here or something opaque like impl Iterator<Item = &[u8]>
     pub fn verify_cell_kzg_proof_batch(
         &self,
+        // This is a deduplicated list of row commitments
+        // It is not indicative of the total number of commitments in the batch.
+        // This is what row_indices is used for.
         row_commitments_bytes: Vec<Bytes48Ref>,
         row_indices: Vec<RowIndex>,
         column_indices: Vec<ColumnIndex>,
