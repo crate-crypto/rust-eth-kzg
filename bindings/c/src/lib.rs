@@ -1,11 +1,11 @@
 extern crate eip7594;
 
-use eip7594::constants::BYTES_PER_BLOB;
+use eip7594::constants::{BYTES_PER_BLOB, BYTES_PER_CELL};
 pub use eip7594::constants::{
     BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, FIELD_ELEMENTS_PER_BLOB,
 };
 use eip7594::prover::ProverContext as eip7594_ProverContext;
-use eip7594::verifier::VerifierContext as eip7594_VerifierContext;
+use eip7594::verifier::{VerifierContext as eip7594_VerifierContext, VerifierError};
 
 /// The total number of bytes needed to represent all of the proofs
 /// we generate for a blob.
@@ -233,6 +233,187 @@ pub extern "C" fn verifier_context_free(ctx: *mut VerifierContext) {
     unsafe {
         let _ = Box::from_raw(ctx);
     }
+}
+/// Safety:
+/// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+/// - The caller must ensure that `cell` points to a region of memory that is at least `BYTES_PER_CELL` bytes.
+/// - The caller must ensure that `commitment` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+/// - The caller must ensure that `proof` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+/// - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
+#[no_mangle]
+pub extern "C" fn verify_cell_kzg_proof(
+    ctx: *const VerifierContext,
+    cell: *const u8,
+    commitment: *const u8,
+    cell_id: u64,
+    proof: *const u8,
+    verified: *mut bool,
+) -> CResult {
+    // Check if pointers are null
+    if ctx.is_null()
+        || cell.is_null()
+        || commitment.is_null()
+        || proof.is_null()
+        || verified.is_null()
+    {
+        return CResult::Err;
+    }
+
+    let (cell, proof, commitment, ctx) = unsafe {
+        let cell_slice = std::slice::from_raw_parts(cell, BYTES_PER_CELL);
+        let proof_slice = std::slice::from_raw_parts(proof, BYTES_PER_COMMITMENT as usize);
+        let commitment_slice =
+            std::slice::from_raw_parts(commitment, BYTES_PER_COMMITMENT as usize);
+        let ctx_ref = &*ctx;
+
+        (cell_slice, proof_slice, commitment_slice, ctx_ref)
+    };
+
+    let verification_result = ctx
+        .0
+        .verify_cell_kzg_proof(commitment, cell_id, cell, proof);
+
+    let (proof_is_valid, result) = verification_result_to_bool_cresult(verification_result);
+    unsafe {
+        *verified = proof_is_valid;
+    }
+    result
+}
+
+// Note: The underlying cryptography library, uses a Result enum to indicate a proof failed.
+// Because from the callers perspective, as long as the verification procedure is invalid, it doesn't matter why it is invalid.
+// We need to unwrap it here because the FFI API is not rich enough to distinguish this.
+fn verification_result_to_bool_cresult(
+    verification_result: Result<(), VerifierError>,
+) -> (bool, CResult) {
+    match verification_result {
+        Ok(_) => (true, CResult::Ok),
+        Err(VerifierError::InvalidProof) => (false, CResult::Ok),
+        Err(_) => (false, CResult::Err),
+    }
+}
+
+/// Safety:
+/// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+/// - The caller must ensure that `row_commitments` points to a region of memory that is at least `row_commitments_length` bytes.
+/// - The caller must ensure that `row_indices` points to a region of memory that is at least `num_cells` bytes.
+/// - The caller must ensure that `column_indices` points to a region of memory that is at least `num_cells` bytes.
+/// - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` bytes.
+/// - The caller must ensure that `proofs` points to a region of memory that is at least `num_cells * BYTES_PER_COMMITMENT` bytes.
+/// - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
+///
+/// Note: cells, proofs and row_commitments are expected to be contiguous in memory.
+/// ie they have been concatenated together
+#[no_mangle]
+pub extern "C" fn verify_cell_kzg_proof_batch(
+    ctx: *const VerifierContext,
+    row_commitments_length: u64,
+    row_commitments: *const u8,
+    row_indices: *const u64,
+    column_indices: *const u64,
+    cells_length: u64,
+    cells: *const u8,
+    proofs: *const u8,
+    verified: *mut bool,
+) -> CResult {
+    // Check if pointers are null
+    if ctx.is_null()
+        || row_commitments.is_null()
+        || row_indices.is_null()
+        || column_indices.is_null()
+        || cells.is_null()
+        || proofs.is_null()
+        || verified.is_null()
+    {
+        return CResult::Err;
+    }
+
+    let row_commitments =
+        unsafe { std::slice::from_raw_parts(row_commitments, row_commitments_length as usize) };
+    let cells = unsafe { std::slice::from_raw_parts(cells, cells_length as usize) };
+    let num_cells = cells.len() / BYTES_PER_CELL as usize;
+
+    let proofs =
+        unsafe { std::slice::from_raw_parts(proofs, num_cells * BYTES_PER_COMMITMENT as usize) };
+
+    let row_indices = unsafe { std::slice::from_raw_parts(row_indices, num_cells) };
+    let column_indices = unsafe { std::slice::from_raw_parts(column_indices, num_cells) };
+
+    let ctx = unsafe { &*ctx };
+
+    let row_commitments: Vec<_> = row_commitments
+        .chunks_exact(BYTES_PER_COMMITMENT as usize)
+        .collect();
+    let cells = cells.chunks_exact(BYTES_PER_CELL as usize).collect();
+    let proofs = proofs.chunks_exact(BYTES_PER_COMMITMENT as usize).collect();
+
+    let verification_result = ctx.0.verify_cell_kzg_proof_batch(
+        row_commitments,
+        row_indices.to_vec(),
+        column_indices.to_vec(),
+        cells,
+        proofs,
+    );
+
+    let (proof_is_valid, result) = verification_result_to_bool_cresult(verification_result);
+    unsafe {
+        *verified = proof_is_valid;
+    }
+    result
+}
+
+/// Safety:
+/// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+/// - The caller must ensure that `cell_ids` points to a region of memory that is at least `num_cells` bytes.
+/// - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` bytes.
+/// - The caller must ensure that `out_cells` points to a region of memory that is at least `NUM_BYTES_CELLS` bytes.
+#[no_mangle]
+pub extern "C" fn recover_all_cells(
+    ctx: *const VerifierContext,
+    cells_length: u64,
+    cell_ids: *const u64,
+    cells: *const u8,
+    out_cells: *mut u8,
+) -> CResult {
+    // Check if pointers are null
+    if ctx.is_null() || cells.is_null() || cell_ids.is_null() || out_cells.is_null() {
+        return CResult::Err;
+    }
+
+    let cells = unsafe { std::slice::from_raw_parts(cells, cells_length as usize) };
+    let num_cells = cells_length as usize / BYTES_PER_CELL as usize;
+    let cell_ids = unsafe { std::slice::from_raw_parts(cell_ids, num_cells as usize) };
+    let ctx = unsafe { &*ctx };
+
+    let cells: Vec<_> = cells.chunks_exact(BYTES_PER_CELL as usize).collect();
+
+    let recovered_cells = match ctx.0.recover_all_cells(cell_ids.to_vec(), cells) {
+        Ok(recovered_cells) => recovered_cells,
+        Err(_) => return CResult::Err,
+    };
+
+    let cells_flattened: Vec<_> = recovered_cells
+        .iter()
+        .flat_map(|cell| cell.into_iter())
+        .copied()
+        .collect();
+
+    // Check that these are the correct sizes because callers will use these
+    // methods to allocate the output arrays.
+    assert_eq!(
+        cells_flattened.len() as u64,
+        NUM_BYTES_CELLS,
+        "This is a library bug. cells_flattened.len() != num_bytes_cells(), {} != {}",
+        cells_flattened.len(),
+        NUM_BYTES_CELLS
+    );
+
+    unsafe {
+        let cells_data_slice = std::slice::from_raw_parts_mut(out_cells, cells_flattened.len());
+        cells_data_slice.copy_from_slice(&cells_flattened);
+    }
+
+    CResult::Ok
 }
 
 #[cfg(test)]
