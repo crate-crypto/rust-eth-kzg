@@ -87,11 +87,10 @@ public static partial class PeerDASKZG
     [DllImport("c_peerdas_kzg", EntryPoint = "recover_all_cells", CallingConvention = CallingConvention.Cdecl)]
     private static extern Result InternalRecoverAllCells(IntPtr ctx, ulong cellsLength, byte[] cells, ulong cellIdsLength, ulong[] cellIds, byte[] outCells);
 
-    private enum Result
+    internal enum Result : uint
     {
         Ok,
         Err,
-
     }
 }
 
