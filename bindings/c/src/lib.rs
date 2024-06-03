@@ -24,12 +24,18 @@ pub const NUM_BYTES_CELLS: u64 = 262144;
 
 /*
 
-A note on safety:
+A note on safety and API:
 
 - It is the callers responsibility to ensure that the pointers that get passed in point to the minimum number of bytes required, to dereference them safely.
     - If the pointers, point to region of memory that is less than the minimum number of bytes required, then this method will read from random memory.
     - If the pointers point to a region of memory that is more than the minimum number of bytes required, then this method will essentially truncate the memory region.
 
+- For a particular instance, the length of the some parameters like blobs will always be the same.
+  This means we do not need to pass the length in as a parameter, but we do so, so that we can check the users expectations on
+  the expected length.
+
+  The alternative is to have the code calling the FFI API to check the length of the blob before calling this method.
+  However this is not ideal, because every language called via the FFI API will need to repeat the same checks.
 */
 
 // We re-define the structs so that they can be generated in the c-code as
@@ -67,19 +73,23 @@ pub enum CResult {
 #[no_mangle]
 pub extern "C" fn blob_to_kzg_commitment(
     ctx: *const ProverContext,
+    blob_length: u64,
     blob: *const u8,
     out: *mut u8,
 ) -> CResult {
     if ctx.is_null() || blob.is_null() || out.is_null() {
-        // TODO: We have ommited the error handling for null pointers at the moment.
-        // TODO: Likely will panic in this case.
+        return CResult::Err;
+    }
+
+    // Sanity check the blob length
+    if blob_length != BYTES_PER_BLOB as u64 {
         return CResult::Err;
     }
 
     let (blob, ctx) = unsafe {
         // Note: If `blob` points to a slice that is more than the number of bytes for a blob
         // This method will not panic and will instead truncate the memory region.
-        let blob_slice = std::slice::from_raw_parts(blob, BYTES_PER_BLOB);
+        let blob_slice = std::slice::from_raw_parts(blob, blob_length as usize);
         let ctx_ref = &*ctx;
 
         (blob_slice, ctx_ref)
@@ -104,11 +114,16 @@ pub extern "C" fn blob_to_kzg_commitment(
 #[no_mangle]
 pub extern "C" fn compute_cells(
     ctx: *const ProverContext,
+    blob_length: u64,
     blob: *const u8,
     out_cells: *mut u8,
 ) -> CResult {
     // Check if pointers are null
     if ctx.is_null() || blob.is_null() || out_cells.is_null() {
+        return CResult::Err;
+    }
+
+    if blob_length != BYTES_PER_BLOB as u64 {
         return CResult::Err;
     }
 
@@ -156,12 +171,17 @@ pub extern "C" fn compute_cells(
 #[no_mangle]
 pub extern "C" fn compute_cells_and_kzg_proofs(
     ctx: *const ProverContext,
+    blob_length: u64,
     blob: *const u8,
     out_cells: *mut u8,
     out_proofs: *mut u8,
 ) -> CResult {
     // Check if pointers are null
     if ctx.is_null() || blob.is_null() || out_cells.is_null() || out_proofs.is_null() {
+        return CResult::Err;
+    }
+
+    if blob_length != BYTES_PER_BLOB as u64 {
         return CResult::Err;
     }
 
@@ -243,9 +263,12 @@ pub extern "C" fn verifier_context_free(ctx: *mut VerifierContext) {
 #[no_mangle]
 pub extern "C" fn verify_cell_kzg_proof(
     ctx: *const VerifierContext,
+    cell_length: u64,
     cell: *const u8,
+    commitment_length: u64,
     commitment: *const u8,
     cell_id: u64,
+    proof_length: u64,
     proof: *const u8,
     verified: *mut bool,
 ) -> CResult {
@@ -255,6 +278,13 @@ pub extern "C" fn verify_cell_kzg_proof(
         || commitment.is_null()
         || proof.is_null()
         || verified.is_null()
+    {
+        return CResult::Err;
+    }
+
+    if cell_length != BYTES_PER_CELL as u64
+        || commitment_length != BYTES_PER_COMMITMENT as u64
+        || proof_length != BYTES_PER_COMMITMENT as u64
     {
         return CResult::Err;
     }
@@ -309,10 +339,13 @@ pub extern "C" fn verify_cell_kzg_proof_batch(
     ctx: *const VerifierContext,
     row_commitments_length: u64,
     row_commitments: *const u8,
+    row_indices_length: u64,
     row_indices: *const u64,
+    column_indices_length: u64,
     column_indices: *const u64,
     cells_length: u64,
     cells: *const u8,
+    proofs_length: u64,
     proofs: *const u8,
     verified: *mut bool,
 ) -> CResult {
@@ -328,13 +361,34 @@ pub extern "C" fn verify_cell_kzg_proof_batch(
         return CResult::Err;
     }
 
+    let num_cells = (cells_length / BYTES_PER_CELL as u64) as usize;
+    let num_commitments = (row_commitments_length / BYTES_PER_COMMITMENT as u64) as usize;
+
+    if (row_commitments_length as usize) != (BYTES_PER_COMMITMENT * num_commitments) {
+        return CResult::Err;
+    }
+
+    if (cells_length as usize) != (num_cells * BYTES_PER_CELL) {
+        return CResult::Err;
+    }
+
+    if (proofs_length as usize) != (BYTES_PER_COMMITMENT * num_cells) {
+        return CResult::Err;
+    }
+
+    if (row_indices_length as usize) != num_cells {
+        return CResult::Err;
+    }
+
+    if (column_indices_length as usize) != num_cells {
+        return CResult::Err;
+    }
+
     let row_commitments =
         unsafe { std::slice::from_raw_parts(row_commitments, row_commitments_length as usize) };
     let cells = unsafe { std::slice::from_raw_parts(cells, cells_length as usize) };
-    let num_cells = cells.len() / BYTES_PER_CELL as usize;
 
-    let proofs =
-        unsafe { std::slice::from_raw_parts(proofs, num_cells * BYTES_PER_COMMITMENT as usize) };
+    let proofs = unsafe { std::slice::from_raw_parts(proofs, proofs_length as usize) };
 
     let row_indices = unsafe { std::slice::from_raw_parts(row_indices, num_cells) };
     let column_indices = unsafe { std::slice::from_raw_parts(column_indices, num_cells) };
@@ -371,8 +425,9 @@ pub extern "C" fn verify_cell_kzg_proof_batch(
 pub extern "C" fn recover_all_cells(
     ctx: *const VerifierContext,
     cells_length: u64,
-    cell_ids: *const u64,
     cells: *const u8,
+    cell_ids_length: u64,
+    cell_ids: *const u64,
     out_cells: *mut u8,
 ) -> CResult {
     // Check if pointers are null
@@ -380,9 +435,16 @@ pub extern "C" fn recover_all_cells(
         return CResult::Err;
     }
 
-    let cells = unsafe { std::slice::from_raw_parts(cells, cells_length as usize) };
+    if cells_length % (BYTES_PER_CELL as u64) != 0 {
+        return CResult::Err;
+    }
     let num_cells = cells_length as usize / BYTES_PER_CELL as usize;
-    let cell_ids = unsafe { std::slice::from_raw_parts(cell_ids, num_cells as usize) };
+    if cell_ids_length != num_cells as u64 {
+        return CResult::Err;
+    }
+
+    let cells = unsafe { std::slice::from_raw_parts(cells, cells_length as usize) };
+    let cell_ids = unsafe { std::slice::from_raw_parts(cell_ids, cell_ids_length as usize) };
     let ctx = unsafe { &*ctx };
 
     let cells: Vec<_> = cells.chunks_exact(BYTES_PER_CELL as usize).collect();
@@ -422,14 +484,19 @@ mod tests {
         BYTES_PER_CELL, BYTES_PER_COMMITMENT, CELLS_PER_EXT_BLOB, NUM_PROOFS,
     };
 
+    use crate::{NUM_BYTES_CELLS, NUM_BYTES_PROOFS};
+
     #[test]
     fn test_num_bytes_proof_constant() {
-        assert_eq!(BYTES_PER_COMMITMENT * NUM_PROOFS, 6144);
+        assert_eq!(BYTES_PER_COMMITMENT * NUM_PROOFS, NUM_BYTES_PROOFS as usize);
     }
 
     #[test]
     fn test_num_bytes_cell_constant() {
-        assert_eq!(BYTES_PER_CELL * CELLS_PER_EXT_BLOB, 262144);
+        assert_eq!(
+            BYTES_PER_CELL * CELLS_PER_EXT_BLOB,
+            NUM_BYTES_CELLS as usize
+        );
     }
 }
 
@@ -449,7 +516,7 @@ pub mod test {
         let ctx = prover_context_new();
         let blob = vec![0u8; BYTES_PER_BLOB];
         let mut out = vec![0u8; BYTES_PER_COMMITMENT];
-        blob_to_kzg_commitment(ctx, blob.as_ptr(), out.as_mut_ptr());
+        blob_to_kzg_commitment(ctx, blob.len() as u64, blob.as_ptr(), out.as_mut_ptr());
     }
 
     #[test]
@@ -460,6 +527,7 @@ pub mod test {
         let mut out_proofs = vec![0u8; NUM_BYTES_PROOFS as usize];
         compute_cells_and_kzg_proofs(
             ctx,
+            blob.len() as u64,
             blob.as_ptr(),
             out_cells.as_mut_ptr(),
             out_proofs.as_mut_ptr(),
