@@ -39,6 +39,8 @@ public static partial class PeerDASKZG
             RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "dylib" :
             RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dll" : "";
 
+        // TODO: throw if extension is empty -- this should not happen though
+
         // Windows doesn't have a lib prefix
         string prefix =
            RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "lib" : "";
@@ -62,16 +64,28 @@ public static partial class PeerDASKZG
     private static extern void InternalProverContextFree(IntPtr ctx);
 
     [DllImport("c_peerdas_kzg", EntryPoint = "blob_to_kzg_commitment", CallingConvention = CallingConvention.Cdecl)]
-    private static extern Result InternalBlobToKzgCommitment(IntPtr ctx, byte[] blob, byte[] outCommitment);
+    private static extern Result InternalBlobToKzgCommitment(IntPtr ctx, ulong blobLength, byte[] blob, byte[] outCommitment);
+
+    [DllImport("c_peerdas_kzg", EntryPoint = "compute_cells", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Result InternalComputeCells(IntPtr ctx, ulong blobLength, byte[] blob, byte[] outCells);
 
     [DllImport("c_peerdas_kzg", EntryPoint = "compute_cells_and_kzg_proofs", CallingConvention = CallingConvention.Cdecl)]
-    private static extern void InternalComputeCellsAndKzgProofs(IntPtr ctx, byte[] blob, byte[] outCells, byte[] outProofs);
+    private static extern Result InternalComputeCellsAndKzgProofs(IntPtr ctx, ulong blobLength, byte[] blob, byte[] outCells, byte[] outProofs);
 
     [DllImport("c_peerdas_kzg", EntryPoint = "verifier_context_new", CallingConvention = CallingConvention.Cdecl)]
     private static extern IntPtr InternalVerifierContextNew();
 
     [DllImport("c_peerdas_kzg", EntryPoint = "verifier_context_free", CallingConvention = CallingConvention.Cdecl)]
     private static extern void InternalVerifierContextFree(IntPtr ctx);
+
+    [DllImport("c_peerdas_kzg", EntryPoint = "verify_cell_kzg_proof", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Result InternalVerifyCellKZGProof(IntPtr ctx, ulong cellLength, byte[] cell, ulong commitmentLength, byte[] commitment, ulong cellId, ulong proofLength, byte[] proof, out bool verified);
+
+    [DllImport("c_peerdas_kzg", EntryPoint = "verify_cell_kzg_proof_batch", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Result InternalVerifyCellKZGProofBatch(IntPtr ctx, ulong rowCommitmentsLength, byte[] rowCommitments, ulong rowIndicesLength, ulong[] rowIndices, ulong columnIndicesLength, ulong[] columnIndices, ulong cellsLength, byte[] cells, ulong proofsLength, byte[] proofs, out bool verified);
+
+    [DllImport("c_peerdas_kzg", EntryPoint = "recover_all_cells", CallingConvention = CallingConvention.Cdecl)]
+    private static extern Result InternalRecoverAllCells(IntPtr ctx, ulong cellsLength, byte[] cells, ulong cellIdsLength, ulong[] cellIds, byte[] outCells);
 
     private enum Result
     {
