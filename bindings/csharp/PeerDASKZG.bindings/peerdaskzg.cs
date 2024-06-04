@@ -1,6 +1,6 @@
 namespace PeerDASKZG;
 
-public static partial class PeerDASKZG
+public static unsafe partial class PeerDASKZG
 {
     // These constants are copied from the c-kzg csharp bindings file.
     // TODO: This is not ideal, since we want the Rust code to be the single source of truth
@@ -18,69 +18,58 @@ public static partial class PeerDASKZG
     public const int BytesPerCell = BytesPerFieldElement * FieldElementsPerCell;
     private const int CellsPerExtBlob = FieldElementsPerExtBlob / FieldElementsPerCell;
 
-    public static IntPtr ProverContextNew()
-    {
-        return InternalProverContextNew();
-    }
-
-    public static void ProverContextFree(IntPtr proverContextPtr)
-    {
-        InternalProverContextFree(proverContextPtr);
-    }
-
-    public static byte[] BlobToKzgCommitment(IntPtr proverContextPtr, byte[] blob)
+    public static unsafe byte[] BlobToKzgCommitment(IntPtr proverContextPtr, byte[] blob)
     {
         byte[] commitment = new byte[BytesPerCommitment];
 
-        Result result = InternalBlobToKzgCommitment(proverContextPtr, Convert.ToUInt64(blob.Length), blob, commitment);
+        Result result = InternalBlobToKzgCommitment(IntPtrToPeerDASContext(proverContextPtr), Convert.ToUInt64(blob.Length), blob, commitment);
         ThrowOnError(result);
 
         return commitment;
     }
 
-    public static byte[] ComputeCells(IntPtr proverContextPtr, byte[] blob)
+    public static unsafe byte[] ComputeCells(IntPtr proverContextPtr, byte[] blob)
     {
         byte[] cells = new byte[BytesForAllCells];
 
-        Result result = InternalComputeCells(proverContextPtr, Convert.ToUInt64(blob.Length), blob, cells);
+        Result result = InternalComputeCells(IntPtrToPeerDASContext(proverContextPtr), Convert.ToUInt64(blob.Length), blob, cells);
         ThrowOnError(result);
         return cells;
     }
 
-    public static (byte[], byte[]) ComputeCellsAndKZGProofs(IntPtr proverContextPtr, byte[] blob)
+    public static unsafe (byte[], byte[]) ComputeCellsAndKZGProofs(IntPtr proverContextPtr, byte[] blob)
     {
         byte[] cells = new byte[BytesForAllCells];
         byte[] proofs = new byte[BytesForAllProofs];
 
-        Result result = InternalComputeCellsAndKzgProofs(proverContextPtr, Convert.ToUInt64(blob.Length), blob, cells, proofs);
+        Result result = InternalComputeCellsAndKzgProofs(IntPtrToPeerDASContext(proverContextPtr), Convert.ToUInt64(blob.Length), blob, cells, proofs);
         ThrowOnError(result);
 
         return (cells, proofs);
     }
 
-    public static IntPtr VerifierContextNew()
+    public static unsafe IntPtr PeerDASContextNew()
     {
-        return InternalVerifierContextNew();
+        return PeerDASContextToIntPtr(InternalPeerDASContextNew());
     }
 
-    public static void VerifierContextFree(IntPtr verifierContextPtr)
+    public static unsafe void PeerDASContextFree(IntPtr peerDASContextPtr)
     {
-        InternalVerifierContextFree(verifierContextPtr);
+        InternalPeerDASContextFree(IntPtrToPeerDASContext(peerDASContextPtr));
     }
 
-    public static bool VerifyCellKZGProof(IntPtr verifierContextPtr, byte[] cell, byte[] commitment, ulong cellId, byte[] proof)
+    public static unsafe bool VerifyCellKZGProof(IntPtr verifierContextPtr, byte[] cell, byte[] commitment, ulong cellId, byte[] proof)
     {
-        Result result = InternalVerifyCellKZGProof(verifierContextPtr, Convert.ToUInt64(cell.Length), cell, Convert.ToUInt64(commitment.Length), commitment, cellId, Convert.ToUInt64(proof.Length), proof, out var verified);
+        Result result = InternalVerifyCellKZGProof(IntPtrToPeerDASContext(verifierContextPtr), Convert.ToUInt64(cell.Length), cell, Convert.ToUInt64(commitment.Length), commitment, cellId, Convert.ToUInt64(proof.Length), proof, out var verified);
         ThrowOnError(result);
 
         return verified;
     }
 
-
     // TODO: switch argument order to match specs closer on all functions
     public static bool VerifyCellKZGProofBatch(IntPtr verifierContextPtr, byte[] rowCommitments, ulong[] rowIndices, ulong[] columnIndices, byte[] cells, byte[] proofs)
     {
-        Result result = InternalVerifyCellKZGProofBatch(verifierContextPtr, Convert.ToUInt64(rowCommitments.Length), rowCommitments, Convert.ToUInt64(rowIndices.Length), rowIndices, Convert.ToUInt64(columnIndices.Length), columnIndices, Convert.ToUInt64(cells.Length), cells, Convert.ToUInt64(proofs.Length), proofs, out var verified);
+        Result result = InternalVerifyCellKZGProofBatch(IntPtrToPeerDASContext(verifierContextPtr), Convert.ToUInt64(rowCommitments.Length), rowCommitments, Convert.ToUInt64(rowIndices.Length), rowIndices, Convert.ToUInt64(columnIndices.Length), columnIndices, Convert.ToUInt64(cells.Length), cells, Convert.ToUInt64(proofs.Length), proofs, out var verified);
         ThrowOnError(result);
 
         return verified;
@@ -90,7 +79,7 @@ public static partial class PeerDASKZG
     {
         byte[] recoveredCells = new byte[BytesForAllCells];
 
-        Result result = InternalRecoverAllCells(verifierContextPtr, Convert.ToUInt64(cells.Length), cells, Convert.ToUInt64(cellIds.Length), cellIds, recoveredCells);
+        Result result = InternalRecoverAllCells(IntPtrToPeerDASContext(verifierContextPtr), Convert.ToUInt64(cells.Length), cells, Convert.ToUInt64(cellIds.Length), cellIds, recoveredCells);
         ThrowOnError(result);
 
         return recoveredCells;
@@ -107,5 +96,17 @@ public static partial class PeerDASKZG
             default:
                 throw new ApplicationException("PeerDASKZG returned an unexpected result variant");
         }
+    }
+
+    // TODO: Ideally, these methods are not needed and we use PeerDASContext* directly
+    // instead of IntPtr.
+    // The csharp code, in particular tests, seems to not be able to handle pointers directly
+    public static IntPtr PeerDASContextToIntPtr(PeerDASContext* context)
+    {
+        return new IntPtr(context);
+    }
+    public static PeerDASContext* IntPtrToPeerDASContext(IntPtr ptr)
+    {
+        return (PeerDASContext*)ptr.ToPointer();
     }
 }
