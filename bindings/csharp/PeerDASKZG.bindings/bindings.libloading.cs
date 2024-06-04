@@ -17,8 +17,8 @@ public static unsafe partial class PeerDASKZG
     private static IntPtr LoadNativeLibrary(Assembly _, string path)
     {
         // This checks whether the requested library is the one we're interested in
-        // ie this class can only be used to load a dynamic library with the name "c_peerdas_kzg"
-        if (!path.Equals("c_peerdas_kzg", StringComparison.OrdinalIgnoreCase))
+        // ie this class can only be used to load a dynamic library with the name `__DllName`
+        if (!path.Equals(__DllName, StringComparison.OrdinalIgnoreCase))
         {
             return IntPtr.Zero;
         }
