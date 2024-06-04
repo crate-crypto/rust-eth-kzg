@@ -6,23 +6,104 @@ const NUM_BYTES_PROOFS* = 6144
 const NUM_BYTES_CELLS* = 262144
 
 
-type ProverContext* {.incompleteStruct.} = object
+## The settings object for the Context.
+# This is used to indicate if the context is for proving only, verifying only or both.
+type CContextSetting* = enum
+  ProvingOnly
+  VerifyOnly
+  Both
 
-type VerifierContext* {.incompleteStruct.} = object
+## The Result of each FFI function call.
+# This is used to indicate if the function call was successful or not.
+type CResult* = enum
+  Ok
+  Err
 
-proc prover_context_new*(): ptr ProverContext {.importc: "prover_context_new".}
+type PeerDASContext* {.incompleteStruct.} = object
 
-proc prover_context_free*(ctx: ptr ProverContext): void {.importc: "prover_context_free".}
+proc peerdas_context_new*(): ptr PeerDASContext {.importc: "peerdas_context_new".}
 
-proc blob_to_kzg_commitment*(ctx: ptr ProverContext,
+proc peerdas_context_new_with_setting*(setting: CContextSetting): ptr PeerDASContext {.importc: "peerdas_context_new_with_setting".}
+
+proc peerdas_context_free*(ctx: ptr PeerDASContext): void {.importc: "peerdas_context_free".}
+
+## Safety:
+# - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+# - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
+# - The caller must ensure that `out` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+proc blob_to_kzg_commitment*(ctx: ptr PeerDASContext,
+                             blob_length: uint64,
                              blob: pointer,
-                             outx: pointer): uint8 {.importc: "blob_to_kzg_commitment".}
+                             outx: pointer): CResult {.importc: "blob_to_kzg_commitment".}
 
-proc compute_cells_and_kzg_proofs*(ctx: ptr ProverContext,
+## Safety:
+# - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+# - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
+# - The caller must ensure that `out_cells` points to a region of memory that is at least `NUM_BYTES_CELLS` bytes.
+proc compute_cells*(ctx: ptr PeerDASContext,
+                    blob_length: uint64,
+                    blob: pointer,
+                    out_cells: pointer): CResult {.importc: "compute_cells".}
+
+## Safety:
+# - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+# - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
+# - The caller must ensure that `out_cells` points to a region of memory that is at least `NUM_BYTES_CELLS` bytes.
+# - The caller must ensure that `out_proofs` points to a region of memory that is at least `NUM_BYTES_PROOFS` bytes.
+proc compute_cells_and_kzg_proofs*(ctx: ptr PeerDASContext,
+                                   blob_length: uint64,
                                    blob: pointer,
                                    out_cells: pointer,
-                                   out_proofs: pointer): void {.importc: "compute_cells_and_kzg_proofs".}
+                                   out_proofs: pointer): CResult {.importc: "compute_cells_and_kzg_proofs".}
 
-proc verifier_context_new*(): ptr VerifierContext {.importc: "verifier_context_new".}
+## Safety:
+# - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+# - The caller must ensure that `cell` points to a region of memory that is at least `BYTES_PER_CELL` bytes.
+# - The caller must ensure that `commitment` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+# - The caller must ensure that `proof` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+# - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
+proc verify_cell_kzg_proof*(ctx: ptr PeerDASContext,
+                            cell_length: uint64,
+                            cell: pointer,
+                            commitment_length: uint64,
+                            commitment: pointer,
+                            cell_id: uint64,
+                            proof_length: uint64,
+                            proof: pointer,
+                            verified: pointer): CResult {.importc: "verify_cell_kzg_proof".}
 
-proc verifier_context_free*(ctx: ptr VerifierContext): void {.importc: "verifier_context_free".}
+## Safety:
+# - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+# - The caller must ensure that `row_commitments` points to a region of memory that is at least `row_commitments_length` bytes.
+# - The caller must ensure that `row_indices` points to a region of memory that is at least `num_cells` bytes.
+# - The caller must ensure that `column_indices` points to a region of memory that is at least `num_cells` bytes.
+# - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` bytes.
+# - The caller must ensure that `proofs` points to a region of memory that is at least `num_cells * BYTES_PER_COMMITMENT` bytes.
+# - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
+#
+# Note: cells, proofs and row_commitments are expected to be contiguous in memory.
+# ie they have been concatenated together
+proc verify_cell_kzg_proof_batch*(ctx: ptr PeerDASContext,
+                                  row_commitments_length: uint64,
+                                  row_commitments: pointer,
+                                  row_indices_length: uint64,
+                                  row_indices: pointer,
+                                  column_indices_length: uint64,
+                                  column_indices: pointer,
+                                  cells_length: uint64,
+                                  cells: pointer,
+                                  proofs_length: uint64,
+                                  proofs: pointer,
+                                  verified: pointer): CResult {.importc: "verify_cell_kzg_proof_batch".}
+
+## Safety:
+# - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+# - The caller must ensure that `cell_ids` points to a region of memory that is at least `num_cells` bytes.
+# - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` bytes.
+# - The caller must ensure that `out_cells` points to a region of memory that is at least `NUM_BYTES_CELLS` bytes.
+proc recover_all_cells*(ctx: ptr PeerDASContext,
+                        cells_length: uint64,
+                        cells: pointer,
+                        cell_ids_length: uint64,
+                        cell_ids: pointer,
+                        out_cells: pointer): CResult {.importc: "recover_all_cells".}
