@@ -4,7 +4,7 @@ using System.Runtime.Loader;
 
 namespace PeerDASKZG;
 
-public static partial class PeerDASKZG
+public static unsafe partial class PeerDASKZG
 {
     // When the static methods are called, .NET will look for the library in some
     // conventional locations. If it cannot find it, it will then trigger 
@@ -39,7 +39,11 @@ public static partial class PeerDASKZG
             RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? "dylib" :
             RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "dll" : "";
 
-        // TODO: throw if extension is empty -- this should not happen though
+        // All platforms should have an extension, an unknown extension is unexpected and an error
+        if (extension == "")
+        {
+            return IntPtr.Zero;
+        }
 
         // Windows doesn't have a lib prefix
         string prefix =
@@ -57,40 +61,39 @@ public static partial class PeerDASKZG
         return IntPtr.Zero;
     }
 
-    [DllImport("c_peerdas_kzg", EntryPoint = "prover_context_new", CallingConvention = CallingConvention.Cdecl)]
-    private static extern IntPtr InternalProverContextNew();
+    [DllImport("c_peerdas_kzg", EntryPoint = "peerdas_context_new", CallingConvention = CallingConvention.Cdecl)]
+    private static extern PeerDASContext* InternalPeerDASContextNew();
 
-    [DllImport("c_peerdas_kzg", EntryPoint = "prover_context_free", CallingConvention = CallingConvention.Cdecl)]
-    private static extern void InternalProverContextFree(IntPtr ctx);
+    [DllImport("c_peerdas_kzg", EntryPoint = "peerdas_context_free", CallingConvention = CallingConvention.Cdecl)]
+    private static extern void InternalPeerDASContextFree(PeerDASContext* ctx);
 
     [DllImport("c_peerdas_kzg", EntryPoint = "blob_to_kzg_commitment", CallingConvention = CallingConvention.Cdecl)]
-    private static extern Result InternalBlobToKzgCommitment(IntPtr ctx, ulong blobLength, byte[] blob, byte[] outCommitment);
+    private static extern Result InternalBlobToKzgCommitment(PeerDASContext* ctx, ulong blobLength, byte[] blob, byte[] outCommitment);
 
     [DllImport("c_peerdas_kzg", EntryPoint = "compute_cells", CallingConvention = CallingConvention.Cdecl)]
-    private static extern Result InternalComputeCells(IntPtr ctx, ulong blobLength, byte[] blob, byte[] outCells);
+    private static extern Result InternalComputeCells(PeerDASContext* ctx, ulong blobLength, byte[] blob, byte[] outCells);
 
     [DllImport("c_peerdas_kzg", EntryPoint = "compute_cells_and_kzg_proofs", CallingConvention = CallingConvention.Cdecl)]
-    private static extern Result InternalComputeCellsAndKzgProofs(IntPtr ctx, ulong blobLength, byte[] blob, byte[] outCells, byte[] outProofs);
-
-    [DllImport("c_peerdas_kzg", EntryPoint = "verifier_context_new", CallingConvention = CallingConvention.Cdecl)]
-    private static extern IntPtr InternalVerifierContextNew();
-
-    [DllImport("c_peerdas_kzg", EntryPoint = "verifier_context_free", CallingConvention = CallingConvention.Cdecl)]
-    private static extern void InternalVerifierContextFree(IntPtr ctx);
+    private static extern Result InternalComputeCellsAndKzgProofs(PeerDASContext* ctx, ulong blobLength, byte[] blob, byte[] outCells, byte[] outProofs);
 
     [DllImport("c_peerdas_kzg", EntryPoint = "verify_cell_kzg_proof", CallingConvention = CallingConvention.Cdecl)]
-    private static extern Result InternalVerifyCellKZGProof(IntPtr ctx, ulong cellLength, byte[] cell, ulong commitmentLength, byte[] commitment, ulong cellId, ulong proofLength, byte[] proof, out bool verified);
+    private static extern Result InternalVerifyCellKZGProof(PeerDASContext* ctx, ulong cellLength, byte[] cell, ulong commitmentLength, byte[] commitment, ulong cellId, ulong proofLength, byte[] proof, out bool verified);
 
     [DllImport("c_peerdas_kzg", EntryPoint = "verify_cell_kzg_proof_batch", CallingConvention = CallingConvention.Cdecl)]
-    private static extern Result InternalVerifyCellKZGProofBatch(IntPtr ctx, ulong rowCommitmentsLength, byte[] rowCommitments, ulong rowIndicesLength, ulong[] rowIndices, ulong columnIndicesLength, ulong[] columnIndices, ulong cellsLength, byte[] cells, ulong proofsLength, byte[] proofs, out bool verified);
+    private static extern Result InternalVerifyCellKZGProofBatch(PeerDASContext* ctx, ulong rowCommitmentsLength, byte[] rowCommitments, ulong rowIndicesLength, ulong[] rowIndices, ulong columnIndicesLength, ulong[] columnIndices, ulong cellsLength, byte[] cells, ulong proofsLength, byte[] proofs, out bool verified);
 
     [DllImport("c_peerdas_kzg", EntryPoint = "recover_all_cells", CallingConvention = CallingConvention.Cdecl)]
-    private static extern Result InternalRecoverAllCells(IntPtr ctx, ulong cellsLength, byte[] cells, ulong cellIdsLength, ulong[] cellIds, byte[] outCells);
+    private static extern Result InternalRecoverAllCells(PeerDASContext* ctx, ulong cellsLength, byte[] cells, ulong cellIdsLength, ulong[] cellIds, byte[] outCells);
 
     internal enum Result : uint
     {
         Ok,
         Err,
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe partial struct PeerDASContext
+    {
     }
 }
 
