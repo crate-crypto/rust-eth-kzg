@@ -493,6 +493,19 @@ fn _verify_cell_kzg_proof_batch(
     proofs: *const u8,
     verified: *mut bool,
 ) -> Result<(), CResult> {
+    // When the arrays are empty in the caller language, the pointer might be null
+    // This was witnessed in csharp.
+    // For now, we will check for an empty batch size and return early, for both optimization purposes
+    // and for safety.
+    // TODO: we could make it so that the client needs to worry about making sure the ptr is not nil
+    // TODO: This is an easy guarantee to put in languages and does not add a lot of code.
+    //
+    // TODO: We should also keep the null pointer checks so that we never have UB if the library is used incorrectly.
+    if cells_length == 0 {
+        unsafe { *verified = true };
+        return Ok(());
+    }
+
     // Pointer checks
     //
     let ctx = deref_const(ctx)?;
