@@ -445,6 +445,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "csbindgen"
+version = "1.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf70eb656f35e0e6956cbde31c66431c53d8a546823489719099c71525767a9c"
+dependencies = [
+ "regex",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "csharp_peerdas_kzg"
+version = "0.3.0"
+dependencies = [
+ "csbindgen",
+ "toml",
+]
+
+[[package]]
 name = "ctor"
 version = "0.2.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
