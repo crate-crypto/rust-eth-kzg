@@ -5,6 +5,7 @@ members = [
     "bindings/java/rust_code",
     "bindings/node",
     "bindings/nim/rust_code",
+    "bindings/csharp/rust_code",
     "bls12_381",
     "eip7594",
     "kzg_multi_open",
