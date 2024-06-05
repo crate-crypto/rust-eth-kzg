@@ -35,12 +35,12 @@ jobs:
 
       - name: Restore .NET dependencies
         run: dotnet restore
-        working-directory: bindings/csharp
+        working-directory: bindings/csharp/csharp_code
 
       - name: Build .NET project
         run: dotnet build --no-restore
-        working-directory: bindings/csharp
+        working-directory: bindings/csharp/csharp_code
 
       - name: Run .NET tests
         run: dotnet test --no-build --verbosity normal
-        working-directory: bindings/csharp
+        working-directory: bindings/csharp/csharp_code

@@ -34,7 +34,7 @@ public class ReferenceTests
     }
 
     private IntPtr _context;
-    private const string TestDir = "../../../../../../consensus_test_vectors";
+    private const string TestDir = "../../../../../../../consensus_test_vectors";
     private readonly string _blobToKzgCommitmentTests = Path.Join(TestDir, "blob_to_kzg_commitment");
     private readonly string _computeCellsTests = Path.Join(TestDir, "compute_cells");
     private readonly string _computeCellsAndKzgProofsTests = Path.Join(TestDir, "compute_cells_and_kzg_proofs");

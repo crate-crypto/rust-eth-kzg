@@ -44,7 +44,7 @@
                 "bindings/java/java_code/build.gradle",
                 {
                     "type": "xml",
-                    "path": "bindings/csharp/PeerDASKZG.bindings/PeerDASKZG.csproj",
+                    "path": "bindings/csharp/csharp_code/PeerDASKZG.bindings/PeerDASKZG.csproj",
                     "xpath": "//Project/PropertyGroup/Version"
                 },
                 {

@@ -4,7 +4,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
-OUT_DIR="$PROJECT_ROOT/bindings/csharp/PeerDASKZG.bindings/runtimes"
+OUT_DIR="$PROJECT_ROOT/bindings/csharp/csharp_code/PeerDASKZG.bindings/runtimes"
 LIB_TYPE="dynamic"
 LIB_NAME="c_peerdas_kzg"
 $PROJECT_ROOT/scripts/compile_to_native.sh Darwin arm64 $LIB_NAME $LIB_TYPE $OUT_DIR
