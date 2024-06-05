@@ -5,14 +5,13 @@ use std::path::PathBuf;
 const PATH_FOR_NIM_HEADER: &str = "nim/nim_code/src/header.nim";
 
 fn main() {
-    // This will run after the c headers are built, since this has a dependency on
-    // the c library
-    println!("cargo:rerun-if-changed=src/");
-    let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
-    let crate_dir = PathBuf::from(crate_dir);
+    println!(
+        "cargo:rerun-if-changed={}",
+        path_to_bindings_folder().display()
+    );
 
     // Go up two directories to be at bindings parent directory
-    let parent = crate_dir.parent().unwrap().parent().unwrap().to_path_buf();
+    let parent = path_to_bindings_folder();
     let path_to_c_crate = parent.join("c");
 
     let output_file = parent.join(PATH_FOR_NIM_HEADER).display().to_string();
@@ -24,4 +23,12 @@ fn main() {
         .generate()
         .unwrap()
         .write_to_file(&output_file);
+}
+
+fn path_to_bindings_folder() -> PathBuf {
+    let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+    let crate_dir = PathBuf::from(crate_dir);
+    // Go up two directories to be at bindings parent directory
+    let parent = crate_dir.parent().unwrap().parent().unwrap().to_path_buf();
+    parent
 }
