@@ -1,3 +1,5 @@
+using PeerDAS.Native;
+using static PeerDAS.Native.NativeMethods;
 
 namespace PeerDASKZG;
 
