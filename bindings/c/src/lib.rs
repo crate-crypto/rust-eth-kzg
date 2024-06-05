@@ -122,7 +122,7 @@ pub enum CResultStatus {
 #[repr(C)]
 pub struct CResult {
     pub status: CResultStatus,
-    pub error_msg: *const std::os::raw::c_char,
+    pub error_msg: *mut std::os::raw::c_char,
 }
 
 impl CResult {
@@ -137,7 +137,7 @@ impl CResult {
     pub fn with_ok() -> Self {
         CResult {
             status: CResultStatus::Ok,
-            error_msg: std::ptr::null(),
+            error_msg: std::ptr::null_mut(),
         }
     }
 }
