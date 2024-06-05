@@ -11,3 +11,4 @@ repository.workspace = true
 
 [build-dependencies]
 csbindgen = "1.8.0"
+toml = "0.5"
