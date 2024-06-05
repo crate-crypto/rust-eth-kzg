@@ -2,9 +2,9 @@
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 
-namespace PeerDASKZG;
+namespace PeerDAS.Native;
 
-public static unsafe partial class PeerDASKZG
+public static unsafe partial class NativeMethods
 {
     // When the static methods are called, .NET will look for the library in some
     // conventional locations. If it cannot find it, it will then trigger 
@@ -12,9 +12,9 @@ public static unsafe partial class PeerDASKZG
     // The below just says that LoadNativeLibrary will handle this event.
     //
     // The first parameter to DLLImport is the path that gets passed to the event handler.
-    static PeerDASKZG() => AssemblyLoadContext.Default.ResolvingUnmanagedDll += LoadNativeLibrary;
+    static NativeMethods() => AssemblyLoadContext.Default.ResolvingUnmanagedDll += LoadNativeLibrary;
 
-    private static IntPtr LoadNativeLibrary(Assembly _, string path)
+    public static IntPtr LoadNativeLibrary(Assembly _, string path)
     {
         // This checks whether the requested library is the one we're interested in
         // ie this class can only be used to load a dynamic library with the name `__DllName`
