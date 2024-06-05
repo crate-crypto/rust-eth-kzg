@@ -109,21 +109,58 @@ pub enum CContextSetting {
     Both,
 }
 
-/// The Result of each FFI function call.
-/// This is used to indicate if the function call was successful or not.
+/// A C-style enum to indicate the status of each function call
 #[repr(C)]
-pub enum CResult {
+pub enum CResultStatus {
     Ok,
     Err,
 }
 
+/// The return value of each function call.
+/// This is a C-style struct that contains the status of the call and an error message, if
+/// the status was an error.
+#[repr(C)]
+pub struct CResult {
+    pub status: CResultStatus,
+    pub error_msg: *const std::os::raw::c_char,
+}
+
+impl CResult {
+    pub fn with_error(error_msg: &str) -> Self {
+        let error_msg = std::ffi::CString::new(error_msg).unwrap();
+        CResult {
+            status: CResultStatus::Err,
+            error_msg: error_msg.into_raw(),
+        }
+    }
+
+    pub fn with_ok() -> Self {
+        CResult {
+            status: CResultStatus::Ok,
+            error_msg: std::ptr::null(),
+        }
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn free_error_message(c_message: *mut std::os::raw::c_char) {
+    // check if the pointer is null
+    if c_message.is_null() {
+        return;
+    }
+    // Safety: Deallocate the memory allocated for the C-style string
+    unsafe {
+        let _ = std::ffi::CString::from_raw(c_message);
+    };
+}
+
 // Helper methods for dereferencing raw pointers and writing to slices
 //
-fn deref_mut<'a, T>(ptr: *mut T) -> Result<&'a mut T, CResult> {
-    unsafe { ptr.as_mut().map_or(Err(CResult::Err), |p| Ok(p)) }
+fn deref_mut<'a, T>(ptr: *mut T) -> Result<&'a mut T, CResultStatus> {
+    unsafe { ptr.as_mut().map_or(Err(CResultStatus::Err), |p| Ok(p)) }
 }
-fn deref_const<'a, T>(ptr: *const T) -> Result<&'a T, CResult> {
-    unsafe { ptr.as_ref().map_or(Err(CResult::Err), |p| Ok(p)) }
+fn deref_const<'a, T>(ptr: *const T) -> Result<&'a T, CResultStatus> {
+    unsafe { ptr.as_ref().map_or(Err(CResultStatus::Err), |p| Ok(p)) }
 }
 // TODO: We could return the number of bytes written to the C function so they can check if the length is correct.
 fn write_to_slice<T: Copy>(ptr: &mut T, data: &[T]) {
@@ -148,7 +185,7 @@ pub extern "C" fn blob_to_kzg_commitment(
     out: *mut u8,
 ) -> CResult {
     match _blob_to_kzg_commitment(ctx, blob_length, blob, out) {
-        Ok(_) => CResult::Ok,
+        Ok(_) => CResult::with_ok(),
         Err(err) => return err,
     }
 }
@@ -160,15 +197,22 @@ fn _blob_to_kzg_commitment(
 ) -> Result<(), CResult> {
     // Pointer checks
     //
-    let ctx = deref_const(ctx)?;
-    let ctx = ctx.prover_ctx().ok_or(CResult::Err)?;
-    let blob = deref_const(blob)?;
-    let out = deref_mut(out)?;
+    let ctx = deref_const(ctx).map_err(|_| CResult::with_error("context has a null ptr"))?;
+    let ctx = ctx.prover_ctx().ok_or(CResultStatus::Err).map_err(|_| {
+        CResult::with_error("context does not have a valid pointer to a prover structure")
+    })?;
+    let blob = deref_const(blob)
+        .map_err(|_| CResult::with_error("could not dereference pointer to blob"))?;
+    let out = deref_mut(out)
+        .map_err(|_| CResult::with_error("could not dereference pointer to the output"))?;
 
     // Length checks
     //
     if blob_length != BYTES_PER_BLOB as u64 {
-        return Err(CResult::Err);
+        return Err(CResult::with_error(&format!(
+            "Invalid blob length. Expected: {}, Got: {}",
+            BYTES_PER_BLOB, blob_length
+        )));
     }
 
     // Convert immutable references to slices
@@ -177,7 +221,9 @@ fn _blob_to_kzg_commitment(
 
     // Computation
     //
-    let commitment = ctx.blob_to_kzg_commitment(blob).map_err(|_| CResult::Err)?;
+    let commitment = ctx
+        .blob_to_kzg_commitment(blob)
+        .map_err(|err| CResult::with_error(&format!("{:?}", err)))?;
     assert!(
         commitment.len() == BYTES_PER_COMMITMENT as usize,
         "This is a library bug. commitment.len() != BYTES_PER_COMMITMENT, {} != {}",
@@ -204,7 +250,7 @@ pub extern "C" fn compute_cells(
     out_cells: *mut u8,
 ) -> CResult {
     match _compute_cells(ctx, blob_length, blob, out_cells) {
-        Ok(_) => return CResult::Ok,
+        Ok(_) => return CResult::with_ok(),
         Err(err) => return err,
     }
 }
@@ -217,15 +263,22 @@ fn _compute_cells(
 ) -> Result<(), CResult> {
     // Pointer checks
     //
-    let ctx = deref_const(ctx)?;
-    let ctx = ctx.prover_ctx().ok_or(CResult::Err)?;
-    let blob = deref_const(blob)?;
-    let out_cells = deref_mut(out_cells)?;
+    let ctx = deref_const(ctx).map_err(|_| CResult::with_error("context has a null ptr"))?;
+    let ctx = ctx.prover_ctx().ok_or(CResultStatus::Err).map_err(|_| {
+        CResult::with_error("context does not have a valid pointer to a prover structure")
+    })?;
+    let blob = deref_const(blob)
+        .map_err(|_| CResult::with_error("could not dereference pointer to blob"))?;
+    let out_cells = deref_mut(out_cells)
+        .map_err(|_| CResult::with_error("could not dereference pointer to the output"))?;
 
     // Length checks
     //
     if blob_length != BYTES_PER_BLOB as u64 {
-        return Err(CResult::Err);
+        return Err(CResult::with_error(&format!(
+            "Invalid blob length. Expected: {}, Got: {}",
+            BYTES_PER_BLOB, blob_length
+        )));
     }
 
     // Convert immutable references to slices
@@ -234,7 +287,9 @@ fn _compute_cells(
 
     // Computation
     //
-    let cells = ctx.compute_cells(blob).map_err(|_| CResult::Err)?;
+    let cells = ctx
+        .compute_cells(blob)
+        .map_err(|err| CResult::with_error(&format!("{:?}", err)))?;
 
     let cells_flattened: Vec<_> = cells
         .iter()
@@ -270,7 +325,7 @@ pub extern "C" fn compute_cells_and_kzg_proofs(
     out_proofs: *mut u8,
 ) -> CResult {
     match _compute_cells_and_kzg_proofs(ctx, blob_length, blob, out_cells, out_proofs) {
-        Ok(_) => return CResult::Ok,
+        Ok(_) => return CResult::with_ok(),
         Err(err) => return err,
     }
 }
@@ -283,16 +338,24 @@ fn _compute_cells_and_kzg_proofs(
 ) -> Result<(), CResult> {
     // Pointer checks
     //
-    let ctx = deref_const(ctx)?;
-    let ctx = ctx.prover_ctx().ok_or(CResult::Err)?;
-    let blob = deref_const(blob)?;
-    let out_cells = deref_mut(out_cells)?;
-    let out_proofs = deref_mut(out_proofs)?;
+    let ctx = deref_const(ctx).map_err(|_| CResult::with_error("context has a null ptr"))?;
+    let ctx = ctx.prover_ctx().ok_or(CResultStatus::Err).map_err(|_| {
+        CResult::with_error("context does not have a valid pointer to a prover structure")
+    })?;
+    let blob = deref_const(blob)
+        .map_err(|_| CResult::with_error("could not dereference pointer to blob"))?;
+    let out_cells = deref_mut(out_cells)
+        .map_err(|_| CResult::with_error("could not dereference pointer to the output cells"))?;
+    let out_proofs = deref_mut(out_proofs)
+        .map_err(|_| CResult::with_error("could not dereference pointer to the output proofs"))?;
 
     // Length checks
     //
     if blob_length != BYTES_PER_BLOB as u64 {
-        return Err(CResult::Err);
+        return Err(CResult::with_error(&format!(
+            "Invalid blob length. Expected: {}, Got: {}",
+            BYTES_PER_BLOB, blob_length
+        )));
     }
 
     // Convert immutable references to slices
@@ -303,7 +366,7 @@ fn _compute_cells_and_kzg_proofs(
     //
     let (cells, proofs) = ctx
         .compute_cells_and_kzg_proofs(blob)
-        .map_err(|_| CResult::Err)?;
+        .map_err(|err| CResult::with_error(&format!("{:?}", err)))?;
 
     // TODO: This is not consistent with the node way of returning cells and proofs.
     // TODO: This may be fine, because node lives at a higher level and has richer features due to napi
@@ -371,7 +434,7 @@ pub extern "C" fn verify_cell_kzg_proof(
         proof,
         verified,
     ) {
-        Ok(_) => return CResult::Ok,
+        Ok(_) => return CResult::with_ok(),
         Err(err) => return err,
     }
 }
@@ -389,12 +452,18 @@ fn _verify_cell_kzg_proof(
 ) -> Result<(), CResult> {
     // Pointer checks
     //
-    let ctx = deref_const(ctx)?;
-    let ctx = ctx.verifier_ctx().ok_or(CResult::Err)?;
-    let cell = deref_const(cell)?;
-    let commitment = deref_const(commitment)?;
-    let proof = deref_const(proof)?;
-    let verified = deref_mut(verified)?;
+    let ctx = deref_const(ctx).map_err(|_| CResult::with_error("context has a null ptr"))?;
+    let ctx = ctx.verifier_ctx().ok_or(CResultStatus::Err).map_err(|_| {
+        CResult::with_error("context does not have a valid pointer to a verifier structure")
+    })?;
+    let cell = deref_const(cell).map_err(|_| CResult::with_error("could not dereference cell"))?;
+    let commitment = deref_const(commitment)
+        .map_err(|_| CResult::with_error("could not dereference commitment"))?;
+    let proof =
+        deref_const(proof).map_err(|_| CResult::with_error("could not dereference proof"))?;
+    let verified = deref_mut(verified).map_err(|_| {
+        CResult::with_error("could not dereference pointer to the output verified flag")
+    })?;
 
     // Length checks
     //
@@ -402,7 +471,10 @@ fn _verify_cell_kzg_proof(
         || commitment_length != BYTES_PER_COMMITMENT as u64
         || proof_length != BYTES_PER_COMMITMENT as u64
     {
-        return Err(CResult::Err);
+        return Err(CResult::with_error(&format!(
+            "Invalid length. Expected: cell: {}, commitment: {}, proof: {}, Got: cell: {}, commitment: {}, proof: {}",
+            BYTES_PER_CELL, BYTES_PER_COMMITMENT, BYTES_PER_COMMITMENT, cell_length, commitment_length, proof_length
+        )));
     }
 
     // Convert immutable references to slices
@@ -431,7 +503,7 @@ fn verification_result_to_bool_cresult(
     match verification_result {
         Ok(_) => Ok(true),
         Err(VerifierError::InvalidProof) => Ok(false),
-        Err(_) => Err(CResult::Err),
+        Err(err) => Err(CResult::with_error(&format!("{:?}", err))),
     }
 }
 
@@ -475,7 +547,7 @@ pub extern "C" fn verify_cell_kzg_proof_batch(
         proofs,
         verified,
     ) {
-        Ok(_) => return CResult::Ok,
+        Ok(_) => return CResult::with_ok(),
         Err(err) => return err,
     }
 }
@@ -508,14 +580,23 @@ fn _verify_cell_kzg_proof_batch(
 
     // Pointer checks
     //
-    let ctx = deref_const(ctx)?;
-    let ctx = ctx.verifier_ctx().ok_or(CResult::Err)?;
-    let row_commitments = deref_const(row_commitments)?;
-    let row_indices = deref_const(row_indices)?;
-    let column_indices = deref_const(column_indices)?;
-    let cells = deref_const(cells)?;
-    let proofs = deref_const(proofs)?;
-    let verified = deref_mut(verified)?;
+    let ctx = deref_const(ctx).map_err(|_| CResult::with_error("context has a null ptr"))?;
+    let ctx = ctx.verifier_ctx().ok_or(CResultStatus::Err).map_err(|_| {
+        CResult::with_error("context does not have a valid pointer to a verifier structure")
+    })?;
+    let row_commitments = deref_const(row_commitments)
+        .map_err(|_| CResult::with_error("could not dereference row_commitments"))?;
+    let row_indices = deref_const(row_indices)
+        .map_err(|_| CResult::with_error("could not dereference row_indices"))?;
+    let column_indices = deref_const(column_indices)
+        .map_err(|_| CResult::with_error("could not dereference column_indices"))?;
+    let cells =
+        deref_const(cells).map_err(|_| CResult::with_error("could not dereference cells"))?;
+    let proofs =
+        deref_const(proofs).map_err(|_| CResult::with_error("could not dereference proofs"))?;
+    let verified = deref_mut(verified).map_err(|_| {
+        CResult::with_error("could not dereference pointer to the output verified flag")
+    })?;
 
     // Length checks
     //
@@ -523,23 +604,41 @@ fn _verify_cell_kzg_proof_batch(
     let num_commitments = (row_commitments_length / BYTES_PER_COMMITMENT as u64) as usize;
 
     if (row_commitments_length as usize) != (BYTES_PER_COMMITMENT * num_commitments) {
-        return Err(CResult::Err);
+        return Err(CResult::with_error(&format!(
+            "Invalid row_commitments length. Expected: {}, Got: {}",
+            BYTES_PER_COMMITMENT * num_commitments,
+            row_commitments_length
+        )));
     }
 
     if (cells_length as usize) != (num_cells * BYTES_PER_CELL) {
-        return Err(CResult::Err);
+        return Err(CResult::with_error(&format!(
+            "Invalid cells length. Expected: {}, Got: {}",
+            num_cells * BYTES_PER_CELL,
+            cells_length
+        )));
     }
 
     if (proofs_length as usize) != (BYTES_PER_COMMITMENT * num_cells) {
-        return Err(CResult::Err);
+        return Err(CResult::with_error(&format!(
+            "Invalid proofs length. Expected: {}, Got: {}",
+            BYTES_PER_COMMITMENT * num_cells,
+            proofs_length
+        )));
     }
 
     if (row_indices_length as usize) != num_cells {
-        return Err(CResult::Err);
+        return Err(CResult::with_error(&format!(
+            "Invalid row_indices length. Expected: {}, Got: {}",
+            num_cells, row_indices_length
+        )));
     }
 
     if (column_indices_length as usize) != num_cells {
-        return Err(CResult::Err);
+        return Err(CResult::with_error(&format!(
+            "Invalid column_indices length. Expected: {}, Got: {}",
+            num_cells, column_indices_length
+        )));
     }
 
     // Convert immutable references to slices
@@ -596,7 +695,7 @@ pub extern "C" fn recover_all_cells(
         cell_ids,
         out_cells,
     ) {
-        Ok(_) => return CResult::Ok,
+        Ok(_) => return CResult::with_ok(),
         Err(err) => return err,
     }
 }
@@ -610,20 +709,31 @@ fn _recover_all_cells(
 ) -> Result<(), CResult> {
     // Pointer checks
     //
-    let ctx = deref_const(ctx)?;
-    let ctx = ctx.verifier_ctx().ok_or(CResult::Err)?;
-    let cells = deref_const(cells)?;
-    let cell_ids = deref_const(cell_ids)?;
-    let out_cells = deref_mut(out_cells)?;
+    let ctx = deref_const(ctx).map_err(|_| CResult::with_error("context has a null ptr"))?;
+    let ctx = ctx.verifier_ctx().ok_or(CResultStatus::Err).map_err(|_| {
+        CResult::with_error("context does not have a valid pointer to a verifier structure")
+    })?;
+    let cells =
+        deref_const(cells).map_err(|_| CResult::with_error("could not dereference cells"))?;
+    let cell_ids =
+        deref_const(cell_ids).map_err(|_| CResult::with_error("could not dereference cell_ids"))?;
+    let out_cells = deref_mut(out_cells)
+        .map_err(|_| CResult::with_error("could not dereference pointer to the output cells"))?;
 
     // Length checks
     //
     if cells_length % (BYTES_PER_CELL as u64) != 0 {
-        return Err(CResult::Err);
+        return Err(CResult::with_error(&format!(
+            "Invalid cells length. Expected multiple of {}, Got: {}",
+            BYTES_PER_CELL, cells_length
+        )));
     }
     let num_cells = cells_length as usize / BYTES_PER_CELL as usize;
     if cell_ids_length != num_cells as u64 {
-        return Err(CResult::Err);
+        return Err(CResult::with_error(&format!(
+            "Invalid cell_ids length. Expected: {}, Got: {}",
+            num_cells, cell_ids_length
+        )));
     }
 
     // Convert immutable references to slices
@@ -637,7 +747,7 @@ fn _recover_all_cells(
 
     let recovered_cells = ctx
         .recover_all_cells(cell_ids.to_vec(), cells)
-        .map_err(|_| CResult::Err)?;
+        .map_err(|err| CResult::with_error(&format!("{:?}", err)))?;
 
     let cells_flattened: Vec<_> = recovered_cells
         .iter()
