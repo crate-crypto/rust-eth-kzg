@@ -14,7 +14,7 @@ public class LibPeerDASKZG {
 
     public static native byte[] computeCells(long context_ptr, byte[] blob);
 
-    public static native byte[] computeCellsAndKZGProofs(long context_ptr, byte[] blob);
+    public static native CellsAndProofs computeCellsAndKZGProofs(long context_ptr, byte[] blob);
 
     public static native byte[] blobToKZGCommitment(long context_ptr, byte[] blob);
 

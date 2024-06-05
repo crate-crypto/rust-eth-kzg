@@ -18,7 +18,7 @@ public class LibPeerDASKZGTest {
 
         long ctx_ptr = LibPeerDASKZG.peerDASContextNew();
         byte[] res = LibPeerDASKZG.computeCells(ctx_ptr, byteArray);
-        byte[] res2 = LibPeerDASKZG.computeCellsAndKZGProofs(ctx_ptr, byteArray);
+        CellsAndProofs res2 = LibPeerDASKZG.computeCellsAndKZGProofs(ctx_ptr, byteArray);
         byte[] res3 = LibPeerDASKZG.blobToKZGCommitment(ctx_ptr, byteArray);
     }
 }
