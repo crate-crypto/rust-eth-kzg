@@ -29,6 +29,9 @@ namespace PeerDAS.Native
         [DllImport(__DllName, EntryPoint = "peerdas_context_free", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void peerdas_context_free(PeerDASContext* ctx);
 
+        [DllImport(__DllName, EntryPoint = "free_error_message", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern void free_error_message(byte* c_message);
+
         /// <summary>Safety: - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error. - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes. - The caller must ensure that `out` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.</summary>
         [DllImport(__DllName, EntryPoint = "blob_to_kzg_commitment", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern CResult blob_to_kzg_commitment(PeerDASContext* ctx, ulong blob_length, byte* blob, byte* @out);
@@ -61,6 +64,13 @@ namespace PeerDAS.Native
     {
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public unsafe partial struct CResult
+    {
+        public CResultStatus status;
+        public byte* error_msg;
+    }
+
 
     public enum CContextSetting : uint
     {
@@ -69,7 +79,7 @@ namespace PeerDAS.Native
         Both,
     }
 
-    public enum CResult : uint
+    public enum CResultStatus : uint
     {
         Ok,
         Err,
