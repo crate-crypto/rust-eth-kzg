@@ -69,6 +69,12 @@ public static unsafe partial class PeerDASKZG
         return PeerDASContextToIntPtr(peerdas_context_new());
     }
 
+    public static unsafe IntPtr PeerDASContextWithSettings(ContextSetting setting = ContextSetting.Both)
+    {
+        return PeerDASContextToIntPtr(peerdas_context_new_with_setting((CContextSetting)setting));
+    }
+
+
     public static unsafe void PeerDASContextFree(IntPtr peerDASContextPtr)
     {
         peerdas_context_free(IntPtrToPeerDASContext(peerDASContextPtr));
@@ -138,12 +144,19 @@ public static unsafe partial class PeerDASKZG
     // TODO: Ideally, these methods are not needed and we use PeerDASContext* directly
     // instead of IntPtr.
     // The csharp code, in particular tests, seems to not be able to handle pointers directly
-    public static IntPtr PeerDASContextToIntPtr(PeerDASContext* context)
+    internal static IntPtr PeerDASContextToIntPtr(PeerDASContext* context)
     {
         return new IntPtr(context);
     }
-    public static PeerDASContext* IntPtrToPeerDASContext(IntPtr ptr)
+    internal static PeerDASContext* IntPtrToPeerDASContext(IntPtr ptr)
     {
         return (PeerDASContext*)ptr.ToPointer();
+    }
+
+    public enum ContextSetting
+    {
+        ProvingOnly,
+        VerifyOnly,
+        Both
     }
 }
