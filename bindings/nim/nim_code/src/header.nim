@@ -13,19 +13,27 @@ type CContextSetting* = enum
   VerifyOnly
   Both
 
-## The Result of each FFI function call.
-# This is used to indicate if the function call was successful or not.
-type CResult* = enum
+## A C-style enum to indicate the status of each function call
+type CResultStatus* = enum
   Ok
   Err
 
 type PeerDASContext* {.incompleteStruct.} = object
+
+## The return value of each function call.
+# This is a C-style struct that contains the status of the call and an error message, if
+# the status was an error.
+type CResult* = object
+  xstatus*: CResultStatus
+  xerror_msg*: pointer
 
 proc peerdas_context_new*(): ptr PeerDASContext {.importc: "peerdas_context_new".}
 
 proc peerdas_context_new_with_setting*(setting: CContextSetting): ptr PeerDASContext {.importc: "peerdas_context_new_with_setting".}
 
 proc peerdas_context_free*(ctx: ptr PeerDASContext): void {.importc: "peerdas_context_free".}
+
+proc free_error_message*(c_message: pointer): void {.importc: "free_error_message".}
 
 ## Safety:
 # - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
