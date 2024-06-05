@@ -7,6 +7,10 @@ use jni::objects::JValue;
 use jni::sys::{jboolean, jlong};
 use jni::JNIEnv;
 
+// Note: These methods will use the c crate instead of directly calling Rust.
+// This reduces the attack surface for all of the bindings.
+// The c crate is a thin wrapper around the KZG Rust API.
+
 #[no_mangle]
 pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_peerDASContextNew(
     _env: JNIEnv,
