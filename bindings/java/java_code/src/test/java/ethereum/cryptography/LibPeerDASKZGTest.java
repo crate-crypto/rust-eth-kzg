@@ -16,9 +16,9 @@ public class LibPeerDASKZGTest {
 
         java.util.Arrays.fill(byteArray, (byte) 0);
 
-        long prover_context_ptr = LibPeerDASKZG.proverContextNew();
-        byte[] res = LibPeerDASKZG.computeCells(prover_context_ptr, byteArray);
-        byte[] res2 = LibPeerDASKZG.computeCellsAndKZGProofs(prover_context_ptr, byteArray);
-        byte[] res3 = LibPeerDASKZG.blobToKZGCommitment(prover_context_ptr, byteArray);
+        long ctx_ptr = LibPeerDASKZG.peerDASContextNew();
+        byte[] res = LibPeerDASKZG.computeCells(ctx_ptr, byteArray);
+        byte[] res2 = LibPeerDASKZG.computeCellsAndKZGProofs(ctx_ptr, byteArray);
+        byte[] res3 = LibPeerDASKZG.blobToKZGCommitment(ctx_ptr, byteArray);
     }
 }

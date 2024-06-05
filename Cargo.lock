@@ -690,6 +690,7 @@ checksum = "49f1f14873335454500d59611f1cf4a4b0f786f9ac11f4312a78e4cf2566695b"
 name = "java_peerdas_kzg"
 version = "0.3.0"
 dependencies = [
+ "c_peerdas_kzg",
  "eip7594",
  "hex",
  "jni",

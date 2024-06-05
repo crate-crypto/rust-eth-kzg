@@ -1,40 +1,38 @@
-use eip7594::prover::ProverContext;
-use eip7594::verifier::VerifierContext;
-
+use c_peerdas_kzg::PeerDASContext;
 use jni::objects::JByteArray;
 use jni::objects::JClass;
 use jni::sys::{jboolean, jlong};
 use jni::JNIEnv;
 
 #[no_mangle]
-pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_proverContextNew(
+pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_peerDASContextNew(
     _env: JNIEnv,
     _class: JClass,
 ) -> jlong {
-    let prover_context = ProverContext::new();
+    let context = PeerDASContext::new();
 
-    Box::into_raw(Box::new(prover_context)) as jlong
+    Box::into_raw(Box::new(context)) as jlong
 }
 
 #[no_mangle]
-pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_proverContextDestroy(
+pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_peerDASContextDestroy(
     _env: JNIEnv,
     _class: JClass,
-    prover_context_ptr: jlong,
+    ctx_ptr: jlong,
 ) {
-    let _boxed_prover_context = Box::from_raw(prover_context_ptr as *mut ProverContext);
+    let _boxed_prover_context = Box::from_raw(ctx_ptr as *mut PeerDASContext);
 }
 
 #[no_mangle]
 pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_computeCells<'local>(
     env: JNIEnv<'local>,
     _class: JClass,
-    prover_ptr: jlong,
+    ctx_ptr: jlong,
     blob: JByteArray<'local>,
 ) -> JByteArray<'local> {
-    let prover_ctx = &mut *(prover_ptr as *mut ProverContext);
+    let ctx = &mut *(ctx_ptr as *mut PeerDASContext);
     let blob = env.convert_byte_array(blob).unwrap();
-    let cells = prover_ctx.compute_cells(&blob).unwrap();
+    let cells = ctx.prover_ctx().unwrap().compute_cells(&blob).unwrap();
 
     let flattened_cells = cells
         .iter()
@@ -51,14 +49,18 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_computeCe
 >(
     env: JNIEnv<'local>,
     _class: JClass,
-    prover_ptr: jlong,
+    ctx_ptr: jlong,
     blob: JByteArray<'local>,
 ) -> JByteArray<'local> {
-    let prover_ctx = &mut *(prover_ptr as *mut ProverContext);
+    let ctx = &mut *(ctx_ptr as *mut PeerDASContext);
 
     let blob = env.convert_byte_array(blob).unwrap();
 
-    let (cells, proofs) = prover_ctx.compute_cells_and_kzg_proofs(&blob).unwrap();
+    let (cells, proofs) = ctx
+        .prover_ctx()
+        .unwrap()
+        .compute_cells_and_kzg_proofs(&blob)
+        .unwrap();
 
     let flattened_proofs_and_cells: Vec<u8> = cells
         .into_iter()
@@ -77,32 +79,18 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_blobToKZG
 >(
     env: JNIEnv<'local>,
     _class: JClass,
-    prover_ptr: jlong,
+    ctx_ptr: jlong,
     blob: JByteArray<'local>,
 ) -> JByteArray<'local> {
-    let prover_ctx = &mut *(prover_ptr as *mut ProverContext);
+    let ctx = &mut *(ctx_ptr as *mut PeerDASContext);
     let blob = env.convert_byte_array(blob).unwrap();
-    let commitment = prover_ctx.blob_to_kzg_commitment(&blob).unwrap();
+    let commitment = ctx
+        .prover_ctx()
+        .unwrap()
+        .blob_to_kzg_commitment(&blob)
+        .unwrap();
 
     return env.byte_array_from_slice(&commitment).unwrap();
-}
-
-#[no_mangle]
-pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_verifierContextNew(
-    _env: JNIEnv,
-    _class: JClass,
-) -> jlong {
-    let verifier_context = VerifierContext::new();
-    Box::into_raw(Box::new(verifier_context)) as jlong
-}
-
-#[no_mangle]
-pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_verifierContextDestroy(
-    _env: JNIEnv,
-    _class: JClass,
-    verifier_context_ptr: jlong,
-) {
-    let _boxed_verifier_context = Box::from_raw(verifier_context_ptr as *mut VerifierContext);
 }
 
 #[no_mangle]
@@ -111,13 +99,13 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_verifyCel
 >(
     env: JNIEnv<'local>,
     _class: JClass,
-    verifier_ptr: jlong,
+    ctx_ptr: jlong,
     commitment_bytes: JByteArray<'local>,
     cell_id: jlong,
     cell: JByteArray<'local>,
     proof_bytes: JByteArray<'local>,
 ) -> jboolean {
-    let verifier_ctx = &mut *(verifier_ptr as *mut VerifierContext);
+    let ctx = &mut *(ctx_ptr as *mut PeerDASContext);
 
     let commitment_bytes = env.convert_byte_array(&commitment_bytes).unwrap();
     let cell_id = cell_id as u64;
@@ -125,7 +113,8 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_verifyCel
     let proof_bytes = env.convert_byte_array(&proof_bytes).unwrap();
 
     return jboolean::from(
-        verifier_ctx
+        ctx.verifier_ctx()
+            .unwrap()
             .verify_cell_kzg_proof(&commitment_bytes, cell_id, &cell, &proof_bytes)
             .is_ok(),
     );
