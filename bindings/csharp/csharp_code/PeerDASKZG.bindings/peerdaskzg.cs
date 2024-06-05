@@ -1,5 +1,6 @@
 using PeerDAS.Native;
 using static PeerDAS.Native.NativeMethods;
+using System.Runtime.InteropServices;
 
 namespace PeerDASKZG;
 
@@ -30,6 +31,7 @@ public static unsafe partial class PeerDASKZG
         {
 
             CResult result = blob_to_kzg_commitment(IntPtrToPeerDASContext(proverContextPtr), Convert.ToUInt64(blob.Length), blobPtr, commitmentPtr);
+
             ThrowOnError(result);
 
         }
@@ -130,13 +132,26 @@ public static unsafe partial class PeerDASKZG
         return recoveredCells;
     }
 
-    // Below error handling was copied from ckzg
     private static void ThrowOnError(CResult result)
     {
-        switch (result)
+        switch (result.status)
         {
-            case CResult.Err: throw new ArgumentException("an error occurred from the bindings");
-            case CResult.Ok:
+            case CResultStatus.Err:
+                string? errorMessage = Marshal.PtrToStringAnsi((IntPtr)result.error_msg);
+
+                if (errorMessage != null)
+                {
+                    // Free the error message that we allocated on the rust side
+                    free_error_message(result.error_msg);
+                    throw new ArgumentException($"an error occurred from the bindings: {errorMessage}");
+                }
+                else
+                {
+                    // This branch should not be hit, ie when the native library returns
+                    // and error, the error_message should always be set.
+                    throw new ArgumentException("an error occurred from the bindings: unknown error");
+                }
+            case CResultStatus.Ok:
                 return;
             default:
                 throw new ApplicationException("PeerDASKZG returned an unexpected result variant");
