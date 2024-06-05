@@ -1,9 +1,7 @@
+use c_peerdas_kzg::CResult;
 use c_peerdas_kzg::PeerDASContext;
 use c_peerdas_kzg::BYTES_PER_COMMITMENT;
-use jni::objects::JByteArray;
-use jni::objects::JClass;
-use jni::objects::JObject;
-use jni::objects::JValue;
+use jni::objects::{JByteArray, JClass, JObject, JValue};
 use jni::sys::{jboolean, jlong};
 use jni::JNIEnv;
 
@@ -30,7 +28,7 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_peerDASCo
 
 #[no_mangle]
 pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_computeCells<'local>(
-    env: JNIEnv<'local>,
+    mut env: JNIEnv<'local>,
     _class: JClass,
     ctx_ptr: jlong,
     blob: JByteArray<'local>,
@@ -40,13 +38,21 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_computeCe
 
     let mut out_cells = vec![0u8; c_peerdas_kzg::NUM_BYTES_CELLS as usize];
 
-    // TODO: handle CResult and throw
-    c_peerdas_kzg::compute_cells(
+    let result = c_peerdas_kzg::compute_cells(
         ctx,
         blob.len() as u64,
         blob.as_ptr(),
         out_cells.as_mut_ptr(),
     );
+
+    if let CResult::Err = result {
+        env.throw_new(
+            "java/lang/IllegalArgumentException",
+            "Failed to compute `compute_cells`",
+        )
+        .expect("Failed to throw exception for `compute_cells`");
+        return JByteArray::default();
+    }
 
     return env.byte_array_from_slice(&out_cells).unwrap();
 }
@@ -74,14 +80,22 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_computeCe
         proofs: [0u8; c_peerdas_kzg::NUM_BYTES_PROOFS as usize],
     };
 
-    // TODO: handle CResult and throw
-    c_peerdas_kzg::compute_cells_and_kzg_proofs(
+    let result = c_peerdas_kzg::compute_cells_and_kzg_proofs(
         ctx,
         blob.len() as u64,
         blob.as_ptr(),
         cells_and_proofs.cells.as_mut_ptr(),
         cells_and_proofs.proofs.as_mut_ptr(),
     );
+
+    if let CResult::Err = result {
+        env.throw_new(
+            "java/lang/IllegalArgumentException",
+            "Failed to compute `compute_cells_and_kzg_proofs`",
+        )
+        .expect("Failed to throw exception for `compute_cells_and_kzg_proofs`");
+        return JObject::default();
+    }
 
     // Create a new instance of the CellsAndProofs class in Java
     let cells_and_proofs_class = env
@@ -104,7 +118,7 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_computeCe
 pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_blobToKZGCommitment<
     'local,
 >(
-    env: JNIEnv<'local>,
+    mut env: JNIEnv<'local>,
     _class: JClass,
     ctx_ptr: jlong,
     blob: JByteArray<'local>,
@@ -114,8 +128,21 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_blobToKZG
 
     let mut out = vec![0u8; BYTES_PER_COMMITMENT as usize];
 
-    // TODO: handle CResult and throw
-    c_peerdas_kzg::blob_to_kzg_commitment(ctx, blob.len() as u64, blob.as_ptr(), out.as_mut_ptr());
+    let result = c_peerdas_kzg::blob_to_kzg_commitment(
+        ctx,
+        blob.len() as u64,
+        blob.as_ptr(),
+        out.as_mut_ptr(),
+    );
+
+    if let CResult::Err = result {
+        env.throw_new(
+            "java/lang/IllegalArgumentException",
+            "Failed to compute `blob_to_kzg_commitment`",
+        )
+        .expect("Failed to throw exception for `blob_to_kzg_commitment`");
+        return JByteArray::default();
+    }
 
     return env.byte_array_from_slice(&out).unwrap();
 }
@@ -124,7 +151,7 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_blobToKZG
 pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_verifyCellKZGProof<
     'local,
 >(
-    env: JNIEnv<'local>,
+    mut env: JNIEnv<'local>,
     _class: JClass,
     ctx_ptr: jlong,
     commitment_bytes: JByteArray<'local>,
@@ -142,8 +169,7 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_verifyCel
     let mut verified = false;
     let verified_ptr: *mut bool = (&mut verified) as *mut bool;
 
-    // TODO: handle CResult and throw
-    c_peerdas_kzg::verify_cell_kzg_proof(
+    let result = c_peerdas_kzg::verify_cell_kzg_proof(
         ctx,
         cell.len() as u64,
         cell.as_ptr(),
@@ -154,6 +180,15 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_verifyCel
         proof_bytes.as_ptr(),
         verified_ptr,
     );
+
+    if let CResult::Err = result {
+        env.throw_new(
+            "java/lang/IllegalArgumentException",
+            "Failed to compute `verify_cell_kzg_proof`",
+        )
+        .expect("Failed to throw exception for `verify_cell_kzg_proof`");
+        return jboolean::default();
+    }
 
     return jboolean::from(verified);
 }
