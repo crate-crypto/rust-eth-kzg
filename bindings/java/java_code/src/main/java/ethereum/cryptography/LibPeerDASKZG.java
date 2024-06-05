@@ -8,22 +8,18 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
 public class LibPeerDASKZG {
-    public static native long proverContextNew();
+    public static native long peerDASContextNew();
 
-    public static native void proverContextDestroy(long prover_ctx_ptr);
+    public static native void peerDASContextDestroy(long ctx_ptr);
 
-    public static native byte[] computeCells(long prover_context_ptr, byte[] blob);
+    public static native byte[] computeCells(long context_ptr, byte[] blob);
 
-    public static native byte[] computeCellsAndKZGProofs(long prover_context_ptr, byte[] blob);
+    public static native byte[] computeCellsAndKZGProofs(long context_ptr, byte[] blob);
 
-    public static native byte[] blobToKZGCommitment(long prover_context_ptr, byte[] blob);
-
-    public static native long verifierContextNew();
-
-    public static native void verifierContextDestroy(long verifier_context_ptr);
+    public static native byte[] blobToKZGCommitment(long context_ptr, byte[] blob);
 
     public static native boolean verifyCellKZGProof(
-            long verifier_context_ptr, byte[] commitment, long cell_id, byte[] cell, byte[] proof);
+            long context_ptr, byte[] commitment, long cell_id, byte[] cell, byte[] proof);
 
     private static final String LIBRARY_NAME = "java_peerdas_kzg";
     private static final String PLATFORM_NATIVE_LIBRARY_NAME = System.mapLibraryName(LIBRARY_NAME);
