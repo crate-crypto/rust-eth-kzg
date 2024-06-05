@@ -11,35 +11,35 @@ package peerdas_kzg
 import "C"
 import "runtime"
 
-type ProverContext struct {
-	_inner *C.ProverContext
+type PeerDASContext struct {
+	_inner *C.PeerDASContext
 }
 
-func NewProverContext() *ProverContext {
-	self := &ProverContext{_inner: C.prover_context_new()}
+func NewProverContext() *PeerDASContext {
+	self := &PeerDASContext{_inner: C.peerdas_context_new()}
 
-	runtime.SetFinalizer(self, func(self *ProverContext) {
-		C.prover_context_free(self.inner())
+	runtime.SetFinalizer(self, func(self *PeerDASContext) {
+		C.peerdas_context_free(self.inner())
 	})
 
-	return &ProverContext{_inner: C.prover_context_new()}
+	return self
 }
 
-func (prover *ProverContext) BlobToKZGCommitment(blob []byte) []byte {
+func (prover *PeerDASContext) BlobToKZGCommitment(blob []byte) []byte {
 	// TODO: We should add a check that the blob length is also correct by using a C constant
 	// TODO: Take 48 from the C code constant
 	out := make([]byte, 48)
-	C.blob_to_kzg_commitment(prover.inner(), (*C.uint8_t)(&blob[0]), (*C.uint8_t)(&out[0]))
+	C.blob_to_kzg_commitment(prover.inner(), C.uint64_t(len(blob)), (*C.uint8_t)(&blob[0]), (*C.uint8_t)(&out[0]))
 	return out
 }
 
-func (prover *ProverContext) ComputeCellsAndKZGProofs(blob []byte) ([]byte, []byte) {
-	out_cells := make([]byte, C.NUM_BYTES_CELLS)
-	out_proofs := make([]byte, C.NUM_BYTES_PROOFS)
-	C.compute_cells_and_kzg_proofs(prover.inner(), (*C.uint8_t)(&blob[0]), (*C.uint8_t)(&out_cells[0]), (*C.uint8_t)(&out_proofs[0]))
-	return out_cells, out_proofs
+func (prover *PeerDASContext) ComputeCellsAndKZGProofs(blob []byte) ([]byte, []byte) {
+	outCells := make([]byte, C.NUM_BYTES_CELLS)
+	outProofs := make([]byte, C.NUM_BYTES_PROOFS)
+	C.compute_cells_and_kzg_proofs(prover.inner(), C.uint64_t(len(blob)), (*C.uint8_t)(&blob[0]), (*C.uint8_t)(&outCells[0]), (*C.uint8_t)(&outProofs[0]))
+	return outCells, outProofs
 }
 
-func (prover *ProverContext) inner() *C.ProverContext {
+func (prover *PeerDASContext) inner() *C.PeerDASContext {
 	return prover._inner
 }
