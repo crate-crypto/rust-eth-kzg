@@ -2,25 +2,36 @@ use std::{env, fs, path::PathBuf};
 
 use toml::Value;
 
+/// The path where the generated bindings file will be written, relative to the bindings folder.
+const PATH_FOR_CSHARP_BINDINGS_FILE: &str = "csharp/csharp_code/PeerDASKZG.bindings/bindings.g.cs";
+
 fn main() {
     let package_name_of_c_crate = get_package_name_of_c_crate();
 
+    let parent = path_to_bindings_folder();
+    let path_to_output_file = parent.join(PATH_FOR_CSHARP_BINDINGS_FILE);
+
     csbindgen::Builder::default()
         .input_extern_file("../../c/src/lib.rs")
-        .csharp_namespace("PeerDasKZG")
+        .csharp_namespace("PeerDASKZG")
         .csharp_dll_name(package_name_of_c_crate)
-        .csharp_class_name("PeerDasKZG")
+        .csharp_class_name("PeerDASKZG")
         .csharp_use_nint_types(false)
-        .generate_csharp_file("../dotnet/NativeMethods.g.cs")
+        .csharp_class_accessibility("public")
+        .generate_csharp_file(path_to_output_file)
         .unwrap();
 }
 
-fn get_package_name_of_c_crate() -> String {
+fn path_to_bindings_folder() -> PathBuf {
     let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
     let crate_dir = PathBuf::from(crate_dir);
-
     // Go up two directories to be at bindings parent directory
     let parent = crate_dir.parent().unwrap().parent().unwrap().to_path_buf();
+    parent
+}
+fn get_package_name_of_c_crate() -> String {
+    let parent = path_to_bindings_folder();
+
     let path_to_c_crate = parent.join("c");
     let path_to_c_crate_cargo_toml = path_to_c_crate.join("Cargo.toml");
 
