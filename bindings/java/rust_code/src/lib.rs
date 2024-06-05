@@ -9,6 +9,30 @@ use jni::JNIEnv;
 // This reduces the attack surface for all of the bindings.
 // The c crate is a thin wrapper around the KZG Rust API.
 
+fn construct_error_message(msg_prefix: &str, msg_body: *mut i8) -> String {
+    unsafe {
+        // Check if msg is null
+        let msg_body = msg_body.as_mut();
+        let msg_body = match msg_body {
+            None => return msg_prefix.to_string(),
+            Some(msg) => msg,
+        };
+
+        // Concatenate the prefix and the body
+        let error_message = msg_prefix.to_string()
+            + ": "
+            + std::ffi::CStr::from_ptr(msg_body)
+                .to_string_lossy()
+                .into_owned()
+                .as_str();
+
+        // free the error message
+        c_peerdas_kzg::free_error_message(msg_body);
+
+        error_message
+    }
+}
+
 #[no_mangle]
 pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_peerDASContextNew(
     _env: JNIEnv,
@@ -46,11 +70,10 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_computeCe
     );
 
     if let CResultStatus::Err = result.status {
-        env.throw_new(
-            "java/lang/IllegalArgumentException",
-            "Failed to compute `compute_cells`",
-        )
-        .expect("Failed to throw exception for `compute_cells`");
+        let err_msg =
+            construct_error_message("Failed to compute `compute_cells`", result.error_msg);
+        env.throw_new("java/lang/IllegalArgumentException", err_msg)
+            .expect("Failed to throw exception for `compute_cells`");
         return JByteArray::default();
     }
 
@@ -89,11 +112,12 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_computeCe
     );
 
     if let CResultStatus::Err = result.status {
-        env.throw_new(
-            "java/lang/IllegalArgumentException",
+        let err_msg = construct_error_message(
             "Failed to compute `compute_cells_and_kzg_proofs`",
-        )
-        .expect("Failed to throw exception for `compute_cells_and_kzg_proofs`");
+            result.error_msg,
+        );
+        env.throw_new("java/lang/IllegalArgumentException", err_msg)
+            .expect("Failed to throw exception for `compute_cells_and_kzg_proofs`");
         return JObject::default();
     }
 
@@ -136,11 +160,12 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_blobToKZG
     );
 
     if let CResultStatus::Err = result.status {
-        env.throw_new(
-            "java/lang/IllegalArgumentException",
+        let err_msg = construct_error_message(
             "Failed to compute `blob_to_kzg_commitment`",
-        )
-        .expect("Failed to throw exception for `blob_to_kzg_commitment`");
+            result.error_msg,
+        );
+        env.throw_new("java/lang/IllegalArgumentException", err_msg)
+            .expect("Failed to throw exception for `blob_to_kzg_commitment`");
         return JByteArray::default();
     }
 
@@ -182,11 +207,12 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_verifyCel
     );
 
     if let CResultStatus::Err = result.status {
-        env.throw_new(
-            "java/lang/IllegalArgumentException",
+        let err_msg = construct_error_message(
             "Failed to compute `verify_cell_kzg_proof`",
-        )
-        .expect("Failed to throw exception for `verify_cell_kzg_proof`");
+            result.error_msg,
+        );
+        env.throw_new("java/lang/IllegalArgumentException", err_msg)
+            .expect("Failed to throw exception for `verify_cell_kzg_proof`");
         return jboolean::default();
     }
 
