@@ -48,6 +48,11 @@ public class LibPeerDASKZG {
 
     public static native boolean verifyCellKZGProof(
             long context_ptr, byte[] commitment, long cell_id, byte[] cell, byte[] proof);
+    
+    public static native boolean verifyCellKZGProofBatch(
+            long context_ptr, byte[] commitments, long[] rowIndices, long[] columnIndices, byte[] cells, byte[] proofs);
+    
+    public static native byte[] recoverAllCells(long context_ptr, long[] cellIDs, byte[] cells);
 
     private static final String LIBRARY_NAME = "java_peerdas_kzg";
     private static final String PLATFORM_NATIVE_LIBRARY_NAME = System.mapLibraryName(LIBRARY_NAME);
