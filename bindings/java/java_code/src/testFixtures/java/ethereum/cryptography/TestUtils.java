@@ -30,10 +30,10 @@ public class TestUtils {
   private static final String BLOB_TO_KZG_COMMITMENT_TESTS = "../../../consensus_test_vectors/blob_to_kzg_commitment/";
   private static final String COMPUTE_CELLS_TESTS = "../../../consensus_test_vectors/compute_cells/";
   private static final String COMPUTE_CELLS_AND_KZG_PROOFS_TESTS =
-      "..../consensus_test_vectors/compute_cells_and_kzg_proofs/";
+      "../../../consensus_test_vectors/compute_cells_and_kzg_proofs/";
   private static final String VERIFY_CELL_KZG_PROOF_TESTS = "../../../consensus_test_vectors/verify_cell_kzg_proof/";
   private static final String VERIFY_CELL_KZG_PROOF_BATCH_TESTS =
-      "..../consensus_test_vectors/verify_cell_kzg_proof_batch/";
+      "../../../consensus_test_vectors/verify_cell_kzg_proof_batch/";
   private static final String RECOVER_ALL_CELLS_TESTS = "../../../consensus_test_vectors/recover_all_cells/";
 
   public static byte[] flatten(final byte[]... bytes) {
