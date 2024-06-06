@@ -178,6 +178,7 @@ fn create_slice_view<'a, T>(ptr: &T, len: usize) -> &'a [T] {
 /// - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
 /// - The caller must ensure that `out` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
 #[no_mangle]
+#[must_use]
 pub extern "C" fn blob_to_kzg_commitment(
     ctx: *const PeerDASContext,
     blob_length: u64,
@@ -243,6 +244,7 @@ fn _blob_to_kzg_commitment(
 /// - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
 /// - The caller must ensure that `out_cells` points to a region of memory that is at least `NUM_BYTES_CELLS` bytes.
 #[no_mangle]
+#[must_use]
 pub extern "C" fn compute_cells(
     ctx: *const PeerDASContext,
     blob_length: u64,
@@ -317,6 +319,7 @@ fn _compute_cells(
 /// - The caller must ensure that `out_cells` points to a region of memory that is at least `NUM_BYTES_CELLS` bytes.
 /// - The caller must ensure that `out_proofs` points to a region of memory that is at least `NUM_BYTES_PROOFS` bytes.
 #[no_mangle]
+#[must_use]
 pub extern "C" fn compute_cells_and_kzg_proofs(
     ctx: *const PeerDASContext,
     blob_length: u64,
@@ -412,6 +415,7 @@ fn _compute_cells_and_kzg_proofs(
 //
 // TODO: Can we create a new structure that allows us to hold a pointer+length? example struct Slice {ptr : *const u8, len: u64}
 #[no_mangle]
+#[must_use]
 pub extern "C" fn verify_cell_kzg_proof(
     ctx: *const PeerDASContext,
     cell_length: u64,
@@ -519,6 +523,7 @@ fn verification_result_to_bool_cresult(
 /// Note: cells, proofs and row_commitments are expected to be contiguous in memory.
 /// ie they have been concatenated together
 #[no_mangle]
+#[must_use]
 pub extern "C" fn verify_cell_kzg_proof_batch(
     ctx: *const PeerDASContext,
     row_commitments_length: u64,
@@ -679,6 +684,7 @@ fn _verify_cell_kzg_proof_batch(
 /// - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` bytes.
 /// - The caller must ensure that `out_cells` points to a region of memory that is at least `NUM_BYTES_CELLS` bytes.
 #[no_mangle]
+#[must_use]
 pub extern "C" fn recover_all_cells(
     ctx: *const PeerDASContext,
     cells_length: u64,
