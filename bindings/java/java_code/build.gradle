@@ -1,5 +1,8 @@
 plugins {
     id 'java'
+    id "java-test-fixtures"
+    id "me.champeau.jmh" version "0.7.0"
+    id "com.diffplug.spotless" version "6.17.0"
 }
 
 group = 'ethereum.cryptography'
@@ -19,6 +22,12 @@ if (hasProperty('buildScan')) {
 dependencies {
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+
+    def jacksonVersion = "2.14.2"
+
+    testFixturesImplementation("org.apache.tuweni:tuweni-units:2.3.1")
+    testFixturesImplementation("com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}")
+    testFixturesImplementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}")
 }
 
 test {
