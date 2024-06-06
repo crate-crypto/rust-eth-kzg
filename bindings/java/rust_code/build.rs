@@ -1,14 +1,15 @@
 use std::{env, path::PathBuf};
 
-/// Path to the java file that we will use to generate the java bindings from
+/// Path to the java directory that we will use to generate the java bindings from
 ///
 /// Relative to the bindings folder.
-const PATH_TO_JAVA_BINDINGS_FILE: &str =
-    "java_code/src/main/java/ethereum/cryptography/LibPeerDASKZG.java";
+const PATH_TO_JAVA_BINDINGS_FILE: &str = "java/java_code/src/main/java/ethereum/cryptography";
+
+// These are the files needed to pass to the `javac` command to generate the header file
+const INPUT_FILES: [&str; 2] = ["LibPeerDASKZG.java", "CellsAndProofs.java"];
 
 fn main() {
-    let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
-    let path_to_bindings_dir = PathBuf::from(crate_dir).parent().unwrap().to_path_buf();
+    let path_to_bindings_dir = path_to_bindings_folder();
     let path_to_java_bindings_file = path_to_bindings_dir.join(PATH_TO_JAVA_BINDINGS_FILE);
 
     println!(
@@ -17,10 +18,24 @@ fn main() {
     );
 
     // Generate the header file
-    std::process::Command::new("javac")
-        .arg("-h")
-        .arg(".")
-        .arg(path_to_java_bindings_file)
-        .output()
-        .unwrap();
+    let mut command = std::process::Command::new("javac");
+    command.arg("-h").arg(".");
+    for file in INPUT_FILES.iter() {
+        command.arg(path_to_java_bindings_file.join(file));
+    }
+    let output = command.output().unwrap();
+
+    // TODO: check if we need this in other build.rs scripts
+    if !output.status.success() {
+        let output = std::str::from_utf8(&output.stderr).unwrap();
+        panic!("{}", output)
+    }
+}
+
+fn path_to_bindings_folder() -> PathBuf {
+    let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+    let crate_dir = PathBuf::from(crate_dir);
+    // Go up two directories to be at bindings parent directory
+    let parent = crate_dir.parent().unwrap().parent().unwrap().to_path_buf();
+    parent
 }
