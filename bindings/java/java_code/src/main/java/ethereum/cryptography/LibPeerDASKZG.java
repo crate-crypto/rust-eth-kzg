@@ -7,7 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
-public class LibPeerDASKZG {
+public class LibPeerDASKZG implements AutoCloseable{
     // These constants were taken from c-kzg
     //
     // TODO: We should remove the ones which are not needed or only needed for tests
@@ -36,23 +36,69 @@ public class LibPeerDASKZG {
     /** The number of bytes in a single cell. */
     public static final int BYTES_PER_CELL = BYTES_PER_FIELD_ELEMENT * FIELD_ELEMENTS_PER_CELL;
 
-    public static native long peerDASContextNew();
+    private long contextPtr;
 
-    public static native void peerDASContextDestroy(long ctx_ptr);
+    public LibPeerDASKZG() {
+        loadNativeLibrary();
+        this.contextPtr = peerDASContextNew();
+    }
 
-    public static native byte[] computeCells(long context_ptr, byte[] blob);
+    // TODO: Finalization was deprecaed, we should find a method that does
+    // TODO: not require a lot of code. Possibly separate the wrapper from the 
+    // TODO: bindings code too.
+    @Override
+    public void close() {
+        destroy();
+    }
+    public void destroy() {
+        if (contextPtr != 0) {
+            peerDASContextDestroy(contextPtr);
+            contextPtr = 0;
+        }
+    }
 
-    public static native CellsAndProofs computeCellsAndKZGProofs(long context_ptr, byte[] blob);
+    public byte[] blobToKZGCommitment(byte[] blob) {
+        return blobToKZGCommitment(contextPtr, blob);
+    }
+    
+    public CellsAndProofs computeCellsAndKZGProofs(byte[] blob) {
+        return computeCellsAndKZGProofs(contextPtr, blob);
+    }
 
-    public static native byte[] blobToKZGCommitment(long context_ptr, byte[] blob);
+    public byte[] computeCells(byte[] blob) {
+        return computeCells(contextPtr, blob);
+    }
 
-    public static native boolean verifyCellKZGProof(
+    public boolean verifyCellKZGProof(byte[] commitment, long cellID, byte[] cell, byte[] proof) {
+        return verifyCellKZGProof(contextPtr, commitment, cellID, cell, proof);
+    }
+
+    public boolean verifyCellKZGProofBatch(byte[] commitments, long[] rowIndices, long[] columnIndices, byte[] cells,
+            byte[] proofs) {
+        return verifyCellKZGProofBatch(contextPtr, commitments, rowIndices, columnIndices, cells, proofs);
+    }
+    
+    public byte[] recoverAllCells(long[] cellIDs, byte[] cells) {
+        return recoverAllCells(contextPtr, cellIDs, cells);
+    }
+
+    private static native long peerDASContextNew();
+
+    private static native void peerDASContextDestroy(long ctx_ptr);
+
+    private static native byte[] computeCells(long context_ptr, byte[] blob);
+
+    private static native CellsAndProofs computeCellsAndKZGProofs(long context_ptr, byte[] blob);
+
+    private static native byte[] blobToKZGCommitment(long context_ptr, byte[] blob);
+
+    private static native boolean verifyCellKZGProof(
             long context_ptr, byte[] commitment, long cell_id, byte[] cell, byte[] proof);
     
-    public static native boolean verifyCellKZGProofBatch(
+    private static native boolean verifyCellKZGProofBatch(
             long context_ptr, byte[] commitments, long[] rowIndices, long[] columnIndices, byte[] cells, byte[] proofs);
     
-    public static native byte[] recoverAllCells(long context_ptr, long[] cellIDs, byte[] cells);
+    private static native byte[] recoverAllCells(long context_ptr, long[] cellIDs, byte[] cells);
 
     private static final String LIBRARY_NAME = "java_peerdas_kzg";
     private static final String PLATFORM_NATIVE_LIBRARY_NAME = System.mapLibraryName(LIBRARY_NAME);
@@ -70,7 +116,7 @@ public class LibPeerDASKZG {
 
     /** Loads the appropriate native library based on your platform. */
     // Copied from c-kzg
-    public static void loadNativeLibrary() {
+    private static void loadNativeLibrary() {
 
         String osName = System.getProperty("os.name").toLowerCase();
         String osArch = getNormalizedArchitecture();

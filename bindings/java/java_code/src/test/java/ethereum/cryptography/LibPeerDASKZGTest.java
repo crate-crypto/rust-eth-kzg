@@ -19,12 +19,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 import ethereum.cryptography.test_formats.*;
 
 public class LibPeerDASKZGTest {
-    static long ctx_ptr;
+    static LibPeerDASKZG context;
 
     @BeforeAll
     public static void setUp() {
-        LibPeerDASKZG.loadNativeLibrary();
-        ctx_ptr = LibPeerDASKZG.peerDASContextNew();
+        context = new LibPeerDASKZG();
     }
 
 
@@ -32,7 +31,7 @@ public class LibPeerDASKZGTest {
     @MethodSource("ethereum.cryptography.TestUtils#getBlobToKzgCommitmentTests")
     public void blobToKzgCommitmentTests(final BlobToKzgCommitmentTest test) {
         try {
-            byte[] commitment = LibPeerDASKZG.blobToKZGCommitment(ctx_ptr, test.getInput().getBlob());
+            byte[] commitment = context.blobToKZGCommitment(test.getInput().getBlob());
             assertArrayEquals(test.getOutput(), commitment);
         } catch (IllegalArgumentException e) {
             assertNull(test.getOutput());
@@ -43,7 +42,7 @@ public class LibPeerDASKZGTest {
     @MethodSource("ethereum.cryptography.TestUtils#getComputeCellsTests")
     public void verifyComputeCellsTests(final ComputeCellsTest test) {
         try {
-            byte[] cells = LibPeerDASKZG.computeCells(ctx_ptr,test.getInput().getBlob());
+            byte[] cells = context.computeCells(test.getInput().getBlob());
             assertArrayEquals(test.getOutput(), cells);
         } catch (IllegalArgumentException ex) {
             assertNull(test.getOutput());
@@ -54,7 +53,7 @@ public class LibPeerDASKZGTest {
     @MethodSource("ethereum.cryptography.TestUtils#getComputeCellsAndKzgProofsTests")
     public void verifyComputeCellsAndKzgProofsTests(final ComputeCellsAndKzgProofsTest test) {
         try {
-            CellsAndProofs cellsAndProofs = LibPeerDASKZG.computeCellsAndKZGProofs(ctx_ptr, test.getInput().getBlob());
+            CellsAndProofs cellsAndProofs = context.computeCellsAndKZGProofs(test.getInput().getBlob());
             assertArrayEquals(test.getOutput().getCells(), cellsAndProofs.getCells());
             assertArrayEquals(test.getOutput().getProofs(), cellsAndProofs.getProofs());
         } catch (IllegalArgumentException ex) {
@@ -66,8 +65,7 @@ public class LibPeerDASKZGTest {
     @MethodSource("ethereum.cryptography.TestUtils#getVerifyCellKzgProofTests")
     public void verifyCellKzgProofTests(final VerifyCellKzgProofTest test) {
         try {
-            boolean valid = LibPeerDASKZG.verifyCellKZGProof(
-                    ctx_ptr, 
+            boolean valid = context.verifyCellKZGProof(
                     test.getInput().getCommitment(),
                     test.getInput().getCellId(),
                     test.getInput().getCell(),
@@ -82,8 +80,7 @@ public class LibPeerDASKZGTest {
     @MethodSource("ethereum.cryptography.TestUtils#getVerifyCellKzgProofBatchTests")
     public void verifyCellKzgProofBatchTests(final VerifyCellKzgProofBatchTest test) {
         try {
-            boolean valid = LibPeerDASKZG.verifyCellKZGProofBatch(
-                    ctx_ptr,
+            boolean valid = context.verifyCellKZGProofBatch(
                     test.getInput().getRowCommitments(),
                     test.getInput().getRowIndices(),
                     test.getInput().getColumnIndices(),
@@ -99,7 +96,7 @@ public class LibPeerDASKZGTest {
     @MethodSource("ethereum.cryptography.TestUtils#getRecoverAllCellsTests")
     public void recoverAllCellsTests(final RecoverAllCellsTest test) {
         try {
-            byte[] cells = LibPeerDASKZG.recoverAllCells(ctx_ptr, test.getInput().getCellIds(), test.getInput().getCells());
+            byte[] cells = context.recoverAllCells(test.getInput().getCellIds(), test.getInput().getCells());
             assertArrayEquals(test.getOutput(), cells);
         } catch (IllegalArgumentException ex) {
             assertNull(test.getOutput());
