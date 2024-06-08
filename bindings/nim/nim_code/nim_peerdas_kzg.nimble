@@ -20,3 +20,6 @@ installDirs   = @[
 # Dependencies
 
 requires "nim >= 2.0.4"
+requires "yaml"
+requires "unittest2"
+requires "stew"
