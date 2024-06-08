@@ -5,11 +5,6 @@ export results
 
 # TODO: If the underlying c library changes and we recompile the static lib
 # TODO: nim will not recompile the tests. see test_yaml does not change for example
-
-proc add2*(x, y: int): int =
-  ## Adds two numbers together.
-  return x + y
-
 const
   FIELD_ELEMENTS_PER_BLOB = 4096
   FIELD_ELEMENTS_PER_CELL = 64
