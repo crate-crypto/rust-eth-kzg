@@ -26,6 +26,7 @@ namespace PeerDAS.Native
         [DllImport(__DllName, EntryPoint = "peerdas_context_new_with_setting", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern PeerDASContext* peerdas_context_new_with_setting(CContextSetting setting);
 
+        /// <summary>Safety: - The caller must ensure that the pointer is valid. If the pointer is null, this method will return early. - The caller should also avoid a double-free by setting the pointer to null after calling this method.</summary>
         [DllImport(__DllName, EntryPoint = "peerdas_context_free", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void peerdas_context_free(PeerDASContext* ctx);
 
