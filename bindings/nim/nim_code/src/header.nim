@@ -31,6 +31,9 @@ proc peerdas_context_new*(): ptr PeerDASContext {.importc: "peerdas_context_new"
 
 proc peerdas_context_new_with_setting*(setting: CContextSetting): ptr PeerDASContext {.importc: "peerdas_context_new_with_setting".}
 
+## Safety:
+# - The caller must ensure that the pointer is valid. If the pointer is null, this method will return early.
+# - The caller should also avoid a double-free by setting the pointer to null after calling this method.
 proc peerdas_context_free*(ctx: ptr PeerDASContext): void {.importc: "peerdas_context_free".}
 
 proc free_error_message*(c_message: pointer): void {.importc: "free_error_message".}
