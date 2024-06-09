@@ -1,12 +1,16 @@
 use std::sync::{Arc, RwLock};
 
 use napi::{
-  bindgen_prelude::{AsyncTask, BigInt, Env, Error, Uint8Array},
-  Result, Task,
+  bindgen_prelude::{BigInt, Error, Uint8Array},
+  Result,
 };
 use napi_derive::napi;
 
-use eip7594::{constants, prover::ProverContext, verifier::VerifierContext, KZGCommitment};
+use eip7594::{
+  constants,
+  prover::ProverContext,
+  verifier::{VerifierContext, VerifierError},
+};
 
 #[napi]
 pub const BYTES_PER_CELL: u32 = constants::BYTES_PER_CELL as u32;
@@ -22,107 +26,10 @@ pub const FIELD_ELEMENTS_PER_CELL: u32 = constants::FIELD_ELEMENTS_PER_CELL as u
 pub const BYTES_PER_BLOB: u32 =
   (constants::FIELD_ELEMENTS_PER_BLOB * constants::BYTES_PER_FIELD_ELEMENT) as u32;
 
-pub struct AsyncBlobToKzgCommitment {
-  blob: Uint8Array,
-
-  // TODO: make this RwLock parking_lot crate
-  prover_context: Arc<RwLock<ProverContext>>,
-}
-
-#[napi]
-impl Task for AsyncBlobToKzgCommitment {
-  type Output = KZGCommitment;
-  type JsValue = Uint8Array;
-
-  fn compute(&mut self) -> Result<Self::Output> {
-    let blob = self.blob.as_ref();
-    let prover_context = self
-      .prover_context
-      .read()
-      .map_err(|_| napi::Error::from_reason("Failed to acquire lock"))?;
-    let commitment = prover_context.blob_to_kzg_commitment(blob).unwrap();
-    Ok(commitment)
-  }
-
-  fn resolve(&mut self, _env: Env, output: Self::Output) -> Result<Self::JsValue> {
-    Ok(Uint8Array::from(&output))
-  }
-}
-
-pub struct NativeCellsAndProofs {
-  pub cells: [Vec<u8>; 128],
-  pub proofs: [[u8; 48]; 128],
-}
-
 #[napi]
 pub struct CellsAndProofs {
   pub cells: Vec<Uint8Array>,
   pub proofs: Vec<Uint8Array>,
-}
-
-pub struct AsyncComputeCellsAndKzgProofs {
-  blob: Uint8Array,
-  prover_context: Arc<RwLock<ProverContext>>,
-}
-
-#[napi]
-impl Task for AsyncComputeCellsAndKzgProofs {
-  type Output = NativeCellsAndProofs;
-  type JsValue = CellsAndProofs;
-
-  fn compute(&mut self) -> Result<Self::Output> {
-    let blob = self.blob.as_ref();
-    let prover_context = self
-      .prover_context
-      .read()
-      .map_err(|_| Error::from_reason("Failed to acquire lock"))?;
-    let (cells, proofs) = prover_context.compute_cells_and_kzg_proofs(blob).unwrap();
-
-    Ok(NativeCellsAndProofs { cells, proofs })
-  }
-
-  fn resolve(&mut self, _env: Env, output: Self::Output) -> Result<Self::JsValue> {
-    let cells = output
-      .cells
-      .into_iter()
-      .map(|cell| Uint8Array::from(cell))
-      .collect::<Vec<Uint8Array>>();
-    let proofs = output
-      .proofs
-      .into_iter()
-      .map(|proof| Uint8Array::from(proof))
-      .collect::<Vec<Uint8Array>>();
-    Ok(CellsAndProofs { cells, proofs })
-  }
-}
-
-pub struct AsyncComputeCells {
-  blob: Uint8Array,
-  prover_context: Arc<RwLock<ProverContext>>,
-}
-
-#[napi]
-impl Task for AsyncComputeCells {
-  type Output = [Vec<u8>; 128];
-  type JsValue = Vec<Uint8Array>;
-
-  fn compute(&mut self) -> Result<Self::Output> {
-    let blob = self.blob.as_ref();
-    let prover_context = self
-      .prover_context
-      .read()
-      .map_err(|_| Error::from_reason("Failed to acquire lock"))?;
-    let cells = prover_context.compute_cells(blob).unwrap();
-    Ok(cells)
-  }
-
-  fn resolve(&mut self, _env: Env, output: Self::Output) -> Result<Self::JsValue> {
-    let cells = output
-      .into_iter()
-      .map(|cell| Uint8Array::from(cell))
-      .collect::<Vec<Uint8Array>>();
-    Ok(cells)
-  }
 }
 
 #[napi]
@@ -145,20 +52,20 @@ impl ProverContextJs {
     let prover_context = self
       .inner
       .read()
-      .map_err(|_| Error::from_reason("Failed to acquire lock"))?;
-    let commitment = prover_context.blob_to_kzg_commitment(blob).unwrap();
+      .map_err(|err| Error::from_reason(&format!("Failed to acquire lock: {:?}", err)))?;
+
+    let commitment = prover_context.blob_to_kzg_commitment(blob).map_err(|err| {
+      Error::from_reason(&format!(
+        "failed to compute blob_to_kzg_commitment: {:?}",
+        err
+      ))
+    })?;
     Ok(Uint8Array::from(&commitment))
   }
 
   #[napi]
-  pub fn async_blob_to_kzg_commitment(
-    &self,
-    blob: Uint8Array,
-  ) -> AsyncTask<AsyncBlobToKzgCommitment> {
-    AsyncTask::new(AsyncBlobToKzgCommitment {
-      blob,
-      prover_context: Arc::clone(&self.inner),
-    })
+  pub async fn async_blob_to_kzg_commitment(&self, blob: Uint8Array) -> Result<Uint8Array> {
+    self.blob_to_kzg_commitment(blob)
   }
 
   #[napi]
@@ -167,8 +74,16 @@ impl ProverContextJs {
     let prover_context = self
       .inner
       .read()
-      .map_err(|_| Error::from_reason("Failed to acquire lock"))?;
-    let (cells, proofs) = prover_context.compute_cells_and_kzg_proofs(blob).unwrap();
+      .map_err(|err| Error::from_reason(&format!("Failed to acquire lock: {:?}", err)))?;
+
+    let (cells, proofs) = prover_context
+      .compute_cells_and_kzg_proofs(blob)
+      .map_err(|err| {
+        Error::from_reason(&format!(
+          "failed to compute compute_cells_and_kzg_proofs: {:?}",
+          err
+        ))
+      })?;
 
     let cells_uint8array = cells
       .into_iter()
@@ -186,14 +101,11 @@ impl ProverContextJs {
   }
 
   #[napi]
-  pub fn async_compute_cells_and_kzg_proofs(
+  pub async fn async_compute_cells_and_kzg_proofs(
     &self,
     blob: Uint8Array,
-  ) -> AsyncTask<AsyncComputeCellsAndKzgProofs> {
-    AsyncTask::new(AsyncComputeCellsAndKzgProofs {
-      blob,
-      prover_context: Arc::clone(&self.inner),
-    })
+  ) -> Result<CellsAndProofs> {
+    self.compute_cells_and_kzg_proofs(blob)
   }
 
   #[napi]
@@ -202,8 +114,11 @@ impl ProverContextJs {
     let prover_context = self
       .inner
       .read()
-      .map_err(|_| Error::from_reason("Failed to acquire lock"))?;
-    let cells = prover_context.compute_cells(blob).unwrap();
+      .map_err(|err| Error::from_reason(&format!("Failed to acquire lock: {:?}", err)))?;
+
+    let cells = prover_context
+      .compute_cells(blob)
+      .map_err(|err| Error::from_reason(&format!("failed to compute compute_cells: {:?}", err)))?;
 
     let cells_uint8array = cells
       .into_iter()
@@ -214,44 +129,8 @@ impl ProverContextJs {
   }
 
   #[napi]
-  pub fn async_compute_cells(&self, blob: Uint8Array) -> AsyncTask<AsyncComputeCells> {
-    AsyncTask::new(AsyncComputeCells {
-      blob,
-      prover_context: Arc::clone(&self.inner),
-    })
-  }
-}
-
-pub struct AsyncVerifyCellKzgProof {
-  commitment: Vec<u8>,
-  cell_id: u64,
-  cell: Vec<u8>,
-  proof: Vec<u8>,
-  verifier_context: Arc<RwLock<VerifierContext>>,
-}
-
-#[napi]
-impl Task for AsyncVerifyCellKzgProof {
-  type Output = bool;
-  type JsValue = bool;
-
-  fn compute(&mut self) -> Result<Self::Output> {
-    let commitment = self.commitment.as_ref();
-    let cell = self.cell.as_ref();
-    let proof = self.proof.as_ref();
-    let verifier_context = self
-      .verifier_context
-      .read()
-      .map_err(|_| Error::from_reason("Failed to acquire lock"))?;
-    Ok(
-      verifier_context
-        .verify_cell_kzg_proof(commitment, self.cell_id, cell, proof)
-        .is_ok(),
-    )
-  }
-
-  fn resolve(&mut self, _env: Env, output: Self::Output) -> Result<Self::JsValue> {
-    Ok(output)
+  pub async fn async_compute_cells(&self, blob: Uint8Array) -> Result<Vec<Uint8Array>> {
+    self.compute_cells(blob)
   }
 }
 
@@ -273,7 +152,6 @@ impl VerifierContextJs {
   pub fn verify_cell_kzg_proof(
     &self,
     commitment: Uint8Array,
-    // Note: U64 cannot be used as an argument, see : https://napi.rs/docs/concepts/values.en#bigint
     cell_id: BigInt,
     cell: Uint8Array,
     proof: Uint8Array,
@@ -281,46 +159,129 @@ impl VerifierContextJs {
     let commitment = commitment.as_ref();
     let cell = cell.as_ref();
     let proof = proof.as_ref();
+    let cell_id_u64 = bigint_to_u64(cell_id);
 
-    let (signed, cell_id_value, _) = cell_id.get_u128();
-    assert!(signed == false, "cell id should be an unsigned integer");
+    // TODO: this map_err is repeated a few times, we can create a method for it
     let verifier_context = self
       .inner
       .read()
-      .map_err(|_| Error::from_reason("Failed to acquire lock"))?;
+      .map_err(|err| Error::from_reason(&format!("Failed to acquire lock: {:?}", err)))?;
 
-    let cell_id_u64 = cell_id_value as u64;
-    Ok(
-      verifier_context
-        .verify_cell_kzg_proof(commitment, cell_id_u64, cell, proof)
-        .is_ok(),
-    )
+    let valid = verifier_context.verify_cell_kzg_proof(commitment, cell_id_u64, cell, proof);
+    match valid {
+      Ok(_) => Ok(true),
+      Err(VerifierError::InvalidProof) => Ok(false),
+      Err(err) => {
+        return Err(Error::from_reason(&format!(
+          "failed to compute verify_cell_kzg_proof: {:?}",
+          err
+        )))
+      }
+    }
   }
 
   #[napi]
-  pub fn async_verify_cell_kzg_proof(
+  pub async fn async_verify_cell_kzg_proof(
     &self,
     commitment: Uint8Array,
-    // Note: U64 cannot be used as an argument, see : https://napi.rs/docs/concepts/values.en#bigint
     cell_id: BigInt,
     cell: Uint8Array,
     proof: Uint8Array,
-  ) -> AsyncTask<AsyncVerifyCellKzgProof> {
-    let commitment = commitment.as_ref();
-    let cell = cell.as_ref();
-    let proof = proof.as_ref();
-
-    let (signed, cell_id_value, _) = cell_id.get_u128();
-    assert!(signed == false, "cell id should be an unsigned integer");
-
-    let cell_id_u64 = cell_id_value as u64;
-
-    AsyncTask::new(AsyncVerifyCellKzgProof {
-      commitment: commitment.to_vec(),
-      cell: cell.to_vec(),
-      cell_id: cell_id_u64,
-      proof: proof.to_vec(),
-      verifier_context: Arc::clone(&self.inner),
-    })
+  ) -> Result<bool> {
+    self.verify_cell_kzg_proof(commitment, cell_id, cell, proof)
   }
+
+  #[napi]
+  pub fn verify_cell_kzg_proof_batch(
+    &self,
+    commitments: Vec<Uint8Array>,
+    row_indices: Vec<BigInt>,
+    column_indices: Vec<BigInt>,
+    cells: Vec<Uint8Array>,
+    proofs: Vec<Uint8Array>,
+  ) -> Result<bool> {
+    let row_indices: Vec<_> = row_indices.into_iter().map(bigint_to_u64).collect();
+    let column_indices: Vec<_> = column_indices.into_iter().map(bigint_to_u64).collect();
+
+    let commitments: Vec<_> = commitments.iter().map(|comm| comm.as_ref()).collect();
+    let cells: Vec<_> = cells.iter().map(|cell| cell.as_ref()).collect();
+    let proofs: Vec<_> = proofs.iter().map(|proof| proof.as_ref()).collect();
+
+    let verifier_context = self
+      .inner
+      .read()
+      .map_err(|err| Error::from_reason(&format!("Failed to acquire lock: {:?}", err)))?;
+
+    let valid = verifier_context.verify_cell_kzg_proof_batch(
+      commitments,
+      row_indices,
+      column_indices,
+      cells,
+      proofs,
+    );
+    match valid {
+      Ok(_) => Ok(true),
+      Err(VerifierError::InvalidProof) => Ok(false),
+      Err(err) => {
+        return Err(Error::from_reason(&format!(
+          "failed to compute verify_cell_kzg_proof_batch: {:?}",
+          err
+        )))
+      }
+    }
+  }
+
+  #[napi]
+  pub async fn async_verify_cell_kzg_proof_batch(
+    &self,
+    commitments: Vec<Uint8Array>,
+    row_indices: Vec<BigInt>,
+    column_indices: Vec<BigInt>,
+    cells: Vec<Uint8Array>,
+    proofs: Vec<Uint8Array>,
+  ) -> Result<bool> {
+    self.verify_cell_kzg_proof_batch(commitments, row_indices, column_indices, cells, proofs)
+  }
+
+  #[napi]
+  pub fn recover_all_cells(
+    &self,
+    cell_ids: Vec<BigInt>,
+    cells: Vec<Uint8Array>,
+  ) -> Result<Vec<Uint8Array>> {
+    let cell_ids: Vec<_> = cell_ids.into_iter().map(bigint_to_u64).collect();
+    let cells: Vec<_> = cells.iter().map(|cell| cell.as_ref()).collect();
+
+    let verifier_context = self
+      .inner
+      .read()
+      .map_err(|err| Error::from_reason(&format!("Failed to acquire lock: {:?}", err)))?;
+
+    let cells = verifier_context
+      .recover_all_cells(cell_ids, cells)
+      .map_err(|err| Error::from_reason(&format!("failed to compute compute_cells: {:?}", err)))?;
+
+    let cells_uint8array = cells
+      .into_iter()
+      .map(|cell| Uint8Array::from(cell))
+      .collect::<Vec<Uint8Array>>();
+
+    Ok(cells_uint8array)
+  }
+
+  #[napi]
+  pub async fn async_recover_all_cells(
+    &self,
+    cell_ids: Vec<BigInt>,
+    cells: Vec<Uint8Array>,
+  ) -> Result<Vec<Uint8Array>> {
+    self.recover_all_cells(cell_ids, cells)
+  }
+}
+
+// We use bigint because u64 cannot be used as an argument, see : https://napi.rs/docs/concepts/values.en#bigint
+fn bigint_to_u64(value: BigInt) -> u64 {
+  let (signed, value_u128, _) = value.get_u128();
+  assert!(signed == false, "value should be an unsigned integer");
+  value_u128 as u64
 }
