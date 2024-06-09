@@ -58,7 +58,7 @@ public sealed unsafe partial class PeerDASKZG : IDisposable
         return commitment;
     }
 
-    public unsafe byte[] ComputeCells(byte[] blob)
+    public unsafe byte[][] ComputeCells(byte[] blob)
     {
         byte[] cells = new byte[BytesForAllCells];
 
@@ -68,10 +68,10 @@ public sealed unsafe partial class PeerDASKZG : IDisposable
             CResult result = compute_cells(_context, Convert.ToUInt64(blob.Length), blobPtr, cellsPtr);
             ThrowOnError(result);
         }
-        return cells;
+        return DeflattenArray(cells, BytesPerCell);
     }
 
-    public unsafe (byte[], byte[]) ComputeCellsAndKZGProofs(byte[] blob)
+    public unsafe (byte[][], byte[][]) ComputeCellsAndKZGProofs(byte[] blob)
     {
         byte[] cells = new byte[BytesForAllCells];
         byte[] proofs = new byte[BytesForAllProofs];
@@ -83,7 +83,7 @@ public sealed unsafe partial class PeerDASKZG : IDisposable
             CResult result = compute_cells_and_kzg_proofs(_context, Convert.ToUInt64(blob.Length), blobPtr, cellsPtr, proofsPtr);
             ThrowOnError(result);
         }
-        return (cells, proofs);
+        return (DeflattenArray(cells, BytesPerCell), DeflattenArray(proofs, BytesPerCommitment));
     }
 
     public unsafe bool VerifyCellKZGProof(byte[] cell, byte[] commitment, ulong cellId, byte[] proof)
@@ -125,7 +125,7 @@ public sealed unsafe partial class PeerDASKZG : IDisposable
         return verified;
     }
 
-    public byte[] RecoverAllCells(ulong[] cellIds, byte[][] cells)
+    public byte[][] RecoverAllCells(ulong[] cellIds, byte[][] cells)
     {
         byte[] cellsFlattened = FlattenArray(cells);
 
@@ -138,7 +138,7 @@ public sealed unsafe partial class PeerDASKZG : IDisposable
             ThrowOnError(result);
         }
 
-        return recoveredCells;
+        return DeflattenArray(recoveredCells, BytesPerCell);
     }
 
     private static void ThrowOnError(CResult result)
@@ -167,7 +167,7 @@ public sealed unsafe partial class PeerDASKZG : IDisposable
         }
     }
 
-    public static byte[] FlattenArray(byte[][] jaggedArray)
+    private static byte[] FlattenArray(byte[][] jaggedArray)
     {
         int totalLength = 0;
 
@@ -190,6 +190,20 @@ public sealed unsafe partial class PeerDASKZG : IDisposable
         }
 
         return flattenedArray;
+    }
+
+    private static byte[][] DeflattenArray(byte[] flattenedArray, int length)
+    {
+        int numArrays = flattenedArray.Length / length;
+        byte[][] jaggedArray = new byte[numArrays][];
+
+        for (int i = 0; i < numArrays; i++)
+        {
+            jaggedArray[i] = new byte[length];
+            Array.Copy(flattenedArray, i * length, jaggedArray[i], 0, length);
+        }
+
+        return jaggedArray;
     }
 
     public enum ContextSetting

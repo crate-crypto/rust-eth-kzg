@@ -47,21 +47,6 @@ public class ReferenceTests
         return Convert.FromHexString(hex[2..]);
     }
 
-    private static byte[] GetFlatBytes(List<string> strings)
-    {
-        List<byte[]> stringBytes = strings.Select(GetBytes).ToList();
-
-        byte[] flatBytes = new byte[stringBytes.Sum(b => b.Length)];
-        int offset = 0;
-        foreach (byte[] bytes in stringBytes)
-        {
-            Buffer.BlockCopy(bytes, 0, flatBytes, offset, bytes.Length);
-            offset += bytes.Length;
-        }
-
-        return flatBytes;
-    }
-
     private static byte[][] GetByteArrays(List<string> strings)
     {
         return strings.Select(GetBytes).ToArray();
@@ -146,14 +131,14 @@ public class ReferenceTests
             ComputeCellsTest test = _deserializer.Deserialize<ComputeCellsTest>(yaml);
             Assert.That(test, Is.Not.EqualTo(null));
 
-            byte[] cells;
+            byte[][] cells;
             byte[] blob = GetBytes(test.Input.Blob);
 
             try
             {
                 cells = _context.ComputeCells(blob);
                 Assert.That(test.Output, Is.Not.EqualTo(null));
-                byte[] expectedCells = GetFlatBytes(test.Output);
+                byte[][] expectedCells = GetByteArrays(test.Output);
                 Assert.That(cells, Is.EqualTo(expectedCells));
             }
             catch
@@ -197,11 +182,11 @@ public class ReferenceTests
 
             try
             {
-                (byte[] cells, byte[] proofs) = _context.ComputeCellsAndKZGProofs(blob);
+                (byte[][] cells, byte[][] proofs) = _context.ComputeCellsAndKZGProofs(blob);
                 Assert.That(test.Output, Is.Not.EqualTo(null));
-                byte[] expectedCells = GetFlatBytes(test.Output.ElementAt(0));
+                byte[][] expectedCells = GetByteArrays(test.Output.ElementAt(0));
                 Assert.That(cells, Is.EqualTo(expectedCells));
-                byte[] expectedProofs = GetFlatBytes(test.Output.ElementAt(1));
+                byte[][] expectedProofs = GetByteArrays(test.Output.ElementAt(1));
                 Assert.That(proofs, Is.EqualTo(expectedProofs));
             }
             catch
@@ -352,9 +337,9 @@ public class ReferenceTests
 
             try
             {
-                byte[] recoveredCells = _context.RecoverAllCells(cellIds, cells);
+                byte[][] recoveredCells = _context.RecoverAllCells(cellIds, cells);
                 Assert.That(test.Output, Is.Not.EqualTo(null));
-                byte[] expectedRecoveredCells = GetFlatBytes(test.Output);
+                byte[][] expectedRecoveredCells = GetByteArrays(test.Output);
                 Assert.That(recoveredCells, Is.EqualTo(expectedRecoveredCells));
             }
             catch
