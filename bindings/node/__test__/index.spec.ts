@@ -2,29 +2,35 @@ import crypto from "crypto";
 import {
   ProverContextJs,
   VerifierContextJs,
-  BYTES_PER_COMMITMENT,
-  BYTES_PER_BLOB,
-  BYTES_PER_FIELD_ELEMENT,
 } from "../index.js";
 
-const MAX_TOP_BYTE = 114;
+import { readFileSync } from "fs";
+import { globSync } from "glob";
 
-/**
- * Generates a random blob of the correct length for the KZG library
- *
- * @return {Uint8Array}
- */
-function generateRandomBlob(): Uint8Array {
-  return new Uint8Array(
-    crypto.randomBytes(BYTES_PER_BLOB).map((x, i) => {
-      // Set the top byte to be low enough that the field element doesn't overflow the BLS modulus
-      if (x > MAX_TOP_BYTE && i % BYTES_PER_FIELD_ELEMENT == 0) {
-        return Math.floor(Math.random() * MAX_TOP_BYTE);
-      }
-      return x;
-    })
-  );
+const yaml = require("js-yaml");
+
+interface TestMeta<I extends Record<string, any>, O extends boolean | string | string[] | Record<string, any>> {
+  input: I;
+  output: O;
 }
+
+const BLOB_TO_KZG_COMMITMENT_TESTS = "../../consensus_test_vectors/blob_to_kzg_commitment/*/*/data.yaml";
+const COMPUTE_CELLS_TESTS = "../../consensus_test_vectors/compute_cells/*/*/data.yaml";
+const COMPUTE_CELLS_AND_KZG_PROOFS_TESTS = "../../consensus_test_vectors/compute_cells_and_kzg_proofs/*/*/data.yaml";
+const VERIFY_CELL_KZG_PROOF_TESTS = "../../consensus_test_vectors/verify_cell_kzg_proof/*/*/data.yaml";
+const VERIFY_CELL_KZG_PROOF_BATCH_TESTS = "../../consensus_test_vectors/verify_cell_kzg_proof_batch/*/*/data.yaml";
+const RECOVER_ALL_CELLS_TESTS = "../../consensus_test_vectors/recover_all_cells/*/*/data.yaml";
+
+type BlobToKzgCommitmentTest = TestMeta<{ blob: string }, string>;
+type ComputeCellsTest = TestMeta<{ blob: string }, string[]>;
+type ComputeCellsAndKzgProofsTest = TestMeta<{ blob: string }, string[][]>;
+// TODO: number here is incorrect, but it might be worthwhile to change the type in the specs instead
+type VerifyCellKzgProofTest = TestMeta<{ commitment: string; cell_id: number; cell: string; proof: string }, boolean>;
+type VerifyCellKzgProofBatchTest = TestMeta<
+  { row_commitments: string[]; row_indices: number[]; column_indices: number[]; cells: string[]; proofs: string[] },
+  boolean
+>;
+type RecoverAllCellsTest = TestMeta<{ cell_ids: number[]; cells: string[] }, string[]>;
 
 /**
  * Converts hex string to binary Uint8Array
@@ -59,62 +65,195 @@ function assertBytesEqual(a: Uint8Array | Buffer, b: Uint8Array | Buffer): void 
   }
 }
 
+/**
+ * Finds a valid test under a glob path to test files. Filters out tests with
+ * "invalid", "incorrect", or "different" in the file name.
+ *
+ * @param {string} testDir Glob path to test files
+ *
+ * @return {any} Test object with valid input and output. Must strongly type
+ *               results at calling location
+ *
+ * @throws {Error} If no valid test is found
+ */
+function getValidTest(testDir: string): any {
+  const tests = globSync(testDir);
+  const validTest = tests.find(
+    (testFile: string) =>
+      !testFile.includes("invalid") && !testFile.includes("incorrect") && !testFile.includes("different")
+  );
+  if (!validTest) throw new Error("Could not find valid test");
+  return yaml.load(readFileSync(validTest, "ascii"));
+}
+
 describe("ProverContext", () => {
   const proverContext = new ProverContextJs();
-  describe("blobToKzgCommitment", () => {
-    test("function exists", () => {
-      expect(proverContext.blobToKzgCommitment).toBeDefined();
-    });
-    test("creates a commitment", () => {
-      const blob = generateRandomBlob();
-      const commitment = proverContext.blobToKzgCommitment(blob);
-      expect(commitment).toBeInstanceOf(Uint8Array);
-      expect(commitment.length).toEqual(BYTES_PER_COMMITMENT);
-    });
-  });
-  describe("asyncBlobToKzgCommitment", () => {
-    test("function exists", () => {
-      expect(proverContext.asyncBlobToKzgCommitment).toBeDefined();
-    });
-    test("creates a commitment", async () => {
-      const blob = generateRandomBlob();
-      const commitment = await proverContext.asyncBlobToKzgCommitment(blob);
-      expect(commitment).toBeInstanceOf(Uint8Array);
-      expect(commitment.length).toEqual(BYTES_PER_COMMITMENT);
-    });
-  });
-  describe("computeCellsAndKzgProofs", () => {
-    test("function exists", () => {
-      expect(proverContext.computeCellsAndKzgProofs).toBeDefined();
+
+  it("reference tests for blobToKzgCommitment should pass", () => {
+    const tests = globSync(BLOB_TO_KZG_COMMITMENT_TESTS);
+    expect(tests.length).toBeGreaterThan(0);
+
+    tests.forEach((testFile: string) => {
+      const test: BlobToKzgCommitmentTest = yaml.load(readFileSync(testFile, "ascii"));
+
+      let commitment: Uint8Array;
+      const blob = bytesFromHex(test.input.blob);
+
+      try {
+        commitment = proverContext.blobToKzgCommitment(blob);
+      } catch (err) {
+        expect(test.output).toBeNull();
+        return;
+      }
+
+      expect(test.output).not.toBeNull();
+      const expectedCommitment = bytesFromHex(test.output);
+      expect(assertBytesEqual(commitment, expectedCommitment));
     });
   });
-  describe("asyncComputeCellsAndKzgProofs", () => {
-    test("function exists", () => {
-      expect(proverContext.asyncComputeCellsAndKzgProofs).toBeDefined();
+
+
+  it("reference tests for computeCells should pass", () => {
+    const tests = globSync(COMPUTE_CELLS_TESTS);
+    expect(tests.length).toBeGreaterThan(0);
+
+    tests.forEach((testFile: string) => {
+      const test: ComputeCellsTest = yaml.load(readFileSync(testFile, "ascii"));
+
+      let cells;
+      const blob = bytesFromHex(test.input.blob);
+
+      try {
+        cells = proverContext.computeCells(blob);
+      } catch (err) {
+        expect(test.output).toBeNull();
+        return;
+      }
+
+      expect(test.output).not.toBeNull();
+      const expectedCells = test.output.map(bytesFromHex);
+      expect(cells.length).toBe(expectedCells.length);
+      for (let i = 0; i < cells.length; i++) {
+        assertBytesEqual(cells[i], expectedCells[i]);
+      }
     });
   });
-  describe("computeCells", () => {
-    test("function exists", () => {
-      expect(proverContext.computeCells).toBeDefined();
+
+  it("reference tests for computeCellsAndKzgProofs should pass", () => {
+    const tests = globSync(COMPUTE_CELLS_AND_KZG_PROOFS_TESTS);
+    expect(tests.length).toBeGreaterThan(0);
+
+    tests.forEach((testFile: string) => {
+      const test: ComputeCellsAndKzgProofsTest = yaml.load(readFileSync(testFile, "ascii"));
+
+      let cells_and_proofs;
+      const blob = bytesFromHex(test.input.blob);
+
+      try {
+        cells_and_proofs = proverContext.computeCellsAndKzgProofs(blob);
+      } catch (err) {
+        expect(test.output).toBeNull();
+        return;
+      }
+
+      let cells = cells_and_proofs.cells;
+      let proofs = cells_and_proofs.proofs;
+
+      expect(test.output).not.toBeNull();
+      expect(test.output.length).toBe(2);
+      const expectedCells = test.output[0].map(bytesFromHex);
+      const expectedProofs = test.output[1].map(bytesFromHex);
+      expect(cells.length).toBe(expectedCells.length);
+      for (let i = 0; i < cells.length; i++) {
+        assertBytesEqual(cells[i], expectedCells[i]);
+      }
+      expect(proofs.length).toBe(expectedProofs.length);
+      for (let i = 0; i < proofs.length; i++) {
+        assertBytesEqual(proofs[i], expectedProofs[i]);
+      }
     });
   });
-  describe("asyncComputeCells", () => {
-    test("function exists", () => {
-      expect(proverContext.asyncComputeCells).toBeDefined();
-    });
-  });
+
 });
 
 describe("VerifierContext", () => {
   const verifierContext = new VerifierContextJs();
-  describe("verifyCellKzgProof", () => {
-    test("function exists", () => {
-      expect(verifierContext.verifyCellKzgProof).toBeDefined();
+
+  it("reference tests for recoverAllCells should pass", () => {
+    const tests = globSync(RECOVER_ALL_CELLS_TESTS);
+    expect(tests.length).toBeGreaterThan(0);
+
+    tests.forEach((testFile: string) => {
+      const test: RecoverAllCellsTest = yaml.load(readFileSync(testFile, "ascii"));
+
+      let recovered;
+      const cellIds = test.input.cell_ids.map((x) => BigInt(x));
+      const cells = test.input.cells.map(bytesFromHex);
+
+      try {
+        recovered = verifierContext.recoverAllCells(cellIds, cells);
+      } catch (err) {
+        expect(test.output).toBeNull();
+        return;
+      }
+
+      expect(test.output).not.toBeNull();
+      const expectedCells = test.output.map(bytesFromHex);
+      expect(recovered.length).toBe(expectedCells.length);
+      for (let i = 0; i < cells.length; i++) {
+        assertBytesEqual(recovered[i], expectedCells[i]);
+      }
     });
   });
-  describe("asyncVerifyCellKzgProof", () => {
-    test("function exists", () => {
-      expect(verifierContext.asyncVerifyCellKzgProof).toBeDefined();
+
+  it("reference tests for verifyCellKzgProofBatch should pass", () => {
+    const tests = globSync(VERIFY_CELL_KZG_PROOF_BATCH_TESTS);
+    expect(tests.length).toBeGreaterThan(0);
+
+    tests.forEach((testFile: string) => {
+      const test: VerifyCellKzgProofBatchTest = yaml.load(readFileSync(testFile, "ascii"));
+
+      let valid;
+      const rowCommitments = test.input.row_commitments.map(bytesFromHex);
+      const rowIndices = test.input.row_indices.map((x) => BigInt(x));
+      const columnIndices = test.input.column_indices.map((x) => BigInt(x));
+      const cells = test.input.cells.map(bytesFromHex);
+      const proofs = test.input.proofs.map(bytesFromHex);
+
+      try {
+        valid = verifierContext.verifyCellKzgProofBatch(rowCommitments, rowIndices, columnIndices, cells, proofs);
+      } catch (err) {
+        expect(test.output).toBeNull();
+        return;
+      }
+
+      expect(valid).toEqual(test.output);
+    });
+  });
+
+  it("reference tests for verifyCellKzgProof should pass", () => {
+    const tests = globSync(VERIFY_CELL_KZG_PROOF_TESTS);
+    expect(tests.length).toBeGreaterThan(0);
+
+    tests.forEach((testFile: string) => {
+
+      const test: VerifyCellKzgProofTest = yaml.load(readFileSync(testFile, "ascii"));
+
+      console.log("testFile: ", testFile);
+      let valid;
+      const commitment = bytesFromHex(test.input.commitment);
+      const cellId = BigInt(test.input.cell_id);
+      const cell = bytesFromHex(test.input.cell);
+      const proof = bytesFromHex(test.input.proof);
+
+      try {
+        valid = verifierContext.verifyCellKzgProof(commitment, cellId, cell, proof);
+      } catch (err) {
+        expect(test.output).toBeNull();
+        return;
+      }
+
+      expect(valid).toEqual(test.output);
     });
   });
 });
