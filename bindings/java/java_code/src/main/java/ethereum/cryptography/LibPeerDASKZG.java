@@ -59,23 +59,40 @@ public class LibPeerDASKZG implements AutoCloseable{
         }
     }
 
-    private static byte[] flatten(final byte[]... bytes) {
+    static byte[] flatten(final byte[]... bytes) {
         final int capacity = Arrays.stream(bytes).mapToInt(b -> b.length).sum();
         final ByteBuffer buffer = ByteBuffer.allocate(capacity);
         Arrays.stream(bytes).forEach(buffer::put);
         return buffer.array();
     }
 
+    private static byte[][] deflatten(byte[] flatBytes, int length) {
+        int numArrays = flatBytes.length / length;
+        byte[][] deflattened = new byte[numArrays][length];
+
+        for (int i = 0; i < numArrays; i++) {
+            System.arraycopy(flatBytes, i * length, deflattened[i], 0, length);
+        }
+
+        return deflattened;
+    }
+
     public byte[] blobToKZGCommitment(byte[] blob) {
         return blobToKZGCommitment(contextPtr, blob);
     }
     
-    public CellsAndProofs computeCellsAndKZGProofs(byte[] blob) {
-        return computeCellsAndKZGProofs(contextPtr, blob);
+    public CellsAndProofsDeflattened computeCellsAndKZGProofs(byte[] blob) {
+        CellsAndProofs cellsAndProofs = computeCellsAndKZGProofs(contextPtr, blob);
+
+        byte[][] cells = deflatten(cellsAndProofs.cells, BYTES_PER_CELL);
+        byte[][] proofs = deflatten(cellsAndProofs.proofs, BYTES_PER_COMMITMENT);
+
+        return new CellsAndProofsDeflattened(cells, proofs);
     }
 
-    public byte[] computeCells(byte[] blob) {
-        return computeCells(contextPtr, blob);
+    public byte[][] computeCells(byte[] blob) {
+        byte[] cells = computeCells(contextPtr, blob);
+        return deflatten(cells, BYTES_PER_CELL);
     }
 
     public boolean verifyCellKZGProof(byte[] commitment, long cellID, byte[] cell, byte[] proof) {
@@ -92,10 +109,11 @@ public class LibPeerDASKZG implements AutoCloseable{
         return verifyCellKZGProofBatch(contextPtr, commitments, rowIndices, columnIndices, cells, proofs);
     }
     
-    public byte[] recoverAllCells(long[] cellIDs, byte[][] cellsArr) {
+    public byte[][] recoverAllCells(long[] cellIDs, byte[][] cellsArr) {
         
-        byte[] cells = flatten(cellsArr);
-        return recoverAllCells(contextPtr, cellIDs, cells);
+        byte[] cellsFlattened = flatten(cellsArr);
+        byte[] recoveredCellsFlattened = recoverAllCells(contextPtr, cellIDs, cellsFlattened);
+        return deflatten(recoveredCellsFlattened, BYTES_PER_CELL);
     }
 
     private static native long peerDASContextNew();

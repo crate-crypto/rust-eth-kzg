@@ -42,7 +42,7 @@ public class LibPeerDASKZGTest {
     @MethodSource("ethereum.cryptography.TestUtils#getComputeCellsTests")
     public void verifyComputeCellsTests(final ComputeCellsTest test) {
         try {
-            byte[] cells = context.computeCells(test.getInput().getBlob());
+            byte[][] cells = context.computeCells(test.getInput().getBlob());
             assertArrayEquals(test.getOutput(), cells);
         } catch (IllegalArgumentException ex) {
             assertNull(test.getOutput());
@@ -53,7 +53,7 @@ public class LibPeerDASKZGTest {
     @MethodSource("ethereum.cryptography.TestUtils#getComputeCellsAndKzgProofsTests")
     public void verifyComputeCellsAndKzgProofsTests(final ComputeCellsAndKzgProofsTest test) {
         try {
-            CellsAndProofs cellsAndProofs = context.computeCellsAndKZGProofs(test.getInput().getBlob());
+            CellsAndProofsDeflattened cellsAndProofs = context.computeCellsAndKZGProofs(test.getInput().getBlob());
             assertArrayEquals(test.getOutput().getCells(), cellsAndProofs.getCells());
             assertArrayEquals(test.getOutput().getProofs(), cellsAndProofs.getProofs());
         } catch (IllegalArgumentException ex) {
@@ -96,7 +96,7 @@ public class LibPeerDASKZGTest {
     @MethodSource("ethereum.cryptography.TestUtils#getRecoverAllCellsTests")
     public void recoverAllCellsTests(final RecoverAllCellsTest test) {
         try {
-            byte[] cells = context.recoverAllCells(test.getInput().getCellIds(), test.getInput().getCells());
+            byte[][] cells = context.recoverAllCells(test.getInput().getCellIds(), test.getInput().getCells());
             assertArrayEquals(test.getOutput(), cells);
         } catch (IllegalArgumentException ex) {
             assertNull(test.getOutput());

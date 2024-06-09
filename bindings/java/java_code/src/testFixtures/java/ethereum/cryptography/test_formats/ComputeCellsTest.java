@@ -21,15 +21,14 @@ public class ComputeCellsTest {
     return input;
   }
 
-  public byte[] getOutput() {
+  public byte[][] getOutput() {
     if (output == null) {
       return null;
     }
-    return TestUtils.flatten(
-        output.stream()
+    return output.stream()
             .map(Bytes::fromHexString)
             .map(Bytes::toArrayUnsafe)
             .collect(Collectors.toList())
-            .toArray(byte[][]::new));
+            .toArray(byte[][]::new);
   }
 }
