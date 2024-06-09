@@ -17,13 +17,12 @@ public class RecoverAllCellsTest {
       return cellIds.stream().mapToLong(Long::longValue).toArray();
     }
 
-    public byte[] getCells() {
-      return TestUtils.flatten(
-          cells.stream()
+    public byte[][] getCells() {
+      return cells.stream()
               .map(Bytes::fromHexString)
               .map(Bytes::toArrayUnsafe)
               .collect(Collectors.toList())
-              .toArray(byte[][]::new));
+              .toArray(byte[][]::new);
     }
   }
 

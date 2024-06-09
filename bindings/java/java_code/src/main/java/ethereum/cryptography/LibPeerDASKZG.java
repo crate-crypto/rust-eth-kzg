@@ -6,6 +6,8 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
+import java.nio.ByteBuffer;
 
 public class LibPeerDASKZG implements AutoCloseable{
     // These constants were taken from c-kzg
@@ -43,7 +45,7 @@ public class LibPeerDASKZG implements AutoCloseable{
         this.contextPtr = peerDASContextNew();
     }
 
-    // TODO: Finalization was deprecaed, we should find a method that does
+    // TODO: Finalization was deprecated, we should find a method that does
     // TODO: not require a lot of code. Possibly separate the wrapper from the 
     // TODO: bindings code too.
     @Override
@@ -55,6 +57,13 @@ public class LibPeerDASKZG implements AutoCloseable{
             peerDASContextDestroy(contextPtr);
             contextPtr = 0;
         }
+    }
+
+    private static byte[] flatten(final byte[]... bytes) {
+        final int capacity = Arrays.stream(bytes).mapToInt(b -> b.length).sum();
+        final ByteBuffer buffer = ByteBuffer.allocate(capacity);
+        Arrays.stream(bytes).forEach(buffer::put);
+        return buffer.array();
     }
 
     public byte[] blobToKZGCommitment(byte[] blob) {
@@ -73,12 +82,19 @@ public class LibPeerDASKZG implements AutoCloseable{
         return verifyCellKZGProof(contextPtr, commitment, cellID, cell, proof);
     }
 
-    public boolean verifyCellKZGProofBatch(byte[] commitments, long[] rowIndices, long[] columnIndices, byte[] cells,
-            byte[] proofs) {
+    public boolean verifyCellKZGProofBatch(byte[][] commitmentsArr, long[] rowIndices, long[] columnIndices, byte[][] cellsArr,
+            byte[][] proofsArr) {
+
+        byte[] commitments = flatten(commitmentsArr);
+        byte[] proofs = flatten(proofsArr);
+        byte[] cells = flatten(cellsArr);
+        
         return verifyCellKZGProofBatch(contextPtr, commitments, rowIndices, columnIndices, cells, proofs);
     }
     
-    public byte[] recoverAllCells(long[] cellIDs, byte[] cells) {
+    public byte[] recoverAllCells(long[] cellIDs, byte[][] cellsArr) {
+        
+        byte[] cells = flatten(cellsArr);
         return recoverAllCells(contextPtr, cellIDs, cells);
     }
 

@@ -20,13 +20,12 @@ public class VerifyCellKzgProofBatchTest {
     private List<String> cells;
     private List<String> proofs;
 
-    public byte[] getRowCommitments() {
-      return TestUtils.flatten(
-          rowCommitments.stream()
+    public byte[][] getRowCommitments() {
+      return rowCommitments.stream()
               .map(Bytes::fromHexString)
               .map(Bytes::toArray)
               .collect(Collectors.toList())
-              .toArray(byte[][]::new));
+              .toArray(byte[][]::new);
     }
 
     public long[] getRowIndices() {
@@ -37,22 +36,20 @@ public class VerifyCellKzgProofBatchTest {
       return columnIndices.stream().mapToLong(Long::longValue).toArray();
     }
 
-    public byte[] getCells() {
-      return TestUtils.flatten(
-          cells.stream()
+    public byte[][] getCells() {
+      return cells.stream()
               .map(Bytes::fromHexString)
               .map(Bytes::toArrayUnsafe)
               .collect(Collectors.toList())
-              .toArray(byte[][]::new));
+              .toArray(byte[][]::new);
     }
 
-    public byte[] getProofs() {
-      return TestUtils.flatten(
-          proofs.stream()
+    public byte[][] getProofs() {
+      return proofs.stream()
               .map(Bytes::fromHexString)
               .map(Bytes::toArray)
               .collect(Collectors.toList())
-              .toArray(byte[][]::new));
+              .toArray(byte[][]::new);
     }
   }
 
