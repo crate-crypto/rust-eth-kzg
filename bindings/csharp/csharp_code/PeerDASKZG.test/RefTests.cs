@@ -14,7 +14,7 @@ public class ReferenceTests
     public void Setup()
     {
 
-        _context = PeerDASKZG.PeerDASContextNew();
+        _context = new PeerDASKZG();
         _deserializer = new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
         // TODO(Note): On some systems, this is needed as the normal deserializer has trouble deserializing
         // `cell_id` to `CellId` ie the underscore is not being parsed correctly.
@@ -24,16 +24,11 @@ public class ReferenceTests
     [OneTimeTearDown]
     public void Teardown()
     {
-        PeerDASKZG.PeerDASContextFree(_context);
+        _context.Dispose();
     }
 
-    [TestCase]
-    public void TestContextLoaded()
-    {
-        Assert.That(_context, Is.Not.EqualTo(IntPtr.Zero));
-    }
 
-    private IntPtr _context;
+    private PeerDASKZG _context;
     private const string TestDir = "../../../../../../../consensus_test_vectors";
     private readonly string _blobToKzgCommitmentTests = Path.Join(TestDir, "blob_to_kzg_commitment");
     private readonly string _computeCellsTests = Path.Join(TestDir, "compute_cells");
@@ -65,6 +60,11 @@ public class ReferenceTests
         }
 
         return flatBytes;
+    }
+
+    private static byte[][] GetByteArrays(List<string> strings)
+    {
+        return strings.Select(GetBytes).ToArray();
     }
 
     #endregion
@@ -104,7 +104,7 @@ public class ReferenceTests
             try
             {
 
-                commitment = PeerDASKZG.BlobToKzgCommitment(_context, blob);
+                commitment = _context.BlobToKzgCommitment(blob);
                 Assert.That(test.Output, Is.Not.EqualTo(null));
                 byte[] expectedCommitment = GetBytes(test.Output);
                 Assert.That(commitment, Is.EqualTo(expectedCommitment));
@@ -151,7 +151,7 @@ public class ReferenceTests
 
             try
             {
-                cells = PeerDASKZG.ComputeCells(_context, blob);
+                cells = _context.ComputeCells(blob);
                 Assert.That(test.Output, Is.Not.EqualTo(null));
                 byte[] expectedCells = GetFlatBytes(test.Output);
                 Assert.That(cells, Is.EqualTo(expectedCells));
@@ -197,7 +197,7 @@ public class ReferenceTests
 
             try
             {
-                (byte[] cells, byte[] proofs) = PeerDASKZG.ComputeCellsAndKZGProofs(_context, blob);
+                (byte[] cells, byte[] proofs) = _context.ComputeCellsAndKZGProofs(blob);
                 Assert.That(test.Output, Is.Not.EqualTo(null));
                 byte[] expectedCells = GetFlatBytes(test.Output.ElementAt(0));
                 Assert.That(cells, Is.EqualTo(expectedCells));
@@ -254,7 +254,7 @@ public class ReferenceTests
 
             try
             {
-                bool isCorrect = PeerDASKZG.VerifyCellKZGProof(_context, cell, commitment, cellId, proof);
+                bool isCorrect = _context.VerifyCellKZGProof(cell, commitment, cellId, proof);
                 Assert.That(isCorrect, Is.EqualTo(test.Output));
             }
             catch
@@ -298,15 +298,15 @@ public class ReferenceTests
             VerifyCellKzgProofBatchTest test = _deserializerUnderscoreNaming.Deserialize<VerifyCellKzgProofBatchTest>(yaml);
             Assert.That(test, Is.Not.EqualTo(null));
 
-            byte[] rowCommitments = GetFlatBytes(test.Input.RowCommitments);
+            byte[][] rowCommitments = GetByteArrays(test.Input.RowCommitments);
             ulong[] rowIndices = test.Input.RowIndices.ToArray();
             ulong[] columnIndices = test.Input.ColumnIndices.ToArray();
-            byte[] cells = GetFlatBytes(test.Input.Cells);
-            byte[] proofs = GetFlatBytes(test.Input.Proofs);
+            byte[][] cells = GetByteArrays(test.Input.Cells);
+            byte[][] proofs = GetByteArrays(test.Input.Proofs);
 
             try
             {
-                bool isCorrect = PeerDASKZG.VerifyCellKZGProofBatch(_context, rowCommitments, rowIndices, columnIndices, cells, proofs);
+                bool isCorrect = _context.VerifyCellKZGProofBatch(rowCommitments, rowIndices, columnIndices, cells, proofs);
                 Assert.That(isCorrect, Is.EqualTo(test.Output));
             }
             catch
@@ -348,11 +348,11 @@ public class ReferenceTests
             Assert.That(test, Is.Not.EqualTo(null));
 
             ulong[] cellIds = test.Input.CellIds.ToArray();
-            byte[] cells = GetFlatBytes(test.Input.Cells);
+            byte[][] cells = GetByteArrays(test.Input.Cells);
 
             try
             {
-                byte[] recoveredCells = PeerDASKZG.RecoverAllCells(_context, cellIds, cells);
+                byte[] recoveredCells = _context.RecoverAllCells(cellIds, cells);
                 Assert.That(test.Output, Is.Not.EqualTo(null));
                 byte[] expectedRecoveredCells = GetFlatBytes(test.Output);
                 Assert.That(recoveredCells, Is.EqualTo(expectedRecoveredCells));
