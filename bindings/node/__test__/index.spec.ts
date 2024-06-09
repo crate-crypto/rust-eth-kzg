@@ -218,7 +218,6 @@ describe("VerifierContext", () => {
 
       const test: VerifyCellKzgProofTest = yaml.load(readFileSync(testFile, "ascii"));
 
-      console.log("testFile: ", testFile);
       let valid;
       const commitment = bytesFromHex(test.input.commitment);
       const cellId = BigInt(test.input.cell_id);
