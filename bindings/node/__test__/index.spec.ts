@@ -65,27 +65,6 @@ function assertBytesEqual(a: Uint8Array | Buffer, b: Uint8Array | Buffer): void 
   }
 }
 
-/**
- * Finds a valid test under a glob path to test files. Filters out tests with
- * "invalid", "incorrect", or "different" in the file name.
- *
- * @param {string} testDir Glob path to test files
- *
- * @return {any} Test object with valid input and output. Must strongly type
- *               results at calling location
- *
- * @throws {Error} If no valid test is found
- */
-function getValidTest(testDir: string): any {
-  const tests = globSync(testDir);
-  const validTest = tests.find(
-    (testFile: string) =>
-      !testFile.includes("invalid") && !testFile.includes("incorrect") && !testFile.includes("different")
-  );
-  if (!validTest) throw new Error("Could not find valid test");
-  return yaml.load(readFileSync(validTest, "ascii"));
-}
-
 describe("ProverContext", () => {
   const proverContext = new ProverContextJs();
 
