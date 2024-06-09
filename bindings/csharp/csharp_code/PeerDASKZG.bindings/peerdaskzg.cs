@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace PeerDASKZG;
 
-public static unsafe partial class PeerDASKZG
+public sealed unsafe partial class PeerDASKZG : IDisposable
 {
     // These constants are copied from the c-kzg csharp bindings file.
     // TODO: This is not ideal, since we want the Rust code to be the single source of truth
@@ -22,37 +22,56 @@ public static unsafe partial class PeerDASKZG
     public const int BytesPerCell = BytesPerFieldElement * FieldElementsPerCell;
     private const int CellsPerExtBlob = FieldElementsPerExtBlob / FieldElementsPerCell;
 
-    public static unsafe byte[] BlobToKzgCommitment(IntPtr proverContextPtr, byte[] blob)
+    private PeerDASContext* _context;
+
+    public PeerDASKZG()
+    {
+        _context = peerdas_context_new();
+    }
+
+    public PeerDASKZG(ContextSetting setting = ContextSetting.Both)
+    {
+        _context = peerdas_context_new_with_setting((CContextSetting)setting);
+    }
+
+    public void Dispose()
+    {
+        if (_context != null)
+        {
+            peerdas_context_free(_context);
+            _context = null;
+        }
+    }
+
+    public unsafe byte[] BlobToKzgCommitment(byte[] blob)
     {
         byte[] commitment = new byte[BytesPerCommitment];
 
         fixed (byte* blobPtr = blob)
         fixed (byte* commitmentPtr = commitment)
         {
-
-            CResult result = blob_to_kzg_commitment(IntPtrToPeerDASContext(proverContextPtr), Convert.ToUInt64(blob.Length), blobPtr, commitmentPtr);
+            CResult result = blob_to_kzg_commitment(_context, Convert.ToUInt64(blob.Length), blobPtr, commitmentPtr);
 
             ThrowOnError(result);
-
         }
 
         return commitment;
     }
 
-    public static unsafe byte[] ComputeCells(IntPtr proverContextPtr, byte[] blob)
+    public unsafe byte[] ComputeCells(byte[] blob)
     {
         byte[] cells = new byte[BytesForAllCells];
 
         fixed (byte* blobPtr = blob)
         fixed (byte* cellsPtr = cells)
         {
-            CResult result = compute_cells(IntPtrToPeerDASContext(proverContextPtr), Convert.ToUInt64(blob.Length), blobPtr, cellsPtr);
+            CResult result = compute_cells(_context, Convert.ToUInt64(blob.Length), blobPtr, cellsPtr);
             ThrowOnError(result);
         }
         return cells;
     }
 
-    public static unsafe (byte[], byte[]) ComputeCellsAndKZGProofs(IntPtr proverContextPtr, byte[] blob)
+    public unsafe (byte[], byte[]) ComputeCellsAndKZGProofs(byte[] blob)
     {
         byte[] cells = new byte[BytesForAllCells];
         byte[] proofs = new byte[BytesForAllProofs];
@@ -61,30 +80,13 @@ public static unsafe partial class PeerDASKZG
         fixed (byte* cellsPtr = cells)
         fixed (byte* proofsPtr = proofs)
         {
-
-            CResult result = compute_cells_and_kzg_proofs(IntPtrToPeerDASContext(proverContextPtr), Convert.ToUInt64(blob.Length), blobPtr, cellsPtr, proofsPtr);
+            CResult result = compute_cells_and_kzg_proofs(_context, Convert.ToUInt64(blob.Length), blobPtr, cellsPtr, proofsPtr);
             ThrowOnError(result);
         }
         return (cells, proofs);
     }
 
-    public static unsafe IntPtr PeerDASContextNew()
-    {
-        return PeerDASContextToIntPtr(peerdas_context_new());
-    }
-
-    public static unsafe IntPtr PeerDASContextWithSettings(ContextSetting setting = ContextSetting.Both)
-    {
-        return PeerDASContextToIntPtr(peerdas_context_new_with_setting((CContextSetting)setting));
-    }
-
-
-    public static unsafe void PeerDASContextFree(IntPtr peerDASContextPtr)
-    {
-        peerdas_context_free(IntPtrToPeerDASContext(peerDASContextPtr));
-    }
-
-    public static unsafe bool VerifyCellKZGProof(IntPtr verifierContextPtr, byte[] cell, byte[] commitment, ulong cellId, byte[] proof)
+    public unsafe bool VerifyCellKZGProof(byte[] cell, byte[] commitment, ulong cellId, byte[] proof)
     {
         bool verified = false;
         bool* verifiedPtr = &verified;
@@ -93,7 +95,7 @@ public static unsafe partial class PeerDASKZG
         fixed (byte* commitmentPtr = commitment)
         fixed (byte* proofPtr = proof)
         {
-            CResult result = verify_cell_kzg_proof(IntPtrToPeerDASContext(verifierContextPtr), Convert.ToUInt64(cell.Length), cellPtr, Convert.ToUInt64(commitment.Length), commitmentPtr, cellId, Convert.ToUInt64(proof.Length), proofPtr, verifiedPtr);
+            CResult result = verify_cell_kzg_proof(_context, Convert.ToUInt64(cell.Length), cellPtr, Convert.ToUInt64(commitment.Length), commitmentPtr, cellId, Convert.ToUInt64(proof.Length), proofPtr, verifiedPtr);
             ThrowOnError(result);
         }
 
@@ -101,31 +103,38 @@ public static unsafe partial class PeerDASKZG
     }
 
     // TODO: switch argument order to match specs closer on all functions
-    public static bool VerifyCellKZGProofBatch(IntPtr verifierContextPtr, byte[] rowCommitments, ReadOnlySpan<ulong> rowIndices, ulong[] columnIndices, byte[] cells, byte[] proofs)
+    public bool VerifyCellKZGProofBatch(byte[][] rowCommitments, ulong[] rowIndices, ulong[] columnIndices, byte[][] cells, byte[][] proofs)
     {
+
+        byte[] rowCommitmentsFlattened = FlattenArray(rowCommitments);
+        byte[] cellsFlattened = FlattenArray(cells);
+        byte[] proofsFlattened = FlattenArray(proofs);
+
         bool verified = false;
         bool* verifiedPtr = &verified;
 
-        fixed (byte* rowCommitmentsPtr = rowCommitments)
+        fixed (byte* rowCommitmentsPtr = rowCommitmentsFlattened)
         fixed (ulong* rowIndicesPtr = rowIndices)
         fixed (ulong* columnIndicesPtr = columnIndices)
-        fixed (byte* cellsPtr = cells)
-        fixed (byte* proofsPtr = proofs)
+        fixed (byte* cellsPtr = cellsFlattened)
+        fixed (byte* proofsPtr = proofsFlattened)
         {
-            CResult result = verify_cell_kzg_proof_batch(IntPtrToPeerDASContext(verifierContextPtr), Convert.ToUInt64(rowCommitments.Length), rowCommitmentsPtr, Convert.ToUInt64(rowIndices.Length), rowIndicesPtr, Convert.ToUInt64(columnIndices.Length), columnIndicesPtr, Convert.ToUInt64(cells.Length), cellsPtr, Convert.ToUInt64(proofs.Length), proofsPtr, verifiedPtr);
+            CResult result = verify_cell_kzg_proof_batch(_context, Convert.ToUInt64(rowCommitmentsFlattened.Length), rowCommitmentsPtr, Convert.ToUInt64(rowIndices.Length), rowIndicesPtr, Convert.ToUInt64(columnIndices.Length), columnIndicesPtr, Convert.ToUInt64(cellsFlattened.Length), cellsPtr, Convert.ToUInt64(proofsFlattened.Length), proofsPtr, verifiedPtr);
             ThrowOnError(result);
         }
         return verified;
     }
 
-    public static byte[] RecoverAllCells(IntPtr verifierContextPtr, ulong[] cellIds, byte[] cells)
+    public byte[] RecoverAllCells(ulong[] cellIds, byte[][] cells)
     {
+        byte[] cellsFlattened = FlattenArray(cells);
+
         byte[] recoveredCells = new byte[BytesForAllCells];
-        fixed (byte* cellsPtr = cells)
+        fixed (byte* cellsPtr = cellsFlattened)
         fixed (ulong* cellIdsPtr = cellIds)
         fixed (byte* recoveredCellsPtr = recoveredCells)
         {
-            CResult result = recover_all_cells(IntPtrToPeerDASContext(verifierContextPtr), Convert.ToUInt64(cells.Length), cellsPtr, Convert.ToUInt64(cellIds.Length), cellIdsPtr, recoveredCellsPtr);
+            CResult result = recover_all_cells(_context, Convert.ToUInt64(cellsFlattened.Length), cellsPtr, Convert.ToUInt64(cellIds.Length), cellIdsPtr, recoveredCellsPtr);
             ThrowOnError(result);
         }
 
@@ -158,16 +167,29 @@ public static unsafe partial class PeerDASKZG
         }
     }
 
-    // TODO: Ideally, these methods are not needed and we use PeerDASContext* directly
-    // instead of IntPtr.
-    // The csharp code, in particular tests, seems to not be able to handle pointers directly
-    internal static IntPtr PeerDASContextToIntPtr(PeerDASContext* context)
+    public static byte[] FlattenArray(byte[][] jaggedArray)
     {
-        return new IntPtr(context);
-    }
-    internal static PeerDASContext* IntPtrToPeerDASContext(IntPtr ptr)
-    {
-        return (PeerDASContext*)ptr.ToPointer();
+        int totalLength = 0;
+
+        // Calculate the total length of the flattened array
+        foreach (byte[] subArray in jaggedArray)
+        {
+            totalLength += subArray.Length;
+        }
+
+        // Create a new array to hold the flattened result
+        byte[] flattenedArray = new byte[totalLength];
+
+        int currentIndex = 0;
+
+        // Copy elements from the jagged array to the flattened array
+        foreach (byte[] subArray in jaggedArray)
+        {
+            Array.Copy(subArray, 0, flattenedArray, currentIndex, subArray.Length);
+            currentIndex += subArray.Length;
+        }
+
+        return flattenedArray;
     }
 
     public enum ContextSetting
