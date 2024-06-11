@@ -257,7 +257,7 @@ pub extern "C" fn verify_cell_kzg_proof_batch(
     ctx: *const PeerDASContext,
 
     row_commitments_length: u64,
-    row_commitments: *const u8,
+    row_commitments: *const *const u8,
 
     row_indices_length: u64,
     row_indices: *const u64,
@@ -266,10 +266,10 @@ pub extern "C" fn verify_cell_kzg_proof_batch(
     column_indices: *const u64,
 
     cells_length: u64,
-    cells: *const u8,
+    cells: *const *const u8,
 
     proofs_length: u64,
-    proofs: *const u8,
+    proofs: *const *const u8,
 
     verified: *mut bool,
 ) -> CResult {
