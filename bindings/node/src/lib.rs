@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use napi::{
   bindgen_prelude::{BigInt, Error, Uint8Array},
@@ -34,7 +34,7 @@ pub struct CellsAndProofs {
 
 #[napi]
 pub struct ProverContextJs {
-  inner: Arc<RwLock<ProverContext>>,
+  inner: Arc<ProverContext>,
 }
 
 #[napi]
@@ -42,17 +42,14 @@ impl ProverContextJs {
   #[napi(constructor)]
   pub fn new() -> Self {
     ProverContextJs {
-      inner: Arc::new(RwLock::new(ProverContext::new())),
+      inner: Arc::new(ProverContext::new()),
     }
   }
 
   #[napi]
   pub fn blob_to_kzg_commitment(&self, blob: Uint8Array) -> Result<Uint8Array> {
     let blob = blob.as_ref();
-    let prover_context = self
-      .inner
-      .read()
-      .map_err(|err| Error::from_reason(&format!("Failed to acquire lock: {:?}", err)))?;
+    let prover_context = &self.inner;
 
     let commitment = prover_context.blob_to_kzg_commitment(blob).map_err(|err| {
       Error::from_reason(&format!(
@@ -71,10 +68,7 @@ impl ProverContextJs {
   #[napi]
   pub fn compute_cells_and_kzg_proofs(&self, blob: Uint8Array) -> Result<CellsAndProofs> {
     let blob = blob.as_ref();
-    let prover_context = self
-      .inner
-      .read()
-      .map_err(|err| Error::from_reason(&format!("Failed to acquire lock: {:?}", err)))?;
+    let prover_context = &self.inner;
 
     let (cells, proofs) = prover_context
       .compute_cells_and_kzg_proofs(blob)
@@ -110,22 +104,9 @@ impl ProverContextJs {
 
   #[napi]
   pub fn compute_cells(&self, blob: Uint8Array) -> Result<Vec<Uint8Array>> {
-    let blob = blob.as_ref();
-    let prover_context = self
-      .inner
-      .read()
-      .map_err(|err| Error::from_reason(&format!("Failed to acquire lock: {:?}", err)))?;
-
-    let cells = prover_context
-      .compute_cells(blob)
-      .map_err(|err| Error::from_reason(&format!("failed to compute compute_cells: {:?}", err)))?;
-
-    let cells_uint8array = cells
-      .into_iter()
-      .map(|cell| Uint8Array::from(cell))
-      .collect::<Vec<Uint8Array>>();
-
-    Ok(cells_uint8array)
+    self
+      .compute_cells_and_kzg_proofs(blob)
+      .map(|cells_and_proofs| cells_and_proofs.cells)
   }
 
   #[napi]
@@ -136,7 +117,7 @@ impl ProverContextJs {
 
 #[napi]
 pub struct VerifierContextJs {
-  inner: Arc<RwLock<VerifierContext>>,
+  inner: Arc<VerifierContext>,
 }
 
 #[napi]
@@ -144,7 +125,7 @@ impl VerifierContextJs {
   #[napi(constructor)]
   pub fn new() -> Self {
     VerifierContextJs {
-      inner: Arc::new(RwLock::new(VerifierContext::new())),
+      inner: Arc::new(VerifierContext::new()),
     }
   }
 
@@ -161,11 +142,7 @@ impl VerifierContextJs {
     let proof = proof.as_ref();
     let cell_id_u64 = bigint_to_u64(cell_id);
 
-    // TODO: this map_err is repeated a few times, we can create a method for it
-    let verifier_context = self
-      .inner
-      .read()
-      .map_err(|err| Error::from_reason(&format!("Failed to acquire lock: {:?}", err)))?;
+    let verifier_context = &self.inner;
 
     let valid = verifier_context.verify_cell_kzg_proof(commitment, cell_id_u64, cell, proof);
     match valid {
@@ -207,10 +184,7 @@ impl VerifierContextJs {
     let cells: Vec<_> = cells.iter().map(|cell| cell.as_ref()).collect();
     let proofs: Vec<_> = proofs.iter().map(|proof| proof.as_ref()).collect();
 
-    let verifier_context = self
-      .inner
-      .read()
-      .map_err(|err| Error::from_reason(&format!("Failed to acquire lock: {:?}", err)))?;
+    let verifier_context = &self.inner;
 
     let valid = verifier_context.verify_cell_kzg_proof_batch(
       commitments,
@@ -252,10 +226,7 @@ impl VerifierContextJs {
     let cell_ids: Vec<_> = cell_ids.into_iter().map(bigint_to_u64).collect();
     let cells: Vec<_> = cells.iter().map(|cell| cell.as_ref()).collect();
 
-    let verifier_context = self
-      .inner
-      .read()
-      .map_err(|err| Error::from_reason(&format!("Failed to acquire lock: {:?}", err)))?;
+    let verifier_context = &self.inner;
 
     let cells = verifier_context
       .recover_all_cells(cell_ids, cells)
