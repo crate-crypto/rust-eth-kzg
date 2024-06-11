@@ -12,7 +12,7 @@ use crate::{
     Bytes48Ref, Cell, CellID, CellRef, ColumnIndex, RowIndex,
 };
 use bls12_381::Scalar;
-use erasure_codes::reed_solomon::Erasures;
+use erasure_codes::{reed_solomon::Erasures, ReedSolomon};
 use kzg_multi_open::{
     create_eth_commit_opening_keys, opening_key::OpeningKey, polynomial::domain::Domain,
     proof::verify_multi_opening_naive, reverse_bit_order,
@@ -60,6 +60,8 @@ pub struct VerifierContext {
     opening_key: OpeningKey,
     /// The cosets that we want to verify evaluations against.
     bit_reversed_cosets: Vec<Vec<Scalar>>,
+
+    rs: ReedSolomon,
 }
 
 impl VerifierContext {
@@ -79,6 +81,7 @@ impl VerifierContext {
         VerifierContext {
             opening_key,
             bit_reversed_cosets: cosets,
+            rs: ReedSolomon::new(FIELD_ELEMENTS_PER_BLOB, EXTENSION_FACTOR),
         }
     }
     pub fn verify_cell_kzg_proof(
@@ -241,8 +244,7 @@ impl VerifierContext {
 
         // We now have the evaluations in normal order and we know the indices/erasures that are missing
         // in normal order.
-        let rs = erasure_codes::ReedSolomon::new(FIELD_ELEMENTS_PER_BLOB, EXTENSION_FACTOR);
-        let mut recovered_codeword = rs.recover_polynomial_codeword(
+        let mut recovered_codeword = self.rs.recover_polynomial_codeword(
             coset_evaluations_flattened,
             Erasures::Cells {
                 cell_size: FIELD_ELEMENTS_PER_CELL,
