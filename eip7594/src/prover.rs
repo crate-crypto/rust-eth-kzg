@@ -9,16 +9,18 @@ use kzg_multi_open::{
 
 use crate::{
     constants::{
-        CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL,
+        BYTES_PER_BLOB, CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL,
         FIELD_ELEMENTS_PER_EXT_BLOB,
     },
     serialization::{self, serialize_g1_compressed, SerializationError},
-    BlobRef, Cell, KZGCommitment, KZGProof,
+    verifier::{VerifierContext, VerifierError},
+    BlobRef, Cell, CellID, CellRef, KZGCommitment, KZGProof,
 };
 
 #[derive(Debug)]
 pub enum ProverError {
     Serialization(SerializationError),
+    RecoveryFailure(VerifierError),
 }
 
 pub struct ProverContext {
@@ -34,6 +36,10 @@ pub struct ProverContext {
 
     /// Domain used for converting the polynomial to the monomial form.
     poly_domain: Domain,
+    // Verifier context
+    //
+    // The prover needs the verifier context to recover the cells and then compute the proofs
+    verifier_context: VerifierContext,
 }
 
 impl ProverContext {
@@ -53,6 +59,7 @@ impl ProverContext {
             commit_key,
             poly_domain,
             commit_key_lagrange,
+            verifier_context: VerifierContext::new(),
         }
     }
 
@@ -111,6 +118,26 @@ impl ProverContext {
             .expect(&format!("expected {} number of cells", CELLS_PER_EXT_BLOB));
 
         Ok(cells)
+    }
+
+    pub fn recover_cells_and_proofs(
+        &self,
+        cell_ids: Vec<CellID>,
+        cells: Vec<CellRef>,
+    ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
+        let cells = self
+            .verifier_context
+            .recover_all_cells(cell_ids, cells)
+            .map_err(|err| ProverError::RecoveryFailure(err))?;
+
+        // Concatenate the cells together
+        let extension_blob = cells.into_iter().flatten().collect::<Vec<_>>();
+
+        // We do not need the extension blob, only the blob
+        // which is the first BYTES_PER_BLOB bytes.
+        let blob = &extension_blob[..BYTES_PER_BLOB];
+
+        self.compute_cells_and_kzg_proofs(blob)
     }
 }
 
