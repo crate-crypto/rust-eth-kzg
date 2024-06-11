@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace PeerDASKZG;
 
-public sealed unsafe partial class PeerDASKZG : IDisposable
+public sealed unsafe class PeerDASKZG : IDisposable
 {
     // These constants are copied from the c-kzg csharp bindings file.
     // TODO: This is not ideal, since we want the Rust code to be the single source of truth
@@ -20,6 +20,7 @@ public sealed unsafe partial class PeerDASKZG : IDisposable
     public const int BytesPerProof = 48;
     private const int FieldElementsPerCell = 64;
     public const int BytesPerCell = BytesPerFieldElement * FieldElementsPerCell;
+    public const int NumColumns = CellsPerExtBlob;
     private const int CellsPerExtBlob = FieldElementsPerExtBlob / FieldElementsPerCell;
 
     private PeerDASContext* _context;
@@ -27,11 +28,6 @@ public sealed unsafe partial class PeerDASKZG : IDisposable
     public PeerDASKZG()
     {
         _context = peerdas_context_new();
-    }
-
-    public PeerDASKZG(ContextSetting setting = ContextSetting.Both)
-    {
-        _context = peerdas_context_new_with_setting((CContextSetting)setting);
     }
 
     public void Dispose()
@@ -60,30 +56,50 @@ public sealed unsafe partial class PeerDASKZG : IDisposable
 
     public unsafe byte[][] ComputeCells(byte[] blob)
     {
-        byte[] cells = new byte[BytesForAllCells];
 
-        fixed (byte* blobPtr = blob)
-        fixed (byte* cellsPtr = cells)
-        {
-            CResult result = compute_cells(_context, Convert.ToUInt64(blob.Length), blobPtr, cellsPtr);
-            ThrowOnError(result);
-        }
-        return DeflattenArray(cells, BytesPerCell);
+        (byte[][] cells, _) = ComputeCellsAndKZGProofs(blob);
+        return cells;
     }
 
     public unsafe (byte[][], byte[][]) ComputeCellsAndKZGProofs(byte[] blob)
     {
-        byte[] cells = new byte[BytesForAllCells];
-        byte[] proofs = new byte[BytesForAllProofs];
+        int numProofs = CellsPerExtBlob;
+        int numCells = CellsPerExtBlob;
+
+        byte[][] outCells = InitializeJaggedArray(numCells, BytesPerCell);
+        byte[][] outProofs = InitializeJaggedArray(numCells, BytesPerProof);
+
+        // Allocate an array of pointers for cells and proofs
+        byte*[] outCellsPtrs = new byte*[numCells];
+        byte*[] outProofsPtrs = new byte*[numProofs];
 
         fixed (byte* blobPtr = blob)
-        fixed (byte* cellsPtr = cells)
-        fixed (byte* proofsPtr = proofs)
+        fixed (byte** outCellsPtrPtr = outCellsPtrs)
+        fixed (byte** outProofsPtrPtr = outProofsPtrs)
         {
-            CResult result = compute_cells_and_kzg_proofs(_context, Convert.ToUInt64(blob.Length), blobPtr, cellsPtr, proofsPtr);
+
+            // Get the pointer for each cell
+            for (int i = 0; i < numCells; i++)
+            {
+                fixed (byte* cellPtr = outCells[i])
+                {
+                    outCellsPtrPtr[i] = cellPtr;
+                }
+            }
+
+            // Get the pointer for each proof
+            for (int i = 0; i < numCells; i++)
+            {
+                fixed (byte* proofPtr = outProofs[i])
+                {
+                    outProofsPtrPtr[i] = proofPtr;
+                }
+            }
+
+            CResult result = compute_cells_and_kzg_proofs_deflattened(_context, Convert.ToUInt64(blob.Length), blobPtr, outCellsPtrPtr, outProofsPtrPtr);
             ThrowOnError(result);
         }
-        return (DeflattenArray(cells, BytesPerCell), DeflattenArray(proofs, BytesPerCommitment));
+        return (outCells, outProofs);
     }
 
     public unsafe bool VerifyCellKZGProof(byte[] cell, byte[] commitment, ulong cellId, byte[] proof)
@@ -127,18 +143,70 @@ public sealed unsafe partial class PeerDASKZG : IDisposable
 
     public byte[][] RecoverAllCells(ulong[] cellIds, byte[][] cells)
     {
-        byte[] cellsFlattened = FlattenArray(cells);
+        (byte[][] recoveredCells, _) = RecoverCellsAndKZGProofs(cellIds, cells);
+        return recoveredCells;
+    }
 
-        byte[] recoveredCells = new byte[BytesForAllCells];
-        fixed (byte* cellsPtr = cellsFlattened)
-        fixed (ulong* cellIdsPtr = cellIds)
-        fixed (byte* recoveredCellsPtr = recoveredCells)
+    public (byte[][], byte[][]) RecoverCellsAndKZGProofs(ulong[] cellIds, byte[][] cells)
+    {
+
+        // The native code assumes that all cells have the same length.
+        for (int i = 0; i < cells.Length; i++)
         {
-            CResult result = recover_all_cells(_context, Convert.ToUInt64(cellsFlattened.Length), cellsPtr, Convert.ToUInt64(cellIds.Length), cellIdsPtr, recoveredCellsPtr);
+            if (cells[i].Length != BytesPerCell)
+            {
+                throw new ArgumentException($"cell at index {i} has an invalid length");
+            }
+        }
+
+        int numProofs = CellsPerExtBlob;
+        int numCells = CellsPerExtBlob;
+
+        byte[][] outCells = InitializeJaggedArray(numCells, BytesPerCell);
+        byte[][] outProofs = InitializeJaggedArray(numProofs, BytesPerProof);
+
+        // Allocate an array of pointers for inputCells, outputCells and proofs
+        byte*[] inputCellsPtrs = new byte*[cells.Length];
+        byte*[] outCellsPtrs = new byte*[numCells];
+        byte*[] outProofsPtrs = new byte*[numProofs];
+
+        fixed (ulong* cellIdsPtr = cellIds)
+        fixed (byte** inputCellsPtrPtr = inputCellsPtrs)
+        fixed (byte** outCellsPtrPtr = outCellsPtrs)
+        fixed (byte** outProofsPtrPtr = outProofsPtrs)
+        {
+            // Get the pointer for each input cell
+            for (int i = 0; i < cells.Length; i++)
+            {
+                fixed (byte* cellPtr = cells[i])
+                {
+                    inputCellsPtrPtr[i] = cellPtr;
+                }
+            }
+
+            // Get the pointer for each output cell
+            for (int i = 0; i < numCells; i++)
+            {
+                fixed (byte* cellPtr = outCells[i])
+                {
+                    outCellsPtrPtr[i] = cellPtr;
+                }
+            }
+
+            // Get the pointer for each proof
+            for (int i = 0; i < numProofs; i++)
+            {
+                fixed (byte* proofPtr = outProofs[i])
+                {
+                    outProofsPtrPtr[i] = proofPtr;
+                }
+            }
+
+            CResult result = recover_cells_and_proofs(_context, Convert.ToUInt64(cells.Length), inputCellsPtrPtr, Convert.ToUInt64(cellIds.Length), cellIdsPtr, outCellsPtrPtr, outProofsPtrPtr);
             ThrowOnError(result);
         }
 
-        return DeflattenArray(recoveredCells, BytesPerCell);
+        return (outCells, outProofs);
     }
 
     private static void ThrowOnError(CResult result)
@@ -206,10 +274,14 @@ public sealed unsafe partial class PeerDASKZG : IDisposable
         return jaggedArray;
     }
 
-    public enum ContextSetting
+    static byte[][] InitializeJaggedArray(int outerLen, int innerLen)
     {
-        ProvingOnly,
-        VerifyOnly,
-        Both
+        // Create and initialize the jagged array
+        byte[][] jaggedArray = new byte[outerLen][];
+        for (int i = 0; i < outerLen; i++)
+        {
+            jaggedArray[i] = new byte[innerLen];
+        }
+        return jaggedArray;
     }
 }

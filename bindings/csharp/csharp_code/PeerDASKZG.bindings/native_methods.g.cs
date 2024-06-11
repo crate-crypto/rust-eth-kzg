@@ -23,9 +23,6 @@ namespace PeerDAS.Native
         [DllImport(__DllName, EntryPoint = "peerdas_context_new", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern PeerDASContext* peerdas_context_new();
 
-        [DllImport(__DllName, EntryPoint = "peerdas_context_new_with_setting", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern PeerDASContext* peerdas_context_new_with_setting(CContextSetting setting);
-
         /// <summary>Safety: - The caller must ensure that the pointer is valid. If the pointer is null, this method will return early. - The caller should also avoid a double-free by setting the pointer to null after calling this method.</summary>
         [DllImport(__DllName, EntryPoint = "peerdas_context_free", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void peerdas_context_free(PeerDASContext* ctx);
@@ -37,13 +34,9 @@ namespace PeerDAS.Native
         [DllImport(__DllName, EntryPoint = "blob_to_kzg_commitment", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern CResult blob_to_kzg_commitment(PeerDASContext* ctx, ulong blob_length, byte* blob, byte* @out);
 
-        /// <summary>Safety: - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error. - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes. - The caller must ensure that `out_cells` points to a region of memory that is at least `NUM_BYTES_CELLS` bytes.</summary>
-        [DllImport(__DllName, EntryPoint = "compute_cells", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern CResult compute_cells(PeerDASContext* ctx, ulong blob_length, byte* blob, byte* out_cells);
-
         /// <summary>Safety: - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error. - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes. - The caller must ensure that `out_cells` points to a region of memory that is at least `NUM_BYTES_CELLS` bytes. - The caller must ensure that `out_proofs` points to a region of memory that is at least `NUM_BYTES_PROOFS` bytes.</summary>
-        [DllImport(__DllName, EntryPoint = "compute_cells_and_kzg_proofs", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern CResult compute_cells_and_kzg_proofs(PeerDASContext* ctx, ulong blob_length, byte* blob, byte* out_cells, byte* out_proofs);
+        [DllImport(__DllName, EntryPoint = "compute_cells_and_kzg_proofs_deflattened", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern CResult compute_cells_and_kzg_proofs_deflattened(PeerDASContext* ctx, ulong blob_length, byte* blob, byte** out_cells, byte** out_proofs);
 
         /// <summary>Safety: - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error. - The caller must ensure that `cell` points to a region of memory that is at least `BYTES_PER_CELL` bytes. - The caller must ensure that `commitment` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes. - The caller must ensure that `proof` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes. - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.</summary>
         [DllImport(__DllName, EntryPoint = "verify_cell_kzg_proof", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
@@ -53,9 +46,8 @@ namespace PeerDAS.Native
         [DllImport(__DllName, EntryPoint = "verify_cell_kzg_proof_batch", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern CResult verify_cell_kzg_proof_batch(PeerDASContext* ctx, ulong row_commitments_length, byte* row_commitments, ulong row_indices_length, ulong* row_indices, ulong column_indices_length, ulong* column_indices, ulong cells_length, byte* cells, ulong proofs_length, byte* proofs, bool* verified);
 
-        /// <summary>Safety: - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error. - The caller must ensure that `cell_ids` points to a region of memory that is at least `num_cells` bytes. - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` bytes. - The caller must ensure that `out_cells` points to a region of memory that is at least `NUM_BYTES_CELLS` bytes.</summary>
-        [DllImport(__DllName, EntryPoint = "recover_all_cells", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        public static extern CResult recover_all_cells(PeerDASContext* ctx, ulong cells_length, byte* cells, ulong cell_ids_length, ulong* cell_ids, byte* out_cells);
+        [DllImport(__DllName, EntryPoint = "recover_cells_and_proofs", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern CResult recover_cells_and_proofs(PeerDASContext* ctx, ulong cells_length, byte** cells, ulong cell_ids_length, ulong* cell_ids, byte** out_cells, byte** out_proofs);
 
 
     }
@@ -72,13 +64,6 @@ namespace PeerDAS.Native
         public byte* error_msg;
     }
 
-
-    public enum CContextSetting : uint
-    {
-        ProvingOnly,
-        VerifyOnly,
-        Both,
-    }
 
     public enum CResultStatus : uint
     {
