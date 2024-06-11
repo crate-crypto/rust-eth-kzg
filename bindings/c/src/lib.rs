@@ -4,9 +4,7 @@ mod blob_to_kzg_commitment;
 use blob_to_kzg_commitment::_blob_to_kzg_commitment;
 
 mod compute_cells_and_kzg_proofs;
-use compute_cells_and_kzg_proofs::{
-    _compute_cells_and_kzg_proofs, _compute_cells_and_kzg_proofs_deflattened,
-};
+use compute_cells_and_kzg_proofs::_compute_cells_and_kzg_proofs_deflattened;
 
 mod verify_cells_and_kzg_proofs;
 use verify_cells_and_kzg_proofs::_verify_cell_kzg_proof;
@@ -163,26 +161,6 @@ pub extern "C" fn blob_to_kzg_commitment(
 ) -> CResult {
     match _blob_to_kzg_commitment(ctx, blob_length, blob, out) {
         Ok(_) => CResult::with_ok(),
-        Err(err) => return err,
-    }
-}
-
-/// Safety:
-/// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
-/// - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
-/// - The caller must ensure that `out_cells` points to a region of memory that is at least `NUM_BYTES_CELLS` bytes.
-/// - The caller must ensure that `out_proofs` points to a region of memory that is at least `NUM_BYTES_PROOFS` bytes.
-#[no_mangle]
-#[must_use]
-pub extern "C" fn compute_cells_and_kzg_proofs(
-    ctx: *const PeerDASContext,
-    blob_length: u64,
-    blob: *const u8,
-    out_cells: *mut u8,
-    out_proofs: *mut u8,
-) -> CResult {
-    match _compute_cells_and_kzg_proofs(ctx, blob_length, blob, out_cells, out_proofs) {
-        Ok(_) => return CResult::with_ok(),
         Err(err) => return err,
     }
 }
@@ -378,20 +356,5 @@ pub mod test {
         let blob = vec![0u8; BYTES_PER_BLOB];
         let mut out = vec![0u8; BYTES_PER_COMMITMENT];
         blob_to_kzg_commitment(ctx, blob.len() as u64, blob.as_ptr(), out.as_mut_ptr());
-    }
-
-    #[test]
-    fn prover_context_compute_cells_and_kzg_proofs() {
-        let ctx = peerdas_context_new();
-        let blob = vec![0u8; BYTES_PER_BLOB];
-        let mut out_cells = vec![0u8; NUM_BYTES_CELLS as usize];
-        let mut out_proofs = vec![0u8; NUM_BYTES_PROOFS as usize];
-        compute_cells_and_kzg_proofs(
-            ctx,
-            blob.len() as u64,
-            blob.as_ptr(),
-            out_cells.as_mut_ptr(),
-            out_proofs.as_mut_ptr(),
-        );
     }
 }
