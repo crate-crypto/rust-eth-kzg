@@ -50,18 +50,6 @@ template safeGetPtr[T](arr: openArray[T]): pointer =
     # Return a null pointer if the array is empty
     nil
 
-template toPtrPtr(cells: untyped, numElements: int): ptr pointer =
-  # Create an array of pointers to pointers
-  var ptrArray: array[numElements, ptr pointer]
-  # For each item in the 2d array, we get its pointer and assign it to the pointerArray
-  for i in 0..<numElements:
-    ptrArray[i] = cast[ptr pointer](cells[i].bytes.getPtr)
-
-  cast[ptr pointer](ptrArray.safeGetPtr)
-
-template toPtrPtr(cells: untyped): ptr pointer =
-  toPtrPtr(cells, cells.len)
-
 template toPtrPtr(cells: openArray[untyped]): ptr pointer =
   # Create a seq of pointers to pointers
   var ptrSeq: seq[ptr pointer]
