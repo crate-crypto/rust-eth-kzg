@@ -128,8 +128,7 @@ public class LibPeerDASKZG implements AutoCloseable{
             if (osArch.contains("x86_64")) {
                 libraryResourcePath = "/x86_64-pc-windows-gnu/" + PLATFORM_NATIVE_LIBRARY_NAME;
             } else if (osArch.contains("x86")) {
-                // TODO: Remove this and just don't support 32-bit Windows
-                libraryResourcePath = "/i686-pc-windows-gnu/" + PLATFORM_NATIVE_LIBRARY_NAME;
+                // We do not support 32 bit windows
             } else if (osArch.contains("aarch64")) {
                 // Current version of c-kzg does not support arm windows either
                 // TODO: Rust has support for msvc with arm64, but it also has:
@@ -138,7 +137,6 @@ public class LibPeerDASKZG implements AutoCloseable{
                 // If we do switch to msvc, nethermind had an issue with windows server 2022
                 // that we should check works with an msvc build.
                 // libraryResourcePath = "/aarch64-pc-windows-gnullvm/" + PLATFORM_NATIVE_LIBRARY_NAME;
-
             }
         } else if (osName.contains("mac")) {
             if (osArch.contains("x86_64")) {
