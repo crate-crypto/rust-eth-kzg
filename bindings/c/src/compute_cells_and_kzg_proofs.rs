@@ -4,7 +4,7 @@ use crate::pointer_utils::{
 use crate::{CResult, PeerDASContext};
 use eip7594::constants::{BYTES_PER_BLOB, CELLS_PER_EXT_BLOB};
 
-pub(crate) fn _compute_cells_and_kzg_proofs_deflattened(
+pub(crate) fn _compute_cells_and_kzg_proofs(
     ctx: *const PeerDASContext,
     blob_length: u64,
     blob: *const u8,

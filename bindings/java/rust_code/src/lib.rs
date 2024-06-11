@@ -76,7 +76,7 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_computeCe
     let out_cells_ptr_ptr = vec_vec_u8_to_ptr_ptr_u8_mut(&mut out_cells);
     let out_proofs_ptr_ptr = vec_vec_u8_to_ptr_ptr_u8_mut(&mut out_proofs);
 
-    let result = c_peerdas_kzg::compute_cells_and_kzg_proofs_deflattened(
+    let result = c_peerdas_kzg::compute_cells_and_kzg_proofs(
         ctx,
         blob.len() as u64,
         blob.as_ptr(),

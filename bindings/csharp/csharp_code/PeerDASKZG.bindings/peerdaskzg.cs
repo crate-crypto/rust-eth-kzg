@@ -96,7 +96,7 @@ public sealed unsafe class PeerDASKZG : IDisposable
                 }
             }
 
-            CResult result = compute_cells_and_kzg_proofs_deflattened(_context, Convert.ToUInt64(blob.Length), blobPtr, outCellsPtrPtr, outProofsPtrPtr);
+            CResult result = compute_cells_and_kzg_proofs(_context, Convert.ToUInt64(blob.Length), blobPtr, outCellsPtrPtr, outProofsPtrPtr);
             ThrowOnError(result);
         }
         return (outCells, outProofs);

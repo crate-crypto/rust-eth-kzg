@@ -4,7 +4,7 @@ mod blob_to_kzg_commitment;
 use blob_to_kzg_commitment::_blob_to_kzg_commitment;
 
 mod compute_cells_and_kzg_proofs;
-use compute_cells_and_kzg_proofs::_compute_cells_and_kzg_proofs_deflattened;
+use compute_cells_and_kzg_proofs::_compute_cells_and_kzg_proofs;
 
 mod verify_cells_and_kzg_proofs;
 use verify_cells_and_kzg_proofs::_verify_cell_kzg_proof;
@@ -172,14 +172,14 @@ pub extern "C" fn blob_to_kzg_commitment(
 /// - The caller must ensure that `out_proofs` points to a region of memory that is at least `NUM_BYTES_PROOFS` bytes.
 #[no_mangle]
 #[must_use]
-pub extern "C" fn compute_cells_and_kzg_proofs_deflattened(
+pub extern "C" fn compute_cells_and_kzg_proofs(
     ctx: *const PeerDASContext,
     blob_length: u64,
     blob: *const u8,
     out_cells: *mut *mut u8,
     out_proofs: *mut *mut u8,
 ) -> CResult {
-    match _compute_cells_and_kzg_proofs_deflattened(ctx, blob_length, blob, out_cells, out_proofs) {
+    match _compute_cells_and_kzg_proofs(ctx, blob_length, blob, out_cells, out_proofs) {
         Ok(_) => return CResult::with_ok(),
         Err(err) => return err,
     }

@@ -43,11 +43,11 @@ proc blob_to_kzg_commitment*(ctx: ptr PeerDASContext,
 # - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
 # - The caller must ensure that `out_cells` points to a region of memory that is at least `NUM_BYTES_CELLS` bytes.
 # - The caller must ensure that `out_proofs` points to a region of memory that is at least `NUM_BYTES_PROOFS` bytes.
-proc compute_cells_and_kzg_proofs_deflattened*(ctx: ptr PeerDASContext,
-                                               blob_length: uint64,
-                                               blob: pointer,
-                                               out_cells: ptr pointer,
-                                               out_proofs: ptr pointer): CResult {.importc: "compute_cells_and_kzg_proofs_deflattened".}
+proc compute_cells_and_kzg_proofs*(ctx: ptr PeerDASContext,
+                                   blob_length: uint64,
+                                   blob: pointer,
+                                   out_cells: ptr pointer,
+                                   out_proofs: ptr pointer): CResult {.importc: "compute_cells_and_kzg_proofs".}
 
 ## Safety:
 # - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
