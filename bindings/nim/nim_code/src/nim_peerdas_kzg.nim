@@ -1,6 +1,6 @@
 import nim_peerdas_kzg/bindings
 
-import results, sequtils
+import results
 export results
 
 # TODO: If the underlying c library changes and we recompile the static lib
@@ -32,15 +32,9 @@ type
   KzgCells* = array[CELLS_PER_EXT_BLOB, KzgCell]
 
   KzgCellsAndKzgProofs* = object
-    cells*: array[CELLS_PER_EXT_BLOB, KzgCell]
+    cells*: KzgCells
     proofs*: array[CELLS_PER_EXT_BLOB, KzgProof]
 
-# Generic helper function to convert any object with a `bytes` array to a sequence of bytes
-proc toByteSeq[T](obj: T): seq[byte] =
-  result = obj.bytes.toSeq
-# Function to flatten openArray to a sequence of bytes
-proc flattenToBytes[T](arr: openArray[T]): seq[byte] =
-  result = arr.mapIt(toByteSeq(it)).concat()
 
 template getPtr(x: untyped): auto =
   when (NimMajor, NimMinor) <= (1,6):
@@ -56,9 +50,33 @@ template safeGetPtr[T](arr: openArray[T]): pointer =
     # Return a null pointer if the array is empty
     nil
 
+template toPtrPtr(cells: untyped, numElements: int): ptr pointer =
+  # Create an array of pointers to pointers
+  var ptrArray: array[numElements, ptr pointer]
+  # For each item in the 2d array, we get its pointer and assign it to the pointerArray
+  for i in 0..<numElements:
+    ptrArray[i] = cast[ptr pointer](cells[i].bytes.getPtr)
+
+  cast[ptr pointer](ptrArray.safeGetPtr)
+
+template toPtrPtr(cells: untyped): ptr pointer =
+  toPtrPtr(cells, cells.len)
+
+template toPtrPtr(cells: openArray[untyped]): ptr pointer =
+  # Create a seq of pointers to pointers
+  var ptrSeq: seq[ptr pointer]
+  ptrSeq.setLen(cells.len)
+  
+  # For each item in the openArray, get its pointer and assign it to the seq
+  for i in 0..<cells.len:
+    ptrSeq[i] = cast[ptr pointer](cells[i].bytes.getPtr)
+  
+  # Return the pointer to the seq of pointers
+  cast[ptr pointer](ptrSeq.safeGetPtr)
+
 template verify_result(res: CResult, ret: untyped): untyped =
   if res.xstatus != CResultStatus.Ok:
-    # TODO: get error messae then free the pointer
+    # TODO: get error message then free the pointer
     return err($res)
   ok(ret)
 
@@ -84,27 +102,14 @@ proc blobToKZGCommitment*(ctx: KzgCtx, blob : KzgBlob): Result[KzgCommitment, st
   )
   verify_result(res, ret)
 
-proc computeCells*(ctx: KzgCtx, blob : KzgBlob): Result[KzgCells, string] {.gcsafe.} =
-  var ret: KzgCells
-
-  let res = compute_cells(
-    ctx.ctx_ptr,
-
-    uint64(len(blob.bytes)),
-    blob.bytes.getPtr, 
-    
-    ret.getPtr
-  )
-  verify_result(res, ret)
 
 proc computeCellsAndProofs*(ctx: KzgCtx, blob : KzgBlob): Result[KzgCellsAndKzgProofs, string] {.gcsafe.} =
   var ret: KzgCellsAndKzgProofs
+
+  let outCellsPtr = toPtrPtr(ret.cells) 
+  let outProofsPtr = toPtrPtr(ret.proofs) 
   
-  let
-    outCellsPtr = ret.cells.getPtr
-    outProofsPtr = ret.proofs.getPtr
-  
-  let res = compute_cells_and_kzg_proofs(
+  let res = compute_cells_and_kzg_proofs_deflattened(
     ctx.ctx_ptr,
 
     uint64(len(blob.bytes)),
@@ -114,6 +119,10 @@ proc computeCellsAndProofs*(ctx: KzgCtx, blob : KzgBlob): Result[KzgCellsAndKzgP
     outProofsPtr
   )
   verify_result(res, ret)
+
+proc computeCells*(ctx: KzgCtx, blob : KzgBlob): Result[KzgCells, string] {.gcsafe.} =  
+  let res = ?computeCellsAndProofs(ctx, blob)
+  ok(res.cells)
 
 proc verifyCellKZGProof*(ctx: KzgCtx, commitment: KzgBytes48, cellId: uint64, cell: KzgCell, proof: KzgBytes48): Result[bool, string] =
   var valid: bool
@@ -125,7 +134,7 @@ proc verifyCellKZGProof*(ctx: KzgCtx, commitment: KzgBytes48, cellId: uint64, ce
     cell.bytes.getPtr,
     
     uint64(len(commitment.bytes)),
-    commitment.bytes.getPtr, 
+    commitment.bytes.getPtr,
     
     cellId,
 
@@ -143,19 +152,15 @@ proc verifyCellKZGProofBatch*(ctx: KzgCtx, rowCommitments: openArray[KzgBytes48]
                    proofs: openArray[KzgBytes48]): Result[bool, string] {.gcsafe.} =
   var valid: bool
 
-  # TODO: I can see an argument to having pointers to an array of 
-  # TODO: arrays, so that we do not need to flatten this.
-  # TODO: not necessarilly important and should not afect the outwards facing API
-  let rowCommitmentsFlattened = flattenToBytes(rowCommitments)
-  let proofsFlattened = flattenToBytes(proofs)
-  let cellsFlattened = flattenToBytes(cells)
-  
+  let cellsPtr = toPtrPtr(cells) 
+  let proofsPtr = toPtrPtr(proofs) 
+  let commitmentsPtr = toPtrPtr(rowCommitments)
 
   let res = verify_cell_kzg_proof_batch(
     ctx.ctx_ptr, 
     
-    uint64(len(rowCommitmentsFlattened)), 
-    rowCommitmentsFlattened.safeGetPtr, 
+    uint64(len(rowCommitments)), 
+    commitmentsPtr, 
     
     uint64(len(rowIndices)),
     rowIndices.safeGetPtr, 
@@ -163,37 +168,44 @@ proc verifyCellKZGProofBatch*(ctx: KzgCtx, rowCommitments: openArray[KzgBytes48]
     uint64(len(columnIndices)), 
     columnIndices.safeGetPtr,
     
-    uint64(len(cellsFlattened)),
-    cellsFlattened.safeGetPtr, 
+    uint64(len(cells)),
+    cellsPtr, 
     
-    uint64(len(proofsFlattened)),
-    proofsFlattened.safeGetPtr,
+    uint64(len(proofs)),
+    proofsPtr,
 
     valid.getPtr
   )
   verify_result(res, valid)
 
-proc recoverCells*(ctx: KzgCtx,
+
+proc recoverCellsAndProofs*(ctx: KzgCtx,
                    cellIds: openArray[uint64],
-                   cells: openArray[KzgCell]): Result[KzgCells, string] {.gcsafe.} =
+                   cells: openArray[KzgCell]): Result[KzgCellsAndKzgProofs, string] {.gcsafe.} =
   
-  var ret: KzgCells
-
-  # TODO: For now, we have a check to check for empty arrays since the indexing logic would panic
-  # The ideal way to handle this would be to pass a nullptr
-
-  let cellsFlattened = flattenToBytes(cells)
+  var ret: KzgCellsAndKzgProofs
   
-  let res = recover_all_cells(
+  let outCellsPtr = toPtrPtr(ret.cells) 
+  let outProofsPtr = toPtrPtr(ret.proofs) 
+  let inputCellsPtr = toPtrPtr(cells)
+
+  let res = recover_cells_and_proofs(
     ctx.ctx_ptr,
 
-    uint64(len(cellsFlattened)),
-    cellsFlattened.safeGetPtr,
+    uint64(len(cells)),
+    inputCellsPtr,
     
     uint64(len(cellIds)),
     cellIds.safeGetPtr,
     
-    ret.getPtr
+    outCellsPtr,
+    outProofsPtr,
   )
 
   verify_result(res, ret)
+
+proc recoverCells*(ctx: KzgCtx,
+                   cellIds: openArray[uint64],
+                   cells: openArray[KzgCell]): Result[KzgCells, string] {.gcsafe.} =
+  let res = ?recoverCellsAndProofs(ctx, cellIds, cells)
+  ok(res.cells)
