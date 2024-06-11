@@ -50,6 +50,8 @@ template safeGetPtr[T](arr: openArray[T]): pointer =
     # Return a null pointer if the array is empty
     nil
 
+# Convert an openArray of untyped to a pointer to a pointer
+# ie convert a 2d array to a double pointer
 template toPtrPtr(cells: openArray[untyped]): ptr pointer =
   # Create a seq of pointers to pointers
   var ptrSeq: seq[ptr pointer]
@@ -68,14 +70,22 @@ template verify_result(res: CResult, ret: untyped): untyped =
     return err($res)
   ok(ret)
 
+
 type
   KzgCtx* = ref object
     ctx_ptr: ptr PeerDASContext
+
+# Define custom destructor
+# https://forum.nim-lang.org/t/11229
+proc `=destroy`(x: typeof KzgCtx()[]) =
+  if x.ctx_ptr != nil:
+    peerdas_context_free(x.ctx_ptr)
 
 proc newKzgCtx*(): KzgCtx =
   var kzgCtx = KzgCtx()
   kzgCtx.ctx_ptr = peerdas_context_new()
   return kzgCtx
+
 
 proc blobToKZGCommitment*(ctx: KzgCtx, blob : KzgBlob): Result[KzgCommitment, string] {.gcsafe.} =
   var ret: KzgCommitment
