@@ -1,6 +1,25 @@
 extern crate eip7594;
 
-use eip7594::constants::{BYTES_PER_BLOB, BYTES_PER_CELL};
+mod blob_to_kzg_commitment;
+use blob_to_kzg_commitment::_blob_to_kzg_commitment;
+
+mod compute_cells_and_kzg_proofs;
+use compute_cells_and_kzg_proofs::{
+    _compute_cells_and_kzg_proofs, _compute_cells_and_kzg_proofs_deflattened,
+};
+
+mod verify_cells_and_kzg_proofs;
+use verify_cells_and_kzg_proofs::_verify_cell_kzg_proof;
+
+mod verify_cells_and_kzg_proofs_batch;
+use verify_cells_and_kzg_proofs_batch::_verify_cell_kzg_proof_batch;
+
+mod recover_cells_and_kzg_proofs;
+use recover_cells_and_kzg_proofs::_recover_all_cells_and_proofs;
+
+pub(crate) mod pointer_utils;
+
+pub use eip7594::constants::{BYTES_PER_BLOB, BYTES_PER_CELL};
 pub use eip7594::constants::{
     BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, FIELD_ELEMENTS_PER_BLOB,
 };
@@ -29,6 +48,9 @@ A note on safety and API:
 - It is also the callers responsibility to ensure that pointers are properly aligned. We do not check that *ctx PeerDASContext
    points to a PeerDASContext, we simply deref.
 
+- TODO(put this above every function) It is the callers responsibility to ensure that pointers to pointers point to the same type of data.
+    - We could make this our responsibility, but then we would need to pass in all sizes for every element in the 2d array.
+
 - It is the callers responsibility to ensure that the pointers that get passed in point to the minimum number of bytes required, to dereference them safely.
     - If the pointers, point to region of memory that is less than the minimum number of bytes required, then this method will read from random memory.
     - If the pointers point to a region of memory that is more than the minimum number of bytes required, then this method will essentially truncate the memory region.
@@ -42,51 +64,30 @@ A note on safety and API:
 */
 
 pub struct PeerDASContext {
-    prover_ctx: Option<eip7594_ProverContext>,
-    verifier_ctx: Option<eip7594_VerifierContext>,
+    prover_ctx: eip7594_ProverContext,
+    verifier_ctx: eip7594_VerifierContext,
 }
 
 impl PeerDASContext {
     pub fn new() -> Self {
-        PeerDASContext::with_setting(CContextSetting::Both)
-    }
-
-    pub fn with_setting(setting: CContextSetting) -> Self {
-        match setting {
-            CContextSetting::ProvingOnly => PeerDASContext {
-                prover_ctx: Some(eip7594_ProverContext::new()),
-                verifier_ctx: None,
-            },
-            CContextSetting::VerifyOnly => PeerDASContext {
-                prover_ctx: None,
-                verifier_ctx: Some(eip7594_VerifierContext::new()),
-            },
-            CContextSetting::Both => PeerDASContext {
-                prover_ctx: Some(eip7594_ProverContext::new()),
-                verifier_ctx: Some(eip7594_VerifierContext::new()),
-            },
+        PeerDASContext {
+            prover_ctx: eip7594_ProverContext::new(),
+            verifier_ctx: eip7594_VerifierContext::new(),
         }
     }
 
-    pub fn prover_ctx(&self) -> Option<&eip7594_ProverContext> {
-        self.prover_ctx.as_ref()
+    pub fn prover_ctx(&self) -> &eip7594_ProverContext {
+        &self.prover_ctx
     }
 
-    pub fn verifier_ctx(&self) -> Option<&eip7594_VerifierContext> {
-        self.verifier_ctx.as_ref()
+    pub fn verifier_ctx(&self) -> &eip7594_VerifierContext {
+        &self.verifier_ctx
     }
 }
 
 #[no_mangle]
 pub extern "C" fn peerdas_context_new() -> *mut PeerDASContext {
     let ctx = Box::new(PeerDASContext::new());
-    Box::into_raw(ctx)
-}
-#[no_mangle]
-pub extern "C" fn peerdas_context_new_with_setting(
-    setting: CContextSetting,
-) -> *mut PeerDASContext {
-    let ctx = Box::new(PeerDASContext::with_setting(setting));
     Box::into_raw(ctx)
 }
 
@@ -101,15 +102,6 @@ pub extern "C" fn peerdas_context_free(ctx: *mut PeerDASContext) {
     unsafe {
         let _ = Box::from_raw(ctx);
     }
-}
-
-/// The settings object for the Context.
-/// This is used to indicate if the context is for proving only, verifying only or both.
-#[repr(C)]
-pub enum CContextSetting {
-    ProvingOnly,
-    VerifyOnly,
-    Both,
 }
 
 /// A C-style enum to indicate the status of each function call
@@ -157,25 +149,6 @@ pub extern "C" fn free_error_message(c_message: *mut std::os::raw::c_char) {
     };
 }
 
-// Helper methods for dereferencing raw pointers and writing to slices
-//
-fn deref_mut<'a, T>(ptr: *mut T) -> Result<&'a mut T, CResultStatus> {
-    unsafe { ptr.as_mut().map_or(Err(CResultStatus::Err), |p| Ok(p)) }
-}
-fn deref_const<'a, T>(ptr: *const T) -> Result<&'a T, CResultStatus> {
-    unsafe { ptr.as_ref().map_or(Err(CResultStatus::Err), |p| Ok(p)) }
-}
-// TODO: We could return the number of bytes written to the C function so they can check if the length is correct.
-fn write_to_slice<T: Copy>(ptr: &mut T, data: &[T]) {
-    let slice = unsafe { std::slice::from_raw_parts_mut(ptr, data.len()) };
-    slice.copy_from_slice(data);
-}
-// Note: If `ptr` points to a slice that is more than `len`
-// This method will not panic and will instead truncate the memory region.
-fn create_slice_view<'a, T>(ptr: &T, len: usize) -> &'a [T] {
-    unsafe { std::slice::from_raw_parts(ptr, len) }
-}
-
 /// Safety:
 /// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
 /// - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
@@ -192,128 +165,6 @@ pub extern "C" fn blob_to_kzg_commitment(
         Ok(_) => CResult::with_ok(),
         Err(err) => return err,
     }
-}
-fn _blob_to_kzg_commitment(
-    ctx: *const PeerDASContext,
-    blob_length: u64,
-    blob: *const u8,
-    out: *mut u8,
-) -> Result<(), CResult> {
-    // Pointer checks
-    //
-    let ctx = deref_const(ctx).map_err(|_| CResult::with_error("context has a null ptr"))?;
-    let ctx = ctx.prover_ctx().ok_or(CResultStatus::Err).map_err(|_| {
-        CResult::with_error("context does not have a valid pointer to a prover structure")
-    })?;
-    let blob = deref_const(blob)
-        .map_err(|_| CResult::with_error("could not dereference pointer to blob"))?;
-    let out = deref_mut(out)
-        .map_err(|_| CResult::with_error("could not dereference pointer to the output"))?;
-
-    // Length checks
-    //
-    if blob_length != BYTES_PER_BLOB as u64 {
-        return Err(CResult::with_error(&format!(
-            "Invalid blob length. Expected: {}, Got: {}",
-            BYTES_PER_BLOB, blob_length
-        )));
-    }
-
-    // Convert immutable references to slices
-    //
-    let blob = create_slice_view(blob, blob_length as usize);
-
-    // Computation
-    //
-    let commitment = ctx
-        .blob_to_kzg_commitment(blob)
-        .map_err(|err| CResult::with_error(&format!("{:?}", err)))?;
-    assert!(
-        commitment.len() == BYTES_PER_COMMITMENT as usize,
-        "This is a library bug. commitment.len() != BYTES_PER_COMMITMENT, {} != {}",
-        commitment.len(),
-        BYTES_PER_COMMITMENT
-    );
-
-    // Write output to slice
-    //
-    write_to_slice(out, &commitment);
-
-    Ok(())
-}
-
-/// Safety:
-/// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
-/// - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
-/// - The caller must ensure that `out_cells` points to a region of memory that is at least `NUM_BYTES_CELLS` bytes.
-#[no_mangle]
-#[must_use]
-pub extern "C" fn compute_cells(
-    ctx: *const PeerDASContext,
-    blob_length: u64,
-    blob: *const u8,
-    out_cells: *mut u8,
-) -> CResult {
-    match _compute_cells(ctx, blob_length, blob, out_cells) {
-        Ok(_) => return CResult::with_ok(),
-        Err(err) => return err,
-    }
-}
-
-fn _compute_cells(
-    ctx: *const PeerDASContext,
-    blob_length: u64,
-    blob: *const u8,
-    out_cells: *mut u8,
-) -> Result<(), CResult> {
-    // Pointer checks
-    //
-    let ctx = deref_const(ctx).map_err(|_| CResult::with_error("context has a null ptr"))?;
-    let ctx = ctx.prover_ctx().ok_or(CResultStatus::Err).map_err(|_| {
-        CResult::with_error("context does not have a valid pointer to a prover structure")
-    })?;
-    let blob = deref_const(blob)
-        .map_err(|_| CResult::with_error("could not dereference pointer to blob"))?;
-    let out_cells = deref_mut(out_cells)
-        .map_err(|_| CResult::with_error("could not dereference pointer to the output"))?;
-
-    // Length checks
-    //
-    if blob_length != BYTES_PER_BLOB as u64 {
-        return Err(CResult::with_error(&format!(
-            "Invalid blob length. Expected: {}, Got: {}",
-            BYTES_PER_BLOB, blob_length
-        )));
-    }
-
-    // Convert immutable references to slices
-    //
-    let blob = create_slice_view(blob, blob_length as usize);
-
-    // Computation
-    //
-    let cells = ctx
-        .compute_cells(blob)
-        .map_err(|err| CResult::with_error(&format!("{:?}", err)))?;
-
-    let cells_flattened: Vec<_> = cells
-        .iter()
-        .flat_map(|cell| cell.into_iter())
-        .copied()
-        .collect();
-
-    assert_eq!(
-        cells_flattened.len() as u64,
-        NUM_BYTES_CELLS,
-        "This is a library bug. cells_flattened.len() != num_bytes_cells(), {} != {}",
-        cells_flattened.len(),
-        NUM_BYTES_CELLS
-    );
-
-    // Write to output
-    write_to_slice(out_cells, &cells_flattened);
-
-    Ok(())
 }
 
 /// Safety:
@@ -335,78 +186,25 @@ pub extern "C" fn compute_cells_and_kzg_proofs(
         Err(err) => return err,
     }
 }
-fn _compute_cells_and_kzg_proofs(
+
+/// Safety:
+/// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+/// - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
+/// - The caller must ensure that `out_cells` points to a region of memory that is at least `NUM_BYTES_CELLS` bytes.
+/// - The caller must ensure that `out_proofs` points to a region of memory that is at least `NUM_BYTES_PROOFS` bytes.
+#[no_mangle]
+#[must_use]
+pub extern "C" fn compute_cells_and_kzg_proofs_deflattened(
     ctx: *const PeerDASContext,
     blob_length: u64,
     blob: *const u8,
-    out_cells: *mut u8,
-    out_proofs: *mut u8,
-) -> Result<(), CResult> {
-    // Pointer checks
-    //
-    let ctx = deref_const(ctx).map_err(|_| CResult::with_error("context has a null ptr"))?;
-    let ctx = ctx.prover_ctx().ok_or(CResultStatus::Err).map_err(|_| {
-        CResult::with_error("context does not have a valid pointer to a prover structure")
-    })?;
-    let blob = deref_const(blob)
-        .map_err(|_| CResult::with_error("could not dereference pointer to blob"))?;
-    let out_cells = deref_mut(out_cells)
-        .map_err(|_| CResult::with_error("could not dereference pointer to the output cells"))?;
-    let out_proofs = deref_mut(out_proofs)
-        .map_err(|_| CResult::with_error("could not dereference pointer to the output proofs"))?;
-
-    // Length checks
-    //
-    if blob_length != BYTES_PER_BLOB as u64 {
-        return Err(CResult::with_error(&format!(
-            "Invalid blob length. Expected: {}, Got: {}",
-            BYTES_PER_BLOB, blob_length
-        )));
+    out_cells: *mut *mut u8,
+    out_proofs: *mut *mut u8,
+) -> CResult {
+    match _compute_cells_and_kzg_proofs_deflattened(ctx, blob_length, blob, out_cells, out_proofs) {
+        Ok(_) => return CResult::with_ok(),
+        Err(err) => return err,
     }
-
-    // Convert immutable references to slices
-    //
-    let blob = create_slice_view(blob, blob_length as usize);
-
-    // Computation
-    //
-    let (cells, proofs) = ctx
-        .compute_cells_and_kzg_proofs(blob)
-        .map_err(|err| CResult::with_error(&format!("{:?}", err)))?;
-
-    // TODO: This is not consistent with the node way of returning cells and proofs.
-    // TODO: This may be fine, because node lives at a higher level and has richer features due to napi
-    let cells_flattened: Vec<_> = cells
-        .iter()
-        .flat_map(|cell| cell.into_iter())
-        .copied()
-        .collect();
-    assert_eq!(
-        cells_flattened.len() as u64,
-        NUM_BYTES_CELLS,
-        "This is a library bug. cells_flattened.len() != num_bytes_cells(), {} != {}",
-        cells_flattened.len(),
-        NUM_BYTES_CELLS
-    );
-
-    let proofs_flattened: Vec<_> = proofs
-        .iter()
-        .flat_map(|proof| proof.iter())
-        .copied()
-        .collect();
-    assert_eq!(
-        proofs_flattened.len() as u64,
-        NUM_BYTES_PROOFS,
-        "This is a library bug. proofs_flattened.len() != num_bytes_proofs(), {} != {}",
-        proofs_flattened.len(),
-        NUM_BYTES_PROOFS
-    );
-
-    // Write to output
-    write_to_slice(out_cells, &cells_flattened);
-    write_to_slice(out_proofs, &proofs_flattened);
-
-    Ok(())
 }
 
 /// Safety:
@@ -421,13 +219,18 @@ fn _compute_cells_and_kzg_proofs(
 #[must_use]
 pub extern "C" fn verify_cell_kzg_proof(
     ctx: *const PeerDASContext,
+
     cell_length: u64,
     cell: *const u8,
+
     commitment_length: u64,
     commitment: *const u8,
+
     cell_id: u64,
+
     proof_length: u64,
     proof: *const u8,
+
     verified: *mut bool,
 ) -> CResult {
     match _verify_cell_kzg_proof(
@@ -444,61 +247,6 @@ pub extern "C" fn verify_cell_kzg_proof(
         Ok(_) => return CResult::with_ok(),
         Err(err) => return err,
     }
-}
-
-fn _verify_cell_kzg_proof(
-    ctx: *const PeerDASContext,
-    cell_length: u64,
-    cell: *const u8,
-    commitment_length: u64,
-    commitment: *const u8,
-    cell_id: u64,
-    proof_length: u64,
-    proof: *const u8,
-    verified: *mut bool,
-) -> Result<(), CResult> {
-    // Pointer checks
-    //
-    let ctx = deref_const(ctx).map_err(|_| CResult::with_error("context has a null ptr"))?;
-    let ctx = ctx.verifier_ctx().ok_or(CResultStatus::Err).map_err(|_| {
-        CResult::with_error("context does not have a valid pointer to a verifier structure")
-    })?;
-    let cell = deref_const(cell).map_err(|_| CResult::with_error("could not dereference cell"))?;
-    let commitment = deref_const(commitment)
-        .map_err(|_| CResult::with_error("could not dereference commitment"))?;
-    let proof =
-        deref_const(proof).map_err(|_| CResult::with_error("could not dereference proof"))?;
-    let verified = deref_mut(verified).map_err(|_| {
-        CResult::with_error("could not dereference pointer to the output verified flag")
-    })?;
-
-    // Length checks
-    //
-    if cell_length != BYTES_PER_CELL as u64
-        || commitment_length != BYTES_PER_COMMITMENT as u64
-        || proof_length != BYTES_PER_COMMITMENT as u64
-    {
-        return Err(CResult::with_error(&format!(
-            "Invalid length. Expected: cell: {}, commitment: {}, proof: {}, Got: cell: {}, commitment: {}, proof: {}",
-            BYTES_PER_CELL, BYTES_PER_COMMITMENT, BYTES_PER_COMMITMENT, cell_length, commitment_length, proof_length
-        )));
-    }
-
-    // Convert immutable references to slices
-    //
-    let cell = create_slice_view(cell, cell_length as usize);
-    let commitment = create_slice_view(commitment, commitment_length as usize);
-    let proof = create_slice_view(proof, proof_length as usize);
-
-    // Computation
-    //
-    let verification_result = ctx.verify_cell_kzg_proof(commitment, cell_id, cell, proof);
-
-    // Write to output
-    let proof_is_valid = verification_result_to_bool_cresult(verification_result)?;
-    *verified = proof_is_valid;
-
-    Ok(())
 }
 
 // Note: The underlying cryptography library, uses a Result enum to indicate a proof failed.
@@ -529,16 +277,22 @@ fn verification_result_to_bool_cresult(
 #[must_use]
 pub extern "C" fn verify_cell_kzg_proof_batch(
     ctx: *const PeerDASContext,
+
     row_commitments_length: u64,
     row_commitments: *const u8,
+
     row_indices_length: u64,
     row_indices: *const u64,
+
     column_indices_length: u64,
     column_indices: *const u64,
+
     cells_length: u64,
     cells: *const u8,
+
     proofs_length: u64,
     proofs: *const u8,
+
     verified: *mut bool,
 ) -> CResult {
     match _verify_cell_kzg_proof_batch(
@@ -559,223 +313,30 @@ pub extern "C" fn verify_cell_kzg_proof_batch(
         Err(err) => return err,
     }
 }
-fn _verify_cell_kzg_proof_batch(
-    ctx: *const PeerDASContext,
-    row_commitments_length: u64,
-    row_commitments: *const u8,
-    row_indices_length: u64,
-    row_indices: *const u64,
-    column_indices_length: u64,
-    column_indices: *const u64,
-    cells_length: u64,
-    cells: *const u8,
-    proofs_length: u64,
-    proofs: *const u8,
-    verified: *mut bool,
-) -> Result<(), CResult> {
-    // When the arrays are empty in the caller language, the pointer might be null
-    // This was witnessed in csharp.
-    // For now, we will check for an empty batch size and return early, for both optimization purposes
-    // and for safety.
-    // TODO: we could make it so that the client needs to worry about making sure the ptr is not nil
-    // TODO: This is an easy guarantee to put in languages and does not add a lot of code.
-    //
-    // TODO: We should also keep the null pointer checks so that we never have UB if the library is used incorrectly.
-    if cells_length == 0 {
-        unsafe { *verified = true };
-        return Ok(());
-    }
 
-    // Pointer checks
-    //
-    let ctx = deref_const(ctx).map_err(|_| CResult::with_error("context has a null ptr"))?;
-    let ctx = ctx.verifier_ctx().ok_or(CResultStatus::Err).map_err(|_| {
-        CResult::with_error("context does not have a valid pointer to a verifier structure")
-    })?;
-    let row_commitments = deref_const(row_commitments)
-        .map_err(|_| CResult::with_error("could not dereference row_commitments"))?;
-    let row_indices = deref_const(row_indices)
-        .map_err(|_| CResult::with_error("could not dereference row_indices"))?;
-    let column_indices = deref_const(column_indices)
-        .map_err(|_| CResult::with_error("could not dereference column_indices"))?;
-    let cells =
-        deref_const(cells).map_err(|_| CResult::with_error("could not dereference cells"))?;
-    let proofs =
-        deref_const(proofs).map_err(|_| CResult::with_error("could not dereference proofs"))?;
-    let verified = deref_mut(verified).map_err(|_| {
-        CResult::with_error("could not dereference pointer to the output verified flag")
-    })?;
-
-    // Length checks
-    //
-    let num_cells = (cells_length / BYTES_PER_CELL as u64) as usize;
-    let num_commitments = (row_commitments_length / BYTES_PER_COMMITMENT as u64) as usize;
-
-    if (row_commitments_length as usize) != (BYTES_PER_COMMITMENT * num_commitments) {
-        return Err(CResult::with_error(&format!(
-            "Invalid row_commitments length. Expected: {}, Got: {}",
-            BYTES_PER_COMMITMENT * num_commitments,
-            row_commitments_length
-        )));
-    }
-
-    if (cells_length as usize) != (num_cells * BYTES_PER_CELL) {
-        return Err(CResult::with_error(&format!(
-            "Invalid cells length. Expected: {}, Got: {}",
-            num_cells * BYTES_PER_CELL,
-            cells_length
-        )));
-    }
-
-    if (proofs_length as usize) != (BYTES_PER_COMMITMENT * num_cells) {
-        return Err(CResult::with_error(&format!(
-            "Invalid proofs length. Expected: {}, Got: {}",
-            BYTES_PER_COMMITMENT * num_cells,
-            proofs_length
-        )));
-    }
-
-    if (row_indices_length as usize) != num_cells {
-        return Err(CResult::with_error(&format!(
-            "Invalid row_indices length. Expected: {}, Got: {}",
-            num_cells, row_indices_length
-        )));
-    }
-
-    if (column_indices_length as usize) != num_cells {
-        return Err(CResult::with_error(&format!(
-            "Invalid column_indices length. Expected: {}, Got: {}",
-            num_cells, column_indices_length
-        )));
-    }
-
-    // Convert immutable references to slices
-    //
-    let row_commitments = create_slice_view(row_commitments, row_commitments_length as usize);
-    let cells = create_slice_view(cells, cells_length as usize);
-    let proofs = create_slice_view(proofs, proofs_length as usize);
-    let row_indices = create_slice_view(row_indices, num_cells as usize);
-    let column_indices = create_slice_view(column_indices, num_cells as usize);
-
-    // Computation
-    //
-    let row_commitments: Vec<_> = row_commitments
-        .chunks_exact(BYTES_PER_COMMITMENT as usize)
-        .collect();
-    let cells = cells.chunks_exact(BYTES_PER_CELL as usize).collect();
-    let proofs = proofs.chunks_exact(BYTES_PER_COMMITMENT as usize).collect();
-
-    let verification_result = ctx.verify_cell_kzg_proof_batch(
-        row_commitments,
-        // TODO: conversion to a vector should not be needed
-        row_indices.to_vec(),
-        column_indices.to_vec(),
-        cells,
-        proofs,
-    );
-
-    // Write to output
-    let proof_is_valid = verification_result_to_bool_cresult(verification_result)?;
-    *verified = proof_is_valid;
-
-    Ok(())
-}
-
-/// Safety:
-/// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
-/// - The caller must ensure that `cell_ids` points to a region of memory that is at least `num_cells` bytes.
-/// - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` bytes.
-/// - The caller must ensure that `out_cells` points to a region of memory that is at least `NUM_BYTES_CELLS` bytes.
 #[no_mangle]
 #[must_use]
-pub extern "C" fn recover_all_cells(
+pub extern "C" fn recover_cells_and_proofs(
     ctx: *const PeerDASContext,
     cells_length: u64,
-    cells: *const u8,
+    cells: *const *const u8,
     cell_ids_length: u64,
     cell_ids: *const u64,
-    out_cells: *mut u8,
+    out_cells: *mut *mut u8,
+    out_proofs: *mut *mut u8,
 ) -> CResult {
-    match _recover_all_cells(
+    match _recover_all_cells_and_proofs(
         ctx,
         cells_length,
         cells,
         cell_ids_length,
         cell_ids,
         out_cells,
+        out_proofs,
     ) {
-        Ok(_) => return CResult::with_ok(),
-        Err(err) => return err,
+        Ok(_) => CResult::with_ok(),
+        Err(err) => err,
     }
-}
-fn _recover_all_cells(
-    ctx: *const PeerDASContext,
-    cells_length: u64,
-    cells: *const u8,
-    cell_ids_length: u64,
-    cell_ids: *const u64,
-    out_cells: *mut u8,
-) -> Result<(), CResult> {
-    // Pointer checks
-    //
-    let ctx = deref_const(ctx).map_err(|_| CResult::with_error("context has a null ptr"))?;
-    let ctx = ctx.verifier_ctx().ok_or(CResultStatus::Err).map_err(|_| {
-        CResult::with_error("context does not have a valid pointer to a verifier structure")
-    })?;
-    let cells =
-        deref_const(cells).map_err(|_| CResult::with_error("could not dereference cells"))?;
-    let cell_ids =
-        deref_const(cell_ids).map_err(|_| CResult::with_error("could not dereference cell_ids"))?;
-    let out_cells = deref_mut(out_cells)
-        .map_err(|_| CResult::with_error("could not dereference pointer to the output cells"))?;
-
-    // Length checks
-    //
-    if cells_length % (BYTES_PER_CELL as u64) != 0 {
-        return Err(CResult::with_error(&format!(
-            "Invalid cells length. Expected multiple of {}, Got: {}",
-            BYTES_PER_CELL, cells_length
-        )));
-    }
-    let num_cells = cells_length as usize / BYTES_PER_CELL as usize;
-    if cell_ids_length != num_cells as u64 {
-        return Err(CResult::with_error(&format!(
-            "Invalid cell_ids length. Expected: {}, Got: {}",
-            num_cells, cell_ids_length
-        )));
-    }
-
-    // Convert immutable references to slices
-    //
-    let cells = create_slice_view(cells, cells_length as usize);
-    let cell_ids = create_slice_view(cell_ids, cell_ids_length as usize);
-
-    // Computation
-    //
-    let cells: Vec<_> = cells.chunks_exact(BYTES_PER_CELL as usize).collect();
-
-    let recovered_cells = ctx
-        .recover_all_cells(cell_ids.to_vec(), cells)
-        .map_err(|err| CResult::with_error(&format!("{:?}", err)))?;
-
-    let cells_flattened: Vec<_> = recovered_cells
-        .iter()
-        .flat_map(|cell| cell.into_iter())
-        .copied()
-        .collect();
-
-    assert_eq!(
-        cells_flattened.len() as u64,
-        NUM_BYTES_CELLS,
-        "This is a library bug. cells_flattened.len() != num_bytes_cells(), {} != {}",
-        cells_flattened.len(),
-        NUM_BYTES_CELLS
-    );
-
-    // Write to output
-    write_to_slice(out_cells, &cells_flattened);
-
-    Ok(())
 }
 
 #[cfg(test)]
