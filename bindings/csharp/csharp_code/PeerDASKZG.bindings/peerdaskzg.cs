@@ -122,20 +122,76 @@ public sealed unsafe class PeerDASKZG : IDisposable
     public bool VerifyCellKZGProofBatch(byte[][] rowCommitments, ulong[] rowIndices, ulong[] columnIndices, byte[][] cells, byte[][] proofs)
     {
 
-        byte[] rowCommitmentsFlattened = FlattenArray(rowCommitments);
-        byte[] cellsFlattened = FlattenArray(cells);
-        byte[] proofsFlattened = FlattenArray(proofs);
+        // The native code assumes that all double vectors have the same length.
+        for (int i = 0; i < cells.Length; i++)
+        {
+            if (cells[i].Length != BytesPerCell)
+            {
+                throw new ArgumentException($"cell at index {i} has an invalid length");
+            }
+        }
+
+        for (int i = 0; i < proofs.Length; i++)
+        {
+            if (proofs[i].Length != BytesPerCommitment)
+            {
+                throw new ArgumentException($"proof at index {i} has an invalid length");
+            }
+        }
+
+        for (int i = 0; i < rowCommitments.Length; i++)
+        {
+            if (rowCommitments[i].Length != BytesPerCommitment)
+            {
+                throw new ArgumentException($"commitments at index {i} has an invalid length");
+            }
+        }
+
+        int numCells = cells.Length;
+        int numProofs = proofs.Length;
+        int numRowCommitments = rowCommitments.Length;
+
+        byte*[] commPtrs = new byte*[numRowCommitments];
+        byte*[] cellsPtrs = new byte*[numCells];
+        byte*[] proofsPtrs = new byte*[numProofs];
 
         bool verified = false;
         bool* verifiedPtr = &verified;
 
-        fixed (byte* rowCommitmentsPtr = rowCommitmentsFlattened)
+        fixed (byte** commitmentPtrPtr = commPtrs)
+        fixed (byte** cellsPtrPtr = cellsPtrs)
+        fixed (byte** proofsPtrPtr = proofsPtrs)
         fixed (ulong* rowIndicesPtr = rowIndices)
         fixed (ulong* columnIndicesPtr = columnIndices)
-        fixed (byte* cellsPtr = cellsFlattened)
-        fixed (byte* proofsPtr = proofsFlattened)
         {
-            CResult result = verify_cell_kzg_proof_batch(_context, Convert.ToUInt64(rowCommitmentsFlattened.Length), rowCommitmentsPtr, Convert.ToUInt64(rowIndices.Length), rowIndicesPtr, Convert.ToUInt64(columnIndices.Length), columnIndicesPtr, Convert.ToUInt64(cellsFlattened.Length), cellsPtr, Convert.ToUInt64(proofsFlattened.Length), proofsPtr, verifiedPtr);
+            // Get the pointer for each cell
+            for (int i = 0; i < numCells; i++)
+            {
+                fixed (byte* cellPtr = cells[i])
+                {
+                    cellsPtrPtr[i] = cellPtr;
+                }
+            }
+
+            // Get the pointer for each commitment
+            for (int i = 0; i < numRowCommitments; i++)
+            {
+                fixed (byte* commPtr = rowCommitments[i])
+                {
+                    commitmentPtrPtr[i] = commPtr;
+                }
+            }
+
+            // Get the pointer for each commitment
+            for (int i = 0; i < numProofs; i++)
+            {
+                fixed (byte* proofPtr = proofs[i])
+                {
+                    proofsPtrPtr[i] = proofPtr;
+                }
+            }
+
+            CResult result = verify_cell_kzg_proof_batch(_context, Convert.ToUInt64(rowCommitments.Length), commitmentPtrPtr, Convert.ToUInt64(rowIndices.Length), rowIndicesPtr, Convert.ToUInt64(columnIndices.Length), columnIndicesPtr, Convert.ToUInt64(cells.Length), cellsPtrPtr, Convert.ToUInt64(proofs.Length), proofsPtrPtr, verifiedPtr);
             ThrowOnError(result);
         }
         return verified;
@@ -160,14 +216,15 @@ public sealed unsafe class PeerDASKZG : IDisposable
         }
 
         int numProofs = CellsPerExtBlob;
-        int numCells = CellsPerExtBlob;
+        int numOutCells = CellsPerExtBlob;
+        int numInputCells = cells.Length;
 
-        byte[][] outCells = InitializeJaggedArray(numCells, BytesPerCell);
+        byte[][] outCells = InitializeJaggedArray(numOutCells, BytesPerCell);
         byte[][] outProofs = InitializeJaggedArray(numProofs, BytesPerProof);
 
         // Allocate an array of pointers for inputCells, outputCells and proofs
-        byte*[] inputCellsPtrs = new byte*[cells.Length];
-        byte*[] outCellsPtrs = new byte*[numCells];
+        byte*[] inputCellsPtrs = new byte*[numInputCells];
+        byte*[] outCellsPtrs = new byte*[numOutCells];
         byte*[] outProofsPtrs = new byte*[numProofs];
 
         fixed (ulong* cellIdsPtr = cellIds)
@@ -176,7 +233,7 @@ public sealed unsafe class PeerDASKZG : IDisposable
         fixed (byte** outProofsPtrPtr = outProofsPtrs)
         {
             // Get the pointer for each input cell
-            for (int i = 0; i < cells.Length; i++)
+            for (int i = 0; i < numInputCells; i++)
             {
                 fixed (byte* cellPtr = cells[i])
                 {
@@ -185,7 +242,7 @@ public sealed unsafe class PeerDASKZG : IDisposable
             }
 
             // Get the pointer for each output cell
-            for (int i = 0; i < numCells; i++)
+            for (int i = 0; i < numOutCells; i++)
             {
                 fixed (byte* cellPtr = outCells[i])
                 {
@@ -202,7 +259,7 @@ public sealed unsafe class PeerDASKZG : IDisposable
                 }
             }
 
-            CResult result = recover_cells_and_proofs(_context, Convert.ToUInt64(cells.Length), inputCellsPtrPtr, Convert.ToUInt64(cellIds.Length), cellIdsPtr, outCellsPtrPtr, outProofsPtrPtr);
+            CResult result = recover_cells_and_proofs(_context, Convert.ToUInt64(numInputCells), inputCellsPtrPtr, Convert.ToUInt64(cellIds.Length), cellIdsPtr, outCellsPtrPtr, outProofsPtrPtr);
             ThrowOnError(result);
         }
 
