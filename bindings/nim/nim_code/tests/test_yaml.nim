@@ -67,7 +67,7 @@ template checkRes(res, body: untyped) =
 
 template checkBytes48(res: untyped) =
   checkRes(res):
-    let bytes = KzgBytes48.fromHex(n["output"])
+    let bytes = Bytes48.fromHex(n["output"])
     check bytes == res.get
 
 template checkBool(res: untyped) =
@@ -75,65 +75,65 @@ template checkBool(res: untyped) =
     check n["output"].content == $res.get
 
 suite "yaml tests":
-  var ctx: KzgCtx
+  var ctx: KZGCtx
   # We cannot run this in `setup` because that runs before _every_ test
   # and we only want to run this once
   # 
   # This should also remove order dependency between tests; ie if we ran setup in a test
-  ctx = newKzgCtx()
+  ctx = newKZGCtx()
 
   runTests(BLOB_TO_KZG_COMMITMENT_TESTS):
     let
-      blob = KzgBlob.fromHex(n["input"]["blob"])
+      blob = Blob.fromHex(n["input"]["blob"])
       res = ctx.blobToKZGCommitment(blob)
     checkBytes48(res)
 
 
   runTests(COMPUTE_CELLS_TESTS):
     let
-      blob = KzgBlob.fromHex(n["input"]["blob"])
+      blob = Blob.fromHex(n["input"]["blob"])
       res = ctx.computeCells(blob)
 
     checkRes(res):
-      let cells = KzgCell.fromHexList(n["output"])
+      let cells = Cell.fromHexList(n["output"])
       check cells == res.get
 
   runTests(COMPUTE_CELLS_AND_KZG_PROOFS_TESTS):
     let
-      blob = KzgBlob.fromHex(n["input"]["blob"])
+      blob = Blob.fromHex(n["input"]["blob"])
       res = ctx.computeCellsAndProofs(blob)
 
     checkRes(res):
-      let cells = KzgCell.fromHexList(n["output"][0])
+      let cells = Cell.fromHexList(n["output"][0])
       check cells == res.get.cells
-      let proofs = KzgProof.fromHexList(n["output"][1])
+      let proofs = KZGProof.fromHexList(n["output"][1])
       check proofs == res.get.proofs
 
   runTests(VERIFY_CELL_KZG_PROOF_TESTS):
     let
-      commitment = KzgCommitment.fromHex(n["input"]["commitment"])
+      commitment = KZGCommitment.fromHex(n["input"]["commitment"])
       cellId = n["input"]["cell_id"].content.parseInt().uint64
-      cell = KzgCell.fromHex(n["input"]["cell"])
-      proof = KzgProof.fromHex(n["input"]["proof"])
+      cell = Cell.fromHex(n["input"]["cell"])
+      proof = KZGProof.fromHex(n["input"]["proof"])
       res = ctx.verifyCellKZGProof(commitment, cellId, cell, proof)
     checkBool(res)
 
   runTests(VERIFY_CELL_KZG_PROOF_BATCH_TESTS):
     let
-      rowCommitments = KzgCommitment.fromHexList(n["input"]["row_commitments"])
+      rowCommitments = KZGCommitment.fromHexList(n["input"]["row_commitments"])
       rowIndices = uint64.fromIntList(n["input"]["row_indices"])
       columnIndices = uint64.fromIntList(n["input"]["column_indices"])
-      cells = KzgCell.fromHexList(n["input"]["cells"])
-      proofs = KzgProof.fromHexList(n["input"]["proofs"])
+      cells = Cell.fromHexList(n["input"]["cells"])
+      proofs = KZGProof.fromHexList(n["input"]["proofs"])
       res = ctx.verifyCellKZGProofBatch(rowCommitments, rowIndices, columnIndices, cells, proofs)
     checkBool(res)
 
   runTests(RECOVER_ALL_CELLS_TESTS):
     let
       cellIds = uint64.fromIntList(n["input"]["cell_ids"])
-      cells = KzgCell.fromHexList(n["input"]["cells"])
+      cells = Cell.fromHexList(n["input"]["cells"])
       res = ctx.recoverCells(cellIds, cells)
 
     checkRes(res):
-      let recovered = KzgCell.fromHexList(n["output"])
+      let recovered = Cell.fromHexList(n["output"])
       check recovered == res.get
