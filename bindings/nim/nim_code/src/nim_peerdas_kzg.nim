@@ -10,30 +10,28 @@ const
   FIELD_ELEMENTS_PER_CELL = 64
   BYTES_PER_FIELD_ELEMENT = 32
   CELLS_PER_EXT_BLOB = 128
-  KzgBlobSize* = FIELD_ELEMENTS_PER_BLOB*BYTES_PER_FIELD_ELEMENT
-  KzgCellSize* = FIELD_ELEMENTS_PER_CELL*BYTES_PER_FIELD_ELEMENT
+  BlobSize* = FIELD_ELEMENTS_PER_BLOB*BYTES_PER_FIELD_ELEMENT
+  CellSize* = FIELD_ELEMENTS_PER_CELL*BYTES_PER_FIELD_ELEMENT
 
-# TODO: Inconsistency between the writing of kzg. Decide between `Kzg` and `KZG`
-# TODO: I think KZG is the correct term since its an abbreviation
 type
-  KzgBytes48* = object
+  Bytes48* = object
     bytes*: array[48, byte]
 
-  KzgBlob* = object
-    bytes*: array[KzgBlobSize, byte]
+  Blob* = object
+    bytes*: array[BlobSize, byte]
 
-  KzgCell* = object
-    bytes*: array[KzgCellSize, byte]
+  Cell* = object
+    bytes*: array[CellSize, byte]
 
-  KzgCommitment* = KzgBytes48
+  KZGCommitment* = Bytes48
   
-  KzgProof* = KzgBytes48
+  KZGProof* = Bytes48
 
-  KzgCells* = array[CELLS_PER_EXT_BLOB, KzgCell]
+  Cells* = array[CELLS_PER_EXT_BLOB, Cell]
 
-  KzgCellsAndKzgProofs* = object
-    cells*: KzgCells
-    proofs*: array[CELLS_PER_EXT_BLOB, KzgProof]
+  CellsAndProofs* = object
+    cells*: Cells
+    proofs*: array[CELLS_PER_EXT_BLOB, KZGProof]
 
 
 template getPtr(x: untyped): auto =
@@ -72,23 +70,26 @@ template verify_result(res: CResult, ret: untyped): untyped =
 
 
 type
-  KzgCtx* = ref object
+  KZGCtx* = ref object
     ctx_ptr: ptr PeerDASContext
 
 # Define custom destructor
+# Nim2 does not allow us to take in a var T 
+# for the custom destructor so it must ensure that
+# this is not called twice.
 # https://forum.nim-lang.org/t/11229
-proc `=destroy`(x: typeof KzgCtx()[]) =
+proc `=destroy`(x: typeof KZGCtx()[]) =
   if x.ctx_ptr != nil:
     peerdas_context_free(x.ctx_ptr)
 
-proc newKzgCtx*(): KzgCtx =
-  var kzgCtx = KzgCtx()
+proc newKZGCtx*(): KZGCtx =
+  var kzgCtx = KZGCtx()
   kzgCtx.ctx_ptr = peerdas_context_new()
   return kzgCtx
 
 
-proc blobToKZGCommitment*(ctx: KzgCtx, blob : KzgBlob): Result[KzgCommitment, string] {.gcsafe.} =
-  var ret: KzgCommitment
+proc blobToKZGCommitment*(ctx: KZGCtx, blob : Blob): Result[KZGCommitment, string] {.gcsafe.} =
+  var ret: KZGCommitment
   
   let res = blob_to_kzg_commitment(
     ctx.ctx_ptr, 
@@ -101,8 +102,8 @@ proc blobToKZGCommitment*(ctx: KzgCtx, blob : KzgBlob): Result[KzgCommitment, st
   verify_result(res, ret)
 
 
-proc computeCellsAndProofs*(ctx: KzgCtx, blob : KzgBlob): Result[KzgCellsAndKzgProofs, string] {.gcsafe.} =
-  var ret: KzgCellsAndKzgProofs
+proc computeCellsAndProofs*(ctx: KZGCtx, blob : Blob): Result[CellsAndProofs, string] {.gcsafe.} =
+  var ret: CellsAndProofs
 
   let outCellsPtr = toPtrPtr(ret.cells) 
   let outProofsPtr = toPtrPtr(ret.proofs) 
@@ -118,11 +119,11 @@ proc computeCellsAndProofs*(ctx: KzgCtx, blob : KzgBlob): Result[KzgCellsAndKzgP
   )
   verify_result(res, ret)
 
-proc computeCells*(ctx: KzgCtx, blob : KzgBlob): Result[KzgCells, string] {.gcsafe.} =  
+proc computeCells*(ctx: KZGCtx, blob : Blob): Result[Cells, string] {.gcsafe.} =  
   let res = ?computeCellsAndProofs(ctx, blob)
   ok(res.cells)
 
-proc verifyCellKZGProof*(ctx: KzgCtx, commitment: KzgBytes48, cellId: uint64, cell: KzgCell, proof: KzgBytes48): Result[bool, string] =
+proc verifyCellKZGProof*(ctx: KZGCtx, commitment: Bytes48, cellId: uint64, cell: Cell, proof: Bytes48): Result[bool, string] =
   var valid: bool
 
   let res =  verify_cell_kzg_proof(
@@ -143,11 +144,11 @@ proc verifyCellKZGProof*(ctx: KzgCtx, commitment: KzgBytes48, cellId: uint64, ce
   )
   verify_result(res, valid)
 
-proc verifyCellKZGProofBatch*(ctx: KzgCtx, rowCommitments: openArray[KzgBytes48],
+proc verifyCellKZGProofBatch*(ctx: KZGCtx, rowCommitments: openArray[Bytes48],
                    rowIndices: openArray[uint64],
                    columnIndices: openArray[uint64],
-                   cells: openArray[KzgCell],
-                   proofs: openArray[KzgBytes48]): Result[bool, string] {.gcsafe.} =
+                   cells: openArray[Cell],
+                   proofs: openArray[Bytes48]): Result[bool, string] {.gcsafe.} =
   var valid: bool
 
   let cellsPtr = toPtrPtr(cells) 
@@ -177,11 +178,11 @@ proc verifyCellKZGProofBatch*(ctx: KzgCtx, rowCommitments: openArray[KzgBytes48]
   verify_result(res, valid)
 
 
-proc recoverCellsAndProofs*(ctx: KzgCtx,
+proc recoverCellsAndProofs*(ctx: KZGCtx,
                    cellIds: openArray[uint64],
-                   cells: openArray[KzgCell]): Result[KzgCellsAndKzgProofs, string] {.gcsafe.} =
+                   cells: openArray[Cell]): Result[CellsAndProofs, string] {.gcsafe.} =
   
-  var ret: KzgCellsAndKzgProofs
+  var ret: CellsAndProofs
   
   let outCellsPtr = toPtrPtr(ret.cells) 
   let outProofsPtr = toPtrPtr(ret.proofs) 
@@ -202,8 +203,8 @@ proc recoverCellsAndProofs*(ctx: KzgCtx,
 
   verify_result(res, ret)
 
-proc recoverCells*(ctx: KzgCtx,
+proc recoverCells*(ctx: KZGCtx,
                    cellIds: openArray[uint64],
-                   cells: openArray[KzgCell]): Result[KzgCells, string] {.gcsafe.} =
+                   cells: openArray[Cell]): Result[Cells, string] {.gcsafe.} =
   let res = ?recoverCellsAndProofs(ctx, cellIds, cells)
   ok(res.cells)
