@@ -53,7 +53,7 @@ public class LibPeerDASKZGTest {
     @MethodSource("ethereum.cryptography.TestUtils#getComputeCellsAndKzgProofsTests")
     public void verifyComputeCellsAndKzgProofsTests(final ComputeCellsAndKzgProofsTest test) {
         try {
-            CellsAndProofsDeflattened cellsAndProofs = context.computeCellsAndKZGProofs(test.getInput().getBlob());
+            CellsAndProofs cellsAndProofs = context.computeCellsAndKZGProofs(test.getInput().getBlob());
             assertArrayEquals(test.getOutput().getCells(), cellsAndProofs.getCells());
             assertArrayEquals(test.getOutput().getProofs(), cellsAndProofs.getProofs());
         } catch (IllegalArgumentException ex) {

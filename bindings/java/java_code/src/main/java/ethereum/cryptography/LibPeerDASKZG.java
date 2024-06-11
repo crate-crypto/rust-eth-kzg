@@ -6,37 +6,26 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Arrays;
-import java.nio.ByteBuffer;
 
 public class LibPeerDASKZG implements AutoCloseable{
     // These constants were taken from c-kzg
     //
-    // TODO: We should remove the ones which are not needed or only needed for tests
-    /** The number of bytes in a g1 point. */
-    public static final int BYTES_PER_G1 = 48;
-    /** The number of bytes in a g2 point. */
-    public static final int BYTES_PER_G2 = 96;
+    // The following constants are used so that downstream callers do not need to 
+    // re-define them.
+    //
+    // TODO: Add equality tests
     /** The number of bytes in a KZG commitment. */
     public static final int BYTES_PER_COMMITMENT = 48;
     /** The number of bytes in a KZG proof. */
     public static final int BYTES_PER_PROOF = 48;
     /** The number of bytes in a BLS scalar field element. */
     public static final int BYTES_PER_FIELD_ELEMENT = 32;
-    /** The number of bits in a BLS scalar field element. */
-    public static final int BITS_PER_FIELD_ELEMENT = 255;
     /** The number of field elements in a blob. */
-    public static final int FIELD_ELEMENTS_PER_BLOB = 4096;
-    /** The number of field elements in a blob. */
-    public static final int BYTES_PER_BLOB = FIELD_ELEMENTS_PER_BLOB * BYTES_PER_FIELD_ELEMENT;
-    /** The number of field elements in an extended blob. */
-    public static final int FIELD_ELEMENTS_PER_EXT_BLOB = FIELD_ELEMENTS_PER_BLOB * 2;
-    /** The number of field elements in a cell. */
-    public static final int FIELD_ELEMENTS_PER_CELL = 64;
-    /** The number of cells in an extended blob. */
-    public static final int CELLS_PER_EXT_BLOB = FIELD_ELEMENTS_PER_EXT_BLOB / FIELD_ELEMENTS_PER_CELL;
+    public static final int BYTES_PER_BLOB = 131_072;
+    /** The number of columns in an extended blob. */
+    public static final int NUM_COLUMNS = 128;
     /** The number of bytes in a single cell. */
-    public static final int BYTES_PER_CELL = BYTES_PER_FIELD_ELEMENT * FIELD_ELEMENTS_PER_CELL;
+    public static final int BYTES_PER_CELL = 262_144;
 
     private long contextPtr;
 
@@ -59,40 +48,18 @@ public class LibPeerDASKZG implements AutoCloseable{
         }
     }
 
-    static byte[] flatten(final byte[]... bytes) {
-        final int capacity = Arrays.stream(bytes).mapToInt(b -> b.length).sum();
-        final ByteBuffer buffer = ByteBuffer.allocate(capacity);
-        Arrays.stream(bytes).forEach(buffer::put);
-        return buffer.array();
-    }
-
-    private static byte[][] deflatten(byte[] flatBytes, int length) {
-        int numArrays = flatBytes.length / length;
-        byte[][] deflattened = new byte[numArrays][length];
-
-        for (int i = 0; i < numArrays; i++) {
-            System.arraycopy(flatBytes, i * length, deflattened[i], 0, length);
-        }
-
-        return deflattened;
-    }
-
     public byte[] blobToKZGCommitment(byte[] blob) {
         return blobToKZGCommitment(contextPtr, blob);
     }
     
-    public CellsAndProofsDeflattened computeCellsAndKZGProofs(byte[] blob) {
+    public CellsAndProofs computeCellsAndKZGProofs(byte[] blob) {
         CellsAndProofs cellsAndProofs = computeCellsAndKZGProofs(contextPtr, blob);
-
-        byte[][] cells = deflatten(cellsAndProofs.cells, BYTES_PER_CELL);
-        byte[][] proofs = deflatten(cellsAndProofs.proofs, BYTES_PER_COMMITMENT);
-
-        return new CellsAndProofsDeflattened(cells, proofs);
+        return cellsAndProofs;
     }
 
     public byte[][] computeCells(byte[] blob) {
-        byte[] cells = computeCells(contextPtr, blob);
-        return deflatten(cells, BYTES_PER_CELL);
+        CellsAndProofs cellsAndProofs = computeCellsAndKZGProofs(blob);
+        return cellsAndProofs.cells;
     }
 
     public boolean verifyCellKZGProof(byte[] commitment, long cellID, byte[] cell, byte[] proof) {
@@ -101,26 +68,27 @@ public class LibPeerDASKZG implements AutoCloseable{
 
     public boolean verifyCellKZGProofBatch(byte[][] commitmentsArr, long[] rowIndices, long[] columnIndices, byte[][] cellsArr,
             byte[][] proofsArr) {
-
-        byte[] commitments = flatten(commitmentsArr);
-        byte[] proofs = flatten(proofsArr);
-        byte[] cells = flatten(cellsArr);
-        
-        return verifyCellKZGProofBatch(contextPtr, commitments, rowIndices, columnIndices, cells, proofs);
+        return verifyCellKZGProofBatch(contextPtr, commitmentsArr, rowIndices, columnIndices, cellsArr, proofsArr);
     }
     
     public byte[][] recoverAllCells(long[] cellIDs, byte[][] cellsArr) {
-        
-        byte[] cellsFlattened = flatten(cellsArr);
-        byte[] recoveredCellsFlattened = recoverAllCells(contextPtr, cellIDs, cellsFlattened);
-        return deflatten(recoveredCellsFlattened, BYTES_PER_CELL);
+        CellsAndProofs cellsAndProofs = recoverCellsAndProofs(cellIDs, cellsArr);
+        return cellsAndProofs.cells;
     }
+    
+    public CellsAndProofs recoverCellsAndProofs(long[] cellIDs, byte[][] cellsArr) {
+        CellsAndProofs cellsAndProofs = recoverCellsAndProof(contextPtr, cellIDs, cellsArr);
+        return cellsAndProofs;
+    }
+
+    /*
+     * Below are the native methods and the code related to loading the native
+     * library
+     */
 
     private static native long peerDASContextNew();
 
     private static native void peerDASContextDestroy(long ctx_ptr);
-
-    private static native byte[] computeCells(long context_ptr, byte[] blob);
 
     private static native CellsAndProofs computeCellsAndKZGProofs(long context_ptr, byte[] blob);
 
@@ -130,9 +98,9 @@ public class LibPeerDASKZG implements AutoCloseable{
             long context_ptr, byte[] commitment, long cell_id, byte[] cell, byte[] proof);
     
     private static native boolean verifyCellKZGProofBatch(
-            long context_ptr, byte[] commitments, long[] rowIndices, long[] columnIndices, byte[] cells, byte[] proofs);
+            long context_ptr, byte[][] commitments, long[] rowIndices, long[] columnIndices, byte[][] cells, byte[][] proofs);
     
-    private static native byte[] recoverAllCells(long context_ptr, long[] cellIDs, byte[] cells);
+    private static native CellsAndProofs recoverCellsAndProof(long context_ptr, long[] cellIDs, byte[][] cells);
 
     private static final String LIBRARY_NAME = "java_peerdas_kzg";
     private static final String PLATFORM_NATIVE_LIBRARY_NAME = System.mapLibraryName(LIBRARY_NAME);

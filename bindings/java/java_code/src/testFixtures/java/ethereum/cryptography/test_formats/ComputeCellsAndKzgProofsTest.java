@@ -1,7 +1,6 @@
 package ethereum.cryptography.test_formats;
 
 import ethereum.cryptography.CellsAndProofs;
-import ethereum.cryptography.CellsAndProofsDeflattened;
 import ethereum.cryptography.TestUtils;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,12 +22,12 @@ public class ComputeCellsAndKzgProofsTest {
     return input;
   }
 
-  public CellsAndProofsDeflattened getOutput() {
+  public CellsAndProofs getOutput() {
     if (output == null) {
       return null;
     }
     assert output.size() == 2;
-    return CellsAndProofsDeflattened.of(
+    return CellsAndProofs.of(
             output.get(0).stream()
                 .map(Bytes::fromHexString)
                 .map(Bytes::toArrayUnsafe)
