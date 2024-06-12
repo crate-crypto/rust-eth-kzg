@@ -20,34 +20,46 @@ namespace PeerDAS.Native
 
 
 
+        /// <summary>Create a new PeerDASContext and return a pointer to it.  # Memory faults  To avoid memory leaks, one should ensure that the pointer is freed after use by calling `peerdas_context_free`.</summary>
         [DllImport(__DllName, EntryPoint = "peerdas_context_new", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern PeerDASContext* peerdas_context_new();
 
-        /// <summary>Safety: - The caller must ensure that the pointer is valid. If the pointer is null, this method will return early. - The caller should also avoid a double-free by setting the pointer to null after calling this method.</summary>
+        /// <summary># Safety  - The caller must ensure that the pointer is valid. If the pointer is null, this method will return early. - The caller should also avoid a double-free by setting the pointer to null after calling this method.  # Memory faults  - If this method is called twice on the same pointer, it will result in a double-free.  # Undefined behavior  - Since the `ctx` is created in Rust, we can only get undefined behavior, if the caller passes in a pointer that was not created by `peerdas_context_new`.</summary>
         [DllImport(__DllName, EntryPoint = "peerdas_context_free", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void peerdas_context_free(PeerDASContext* ctx);
 
+        /// <summary>Free the memory allocated for the error message.  # Safety  - The caller must ensure that the pointer is valid. If the pointer is null, this method will return early. - The caller should also avoid a double-free by setting the pointer to null after calling this method.</summary>
         [DllImport(__DllName, EntryPoint = "free_error_message", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern void free_error_message(byte* c_message);
 
-        /// <summary>Safety: - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error. - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes. - The caller must ensure that `out` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.</summary>
+        /// <summary>Compute a commitment from a Blob  # Safety  - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error. - The caller must ensure that `blob` points to a region of memory that is at least `blob_len` bytes. - The caller must ensure that `out` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.</summary>
         [DllImport(__DllName, EntryPoint = "blob_to_kzg_commitment", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern CResult blob_to_kzg_commitment(PeerDASContext* ctx, ulong blob_length, byte* blob, byte* @out);
 
-        /// <summary>Safety: - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error. - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes. - The caller must ensure that `out_cells` points to a region of memory that is at least `NUM_BYTES_CELLS` bytes. - The caller must ensure that `out_proofs` points to a region of memory that is at least `NUM_BYTES_PROOFS` bytes.</summary>
+        /// <summary>Computes the cells and KZG proofs for a given blob.  Safety:  - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error. - The caller must ensure that `blob` points to a region of memory that is at least `blob_len` bytes. - The caller must ensure that `out_cells` points to a region of memory that is at least `NUM_BYTES_CELLS` bytes. - The caller must ensure that `out_proofs` points to a region of memory that is at least `NUM_BYTES_PROOFS` bytes.</summary>
         [DllImport(__DllName, EntryPoint = "compute_cells_and_kzg_proofs", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern CResult compute_cells_and_kzg_proofs(PeerDASContext* ctx, ulong blob_length, byte* blob, byte** out_cells, byte** out_proofs);
 
-        /// <summary>Safety: - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error. - The caller must ensure that `cell` points to a region of memory that is at least `BYTES_PER_CELL` bytes. - The caller must ensure that `commitment` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes. - The caller must ensure that `proof` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes. - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.</summary>
+        /// <summary>Safety:  - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error. - The caller must ensure that `cell` points to a region of memory that is at least `cell_length` bytes. - The caller must ensure that `commitment` points to a region of memory that is at least `commitment_length` bytes. - The caller must ensure that `proof` points to a region of memory that is at least `proof_length` bytes. - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.</summary>
         [DllImport(__DllName, EntryPoint = "verify_cell_kzg_proof", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern CResult verify_cell_kzg_proof(PeerDASContext* ctx, ulong cell_length, byte* cell, ulong commitment_length, byte* commitment, ulong cell_id, ulong proof_length, byte* proof, bool* verified);
 
-        /// <summary>Safety: - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error. - The caller must ensure that `row_commitments` points to a region of memory that is at least `row_commitments_length` bytes. - The caller must ensure that `row_indices` points to a region of memory that is at least `num_cells` bytes. - The caller must ensure that `column_indices` points to a region of memory that is at least `num_cells` bytes. - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` bytes. - The caller must ensure that `proofs` points to a region of memory that is at least `num_cells * BYTES_PER_COMMITMENT` bytes. - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.  Note: cells, proofs and row_commitments are expected to be contiguous in memory. ie they have been concatenated together</summary>
+        /// <summary>Verifies a batch of cells and their KZG proofs.  # Safety  - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error. - The caller must ensure that `row_commitments` points to a region of memory that is at least `row_commitments_length` commitments and that each commitment is at least `BYTES_PER_COMMITMENT` bytes. - The caller must ensure that `row_indices` points to a region of memory that is at least `num_cells` elements. - The caller must ensure that `column_indices` points to a region of memory that is at least `num_cells` elements. - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` proof and that each cell is at least `BYTES_PER_CELL` bytes - The caller must ensure that `proofs` points to a region of memory that is at least `proofs_length` proofs and that each proof is at least `BYTES_PER_COMMITMENT` bytes. - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.</summary>
         [DllImport(__DllName, EntryPoint = "verify_cell_kzg_proof_batch", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern CResult verify_cell_kzg_proof_batch(PeerDASContext* ctx, ulong row_commitments_length, byte** row_commitments, ulong row_indices_length, ulong* row_indices, ulong column_indices_length, ulong* column_indices, ulong cells_length, byte** cells, ulong proofs_length, byte** proofs, bool* verified);
 
+        /// <summary>Recovers all cells and their KZG proofs from the given cell ids and cells  # Safety - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error. - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` cells and that each cell is at least `BYTES_PER_CELL` bytes. - The caller must ensure that `cell_ids` points to a region of memory that is at least `cell_ids_length` cell ids. - The caller must ensure that `out_cells` points to a region of memory that is at least `CELLS_PER_EXT_BLOB` cells and that each cell is at least `BYTES_PER_CELL` bytes. - The caller must ensure that `out_proofs` points to a region of memory that is at least `CELLS_PER_EXT_BLOB` proofs and that each proof is at least `BYTES_PER_COMMITMENT` bytes.</summary>
         [DllImport(__DllName, EntryPoint = "recover_cells_and_proofs", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         public static extern CResult recover_cells_and_proofs(PeerDASContext* ctx, ulong cells_length, byte** cells, ulong cell_ids_length, ulong* cell_ids, byte** out_cells, byte** out_proofs);
+
+        [DllImport(__DllName, EntryPoint = "constant_bytes_per_cell", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern ulong constant_bytes_per_cell();
+
+        [DllImport(__DllName, EntryPoint = "constant_bytes_per_proof", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern ulong constant_bytes_per_proof();
+
+        [DllImport(__DllName, EntryPoint = "constant_cells_per_ext_blob", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        public static extern ulong constant_cells_per_ext_blob();
 
 
     }
