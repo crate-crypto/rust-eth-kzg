@@ -17,27 +17,14 @@ use recover_cells_and_kzg_proofs::_recover_all_cells_and_proofs;
 
 pub(crate) mod pointer_utils;
 
-pub use eip7594::constants::{BYTES_PER_BLOB, BYTES_PER_CELL};
 pub use eip7594::constants::{
-    BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, FIELD_ELEMENTS_PER_BLOB,
+    BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT,
+    CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB,
 };
 use eip7594::prover::ProverContext as eip7594_ProverContext;
 use eip7594::verifier::{VerifierContext as eip7594_VerifierContext, VerifierError};
 
-/// The total number of bytes needed to represent all of the proofs
-/// we generate for a blob.
-///
-/// Note: We have a test to ensure that this stays in sync with the
-/// constants in the eip7594 crate.
-/// Unfortunately, cbindgen doesn't allow us to use those constants directly.
-pub const NUM_BYTES_PROOFS: u64 = 6144;
-/// The number of bytes needed to represent all of the cells
-/// we generate for a blob.
-///
-/// Note: We have a test to ensure that this stays in sync with the
-/// constants in the eip7594 crate.
-/// Unfortunately, cbindgen doesn't allow us to use those constants directly.
-pub const NUM_BYTES_CELLS: u64 = 262144;
+// TODO: Perhaps we remove undefined behavior or safety header since violating safety usually means ub
 
 /*
 
@@ -61,6 +48,7 @@ A note on safety and API:
   However this is not ideal, because every language called via the FFI API will need to repeat the same checks.
 */
 
+/// The context that will be used to create and verify proofs.
 pub struct PeerDASContext {
     prover_ctx: eip7594_ProverContext,
     verifier_ctx: eip7594_VerifierContext,
@@ -83,15 +71,31 @@ impl PeerDASContext {
     }
 }
 
+/// Create a new PeerDASContext and return a pointer to it.
+///
+/// # Memory faults
+///
+/// To avoid memory leaks, one should ensure that the pointer is freed after use
+/// by calling `peerdas_context_free`.
 #[no_mangle]
 pub extern "C" fn peerdas_context_new() -> *mut PeerDASContext {
     let ctx = Box::new(PeerDASContext::new());
     Box::into_raw(ctx)
 }
 
-/// Safety:
+/// # Safety
+///
 /// - The caller must ensure that the pointer is valid. If the pointer is null, this method will return early.
 /// - The caller should also avoid a double-free by setting the pointer to null after calling this method.
+///
+/// # Memory faults
+///
+/// - If this method is called twice on the same pointer, it will result in a double-free.
+///
+/// # Undefined behavior
+///
+/// - Since the `ctx` is created in Rust, we can only get undefined behavior, if the caller passes in
+/// a pointer that was not created by `peerdas_context_new`.
 #[no_mangle]
 pub extern "C" fn peerdas_context_free(ctx: *mut PeerDASContext) {
     if ctx.is_null() {
@@ -102,16 +106,16 @@ pub extern "C" fn peerdas_context_free(ctx: *mut PeerDASContext) {
     }
 }
 
-/// A C-style enum to indicate the status of each function call
+/// A C-style enum to indicate whether a function call was a success or not.
 #[repr(C)]
 pub enum CResultStatus {
     Ok,
     Err,
 }
 
-/// The return value of each function call.
-/// This is a C-style struct that contains the status of the call and an error message, if
-/// the status was an error.
+/// A C-style struct to represent the success result of a function call.
+///
+/// This includes the status of the call and an error message, if the status was an error.
 #[repr(C)]
 pub struct CResult {
     pub status: CResultStatus,
@@ -119,6 +123,17 @@ pub struct CResult {
 }
 
 impl CResult {
+    /// Create a new CResult with an error message.
+    ///
+    /// # Memory leaks
+    ///
+    /// - Ownership of the error message is transferred to the caller.
+    ///   The caller is responsible for freeing the memory allocated for the error message.
+    ///   This can be done by calling `free_error_message`.
+    ///
+    /// # Memory faults
+    ///
+    /// - If this method is called twice on the same pointer, it will result in a double-free.
     pub fn with_error(error_msg: &str) -> Self {
         let error_msg = std::ffi::CString::new(error_msg).unwrap();
         CResult {
@@ -127,6 +142,7 @@ impl CResult {
         }
     }
 
+    /// Creates a new CResult with an Ok status indicating a function has returned successfully.
     pub fn with_ok() -> Self {
         CResult {
             status: CResultStatus::Ok,
@@ -135,6 +151,12 @@ impl CResult {
     }
 }
 
+/// Free the memory allocated for the error message.
+///
+/// # Safety
+///
+/// - The caller must ensure that the pointer is valid. If the pointer is null, this method will return early.
+/// - The caller should also avoid a double-free by setting the pointer to null after calling this method.
 #[no_mangle]
 pub extern "C" fn free_error_message(c_message: *mut std::os::raw::c_char) {
     // check if the pointer is null
@@ -147,16 +169,21 @@ pub extern "C" fn free_error_message(c_message: *mut std::os::raw::c_char) {
     };
 }
 
-/// Safety:
+/// Compute a commitment from a Blob
+///
+/// # Safety
+///
 /// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
-/// - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
+/// - The caller must ensure that `blob` points to a region of memory that is at least `blob_len` bytes.
 /// - The caller must ensure that `out` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
 #[no_mangle]
 #[must_use]
 pub extern "C" fn blob_to_kzg_commitment(
     ctx: *const PeerDASContext,
+
     blob_length: u64,
     blob: *const u8,
+
     out: *mut u8,
 ) -> CResult {
     match _blob_to_kzg_commitment(ctx, blob_length, blob, out) {
@@ -165,17 +192,22 @@ pub extern "C" fn blob_to_kzg_commitment(
     }
 }
 
+/// Computes the cells and KZG proofs for a given blob.
+///
 /// Safety:
+///
 /// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
-/// - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
+/// - The caller must ensure that `blob` points to a region of memory that is at least `blob_len` bytes.
 /// - The caller must ensure that `out_cells` points to a region of memory that is at least `NUM_BYTES_CELLS` bytes.
 /// - The caller must ensure that `out_proofs` points to a region of memory that is at least `NUM_BYTES_PROOFS` bytes.
 #[no_mangle]
 #[must_use]
 pub extern "C" fn compute_cells_and_kzg_proofs(
     ctx: *const PeerDASContext,
+
     blob_length: u64,
     blob: *const u8,
+
     out_cells: *mut *mut u8,
     out_proofs: *mut *mut u8,
 ) -> CResult {
@@ -186,10 +218,11 @@ pub extern "C" fn compute_cells_and_kzg_proofs(
 }
 
 /// Safety:
+///
 /// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
-/// - The caller must ensure that `cell` points to a region of memory that is at least `BYTES_PER_CELL` bytes.
-/// - The caller must ensure that `commitment` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
-/// - The caller must ensure that `proof` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+/// - The caller must ensure that `cell` points to a region of memory that is at least `cell_length` bytes.
+/// - The caller must ensure that `commitment` points to a region of memory that is at least `commitment_length` bytes.
+/// - The caller must ensure that `proof` points to a region of memory that is at least `proof_length` bytes.
 /// - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
 //
 // TODO: Can we create a new structure that allows us to hold a pointer+length? example struct Slice {ptr : *const u8, len: u64}
@@ -227,9 +260,10 @@ pub extern "C" fn verify_cell_kzg_proof(
     }
 }
 
-// Note: The underlying cryptography library, uses a Result enum to indicate a proof failed.
+// The underlying cryptography library, uses a Result enum to indicate a proof failed verification.
+
 // Because from the callers perspective, as long as the verification procedure is invalid, it doesn't matter why it is invalid.
-// We need to unwrap it here because the FFI API is not rich enough to distinguish this.
+// We need to unwrap it here because the FFI API is not rich enough to distinguish this case.
 fn verification_result_to_bool_cresult(
     verification_result: Result<(), VerifierError>,
 ) -> Result<bool, CResult> {
@@ -240,17 +274,20 @@ fn verification_result_to_bool_cresult(
     }
 }
 
-/// Safety:
-/// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
-/// - The caller must ensure that `row_commitments` points to a region of memory that is at least `row_commitments_length` bytes.
-/// - The caller must ensure that `row_indices` points to a region of memory that is at least `num_cells` bytes.
-/// - The caller must ensure that `column_indices` points to a region of memory that is at least `num_cells` bytes.
-/// - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` bytes.
-/// - The caller must ensure that `proofs` points to a region of memory that is at least `num_cells * BYTES_PER_COMMITMENT` bytes.
-/// - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
+/// Verifies a batch of cells and their KZG proofs.
 ///
-/// Note: cells, proofs and row_commitments are expected to be contiguous in memory.
-/// ie they have been concatenated together
+/// # Safety
+///
+/// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+/// - The caller must ensure that `row_commitments` points to a region of memory that is at least `row_commitments_length` commitments
+///   and that each commitment is at least `BYTES_PER_COMMITMENT` bytes.
+/// - The caller must ensure that `row_indices` points to a region of memory that is at least `num_cells` elements.
+/// - The caller must ensure that `column_indices` points to a region of memory that is at least `num_cells` elements.
+/// - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` proof and
+///   that each cell is at least `BYTES_PER_CELL` bytes
+/// - The caller must ensure that `proofs` points to a region of memory that is at least `proofs_length` proofs
+/// and that each proof is at least `BYTES_PER_COMMITMENT` bytes.
+/// - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
 #[no_mangle]
 #[must_use]
 pub extern "C" fn verify_cell_kzg_proof_batch(
@@ -292,14 +329,28 @@ pub extern "C" fn verify_cell_kzg_proof_batch(
     }
 }
 
+/// Recovers all cells and their KZG proofs from the given cell ids and cells
+///
+/// # Safety
+/// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+/// - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` cells
+/// and that each cell is at least `BYTES_PER_CELL` bytes.
+/// - The caller must ensure that `cell_ids` points to a region of memory that is at least `cell_ids_length` cell ids.
+/// - The caller must ensure that `out_cells` points to a region of memory that is at least `CELLS_PER_EXT_BLOB` cells
+/// and that each cell is at least `BYTES_PER_CELL` bytes.
+/// - The caller must ensure that `out_proofs` points to a region of memory that is at least `CELLS_PER_EXT_BLOB` proofs
+///   and that each proof is at least `BYTES_PER_COMMITMENT` bytes.
 #[no_mangle]
 #[must_use]
 pub extern "C" fn recover_cells_and_proofs(
     ctx: *const PeerDASContext,
+
     cells_length: u64,
     cells: *const *const u8,
+
     cell_ids_length: u64,
     cell_ids: *const u64,
+
     out_cells: *mut *mut u8,
     out_proofs: *mut *mut u8,
 ) -> CResult {
@@ -317,26 +368,19 @@ pub extern "C" fn recover_cells_and_proofs(
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use eip7594::constants::{
-        BYTES_PER_CELL, BYTES_PER_COMMITMENT, CELLS_PER_EXT_BLOB, NUM_PROOFS,
-    };
-
-    use crate::{NUM_BYTES_CELLS, NUM_BYTES_PROOFS};
-
-    #[test]
-    fn test_num_bytes_proof_constant() {
-        assert_eq!(BYTES_PER_COMMITMENT * NUM_PROOFS, NUM_BYTES_PROOFS as usize);
-    }
-
-    #[test]
-    fn test_num_bytes_cell_constant() {
-        assert_eq!(
-            BYTES_PER_CELL * CELLS_PER_EXT_BLOB,
-            NUM_BYTES_CELLS as usize
-        );
-    }
+// Expose the constants to the C API so that languages that have to define them
+// manually can use them in tests.
+#[no_mangle]
+pub extern "C" fn constant_bytes_per_cell() -> u64 {
+    BYTES_PER_CELL as u64
+}
+#[no_mangle]
+pub extern "C" fn constant_bytes_per_proof() -> u64 {
+    BYTES_PER_COMMITMENT as u64
+}
+#[no_mangle]
+pub extern "C" fn constant_cells_per_ext_blob() -> u64 {
+    CELLS_PER_EXT_BLOB as u64
 }
 
 #[cfg(test)]
