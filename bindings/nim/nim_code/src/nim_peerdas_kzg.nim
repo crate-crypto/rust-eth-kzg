@@ -108,7 +108,7 @@ proc computeCellsAndProofs*(ctx: KZGCtx, blob : Blob): Result[CellsAndProofs, st
   let outCellsPtr = toPtrPtr(ret.cells) 
   let outProofsPtr = toPtrPtr(ret.proofs) 
   
-  let res = compute_cells_and_kzg_proofs_deflattened(
+  let res = compute_cells_and_kzg_proofs(
     ctx.ctx_ptr,
 
     uint64(len(blob.bytes)),
