@@ -112,16 +112,16 @@ impl VerifierContext {
     }
 
     // TODO: take a slice instead of vectors here or something opaque like impl Iterator<Item = &[u8]>
-    pub fn verify_cell_kzg_proof_batch(
+    pub fn verify_cell_kzg_proof_batch<T: AsRef<[u8]> + Clone>(
         &self,
         // This is a deduplicated list of row commitments
         // It is not indicative of the total number of commitments in the batch.
         // This is what row_indices is used for.
-        row_commitments_bytes: Vec<Bytes48Ref>,
+        row_commitments_bytes: Vec<T>,
         row_indices: Vec<RowIndex>,
         column_indices: Vec<ColumnIndex>,
         cells: Vec<CellRef>,
-        proofs_bytes: Vec<Bytes48Ref>,
+        proofs_bytes: Vec<T>,
     ) -> Result<(), VerifierError> {
         // TODO: This currently uses the naive method
         //
@@ -155,15 +155,15 @@ impl VerifierContext {
 
         let row_commitments_bytes: Vec<_> = row_indices
             .iter()
-            .map(|row_index| row_commitments_bytes[*row_index as usize])
+            .map(|row_index| row_commitments_bytes[*row_index as usize].clone())
             .collect();
 
         for k in 0..row_commitments_bytes.len() {
             let row_index = row_indices[k];
-            let row_commitment_bytes = row_commitments_bytes[row_index as usize];
+            let row_commitment_bytes = row_commitments_bytes[row_index as usize].as_ref();
             let column_index = column_indices[k];
             let cell = cells[k];
-            let proof_bytes = proofs_bytes[k];
+            let proof_bytes = proofs_bytes[k].as_ref();
 
             if let Err(err) = self.verify_cell_kzg_proof(
                 &row_commitment_bytes,
@@ -364,11 +364,11 @@ mod tests {
 
         assert!(ctx
             .verify_cell_kzg_proof_batch(
-                vec![&commitment_bytes; proofs_bytes.len()],
+                vec![commitment_bytes; proofs_bytes.len()],
                 vec![0; proofs_bytes.len()],
                 (0..proofs_bytes.len()).map(|x| x as u64).collect(),
                 cells_bytes.iter().map(|cell| cell.as_slice()).collect(),
-                proofs_bytes.iter().map(|v| v.as_slice()).collect(),
+                proofs_bytes,
             )
             .is_ok());
     }
