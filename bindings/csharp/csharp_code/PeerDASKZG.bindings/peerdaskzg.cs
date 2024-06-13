@@ -53,7 +53,7 @@ public sealed unsafe class PeerDASKZG : IDisposable
         fixed (byte* blobPtr = blob)
         fixed (byte* commitmentPtr = commitment)
         {
-            CResult result = blob_to_kzg_commitment(_context, Convert.ToUInt64(blob.Length), blobPtr, commitmentPtr);
+            CResult result = blob_to_kzg_commitment(_context, blobPtr, commitmentPtr);
 
             ThrowOnError(result);
         }
@@ -114,7 +114,7 @@ public sealed unsafe class PeerDASKZG : IDisposable
                 }
             }
 
-            CResult result = compute_cells_and_kzg_proofs(_context, Convert.ToUInt64(blob.Length), blobPtr, outCellsPtrPtr, outProofsPtrPtr);
+            CResult result = compute_cells_and_kzg_proofs(_context, blobPtr, outCellsPtrPtr, outProofsPtrPtr);
             ThrowOnError(result);
         }
         return (outCells, outProofs);
@@ -143,7 +143,7 @@ public sealed unsafe class PeerDASKZG : IDisposable
         fixed (byte* commitmentPtr = commitment)
         fixed (byte* proofPtr = proof)
         {
-            CResult result = verify_cell_kzg_proof(_context, Convert.ToUInt64(cell.Length), cellPtr, Convert.ToUInt64(commitment.Length), commitmentPtr, cellId, Convert.ToUInt64(proof.Length), proofPtr, verifiedPtr);
+            CResult result = verify_cell_kzg_proof(_context, cellPtr, commitmentPtr, cellId, proofPtr, verifiedPtr);
             ThrowOnError(result);
         }
 
@@ -154,7 +154,7 @@ public sealed unsafe class PeerDASKZG : IDisposable
     public bool VerifyCellKZGProofBatch(byte[][] rowCommitments, ulong[] rowIndices, ulong[] columnIndices, byte[][] cells, byte[][] proofs)
     {
 
-        // The native code assumes that all double vectors have the same length.
+        // Length checks
         for (int i = 0; i < cells.Length; i++)
         {
             if (cells[i].Length != BytesPerCell)
@@ -231,12 +231,6 @@ public sealed unsafe class PeerDASKZG : IDisposable
 
     public byte[][] RecoverAllCells(ulong[] cellIds, byte[][] cells)
     {
-        // Length checks
-        if (cellIds.Length != CellsPerExtBlob)
-        {
-            throw new ArgumentException($"cellIds has an invalid length");
-        }
-
         (byte[][] recoveredCells, _) = RecoverCellsAndKZGProofs(cellIds, cells);
         return recoveredCells;
     }

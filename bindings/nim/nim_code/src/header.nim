@@ -56,7 +56,6 @@ proc free_error_message*(c_message: pointer): void {.importc: "free_error_messag
 # - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
 # - The caller must ensure that `out` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
 proc blob_to_kzg_commitment*(ctx: ptr PeerDASContext,
-                             blob_length: uint64,
                              blob: pointer,
                              outx: pointer): CResult {.importc: "blob_to_kzg_commitment".}
 
@@ -71,7 +70,6 @@ proc blob_to_kzg_commitment*(ctx: ptr PeerDASContext,
 # - The caller must ensure that `out_proofs` points to a region of memory that is at least `CELLS_PER_EXT_BLOB` elements
 #   and that each element is at least `BYTES_PER_COMMITMENT` bytes.
 proc compute_cells_and_kzg_proofs*(ctx: ptr PeerDASContext,
-                                   blob_length: uint64,
                                    blob: pointer,
                                    out_cells: ptr pointer,
                                    out_proofs: ptr pointer): CResult {.importc: "compute_cells_and_kzg_proofs".}
@@ -84,12 +82,9 @@ proc compute_cells_and_kzg_proofs*(ctx: ptr PeerDASContext,
 # - The caller must ensure that `proof` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
 # - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
 proc verify_cell_kzg_proof*(ctx: ptr PeerDASContext,
-                            cell_length: uint64,
                             cell: pointer,
-                            commitment_length: uint64,
                             commitment: pointer,
                             cell_id: uint64,
-                            proof_length: uint64,
                             proof: pointer,
                             verified: pointer): CResult {.importc: "verify_cell_kzg_proof".}
 

@@ -98,7 +98,6 @@ proc blobToKZGCommitment*(ctx: KZGCtx, blob : Blob): Result[KZGCommitment, strin
   let res = blob_to_kzg_commitment(
     ctx.ctx_ptr, 
     
-    uint64(len(blob.bytes)),
     blob.bytes.getPtr, 
     
     ret.bytes.getPtr
@@ -115,7 +114,6 @@ proc computeCellsAndProofs*(ctx: KZGCtx, blob : Blob): Result[CellsAndProofs, st
   let res = compute_cells_and_kzg_proofs(
     ctx.ctx_ptr,
 
-    uint64(len(blob.bytes)),
     blob.bytes.getPtr,
     
     outCellsPtr,
@@ -133,15 +131,12 @@ proc verifyCellKZGProof*(ctx: KZGCtx, commitment: Bytes48, cellId: uint64, cell:
   let res =  verify_cell_kzg_proof(
     ctx.ctx_ptr, 
     
-    uint64(len(cell.bytes)),
     cell.bytes.getPtr,
     
-    uint64(len(commitment.bytes)),
     commitment.bytes.getPtr,
     
     cellId,
 
-    uint64(len(proof.bytes)),
     proof.bytes.getPtr, 
     
     valid.getPtr
