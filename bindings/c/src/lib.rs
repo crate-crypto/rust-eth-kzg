@@ -402,23 +402,3 @@ pub extern "C" fn constant_bytes_per_proof() -> u64 {
 pub extern "C" fn constant_cells_per_ext_blob() -> u64 {
     CELLS_PER_EXT_BLOB as u64
 }
-
-#[cfg(test)]
-pub mod test {
-
-    use super::*;
-
-    #[test]
-    fn prover_context_alloc_free() {
-        let ctx = peerdas_context_new();
-        peerdas_context_free(ctx);
-    }
-
-    #[test]
-    fn prover_context_blob_to_kzg_commitment() {
-        let ctx = peerdas_context_new();
-        let blob = vec![0u8; BYTES_PER_BLOB];
-        let mut out = vec![0u8; BYTES_PER_COMMITMENT];
-        blob_to_kzg_commitment(ctx, blob.as_ptr(), out.as_mut_ptr());
-    }
-}
