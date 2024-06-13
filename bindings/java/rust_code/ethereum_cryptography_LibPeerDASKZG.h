@@ -15,10 +15,10 @@ extern "C" {
 #define ethereum_cryptography_LibPeerDASKZG_BYTES_PER_FIELD_ELEMENT 32L
 #undef ethereum_cryptography_LibPeerDASKZG_BYTES_PER_BLOB
 #define ethereum_cryptography_LibPeerDASKZG_BYTES_PER_BLOB 131072L
-#undef ethereum_cryptography_LibPeerDASKZG_NUM_COLUMNS
-#define ethereum_cryptography_LibPeerDASKZG_NUM_COLUMNS 128L
+#undef ethereum_cryptography_LibPeerDASKZG_MAX_NUM_COLUMNS
+#define ethereum_cryptography_LibPeerDASKZG_MAX_NUM_COLUMNS 128L
 #undef ethereum_cryptography_LibPeerDASKZG_BYTES_PER_CELL
-#define ethereum_cryptography_LibPeerDASKZG_BYTES_PER_CELL 262144L
+#define ethereum_cryptography_LibPeerDASKZG_BYTES_PER_CELL 2048L
 /*
  * Class:     ethereum_cryptography_LibPeerDASKZG
  * Method:    peerDASContextNew
