@@ -222,7 +222,7 @@ impl VerifierContext {
             });
         }
 
-        pub fn bit_reverse_spec_compliant(n: u32, l: u32) -> u32 {
+        fn bit_reverse_spec_compliant(n: u32, l: u32) -> u32 {
             let num_bits = l.trailing_zeros();
             n.reverse_bits() >> (32 - num_bits)
         }
