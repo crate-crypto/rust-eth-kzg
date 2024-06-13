@@ -78,7 +78,6 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_computeCe
 
     let result = c_peerdas_kzg::compute_cells_and_kzg_proofs(
         ctx,
-        blob.len() as u64,
         blob.as_ptr(),
         out_cells_ptr_ptr,
         out_proofs_ptr_ptr,
@@ -111,12 +110,7 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_blobToKZG
 
     let mut out = vec![0u8; BYTES_PER_COMMITMENT as usize];
 
-    let result = c_peerdas_kzg::blob_to_kzg_commitment(
-        ctx,
-        blob.len() as u64,
-        blob.as_ptr(),
-        out.as_mut_ptr(),
-    );
+    let result = c_peerdas_kzg::blob_to_kzg_commitment(ctx, blob.as_ptr(), out.as_mut_ptr());
 
     if let CResultStatus::Err = result.status {
         let err_msg = construct_error_message(
@@ -155,12 +149,9 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_verifyCel
 
     let result = c_peerdas_kzg::verify_cell_kzg_proof(
         ctx,
-        cell.len() as u64,
         cell.as_ptr(),
-        commitment_bytes.len() as u64,
         commitment_bytes.as_ptr(),
         cell_id,
-        proof_bytes.len() as u64,
         proof_bytes.as_ptr(),
         verified_ptr,
     );
