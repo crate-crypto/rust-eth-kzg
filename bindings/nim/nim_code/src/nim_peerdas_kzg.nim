@@ -13,18 +13,18 @@ const
   BYTES_PER_FIELD_ELEMENT* = 32
   CELLS_PER_EXT_BLOB = 128
   MAX_NUM_COLUMNS* = CELLS_PER_EXT_BLOB
-  BlobSize* = 131_072
-  CellSize* = 2048
+  BYTES_PER_BLOB* = 131_072
+  BYTES_PER_CELL* = 2048
 
 type
   Bytes48* = object
     bytes*: array[48, byte]
 
   Blob* = object
-    bytes*: array[BlobSize, byte]
+    bytes*: array[BYTES_PER_BLOB, byte]
 
   Cell* = object
-    bytes*: array[CellSize, byte]
+    bytes*: array[BYTES_PER_CELL, byte]
 
   KZGCommitment* = Bytes48
   
