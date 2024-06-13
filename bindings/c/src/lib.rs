@@ -21,35 +21,27 @@ pub use eip7594::constants::{
     BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT,
     CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB,
 };
-use eip7594::prover::ProverContext as eip7594_ProverContext;
-use eip7594::verifier::{VerifierContext as eip7594_VerifierContext, VerifierError};
+use eip7594::verifier::VerifierError;
 
-// TODO: Add this into eip7594 spec tests
-
-/// The context that will be used to create and verify proofs.
+// This is a wrapper around the PeerDASContext from the eip7594 library.
+// We need to wrap it as some bindgen tools cannot pick up items
+// not defined in this file.
+#[derive(Default)]
 pub struct PeerDASContext {
-    prover_ctx: eip7594_ProverContext,
-    verifier_ctx: eip7594_VerifierContext,
-}
-
-impl Default for PeerDASContext {
-    fn default() -> Self {
-        PeerDASContext {
-            prover_ctx: eip7594_ProverContext::new(),
-            verifier_ctx: eip7594_VerifierContext::new(),
-        }
-    }
+    inner: eip7594::PeerDASContext,
 }
 
 impl PeerDASContext {
-    pub fn prover_ctx(&self) -> &eip7594_ProverContext {
-        &self.prover_ctx
+    pub fn prover_ctx(&self) -> &eip7594::prover::ProverContext {
+        self.inner.prover_ctx()
     }
 
-    pub fn verifier_ctx(&self) -> &eip7594_VerifierContext {
-        &self.verifier_ctx
+    pub fn verifier_ctx(&self) -> &eip7594::verifier::VerifierContext {
+        &self.inner.verifier_ctx
     }
 }
+
+// TODO: Add this into eip7594 spec tests
 
 /// Create a new PeerDASContext and return a pointer to it.
 ///

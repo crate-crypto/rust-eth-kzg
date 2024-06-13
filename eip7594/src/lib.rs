@@ -1,4 +1,6 @@
 use constants::BYTES_PER_COMMITMENT;
+use prover::ProverContext;
+use verifier::VerifierContext;
 
 // TODO: We can remove this once we hook up the consensus-specs fixed test vectors.
 pub mod consensus_specs_fixed_test_vector;
@@ -25,6 +27,31 @@ pub type CellID = u64;
 pub type RowIndex = u64;
 pub type ColumnIndex = u64;
 pub type Bytes48 = [u8; 48];
+
+/// The context that will be used to create and verify proofs.
+pub struct PeerDASContext {
+    pub prover_ctx: ProverContext,
+    pub verifier_ctx: VerifierContext,
+}
+
+impl Default for PeerDASContext {
+    fn default() -> Self {
+        PeerDASContext {
+            prover_ctx: ProverContext::new(),
+            verifier_ctx: VerifierContext::new(),
+        }
+    }
+}
+
+impl PeerDASContext {
+    pub fn prover_ctx(&self) -> &ProverContext {
+        &self.prover_ctx
+    }
+
+    pub fn verifier_ctx(&self) -> &VerifierContext {
+        &self.verifier_ctx
+    }
+}
 
 #[cfg(test)]
 mod tests {

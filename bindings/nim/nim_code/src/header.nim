@@ -7,7 +7,6 @@ type CResultStatus* = enum
   Ok
   Err
 
-## The context that will be used to create and verify proofs.
 type PeerDASContext* {.incompleteStruct.} = object
 
 ## A C-style struct to represent the success result of a function call.
