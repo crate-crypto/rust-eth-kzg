@@ -33,6 +33,10 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           nim-version: '2.0.4'
+      
+      - name: Install Nimble dependencies
+        working-directory: bindings/nim/nim_code
+        run: nimble install -Y
 
       - name: Test Nim project
         working-directory: bindings/nim/nim_code
