@@ -8,7 +8,7 @@ author        = "Kevaundray Wedderburn"
 description   = "PeerDas KZG bindings"
 license       = "MIT"
 
-import src/utils
+import src/build_utils
 
 const staticLibInstallDir = getInstallDir()
 
