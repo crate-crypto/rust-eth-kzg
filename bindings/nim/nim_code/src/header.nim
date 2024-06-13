@@ -52,35 +52,51 @@ proc free_error_message*(c_message: pointer): void {.importc: "free_error_messag
 #
 # # Safety
 #
-# - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+# - The caller must ensure that the pointers are valid.
 # - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
 # - The caller must ensure that `out` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+#
+# # Undefined behavior
+#
+# - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+#   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
 proc blob_to_kzg_commitment*(ctx: ptr PeerDASContext,
                              blob: pointer,
                              outx: pointer): CResult {.importc: "blob_to_kzg_commitment".}
 
 ## Computes the cells and KZG proofs for a given blob.
 #
-# Safety:
+# # Safety
 #
-# - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+# - The caller must ensure that the pointers are valid. If pointers are null.
 # - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
 # - The caller must ensure that `out_cells` points to a region of memory that is at least `CELLS_PER_EXT_BLOB` elements
 #   and that each element is at least `BYTES_PER_CELL` bytes.
 # - The caller must ensure that `out_proofs` points to a region of memory that is at least `CELLS_PER_EXT_BLOB` elements
 #   and that each element is at least `BYTES_PER_COMMITMENT` bytes.
+#
+# # Undefined behavior
+#
+# - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+#   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
 proc compute_cells_and_kzg_proofs*(ctx: ptr PeerDASContext,
                                    blob: pointer,
                                    out_cells: ptr pointer,
                                    out_proofs: ptr pointer): CResult {.importc: "compute_cells_and_kzg_proofs".}
 
-## Safety:
+## Verifies a cell corresponds to a particular commitment.
 #
-# - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+# # Safety
+#
+# - The caller must ensure that the pointers are valid.
 # - The caller must ensure that `cell` points to a region of memory that is at least `BYTES_PER_CELLS` bytes.
 # - The caller must ensure that `commitment` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
 # - The caller must ensure that `proof` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
 # - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
+# # Undefined behavior
+#  - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+#    If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
+#
 proc verify_cell_kzg_proof*(ctx: ptr PeerDASContext,
                             cell: pointer,
                             commitment: pointer,
@@ -92,7 +108,11 @@ proc verify_cell_kzg_proof*(ctx: ptr PeerDASContext,
 #
 # # Safety
 #
-# - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+# - If the length parameter for a pointer is set to zero, then this implementation will not check if its pointer is
+#   null. This is because the caller might have passed in a null pointer, if the length is zero. Instead an empty slice
+#   will be created.
+#
+# - The caller must ensure that the pointers are valid.
 # - The caller must ensure that `row_commitments` points to a region of memory that is at least `row_commitments_length` commitments
 #   and that each commitment is at least `BYTES_PER_COMMITMENT` bytes.
 # - The caller must ensure that `row_indices` points to a region of memory that is at least `num_cells` elements
@@ -104,6 +124,11 @@ proc verify_cell_kzg_proof*(ctx: ptr PeerDASContext,
 # - The caller must ensure that `proofs` points to a region of memory that is at least `proofs_length` proofs
 #    and that each proof is at least `BYTES_PER_COMMITMENT` bytes.
 # - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
+#
+# # Undefined behavior
+#
+# - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+#   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
 proc verify_cell_kzg_proof_batch*(ctx: ptr PeerDASContext,
                                   row_commitments_length: uint64,
                                   row_commitments: ptr pointer,
@@ -120,7 +145,12 @@ proc verify_cell_kzg_proof_batch*(ctx: ptr PeerDASContext,
 ## Recovers all cells and their KZG proofs from the given cell ids and cells
 #
 # # Safety
-# - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+#
+#  - If the length parameter for a pointer is set to zero, then this implementation will not check if its pointer is
+#   null. This is because the caller might have passed in a null pointer, if the length is zero. Instead an empty slice
+#   will be created.
+#
+# - The caller must ensure that the pointers are valid.
 # - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` cells
 #   and that each cell is at least `BYTES_PER_CELL` bytes.
 # - The caller must ensure that `cell_ids` points to a region of memory that is at least `cell_ids_length` cell ids
@@ -129,6 +159,11 @@ proc verify_cell_kzg_proof_batch*(ctx: ptr PeerDASContext,
 #   and that each cell is at least `BYTES_PER_CELL` bytes.
 # - The caller must ensure that `out_proofs` points to a region of memory that is at least `CELLS_PER_EXT_BLOB` proofs
 #   and that each proof is at least `BYTES_PER_COMMITMENT` bytes.
+#
+# # Undefined behavior
+#
+# - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+#   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
 proc recover_cells_and_proofs*(ctx: ptr PeerDASContext,
                                cells_length: uint64,
                                cells: ptr pointer,
