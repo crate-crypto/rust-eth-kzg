@@ -9,7 +9,37 @@ package peerdas_kzg
 #include "./build/c_peerdas_kzg.h"
 */
 import "C"
-import "runtime"
+import (
+	"errors"
+	"runtime"
+)
+
+/*
+
+NOTICE: This binding will not be maintained and is only for demonstration purposes.
+		The main reason being that forcing downstream users and their dependents to install
+		a rust toolchain is not ideal.
+*/
+
+const (
+	// BytesPerCommitment is the number of bytes in a KZG commitment.
+	BytesPerCommitment = 48
+
+	// BytesPerProof is the number of bytes in a KZG proof.
+	BytesPerProof = 48
+
+	// BytesPerFieldElement is the number of bytes in a BLS scalar field element.
+	BytesPerFieldElement = 32
+
+	// BytesPerBlob is the number of bytes in a blob.
+	BytesPerBlob = 131_072
+
+	// MaxNumColumns is the maximum number of columns in an extended blob.
+	MaxNumColumns = 128
+
+	// BytesPerCell is the number of bytes in a single cell.
+	BytesPerCell = 2048
+)
 
 type PeerDASContext struct {
 	_inner *C.PeerDASContext
@@ -25,19 +55,13 @@ func NewProverContext() *PeerDASContext {
 	return self
 }
 
-func (prover *PeerDASContext) BlobToKZGCommitment(blob []byte) []byte {
-	// TODO: We should add a check that the blob length is also correct by using a C constant
-	// TODO: Take 48 from the C code constant
+func (prover *PeerDASContext) BlobToKZGCommitment(blob []byte) ([]byte, error) {
+	if len(blob) != BytesPerBlob {
+		return nil, errors.New("invalid blob size")
+	}
 	out := make([]byte, 48)
-	C.blob_to_kzg_commitment(prover.inner(), C.uint64_t(len(blob)), (*C.uint8_t)(&blob[0]), (*C.uint8_t)(&out[0]))
-	return out
-}
-
-func (prover *PeerDASContext) ComputeCellsAndKZGProofs(blob []byte) ([]byte, []byte) {
-	outCells := make([]byte, C.NUM_BYTES_CELLS)
-	outProofs := make([]byte, C.NUM_BYTES_PROOFS)
-	C.compute_cells_and_kzg_proofs(prover.inner(), C.uint64_t(len(blob)), (*C.uint8_t)(&blob[0]), (*C.uint8_t)(&outCells[0]), (*C.uint8_t)(&outProofs[0]))
-	return outCells, outProofs
+	C.blob_to_kzg_commitment(prover.inner(), (*C.uint8_t)(&blob[0]), (*C.uint8_t)(&out[0]))
+	return out, nil
 }
 
 func (prover *PeerDASContext) inner() *C.PeerDASContext {
