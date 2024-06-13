@@ -5,9 +5,8 @@ use jni::objects::{JByteArray, JClass, JLongArray, JObject, JValue};
 use jni::sys::{jboolean, jlong};
 use jni::JNIEnv;
 
-// TODO: Convert the unwraps into Exceptions
-// TODO: The java code solely uses `java/lang/IllegalArgumentException`
-// TODO: swap for custom exception or use a more specific exception
+mod errors;
+use errors::Error;
 
 #[no_mangle]
 pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_peerDASContextNew(
@@ -36,18 +35,22 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_computeCe
     blob: JByteArray<'local>,
 ) -> JObject<'local> {
     let ctx = &*(ctx_ptr as *const PeerDASContext);
-    let blob = env.convert_byte_array(blob).unwrap();
-
-    let (cells, proofs) = match ctx.prover_ctx().compute_cells_and_kzg_proofs(&blob) {
+    match compute_cells_and_kzg_proofs(&mut env, ctx, blob) {
         Ok(cells_and_proofs) => cells_and_proofs,
         Err(err) => {
-            env.throw_new("java/lang/IllegalArgumentException", format!("{:?}", err))
-                .expect("Failed to throw exception for `compute_cells_and_kzg_proofs`");
+            throw_on_error(&mut env, err, "computeCellsAndKZGProofs");
             return JObject::default();
         }
-    };
-
-    return cells_and_proofs_to_jobject(&mut env, &cells, &proofs).unwrap();
+    }
+}
+fn compute_cells_and_kzg_proofs<'local>(
+    env: &mut JNIEnv<'local>,
+    ctx: &PeerDASContext,
+    blob: JByteArray<'local>,
+) -> Result<JObject<'local>, Error> {
+    let blob = env.convert_byte_array(blob)?;
+    let (cells, proofs) = ctx.prover_ctx().compute_cells_and_kzg_proofs(&blob)?;
+    cells_and_proofs_to_jobject(env, &cells, &proofs).map_err(Error::from)
 }
 
 #[no_mangle]
@@ -60,18 +63,22 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_blobToKZG
     blob: JByteArray<'local>,
 ) -> JByteArray<'local> {
     let ctx = &*(ctx_ptr as *const PeerDASContext);
-    let blob = env.convert_byte_array(blob).unwrap();
-
-    let commitment = match ctx.prover_ctx().blob_to_kzg_commitment(&blob) {
+    match blob_to_kzg_commitment(&mut env, ctx, blob) {
         Ok(commitment) => commitment,
         Err(err) => {
-            env.throw_new("java/lang/IllegalArgumentException", format!("{:?}", err))
-                .expect("Failed to throw exception for `blob_to_kzg_commitment`");
+            throw_on_error(&mut env, err, "blobToKZGCommitment");
             return JByteArray::default();
         }
-    };
-
-    return env.byte_array_from_slice(&commitment).unwrap();
+    }
+}
+fn blob_to_kzg_commitment<'local>(
+    env: &mut JNIEnv<'local>,
+    ctx: &PeerDASContext,
+    blob: JByteArray<'local>,
+) -> Result<JByteArray<'local>, Error> {
+    let blob = env.convert_byte_array(blob)?;
+    let commitment = ctx.prover_ctx().blob_to_kzg_commitment(&blob)?;
+    env.byte_array_from_slice(&commitment).map_err(Error::from)
 }
 
 #[no_mangle]
@@ -88,24 +95,34 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_verifyCel
 ) -> jboolean {
     let ctx = &*(ctx_ptr as *const PeerDASContext);
 
-    let commitment_bytes = env.convert_byte_array(&commitment_bytes).unwrap();
+    match verify_cell_kzg_proof(&mut env, ctx, commitment_bytes, cell_id, cell, proof_bytes) {
+        Ok(result) => result,
+        Err(err) => {
+            throw_on_error(&mut env, err, "verifyCellKZGProof");
+            return jboolean::default();
+        }
+    }
+}
+fn verify_cell_kzg_proof(
+    env: &mut JNIEnv,
+    ctx: &PeerDASContext,
+    commitment_bytes: JByteArray,
+    cell_id: jlong,
+    cell: JByteArray,
+    proof_bytes: JByteArray,
+) -> Result<jboolean, Error> {
+    let commitment_bytes = env.convert_byte_array(commitment_bytes)?;
     let cell_id = cell_id as u64;
-    let cell = env.convert_byte_array(&cell).unwrap();
-    let proof_bytes = env.convert_byte_array(&proof_bytes).unwrap();
+    let cell = env.convert_byte_array(cell)?;
+    let proof_bytes = env.convert_byte_array(proof_bytes)?;
 
     match ctx
         .verifier_ctx()
         .verify_cell_kzg_proof(&commitment_bytes, cell_id, &cell, &proof_bytes)
     {
-        Ok(_) => return jboolean::from(true),
-        Err(VerifierError::InvalidProof) => {
-            return jboolean::from(false);
-        }
-        Err(err) => {
-            env.throw_new("java/lang/IllegalArgumentException", format!("{:?}", err))
-                .expect("Failed to throw exception for `verify_cell_kzg_proof`");
-            return jboolean::default();
-        }
+        Ok(_) => Ok(jboolean::from(true)),
+        Err(VerifierError::InvalidProof) => Ok(jboolean::from(false)),
+        Err(err) => Err(Error::VerifierError(err)),
     }
 }
 
@@ -124,11 +141,36 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_verifyCel
 ) -> jboolean {
     let ctx = &*(ctx_ptr as *const PeerDASContext);
 
-    let commitment_bytes = jobject_array_to_2d_byte_array(&mut env, commitment_bytes).unwrap();
-    let row_indices = jlongarray_to_vec_u64(&env, row_indices);
-    let column_indices = jlongarray_to_vec_u64(&env, column_indices);
-    let cells = jobject_array_to_2d_byte_array(&mut env, cells).unwrap();
-    let proofs = jobject_array_to_2d_byte_array(&mut env, proofs).unwrap();
+    match verify_cell_kzg_proof_batch(
+        &mut env,
+        ctx,
+        commitment_bytes,
+        row_indices,
+        column_indices,
+        cells,
+        proofs,
+    ) {
+        Ok(result) => result,
+        Err(err) => {
+            throw_on_error(&mut env, err, "verifyCellKZGProofBatch");
+            return jboolean::default();
+        }
+    }
+}
+fn verify_cell_kzg_proof_batch<'local>(
+    env: &mut JNIEnv,
+    ctx: &PeerDASContext,
+    commitment_bytes: JObjectArray<'local>,
+    row_indices: JLongArray,
+    column_indices: JLongArray,
+    cells: JObjectArray<'local>,
+    proofs: JObjectArray<'local>,
+) -> Result<jboolean, Error> {
+    let commitment_bytes = jobject_array_to_2d_byte_array(env, commitment_bytes)?;
+    let row_indices = jlongarray_to_vec_u64(env, row_indices)?;
+    let column_indices = jlongarray_to_vec_u64(env, column_indices)?;
+    let cells = jobject_array_to_2d_byte_array(env, cells)?;
+    let proofs = jobject_array_to_2d_byte_array(env, proofs)?;
 
     match ctx.verifier_ctx().verify_cell_kzg_proof_batch(
         commitment_bytes,
@@ -137,15 +179,9 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_verifyCel
         cells.iter().map(|cell| cell.as_slice()).collect(),
         proofs,
     ) {
-        Ok(_) => return jboolean::from(true),
-        Err(VerifierError::InvalidProof) => {
-            return jboolean::from(false);
-        }
-        Err(err) => {
-            env.throw_new("java/lang/IllegalArgumentException", format!("{:?}", err))
-                .expect("Failed to throw exception for `verify_cell_kzg_proof_batch`");
-            return jboolean::default();
-        }
+        Ok(_) => Ok(jboolean::from(true)),
+        Err(VerifierError::InvalidProof) => Ok(jboolean::from(false)),
+        Err(err) => Err(Error::VerifierError(err)),
     }
 }
 
@@ -161,54 +197,52 @@ pub unsafe extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_recoverCe
 ) -> JObject<'local> {
     let ctx = &*(ctx_ptr as *const PeerDASContext);
 
-    let cell_ids = jlongarray_to_vec_u64(&env, cell_ids);
-
-    let cells = match jobject_array_to_2d_byte_array(&mut env, cells) {
-        Ok(cells) => cells,
+    match recover_cells_and_kzg_proofs(&mut env, ctx, cell_ids, cells) {
+        Ok(cells_and_proofs) => cells_and_proofs,
         Err(err) => {
-            env.throw_new("java/lang/IllegalArgumentException", &err.to_string())
-                .expect("Failed to throw exception for `recover_all_cells`");
+            throw_on_error(&mut env, err, "recoverCellsAndProof");
             return JObject::default();
         }
-    };
+    }
+}
+fn recover_cells_and_kzg_proofs<'local>(
+    env: &mut JNIEnv<'local>,
+    ctx: &PeerDASContext,
+    cell_ids: JLongArray,
+    cells: JObjectArray<'local>,
+) -> Result<JObject<'local>, Error> {
+    let cell_ids = jlongarray_to_vec_u64(env, cell_ids)?;
+    let cells = jobject_array_to_2d_byte_array(env, cells)?;
 
-    let (recovered_cells, recovered_proofs) = match ctx.prover_ctx().recover_cells_and_proofs(
+    let (recovered_cells, recovered_proofs) = ctx.prover_ctx().recover_cells_and_proofs(
         cell_ids,
         cells.iter().map(|x| x.as_slice()).collect(),
         vec![],
-    ) {
-        Ok(recovered_cells_and_proofs) => recovered_cells_and_proofs,
-        Err(err) => {
-            env.throw_new("java/lang/IllegalArgumentException", format!("{:?}", err))
-                .expect("Failed to throw exception for `recover_all_cells`");
-            return JObject::default();
-        }
-    };
+    )?;
 
-    return cells_and_proofs_to_jobject(&mut env, &recovered_cells, &recovered_proofs).unwrap();
+    cells_and_proofs_to_jobject(env, &recovered_cells, &recovered_proofs).map_err(Error::from)
 }
 
-fn jlongarray_to_vec_u64(env: &JNIEnv, array: JLongArray) -> Vec<u64> {
+/// Converts a JLongArray to a Vec<u64>
+fn jlongarray_to_vec_u64(env: &JNIEnv, array: JLongArray) -> Result<Vec<u64>, Error> {
     // Step 1: Get the length of the JLongArray
-    let array_length = env
-        .get_array_length(&array)
-        .expect("Unable to get array length");
+    let array_length = env.get_array_length(&array)?;
 
     // Step 2: Create a buffer to hold the jlong elements (these are i64s)
     let mut buffer: Vec<i64> = vec![0; array_length as usize];
 
     // Step 3: Get the elements from the JLongArray
-    env.get_long_array_region(array, 0, &mut buffer)
-        .expect("Unable to get array region");
+    env.get_long_array_region(array, 0, &mut buffer)?;
 
     // Step 4: Convert the Vec<i64> to Vec<u64>
-    buffer.into_iter().map(|x| x as u64).collect()
+    Ok(buffer.into_iter().map(|x| x as u64).collect())
 }
 
+/// Converts a JObjectArray to a Vec<Vec<u8>>
 fn jobject_array_to_2d_byte_array(
     env: &mut JNIEnv,
     array: JObjectArray,
-) -> Result<Vec<Vec<u8>>, jni::errors::Error> {
+) -> Result<Vec<Vec<u8>>, Error> {
     // Get the length of the outer array
     let outer_len = env.get_array_length(&array)?;
 
@@ -235,57 +269,63 @@ fn jobject_array_to_2d_byte_array(
     Ok(result)
 }
 
+/// Converts a Vec<Vec<u8>> to a JObject that represents a CellsAndProofs object in Java
 fn cells_and_proofs_to_jobject<'local>(
     env: &mut JNIEnv<'local>,
     cells: &[impl AsRef<[u8]>],
     proofs: &[impl AsRef<[u8]>],
-) -> Result<JObject<'local>, jni::errors::Error> {
+) -> Result<JObject<'local>, Error> {
     // Create a new instance of the CellsAndProofs class in Java
-    let cells_and_proofs_class = env
-        .find_class("ethereum/cryptography/CellsAndProofs")
-        .unwrap();
+    let cells_and_proofs_class = env.find_class("ethereum/cryptography/CellsAndProofs")?;
 
-    let cell_byte_array_class = env.find_class("[B").unwrap();
-    let proof_byte_array_class = env.find_class("[B").unwrap();
+    let cell_byte_array_class = env.find_class("[B")?;
+    let proof_byte_array_class = env.find_class("[B")?;
 
     // Create 2D array for cells
-    let cells_array = env
-        .new_object_array(
-            cells.len() as i32,
-            cell_byte_array_class,
-            env.new_byte_array(0).unwrap(),
-        )
-        .unwrap();
+    let cells_array = env.new_object_array(
+        cells.len() as i32,
+        cell_byte_array_class,
+        env.new_byte_array(0)?,
+    )?;
 
     for (i, cell) in cells.into_iter().enumerate() {
-        let cell_array = env.byte_array_from_slice(cell.as_ref()).unwrap();
-        env.set_object_array_element(&cells_array, i as i32, cell_array)
-            .unwrap();
+        let cell_array = env.byte_array_from_slice(cell.as_ref())?;
+        env.set_object_array_element(&cells_array, i as i32, cell_array)?;
     }
 
     // Create 2D array for proofs
-    let proofs_array = env
-        .new_object_array(
-            proofs.len() as i32,
-            proof_byte_array_class,
-            env.new_byte_array(0).unwrap(),
-        )
-        .unwrap();
+    let proofs_array = env.new_object_array(
+        proofs.len() as i32,
+        proof_byte_array_class,
+        env.new_byte_array(0)?,
+    )?;
 
     for (i, proof) in proofs.into_iter().enumerate() {
-        let proof_array = env.byte_array_from_slice(proof.as_ref()).unwrap();
-        env.set_object_array_element(&proofs_array, i as i32, proof_array)
-            .unwrap();
+        let proof_array = env.byte_array_from_slice(proof.as_ref())?;
+        env.set_object_array_element(&proofs_array, i as i32, proof_array)?;
     }
 
     // Create the CellsAndProofs object
-    let cells_and_proofs_obj = env
-        .new_object(
-            cells_and_proofs_class,
-            "([[B[[B)V",
-            &[JValue::Object(&cells_array), JValue::Object(&proofs_array)],
-        )
-        .unwrap();
+    let cells_and_proofs_obj = env.new_object(
+        cells_and_proofs_class,
+        "([[B[[B)V",
+        &[JValue::Object(&cells_array), JValue::Object(&proofs_array)],
+    )?;
 
     Ok(cells_and_proofs_obj)
+}
+
+/// Throws an exception in Java
+fn throw_on_error(env: &mut JNIEnv, err: Error, func_name: &'static str) {
+    let reason = match err {
+        Error::Jni(err) => format!("{:?}", err),
+        Error::ProverError(err) => format!("{:?}", err),
+        Error::VerifierError(err) => format!("{:?}", err),
+    };
+    let msg = format!(
+        "function {} has thrown an exception, with reason: {}",
+        func_name, reason
+    );
+    env.throw_new("java/lang/IllegalArgumentException", msg)
+        .expect("Failed to throw exception");
 }
