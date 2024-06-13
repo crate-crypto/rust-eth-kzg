@@ -24,7 +24,7 @@ pub(crate) fn _recover_all_cells_and_proofs(
     // Computation
     //
     let (recovered_cells, recovered_proofs) = ctx
-        .recover_cells_and_proofs(cell_ids.to_vec(), cells)
+        .recover_cells_and_proofs(cell_ids.to_vec(), cells, vec![])
         .map_err(|err| CResult::with_error(&format!("{:?}", err)))?;
 
     // Write to output
