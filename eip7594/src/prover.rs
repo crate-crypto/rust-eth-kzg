@@ -14,7 +14,7 @@ use crate::{
     },
     serialization::{self, serialize_g1_compressed, SerializationError},
     verifier::{VerifierContext, VerifierError},
-    BlobRef, Cell, CellID, CellRef, KZGCommitment, KZGProof,
+    BlobRef, Bytes48Ref, Cell, CellID, CellRef, KZGCommitment, KZGProof,
 };
 
 #[derive(Debug)]
@@ -124,6 +124,7 @@ impl ProverContext {
         &self,
         cell_ids: Vec<CellID>,
         cells: Vec<CellRef>,
+        _proofs: Vec<Bytes48Ref>,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
         let cells = self
             .verifier_context
