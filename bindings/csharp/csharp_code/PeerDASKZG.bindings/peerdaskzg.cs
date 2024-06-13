@@ -123,7 +123,7 @@ public sealed unsafe class PeerDASKZG : IDisposable
         return (outCells, outProofs);
     }
 
-    public unsafe bool VerifyCellKZGProof(byte[] cell, byte[] commitment, ulong cellId, byte[] proof)
+    public unsafe bool VerifyCellKZGProof(byte[] commitment, ulong cellId, byte[] cell, byte[] proof)
     {
         // Length checks
         if (cell.Length != BytesPerCell)
@@ -153,7 +153,6 @@ public sealed unsafe class PeerDASKZG : IDisposable
         return verified;
     }
 
-    // TODO: switch argument order to match specs closer on all functions
     public bool VerifyCellKZGProofBatch(byte[][] rowCommitments, ulong[] rowIndices, ulong[] columnIndices, byte[][] cells, byte[][] proofs)
     {
 
@@ -234,11 +233,11 @@ public sealed unsafe class PeerDASKZG : IDisposable
 
     public byte[][] RecoverAllCells(ulong[] cellIds, byte[][] cells)
     {
-        (byte[][] recoveredCells, _) = RecoverCellsAndKZGProofs(cellIds, cells);
+        (byte[][] recoveredCells, _) = RecoverCellsAndKZGProofs(cellIds, cells, new byte[0][]);
         return recoveredCells;
     }
 
-    public (byte[][], byte[][]) RecoverCellsAndKZGProofs(ulong[] cellIds, byte[][] cells)
+    public (byte[][], byte[][]) RecoverCellsAndKZGProofs(ulong[] cellIds, byte[][] cells, byte[][] _proofs)
     {
 
         // Length checks

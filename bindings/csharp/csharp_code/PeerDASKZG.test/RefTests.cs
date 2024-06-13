@@ -239,7 +239,7 @@ public class ReferenceTests
 
             try
             {
-                bool isCorrect = _context.VerifyCellKZGProof(cell, commitment, cellId, proof);
+                bool isCorrect = _context.VerifyCellKZGProof(commitment, cellId, cell, proof);
                 Assert.That(isCorrect, Is.EqualTo(test.Output));
             }
             catch
