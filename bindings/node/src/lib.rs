@@ -13,18 +13,17 @@ use eip7594::{
 };
 
 #[napi]
-pub const BYTES_PER_CELL: u32 = constants::BYTES_PER_CELL as u32;
-#[napi]
 pub const BYTES_PER_COMMITMENT: u32 = constants::BYTES_PER_COMMITMENT as u32;
+#[napi]
+pub const BYTES_PER_PROOF: u32 = constants::BYTES_PER_COMMITMENT as u32;
 #[napi]
 pub const BYTES_PER_FIELD_ELEMENT: u32 = constants::BYTES_PER_FIELD_ELEMENT as u32;
 #[napi]
-pub const FIELD_ELEMENTS_PER_BLOB: u32 = constants::FIELD_ELEMENTS_PER_BLOB as u32;
+pub const BYTES_PER_BLOB: u32 = constants::BYTES_PER_BLOB as u32;
 #[napi]
-pub const FIELD_ELEMENTS_PER_CELL: u32 = constants::FIELD_ELEMENTS_PER_CELL as u32;
+pub const MAX_NUM_COLUMNS: u32 = constants::CELLS_PER_EXT_BLOB as u32;
 #[napi]
-pub const BYTES_PER_BLOB: u32 =
-  (constants::FIELD_ELEMENTS_PER_BLOB * constants::BYTES_PER_FIELD_ELEMENT) as u32;
+pub const BYTES_PER_CELL: u32 = constants::BYTES_PER_CELL as u32;
 
 #[napi]
 pub struct CellsAndProofs {
