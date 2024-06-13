@@ -1,6 +1,6 @@
 use eip7594::constants::{BYTES_PER_BLOB, BYTES_PER_COMMITMENT};
 
-use crate::pointer_utils::{create_slice_view_with_null, deref_const, write_to_slice_with_null};
+use crate::pointer_utils::{create_slice_view, deref_const, write_to_slice};
 use crate::{CResult, PeerDASContext};
 
 pub(crate) fn _blob_to_kzg_commitment(
@@ -8,14 +8,12 @@ pub(crate) fn _blob_to_kzg_commitment(
     blob: *const u8,
     out: *mut u8,
 ) -> Result<(), CResult> {
+    assert!(ctx.is_null() == false, "context pointer is null");
+
     // Dereference the input pointers
     //
-    let ctx = deref_const(ctx)
-        .map_err(|_| CResult::with_error("context has a null ptr"))?
-        .prover_ctx();
-
-    let blob = create_slice_view_with_null(blob, BYTES_PER_BLOB)
-        .map_err(|_| CResult::with_error("could not dereference pointer to blob"))?;
+    let ctx = deref_const(ctx).prover_ctx();
+    let blob = create_slice_view(blob, BYTES_PER_BLOB);
 
     // Computation
     //
@@ -32,8 +30,7 @@ pub(crate) fn _blob_to_kzg_commitment(
 
     // Write output to slice
     //
-    write_to_slice_with_null(out, &commitment)
-        .map_err(|_| CResult::with_error("could not write commitment to output"))?;
+    write_to_slice(out, &commitment);
 
     Ok(())
 }

@@ -24,7 +24,6 @@ pub use eip7594::constants::{
 use eip7594::prover::ProverContext as eip7594_ProverContext;
 use eip7594::verifier::{VerifierContext as eip7594_VerifierContext, VerifierError};
 
-// TODO: Perhaps we remove undefined behavior or safety header since violating safety usually means ub
 /*
 
 A note on safety and API:
@@ -172,20 +171,24 @@ pub extern "C" fn free_error_message(c_message: *mut std::os::raw::c_char) {
 ///
 /// # Safety
 ///
-/// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+/// - The caller must ensure that the pointers are valid.
 /// - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
 /// - The caller must ensure that `out` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+///
+/// # Undefined behavior
+///
+/// - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+///   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
 #[no_mangle]
 #[must_use]
 pub extern "C" fn blob_to_kzg_commitment(
     ctx: *const PeerDASContext,
 
-    blob_length: u64,
     blob: *const u8,
 
     out: *mut u8,
 ) -> CResult {
-    match _blob_to_kzg_commitment(ctx, blob_length, blob, out) {
+    match _blob_to_kzg_commitment(ctx, blob, out) {
         Ok(_) => CResult::with_ok(),
         Err(err) => return err,
     }
@@ -193,78 +196,69 @@ pub extern "C" fn blob_to_kzg_commitment(
 
 /// Computes the cells and KZG proofs for a given blob.
 ///
-/// Safety:
+/// # Safety
 ///
-/// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+/// - The caller must ensure that the pointers are valid. If pointers are null.
 /// - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
 /// - The caller must ensure that `out_cells` points to a region of memory that is at least `CELLS_PER_EXT_BLOB` elements
 ///   and that each element is at least `BYTES_PER_CELL` bytes.
 /// - The caller must ensure that `out_proofs` points to a region of memory that is at least `CELLS_PER_EXT_BLOB` elements
 ///   and that each element is at least `BYTES_PER_COMMITMENT` bytes.
+///
+/// # Undefined behavior
+///
+/// - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+///   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
 #[no_mangle]
 #[must_use]
 pub extern "C" fn compute_cells_and_kzg_proofs(
     ctx: *const PeerDASContext,
 
-    blob_length: u64,
     blob: *const u8,
 
     out_cells: *mut *mut u8,
     out_proofs: *mut *mut u8,
 ) -> CResult {
-    match _compute_cells_and_kzg_proofs(ctx, blob_length, blob, out_cells, out_proofs) {
+    match _compute_cells_and_kzg_proofs(ctx, blob, out_cells, out_proofs) {
         Ok(_) => return CResult::with_ok(),
         Err(err) => return err,
     }
 }
 
-/// Safety:
+/// Verifies a cell corresponds to a particular commitment.
 ///
-/// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+/// # Safety
+///
+/// - The caller must ensure that the pointers are valid.
 /// - The caller must ensure that `cell` points to a region of memory that is at least `BYTES_PER_CELLS` bytes.
 /// - The caller must ensure that `commitment` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
 /// - The caller must ensure that `proof` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
 /// - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
 //
-// TODO: Can we create a new structure that allows us to hold a pointer+length? example struct Slice {ptr : *const u8, len: u64}
+/// # Undefined behavior
+///  - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+///    If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
+///
 #[no_mangle]
 #[must_use]
 pub extern "C" fn verify_cell_kzg_proof(
     ctx: *const PeerDASContext,
-
-    cell_length: u64,
     cell: *const u8,
-
-    commitment_length: u64,
     commitment: *const u8,
-
     cell_id: u64,
-
-    proof_length: u64,
     proof: *const u8,
-
     verified: *mut bool,
 ) -> CResult {
-    match _verify_cell_kzg_proof(
-        ctx,
-        cell_length,
-        cell,
-        commitment_length,
-        commitment,
-        cell_id,
-        proof_length,
-        proof,
-        verified,
-    ) {
+    match _verify_cell_kzg_proof(ctx, cell, commitment, cell_id, proof, verified) {
         Ok(_) => return CResult::with_ok(),
         Err(err) => return err,
     }
 }
 
 // The underlying cryptography library, uses a Result enum to indicate a proof failed verification.
-
-// Because from the callers perspective, as long as the verification procedure is invalid, it doesn't matter why it is invalid.
-// We need to unwrap it here because the FFI API is not rich enough to distinguish this case.
+//
+// From the callers perspective, as long as the verification procedure is invalid, it doesn't matter why it is invalid.
+// We need to unwrap it here because the FFI API is not rich enough to distinguish invalid proof vs invalid input.
 fn verification_result_to_bool_cresult(
     verification_result: Result<(), VerifierError>,
 ) -> Result<bool, CResult> {
@@ -279,7 +273,11 @@ fn verification_result_to_bool_cresult(
 ///
 /// # Safety
 ///
-/// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+/// - If the length parameter for a pointer is set to zero, then this implementation will not check if its pointer is
+///   null. This is because the caller might have passed in a null pointer, if the length is zero. Instead an empty slice
+///   will be created.
+///
+/// - The caller must ensure that the pointers are valid.
 /// - The caller must ensure that `row_commitments` points to a region of memory that is at least `row_commitments_length` commitments
 ///   and that each commitment is at least `BYTES_PER_COMMITMENT` bytes.
 /// - The caller must ensure that `row_indices` points to a region of memory that is at least `num_cells` elements
@@ -291,6 +289,11 @@ fn verification_result_to_bool_cresult(
 /// - The caller must ensure that `proofs` points to a region of memory that is at least `proofs_length` proofs
 ///    and that each proof is at least `BYTES_PER_COMMITMENT` bytes.
 /// - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
+///
+/// # Undefined behavior
+///
+/// - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+///   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
 #[no_mangle]
 #[must_use]
 pub extern "C" fn verify_cell_kzg_proof_batch(
@@ -335,7 +338,12 @@ pub extern "C" fn verify_cell_kzg_proof_batch(
 /// Recovers all cells and their KZG proofs from the given cell ids and cells
 ///
 /// # Safety
-/// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
+///
+///  - If the length parameter for a pointer is set to zero, then this implementation will not check if its pointer is
+///   null. This is because the caller might have passed in a null pointer, if the length is zero. Instead an empty slice
+///   will be created.
+///
+/// - The caller must ensure that the pointers are valid.
 /// - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` cells
 ///   and that each cell is at least `BYTES_PER_CELL` bytes.
 /// - The caller must ensure that `cell_ids` points to a region of memory that is at least `cell_ids_length` cell ids
@@ -344,6 +352,11 @@ pub extern "C" fn verify_cell_kzg_proof_batch(
 ///   and that each cell is at least `BYTES_PER_CELL` bytes.
 /// - The caller must ensure that `out_proofs` points to a region of memory that is at least `CELLS_PER_EXT_BLOB` proofs
 ///   and that each proof is at least `BYTES_PER_COMMITMENT` bytes.
+///
+/// # Undefined behavior
+///
+/// - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+///   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
 #[no_mangle]
 #[must_use]
 pub extern "C" fn recover_cells_and_proofs(
@@ -403,6 +416,6 @@ pub mod test {
         let ctx = peerdas_context_new();
         let blob = vec![0u8; BYTES_PER_BLOB];
         let mut out = vec![0u8; BYTES_PER_COMMITMENT];
-        blob_to_kzg_commitment(ctx, blob.len() as u64, blob.as_ptr(), out.as_mut_ptr());
+        blob_to_kzg_commitment(ctx, blob.as_ptr(), out.as_mut_ptr());
     }
 }

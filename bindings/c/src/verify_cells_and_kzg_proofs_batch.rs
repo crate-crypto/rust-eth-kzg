@@ -1,5 +1,5 @@
 use crate::pointer_utils::{
-    create_slice_view_with_null, deref_const, deref_mut, dereference_to_vec_of_slices_const,
+    create_slice_view, deref_const, deref_mut, deref_to_vec_of_slices_const,
 };
 use crate::{verification_result_to_bool_cresult, CResult, PeerDASContext};
 use eip7594::constants::{BYTES_PER_CELL, BYTES_PER_COMMITMENT};
@@ -24,6 +24,8 @@ pub(crate) fn _verify_cell_kzg_proof_batch(
 
     verified: *mut bool,
 ) -> Result<(), CResult> {
+    assert!(ctx.is_null() == false, "context pointer is null");
+
     // When the arrays are empty in the caller language, the pointer might be null
     // This was witnessed in csharp.
     // For now, we will check for an empty batch size and return early, for both optimization purposes
@@ -42,28 +44,17 @@ pub(crate) fn _verify_cell_kzg_proof_batch(
 
     // Dereference the input pointers
     //
-    let ctx = deref_const(ctx)
-        .map_err(|_| CResult::with_error("context has a null ptr"))?
-        .verifier_ctx();
-    let row_commitments = dereference_to_vec_of_slices_const(
+    let ctx = deref_const(ctx).verifier_ctx();
+    let row_commitments = deref_to_vec_of_slices_const(
         row_commitments,
         row_commitments_length as usize,
         BYTES_PER_COMMITMENT,
-    )
-    .map_err(|_| CResult::with_error("could not dereference row_commitments"))?;
-    let row_indices = create_slice_view_with_null(row_indices, row_indices_length as usize)
-        .map_err(|_| CResult::with_error("could not dereference row_indices"))?;
-    let column_indices =
-        create_slice_view_with_null(column_indices, column_indices_length as usize)
-            .map_err(|_| CResult::with_error("could not dereference column_indices"))?;
-    let cells = dereference_to_vec_of_slices_const(cells, cells_length as usize, BYTES_PER_CELL)
-        .map_err(|_| CResult::with_error("could not dereference cells"))?;
-    let proofs =
-        dereference_to_vec_of_slices_const(proofs, proofs_length as usize, BYTES_PER_COMMITMENT)
-            .map_err(|_| CResult::with_error("could not dereference proofs"))?;
-    let verified = deref_mut(verified).map_err(|_| {
-        CResult::with_error("could not dereference pointer to the output verified flag")
-    })?;
+    );
+    let row_indices = create_slice_view(row_indices, row_indices_length as usize);
+    let column_indices = create_slice_view(column_indices, column_indices_length as usize);
+    let cells = deref_to_vec_of_slices_const(cells, cells_length as usize, BYTES_PER_CELL);
+    let proofs = deref_to_vec_of_slices_const(proofs, proofs_length as usize, BYTES_PER_COMMITMENT);
+    let verified = deref_mut(verified);
 
     // Computation
     //
