@@ -138,6 +138,11 @@ impl VerifierContext {
             });
         }
 
+        // If there are no inputs, we return early with no error
+        if cells.is_empty() {
+            return Ok(());
+        }
+
         // Check that the row indices are within the correct range
         for row_index in &row_indices {
             if *row_index >= row_commitments_bytes.len() as u64 {
