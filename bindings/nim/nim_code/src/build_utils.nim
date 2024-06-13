@@ -2,10 +2,10 @@ import os
 
 const
   buildDir = "build"
-  universalAppleDarwin = buildDir / "universal-apple-darwin"
-  x86_64PcWindowsGnu = buildDir / "x86_64-pc-windows-gnu"
-  x86_64UnknownLinuxGnu = buildDir / "x86_64-unknown-linux-gnu"
-  aarch64UnknownLinuxGnu = buildDir / "aarch64-unknown-linux-gnu"
+  universalAppleDarwin {.used.} = buildDir / "universal-apple-darwin"
+  x86_64PcWindowsGnu {.used.} = buildDir / "x86_64-pc-windows-gnu"
+  x86_64UnknownLinuxGnu {.used.} = buildDir / "x86_64-unknown-linux-gnu"
+  aarch64UnknownLinuxGnu {.used.} = buildDir / "aarch64-unknown-linux-gnu"
 
 proc getInstallDir*(): string =
   when defined(macosx):
