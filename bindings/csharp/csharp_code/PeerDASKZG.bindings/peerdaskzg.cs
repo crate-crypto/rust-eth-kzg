@@ -10,18 +10,21 @@ public sealed unsafe class PeerDASKZG : IDisposable
     // TODO: This is not ideal, since we want the Rust code to be the single source of truth
     // TODO: Generally, we want the c code to return functions that define these constants
     // TODO: At the very least, we can have code to sanity check these constants
-    private const int BytesPerFieldElement = 32;
-    private const int FieldElementsPerBlob = 4096;
-    private const int FieldElementsPerExtBlob = 2 * FieldElementsPerBlob;
-    public const int BytesPerBlob = BytesPerFieldElement * FieldElementsPerBlob;
-    public const int BytesForAllCells = BytesPerFieldElement * FieldElementsPerExtBlob;
-    public const int BytesForAllProofs = CellsPerExtBlob * BytesPerProof;
+    // The number of bytes in a KZG commitment.
     public const int BytesPerCommitment = 48;
+    // The number of bytes in a KZG Proof
     public const int BytesPerProof = 48;
-    private const int FieldElementsPerCell = 64;
-    public const int BytesPerCell = BytesPerFieldElement * FieldElementsPerCell;
-    public const int NumColumns = CellsPerExtBlob;
-    private const int CellsPerExtBlob = FieldElementsPerExtBlob / FieldElementsPerCell;
+    // The number of bytes in a BLS scalar field element
+    public const int BytesPerFieldElement = 32;
+    // The number of bytes needed to represent a blob.
+    public const int BytesPerBlob = 131_072;
+    // The number of columns needed to represent an extended blob.
+    public const int MaxNumColumns = 128;
+    // This is the same as the MaxNumColumns, but this terminology is used 
+    // in the cryptography implementation, so we use it internally for readability.
+    private const int CellsPerExtBlob = MaxNumColumns;
+    // The number of bytes in a single cell.
+    public const int BytesPerCell = 2048;
 
     private PeerDASContext* _context;
 
