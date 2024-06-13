@@ -41,6 +41,13 @@ public sealed unsafe class PeerDASKZG : IDisposable
 
     public unsafe byte[] BlobToKzgCommitment(byte[] blob)
     {
+
+        // Length checks
+        if (blob.Length != BytesPerBlob)
+        {
+            throw new ArgumentException($"blob has an invalid length");
+        }
+
         byte[] commitment = new byte[BytesPerCommitment];
 
         fixed (byte* blobPtr = blob)
@@ -56,6 +63,11 @@ public sealed unsafe class PeerDASKZG : IDisposable
 
     public unsafe byte[][] ComputeCells(byte[] blob)
     {
+        // Length checks
+        if (blob.Length != BytesPerBlob)
+        {
+            throw new ArgumentException($"blob has an invalid length");
+        }
 
         (byte[][] cells, _) = ComputeCellsAndKZGProofs(blob);
         return cells;
@@ -63,6 +75,12 @@ public sealed unsafe class PeerDASKZG : IDisposable
 
     public unsafe (byte[][], byte[][]) ComputeCellsAndKZGProofs(byte[] blob)
     {
+        // Length checks
+        if (blob.Length != BytesPerBlob)
+        {
+            throw new ArgumentException($"blob has an invalid length");
+        }
+
         int numProofs = CellsPerExtBlob;
         int numCells = CellsPerExtBlob;
 
@@ -104,6 +122,20 @@ public sealed unsafe class PeerDASKZG : IDisposable
 
     public unsafe bool VerifyCellKZGProof(byte[] cell, byte[] commitment, ulong cellId, byte[] proof)
     {
+        // Length checks
+        if (cell.Length != BytesPerCell)
+        {
+            throw new ArgumentException($"cell has an invalid length");
+        }
+        if (proof.Length != BytesPerProof)
+        {
+            throw new ArgumentException($"proof has an invalid length");
+        }
+        if (commitment.Length != BytesPerCommitment)
+        {
+            throw new ArgumentException($"commitment has an invalid length");
+        }
+
         bool verified = false;
         bool* verifiedPtr = &verified;
 
@@ -199,6 +231,12 @@ public sealed unsafe class PeerDASKZG : IDisposable
 
     public byte[][] RecoverAllCells(ulong[] cellIds, byte[][] cells)
     {
+        // Length checks
+        if (cellIds.Length != CellsPerExtBlob)
+        {
+            throw new ArgumentException($"cellIds has an invalid length");
+        }
+
         (byte[][] recoveredCells, _) = RecoverCellsAndKZGProofs(cellIds, cells);
         return recoveredCells;
     }
@@ -206,7 +244,7 @@ public sealed unsafe class PeerDASKZG : IDisposable
     public (byte[][], byte[][]) RecoverCellsAndKZGProofs(ulong[] cellIds, byte[][] cells)
     {
 
-        // The native code assumes that all cells have the same length.
+        // Length checks
         for (int i = 0; i < cells.Length; i++)
         {
             if (cells[i].Length != BytesPerCell)

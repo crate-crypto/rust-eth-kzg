@@ -7,6 +7,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
+// TODO(Note): If the underlying java bindings call into the rust code directly, 
+// We can remove the length checks in the java code.
+
 public class LibPeerDASKZG implements AutoCloseable{
     // These constants were taken from c-kzg
     //
@@ -49,36 +52,88 @@ public class LibPeerDASKZG implements AutoCloseable{
     }
 
     public byte[] blobToKZGCommitment(byte[] blob) {
+        // Length checks
+        if (blob.length != BYTES_PER_BLOB) {
+            throw new IllegalArgumentException("Invalid blob length");
+        }
         return blobToKZGCommitment(contextPtr, blob);
     }
     
     public CellsAndProofs computeCellsAndKZGProofs(byte[] blob) {
+        // Length checks
+        if (blob.length != BYTES_PER_BLOB) {
+            throw new IllegalArgumentException("Invalid blob length");
+        }
         CellsAndProofs cellsAndProofs = computeCellsAndKZGProofs(contextPtr, blob);
         return cellsAndProofs;
     }
 
     public byte[][] computeCells(byte[] blob) {
+        // Length checks
+        if (blob.length != BYTES_PER_BLOB) {
+            throw new IllegalArgumentException("Invalid blob length");
+        }
         CellsAndProofs cellsAndProofs = computeCellsAndKZGProofs(blob);
         return cellsAndProofs.cells;
     }
 
     public boolean verifyCellKZGProof(byte[] commitment, long cellID, byte[] cell, byte[] proof) {
+        // Length checks
+        if (commitment.length != BYTES_PER_COMMITMENT) {
+            throw new IllegalArgumentException("Invalid commitment length");
+        }
+        if (cell.length != BYTES_PER_CELL) {
+            throw new IllegalArgumentException("Invalid cell length");
+        }
+        if (proof.length != BYTES_PER_PROOF) {
+            throw new IllegalArgumentException("Invalid proof length");
+        }
         return verifyCellKZGProof(contextPtr, commitment, cellID, cell, proof);
     }
 
     public boolean verifyCellKZGProofBatch(byte[][] commitmentsArr, long[] rowIndices, long[] columnIndices, byte[][] cellsArr,
             byte[][] proofsArr) {
+
+        // Length checks
+        for (int i = 0; i < commitmentsArr.length; i++) {
+            if (commitmentsArr[i].length != BYTES_PER_COMMITMENT) {
+                throw new IllegalArgumentException("Invalid commitment length");
+            }
+        }
+        for (int i = 0; i < proofsArr.length; i++) {
+            if (proofsArr[i].length != BYTES_PER_PROOF) {
+                throw new IllegalArgumentException("Invalid proof length");
+            }
+        }
+        for (int i = 0; i < cellsArr.length; i++) {
+            if (cellsArr[i].length != BYTES_PER_CELL) {
+                throw new IllegalArgumentException("Invalid cell length");
+            }
+        }
+
         return verifyCellKZGProofBatch(contextPtr, commitmentsArr, rowIndices, columnIndices, cellsArr, proofsArr);
     }
     
     public byte[][] recoverAllCells(long[] cellIDs, byte[][] cellsArr) {
-        CellsAndProofs cellsAndProofs = recoverCellsAndProofs(cellIDs, cellsArr);
-        return cellsAndProofs.cells;
+        // Length checks
+        for (int i = 0; i < cellsArr.length; i++) {
+            if (cellsArr[i].length != BYTES_PER_CELL) {
+                throw new IllegalArgumentException("Invalid cell length");
+            }
+        }
+
+        return recoverCellsAndProofs(cellIDs, cellsArr).cells;
     }
     
     public CellsAndProofs recoverCellsAndProofs(long[] cellIDs, byte[][] cellsArr) {
-        CellsAndProofs cellsAndProofs = recoverCellsAndProof(contextPtr, cellIDs, cellsArr);
-        return cellsAndProofs;
+        // Length checks
+        for (int i = 0; i < cellsArr.length; i++) {
+            if (cellsArr[i].length != BYTES_PER_CELL) {
+                throw new IllegalArgumentException("Invalid cell length");
+            }
+        }
+
+        return recoverCellsAndProof(contextPtr, cellIDs, cellsArr);
     }
 
     /*
