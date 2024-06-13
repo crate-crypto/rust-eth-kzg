@@ -4,18 +4,17 @@ import results
 export results
 
 
-# Note: there are no length checks in the nim code before calling the rust library because the types are
-# are sized at compile time.
+# Note: there are no length checks in the nim code before calling the rust library's c api
+# because the types are are sized at compile time.
 
 # TODO: If the underlying c library changes and we recompile the static lib
 # TODO: nim will not recompile the tests. see test_yaml does not change for example
 const
-  FIELD_ELEMENTS_PER_BLOB = 4096
-  FIELD_ELEMENTS_PER_CELL = 64
-  BYTES_PER_FIELD_ELEMENT = 32
+  BYTES_PER_FIELD_ELEMENT* = 32
   CELLS_PER_EXT_BLOB = 128
-  BlobSize* = FIELD_ELEMENTS_PER_BLOB*BYTES_PER_FIELD_ELEMENT
-  CellSize* = FIELD_ELEMENTS_PER_CELL*BYTES_PER_FIELD_ELEMENT
+  MAX_NUM_COLUMNS* = CELLS_PER_EXT_BLOB
+  BlobSize* = 131_072
+  CellSize* = 2048
 
 type
   Bytes48* = object
@@ -104,7 +103,6 @@ proc blobToKZGCommitment*(ctx: KZGCtx, blob : Blob): Result[KZGCommitment, strin
   )
   verify_result(res, ret)
 
-
 proc computeCellsAndProofs*(ctx: KZGCtx, blob : Blob): Result[CellsAndProofs, string] {.gcsafe.} =
   var ret: CellsAndProofs
 
@@ -175,7 +173,6 @@ proc verifyCellKZGProofBatch*(ctx: KZGCtx, rowCommitments: openArray[Bytes48],
     valid.getPtr
   )
   verify_result(res, valid)
-
 
 proc recoverCellsAndProofs*(ctx: KZGCtx,
                    cellIds: openArray[uint64],
