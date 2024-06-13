@@ -53,7 +53,7 @@ proc free_error_message*(c_message: pointer): void {.importc: "free_error_messag
 # # Safety
 #
 # - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
-# - The caller must ensure that `blob` points to a region of memory that is at least `blob_len` bytes.
+# - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
 # - The caller must ensure that `out` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
 proc blob_to_kzg_commitment*(ctx: ptr PeerDASContext,
                              blob_length: uint64,
@@ -65,9 +65,11 @@ proc blob_to_kzg_commitment*(ctx: ptr PeerDASContext,
 # Safety:
 #
 # - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
-# - The caller must ensure that `blob` points to a region of memory that is at least `blob_len` bytes.
-# - The caller must ensure that `out_cells` points to a region of memory that is at least `NUM_BYTES_CELLS` bytes.
-# - The caller must ensure that `out_proofs` points to a region of memory that is at least `NUM_BYTES_PROOFS` bytes.
+# - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
+# - The caller must ensure that `out_cells` points to a region of memory that is at least `CELLS_PER_EXT_BLOB` elements
+#   and that each element is at least `BYTES_PER_CELL` bytes.
+# - The caller must ensure that `out_proofs` points to a region of memory that is at least `CELLS_PER_EXT_BLOB` elements
+#   and that each element is at least `BYTES_PER_COMMITMENT` bytes.
 proc compute_cells_and_kzg_proofs*(ctx: ptr PeerDASContext,
                                    blob_length: uint64,
                                    blob: pointer,
@@ -77,9 +79,9 @@ proc compute_cells_and_kzg_proofs*(ctx: ptr PeerDASContext,
 ## Safety:
 #
 # - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
-# - The caller must ensure that `cell` points to a region of memory that is at least `cell_length` bytes.
-# - The caller must ensure that `commitment` points to a region of memory that is at least `commitment_length` bytes.
-# - The caller must ensure that `proof` points to a region of memory that is at least `proof_length` bytes.
+# - The caller must ensure that `cell` points to a region of memory that is at least `BYTES_PER_CELLS` bytes.
+# - The caller must ensure that `commitment` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+# - The caller must ensure that `proof` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
 # - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
 proc verify_cell_kzg_proof*(ctx: ptr PeerDASContext,
                             cell_length: uint64,
@@ -98,12 +100,14 @@ proc verify_cell_kzg_proof*(ctx: ptr PeerDASContext,
 # - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
 # - The caller must ensure that `row_commitments` points to a region of memory that is at least `row_commitments_length` commitments
 #   and that each commitment is at least `BYTES_PER_COMMITMENT` bytes.
-# - The caller must ensure that `row_indices` points to a region of memory that is at least `num_cells` elements.
-# - The caller must ensure that `column_indices` points to a region of memory that is at least `num_cells` elements.
+# - The caller must ensure that `row_indices` points to a region of memory that is at least `num_cells` elements
+#   and that each element is 8 bytes.
+# - The caller must ensure that `column_indices` points to a region of memory that is at least `num_cells` elements
+#   and that each element is 8 bytes.
 # - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` proof and
 #   that each cell is at least `BYTES_PER_CELL` bytes
 # - The caller must ensure that `proofs` points to a region of memory that is at least `proofs_length` proofs
-# and that each proof is at least `BYTES_PER_COMMITMENT` bytes.
+#    and that each proof is at least `BYTES_PER_COMMITMENT` bytes.
 # - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
 proc verify_cell_kzg_proof_batch*(ctx: ptr PeerDASContext,
                                   row_commitments_length: uint64,
@@ -123,10 +127,11 @@ proc verify_cell_kzg_proof_batch*(ctx: ptr PeerDASContext,
 # # Safety
 # - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
 # - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` cells
-# and that each cell is at least `BYTES_PER_CELL` bytes.
-# - The caller must ensure that `cell_ids` points to a region of memory that is at least `cell_ids_length` cell ids.
+#   and that each cell is at least `BYTES_PER_CELL` bytes.
+# - The caller must ensure that `cell_ids` points to a region of memory that is at least `cell_ids_length` cell ids
+#   and that each cell id is 8 bytes.
 # - The caller must ensure that `out_cells` points to a region of memory that is at least `CELLS_PER_EXT_BLOB` cells
-# and that each cell is at least `BYTES_PER_CELL` bytes.
+#   and that each cell is at least `BYTES_PER_CELL` bytes.
 # - The caller must ensure that `out_proofs` points to a region of memory that is at least `CELLS_PER_EXT_BLOB` proofs
 #   and that each proof is at least `BYTES_PER_COMMITMENT` bytes.
 proc recover_cells_and_proofs*(ctx: ptr PeerDASContext,
