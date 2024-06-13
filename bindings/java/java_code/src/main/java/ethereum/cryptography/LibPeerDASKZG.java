@@ -26,9 +26,9 @@ public class LibPeerDASKZG implements AutoCloseable{
     /** The number of field elements in a blob. */
     public static final int BYTES_PER_BLOB = 131_072;
     /** The number of columns in an extended blob. */
-    public static final int NUM_COLUMNS = 128;
+    public static final int MAX_NUM_COLUMNS = 128;
     /** The number of bytes in a single cell. */
-    public static final int BYTES_PER_CELL = 262_144;
+    public static final int BYTES_PER_CELL = 2048;
 
     private long contextPtr;
 
@@ -44,6 +44,7 @@ public class LibPeerDASKZG implements AutoCloseable{
     public void close() {
         destroy();
     }
+
     public void destroy() {
         if (contextPtr != 0) {
             peerDASContextDestroy(contextPtr);
@@ -115,13 +116,6 @@ public class LibPeerDASKZG implements AutoCloseable{
     }
     
     public byte[][] recoverAllCells(long[] cellIDs, byte[][] cellsArr) {
-        // Length checks
-        for (int i = 0; i < cellsArr.length; i++) {
-            if (cellsArr[i].length != BYTES_PER_CELL) {
-                throw new IllegalArgumentException("Invalid cell length");
-            }
-        }
-
         return recoverCellsAndProofs(cellIDs, cellsArr).cells;
     }
     
