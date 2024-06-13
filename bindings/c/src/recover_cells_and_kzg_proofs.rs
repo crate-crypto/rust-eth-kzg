@@ -13,7 +13,7 @@ pub(crate) fn _recover_all_cells_and_proofs(
     out_cells: *mut *mut u8,
     out_proofs: *mut *mut u8,
 ) -> Result<(), CResult> {
-    assert!(ctx.is_null() == false, "context pointer is null");
+    assert!(!ctx.is_null(), "context pointer is null");
 
     // Dereference the input pointers
     //

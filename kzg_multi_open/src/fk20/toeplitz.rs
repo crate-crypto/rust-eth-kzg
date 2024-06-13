@@ -1,6 +1,10 @@
 // The abstractions in this file were taken and modified from: https://github.com/EspressoSystems/jellyfish/blob/8f48813ca52d964090dbf0de62f07f5e0c7e22c6/primitives/src/toeplitz.rs#L1
 
-use bls12_381::{G1Projective, Scalar};
+use bls12_381::Scalar;
+
+#[cfg(test)]
+use bls12_381::G1Projective;
+#[cfg(test)]
 use polynomial::domain::Domain;
 
 #[derive(Debug, Clone)]
@@ -127,7 +131,6 @@ impl DenseMatrix {
 
         self.vector_mul(vector, inner_product)
     }
-
     fn vector_mul_g1(self, vector: Vec<G1Projective>) -> Vec<G1Projective> {
         use bls12_381::lincomb::g1_lincomb;
         self.vector_mul(vector, g1_lincomb)

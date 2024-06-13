@@ -13,7 +13,7 @@ pub(crate) fn _verify_cell_kzg_proof(
     proof: *const u8,
     verified: *mut bool,
 ) -> Result<(), CResult> {
-    assert!(ctx.is_null() == false, "context pointer is null");
+    assert!(!ctx.is_null(), "context pointer is null");
 
     // Dereference the input pointers
     //

@@ -54,11 +54,9 @@ pub(crate) fn deserialize_scalar(scalar_bytes: &[u8]) -> Result<Scalar, Serializ
     let option_scalar: Option<Scalar> = Scalar::from_bytes_be(&bytes32).into();
     match option_scalar {
         Some(scalar) => Ok(scalar),
-        None => {
-            return Err(SerializationError::CouldNotDeserializeScalar {
-                bytes: scalar_bytes.to_vec(),
-            })
-        }
+        None => Err(SerializationError::CouldNotDeserializeScalar {
+            bytes: scalar_bytes.to_vec(),
+        }),
     }
 }
 

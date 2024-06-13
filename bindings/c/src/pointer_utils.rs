@@ -36,7 +36,7 @@ pub(crate) fn ptr_ptr_to_vec_slice_const<'a>(
     let mut result: Vec<&[u8]> = Vec::with_capacity(outer_len);
 
     // Convert each inner pointer to a slice of u8
-    for ptr in vec_slice.into_iter() {
+    for ptr in vec_slice.iter() {
         result.push(create_slice_view(*ptr, inner_len));
     }
 
@@ -57,7 +57,7 @@ pub(crate) fn write_to_2d_slice<T: Copy, const N: usize>(
 ) {
     let out_cells = ptr_ptr_to_slice_slice_mut(ptr, N);
 
-    for (out_cell, result) in out_cells.into_iter().zip(data) {
+    for (out_cell, result) in out_cells.iter_mut().zip(data) {
         write_to_slice(*out_cell, result.as_ref());
     }
 }

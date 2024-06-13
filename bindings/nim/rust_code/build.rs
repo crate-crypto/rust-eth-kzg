@@ -22,7 +22,7 @@ fn main() {
         .with_crate(path_to_c_crate)
         .generate()
         .unwrap()
-        .write_to_file(&output_file);
+        .write_to_file(output_file);
 }
 
 fn path_to_bindings_folder() -> PathBuf {

@@ -84,7 +84,7 @@ impl Domain {
         // We now want to compute the generator which has order `size`
         let exponent: u64 = 1 << (Domain::two_adicity() as u64 - log_size_of_group as u64);
 
-        Domain::largest_root_of_unity().pow_vartime(&[exponent])
+        Domain::largest_root_of_unity().pow_vartime([exponent])
     }
 
     /// The largest root of unity that we can use for the domain
@@ -117,8 +117,8 @@ impl Domain {
 
         let mut coset_scale = Scalar::ONE;
         for point in points.iter_mut() {
-            *point = *point * coset_scale;
-            coset_scale = coset_scale * self.coset_generator;
+            *point *= coset_scale;
+            coset_scale *= self.coset_generator;
         }
         fft_scalar(self.generator, &points)
     }
@@ -138,7 +138,7 @@ impl Domain {
         let mut ifft_g1 = fft_g1(self.generator_inv, &points);
 
         for element in ifft_g1.iter_mut() {
-            *element = *element * self.domain_size_inv
+            *element *= self.domain_size_inv
         }
 
         ifft_g1
@@ -161,10 +161,10 @@ impl Domain {
         let mut ifft_scalar = fft_scalar(self.generator_inv, &points);
 
         for element in ifft_scalar.iter_mut() {
-            *element = *element * self.domain_size_inv
+            *element *= self.domain_size_inv
         }
 
-        return ifft_scalar;
+        ifft_scalar
     }
     /// Interpolates a polynomial over the coset of a domain
     pub fn coset_ifft_scalars(&self, points: Vec<Scalar>) -> Vec<Scalar> {
@@ -172,10 +172,10 @@ impl Domain {
 
         let mut coset_scale = Scalar::ONE;
         for element in coset_coeffs.iter_mut() {
-            *element = *element * coset_scale;
-            coset_scale = coset_scale * self.coset_generator_inv;
+            *element *= coset_scale;
+            coset_scale *= self.coset_generator_inv;
         }
-        return coset_coeffs;
+        coset_coeffs
     }
 }
 
@@ -202,7 +202,7 @@ fn fft_scalar(nth_root_of_unity: Scalar, points: &[Scalar]) -> Vec<Scalar> {
         evaluations[k] = fft_even[k] + tmp;
         evaluations[k + n / 2] = fft_even[k] - tmp;
 
-        input_point = input_point * nth_root_of_unity;
+        input_point *= nth_root_of_unity;
     }
 
     evaluations
@@ -236,7 +236,7 @@ fn fft_g1(nth_root_of_unity: Scalar, points: &[G1Projective]) -> Vec<G1Projectiv
         evaluations[k] = G1Projective::from(fft_even[k]) + tmp;
         evaluations[k + n / 2] = fft_even[k] - tmp;
 
-        input_point = input_point * nth_root_of_unity;
+        input_point *= nth_root_of_unity;
     }
 
     evaluations

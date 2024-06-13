@@ -1,5 +1,4 @@
 use bls12_381::fixed_base_msm::FixedBaseMSM;
-use bls12_381::lincomb::g1_lincomb;
 use bls12_381::G1Projective;
 use polynomial::domain::Domain;
 
@@ -98,7 +97,7 @@ impl BatchToeplitzMatrixVecMul {
         let result: Vec<_> = self
             .precomputed_fft_vectors
             .iter()
-            .zip(msm_scalars.into_iter())
+            .zip(msm_scalars)
             .map(|(points, scalars)| points.msm(scalars))
             .collect();
         let circulant_sum = self.circulant_domain.ifft_g1(result);

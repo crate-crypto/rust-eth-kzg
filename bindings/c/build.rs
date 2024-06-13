@@ -22,5 +22,5 @@ fn main() {
         .with_language(cbindgen::Language::C)
         .generate()
         .unwrap()
-        .write_to_file(&output_file);
+        .write_to_file(output_file);
 }

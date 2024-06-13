@@ -52,14 +52,16 @@ pub struct PeerDASContext {
     verifier_ctx: eip7594_VerifierContext,
 }
 
-impl PeerDASContext {
-    pub fn new() -> Self {
+impl Default for PeerDASContext {
+    fn default() -> Self {
         PeerDASContext {
             prover_ctx: eip7594_ProverContext::new(),
             verifier_ctx: eip7594_VerifierContext::new(),
         }
     }
+}
 
+impl PeerDASContext {
     pub fn prover_ctx(&self) -> &eip7594_ProverContext {
         &self.prover_ctx
     }
@@ -77,7 +79,7 @@ impl PeerDASContext {
 /// by calling `peerdas_context_free`.
 #[no_mangle]
 pub extern "C" fn peerdas_context_new() -> *mut PeerDASContext {
-    let ctx = Box::new(PeerDASContext::new());
+    let ctx = Box::<PeerDASContext>::default();
     Box::into_raw(ctx)
 }
 
@@ -94,6 +96,7 @@ pub extern "C" fn peerdas_context_new() -> *mut PeerDASContext {
 ///
 /// - Since the `ctx` is created in Rust, we can only get undefined behavior, if the caller passes in
 /// a pointer that was not created by `peerdas_context_new`.
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[no_mangle]
 pub extern "C" fn peerdas_context_free(ctx: *mut PeerDASContext) {
     if ctx.is_null() {
@@ -156,7 +159,7 @@ impl CResult {
 /// - The caller must ensure that the pointer is valid. If the pointer is null, this method will return early.
 /// - The caller should also avoid a double-free by setting the pointer to null after calling this method.
 #[no_mangle]
-pub extern "C" fn free_error_message(c_message: *mut std::os::raw::c_char) {
+pub unsafe extern "C" fn free_error_message(c_message: *mut std::os::raw::c_char) {
     // check if the pointer is null
     if c_message.is_null() {
         return;
@@ -190,7 +193,7 @@ pub extern "C" fn blob_to_kzg_commitment(
 ) -> CResult {
     match _blob_to_kzg_commitment(ctx, blob, out) {
         Ok(_) => CResult::with_ok(),
-        Err(err) => return err,
+        Err(err) => err,
     }
 }
 
@@ -220,8 +223,8 @@ pub extern "C" fn compute_cells_and_kzg_proofs(
     out_proofs: *mut *mut u8,
 ) -> CResult {
     match _compute_cells_and_kzg_proofs(ctx, blob, out_cells, out_proofs) {
-        Ok(_) => return CResult::with_ok(),
-        Err(err) => return err,
+        Ok(_) => CResult::with_ok(),
+        Err(err) => err,
     }
 }
 
@@ -250,8 +253,8 @@ pub extern "C" fn verify_cell_kzg_proof(
     verified: *mut bool,
 ) -> CResult {
     match _verify_cell_kzg_proof(ctx, cell, commitment, cell_id, proof, verified) {
-        Ok(_) => return CResult::with_ok(),
-        Err(err) => return err,
+        Ok(_) => CResult::with_ok(),
+        Err(err) => err,
     }
 }
 
@@ -330,8 +333,8 @@ pub extern "C" fn verify_cell_kzg_proof_batch(
         proofs,
         verified,
     ) {
-        Ok(_) => return CResult::with_ok(),
-        Err(err) => return err,
+        Ok(_) => CResult::with_ok(),
+        Err(err) => err,
     }
 }
 

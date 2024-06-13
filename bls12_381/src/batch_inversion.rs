@@ -12,19 +12,19 @@ pub fn batch_inverse<F: ff::Field>(elements: &mut [F]) {
 pub fn batch_inverse_check_for_zero(elements: &mut [Scalar]) {
     let mut zeroes = Vec::new();
     let mut non_zero_vec = Vec::with_capacity(elements.len());
-    for i in 0..elements.len() {
-        if elements[i].is_zero_vartime() {
+    for (i, element) in elements.iter().enumerate() {
+        if element.is_zero_vartime() {
             zeroes.push(i);
         } else {
-            non_zero_vec.push(elements[i]);
+            non_zero_vec.push(*element);
         }
     }
     batch_inverse(&mut non_zero_vec);
 
     // Now we put back in the zeroes
-    for i in 0..elements.len() {
+    for (i, element) in elements.iter_mut().enumerate() {
         if !zeroes.contains(&i) {
-            elements[i] = non_zero_vec.remove(0);
+            *element = non_zero_vec.remove(0);
         }
     }
 }
@@ -84,7 +84,7 @@ fn serial_batch_inversion<F: ff::Field>(v: &mut [F]) {
     {
         // tmp := tmp * f; f := tmp * s = 1/f
         let new_tmp = tmp * *f;
-        *f = tmp * &s;
+        *f = tmp * s;
         tmp = new_tmp;
     }
 }

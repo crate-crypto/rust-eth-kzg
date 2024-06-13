@@ -2,6 +2,7 @@ use crate::pointer_utils::{create_slice_view, deref_const, deref_mut, ptr_ptr_to
 use crate::{verification_result_to_bool_cresult, CResult, PeerDASContext};
 use eip7594::constants::{BYTES_PER_CELL, BYTES_PER_COMMITMENT};
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn _verify_cell_kzg_proof_batch(
     ctx: *const PeerDASContext,
 
@@ -22,7 +23,7 @@ pub(crate) fn _verify_cell_kzg_proof_batch(
 
     verified: *mut bool,
 ) -> Result<(), CResult> {
-    assert!(ctx.is_null() == false, "context pointer is null");
+    assert!(!ctx.is_null(), "context pointer is null");
 
     // When the arrays are empty in the caller language, the pointer might be null
     // This was witnessed in csharp.

@@ -19,7 +19,8 @@ criterion = "0.5.1"
 rand = "0.8.4"
 hex = "0.4.3"
 serde = "1.0.203"
-serde_yaml = "0.9.34+deprecated" #TODO: maybe replace with a non-deprecated version
+#TODO: note that serde_yaml is now deprecated
+serde_yaml = "0.9.34"
 
 [[bench]]
 name = "benchmark"

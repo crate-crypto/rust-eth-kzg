@@ -35,3 +35,6 @@ kzg_multi_open = { package = "crate_crypto_kzg_multi_open_fk20", version = "0.3.
 c_peerdas_kzg = { version = "0.3.0", path = "bindings/c" }
 hex = "0.4.3"
 rayon = "1.10.0"
+
+[profile.release]
+lto = true

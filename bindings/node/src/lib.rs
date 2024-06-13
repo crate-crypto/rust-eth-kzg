@@ -36,6 +36,12 @@ pub struct ProverContextJs {
   inner: Arc<ProverContext>,
 }
 
+impl Default for ProverContextJs {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
 #[napi]
 impl ProverContextJs {
   #[napi(constructor)]
@@ -51,7 +57,7 @@ impl ProverContextJs {
     let prover_context = &self.inner;
 
     let commitment = prover_context.blob_to_kzg_commitment(blob).map_err(|err| {
-      Error::from_reason(&format!(
+      Error::from_reason(format!(
         "failed to compute blob_to_kzg_commitment: {:?}",
         err
       ))
@@ -72,7 +78,7 @@ impl ProverContextJs {
     let (cells, proofs) = prover_context
       .compute_cells_and_kzg_proofs(blob)
       .map_err(|err| {
-        Error::from_reason(&format!(
+        Error::from_reason(format!(
           "failed to compute compute_cells_and_kzg_proofs: {:?}",
           err
         ))
@@ -80,11 +86,11 @@ impl ProverContextJs {
 
     let cells_uint8array = cells
       .into_iter()
-      .map(|cell| Uint8Array::from(cell))
+      .map(Uint8Array::from)
       .collect::<Vec<Uint8Array>>();
     let proofs_uint8array = proofs
       .into_iter()
-      .map(|proof| Uint8Array::from(proof))
+      .map(Uint8Array::from)
       .collect::<Vec<Uint8Array>>();
 
     Ok(CellsAndProofs {
@@ -119,6 +125,12 @@ pub struct VerifierContextJs {
   inner: Arc<VerifierContext>,
 }
 
+impl Default for VerifierContextJs {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
 #[napi]
 impl VerifierContextJs {
   #[napi(constructor)]
@@ -147,12 +159,10 @@ impl VerifierContextJs {
     match valid {
       Ok(_) => Ok(true),
       Err(VerifierError::InvalidProof) => Ok(false),
-      Err(err) => {
-        return Err(Error::from_reason(&format!(
-          "failed to compute verify_cell_kzg_proof: {:?}",
-          err
-        )))
-      }
+      Err(err) => Err(Error::from_reason(format!(
+        "failed to compute verify_cell_kzg_proof: {:?}",
+        err
+      ))),
     }
   }
 
@@ -195,12 +205,10 @@ impl VerifierContextJs {
     match valid {
       Ok(_) => Ok(true),
       Err(VerifierError::InvalidProof) => Ok(false),
-      Err(err) => {
-        return Err(Error::from_reason(&format!(
-          "failed to compute verify_cell_kzg_proof_batch: {:?}",
-          err
-        )))
-      }
+      Err(err) => Err(Error::from_reason(format!(
+        "failed to compute verify_cell_kzg_proof_batch: {:?}",
+        err
+      ))),
     }
   }
 
@@ -216,6 +224,7 @@ impl VerifierContextJs {
     self.verify_cell_kzg_proof_batch(commitments, row_indices, column_indices, cells, proofs)
   }
 
+  #[allow(deprecated)]
   #[napi]
   pub fn recover_all_cells(
     &self,
@@ -229,11 +238,11 @@ impl VerifierContextJs {
 
     let cells = verifier_context
       .recover_all_cells(cell_ids, cells)
-      .map_err(|err| Error::from_reason(&format!("failed to compute compute_cells: {:?}", err)))?;
+      .map_err(|err| Error::from_reason(format!("failed to compute compute_cells: {:?}", err)))?;
 
     let cells_uint8array = cells
       .into_iter()
-      .map(|cell| Uint8Array::from(cell))
+      .map(Uint8Array::from)
       .collect::<Vec<Uint8Array>>();
 
     Ok(cells_uint8array)
@@ -252,6 +261,6 @@ impl VerifierContextJs {
 // We use bigint because u64 cannot be used as an argument, see : https://napi.rs/docs/concepts/values.en#bigint
 fn bigint_to_u64(value: BigInt) -> u64 {
   let (signed, value_u128, _) = value.get_u128();
-  assert!(signed == false, "value should be an unsigned integer");
+  assert!(!signed, "value should be an unsigned integer");
   value_u128 as u64
 }

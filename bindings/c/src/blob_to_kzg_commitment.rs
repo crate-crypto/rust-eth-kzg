@@ -8,7 +8,7 @@ pub(crate) fn _blob_to_kzg_commitment(
     blob: *const u8,
     out: *mut u8,
 ) -> Result<(), CResult> {
-    assert!(ctx.is_null() == false, "context pointer is null");
+    assert!(!ctx.is_null(), "context pointer is null");
 
     // Dereference the input pointers
     //
@@ -22,7 +22,7 @@ pub(crate) fn _blob_to_kzg_commitment(
         .map_err(|err| CResult::with_error(&format!("{:?}", err)))?;
 
     assert!(
-        commitment.len() == BYTES_PER_COMMITMENT as usize,
+        commitment.len() == BYTES_PER_COMMITMENT,
         "This is a library bug. commitment.len() != BYTES_PER_COMMITMENT, {} != {}",
         commitment.len(),
         BYTES_PER_COMMITMENT

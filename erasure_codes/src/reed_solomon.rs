@@ -70,7 +70,7 @@ fn recover_polynomial_coefficient(
 ) -> Vec<Scalar> {
     // Compute Z(X) which is the polynomial that vanishes on all
     // of the missing points
-    let z_x = construct_vanishing_poly_from_erasures(missing_indices, &domain_extended);
+    let z_x = construct_vanishing_poly_from_erasures(missing_indices, domain_extended);
 
     // Compute Z(X)_eval which is the vanishing polynomial evaluated
     // at the missing points

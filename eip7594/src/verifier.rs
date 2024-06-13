@@ -66,6 +66,12 @@ pub struct VerifierContext {
     rs: ReedSolomon,
 }
 
+impl Default for VerifierContext {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl VerifierContext {
     pub fn new() -> VerifierContext {
         let (_, opening_key) = create_eth_commit_opening_keys();
@@ -76,7 +82,6 @@ impl VerifierContext {
 
         let cosets: Vec<_> = domain_extended_roots
             .chunks_exact(FIELD_ELEMENTS_PER_CELL)
-            .into_iter()
             .map(|coset| coset.to_vec())
             .collect();
 
@@ -174,14 +179,8 @@ impl VerifierContext {
             let cell = cells[k];
             let proof_bytes = proofs_bytes[k].as_ref();
 
-            if let Err(err) = self.verify_cell_kzg_proof(
-                &row_commitment_bytes,
-                column_index as u64,
-                &cell,
-                &proof_bytes,
-            ) {
-                return Err(err);
-            }
+            // Verify and return early if the proof is invalid
+            self.verify_cell_kzg_proof(row_commitment_bytes, column_index, cell, proof_bytes)?;
         }
 
         Ok(())
@@ -206,7 +205,7 @@ impl VerifierContext {
         }
 
         // Check that we have enough cells to perform a reconstruction
-        if !(CELLS_PER_EXT_BLOB / EXTENSION_FACTOR <= cell_ids.len()) {
+        if cell_ids.len() < CELLS_PER_EXT_BLOB / EXTENSION_FACTOR {
             return Err(VerifierError::NotEnoughCellsToReconstruct {
                 num_cells_received: cell_ids.len(),
                 min_cells_needed: CELLS_PER_EXT_BLOB / EXTENSION_FACTOR,
@@ -214,7 +213,7 @@ impl VerifierContext {
         }
 
         // Check that we don't have too many cells
-        // ie more than we initially generated
+        // ie more than we initially generated from the blob
         if cell_ids.len() > CELLS_PER_EXT_BLOB {
             return Err(VerifierError::TooManyCellsHaveBeenGiven {
                 num_cells_received: cell_ids.len(),
@@ -238,10 +237,8 @@ impl VerifierContext {
             }
         }
 
-        let coset_evaluations: Result<Vec<_>, _> = cells
-            .into_iter()
-            .map(|cell| deserialize_cell_to_scalars(&cell))
-            .collect();
+        let coset_evaluations: Result<Vec<_>, _> =
+            cells.into_iter().map(deserialize_cell_to_scalars).collect();
         let coset_evaluations = coset_evaluations.map_err(VerifierError::Serialization)?;
 
         // Fill in the missing coset_evaluation_sets in bit-reversed order
@@ -275,7 +272,7 @@ impl VerifierContext {
 
         Ok(recovered_codeword
             .chunks_exact(FIELD_ELEMENTS_PER_CELL)
-            .map(|chunk| serialize_scalars_to_cell(chunk))
+            .map(serialize_scalars_to_cell)
             .collect())
     }
 }
@@ -283,7 +280,7 @@ impl VerifierContext {
 /// Check if all of the cell ids are unique
 fn is_cell_ids_unique(cell_ids: &[CellID]) -> bool {
     let len_cell_ids_non_dedup = cell_ids.len();
-    let cell_ids_dedup: HashSet<_> = cell_ids.into_iter().collect();
+    let cell_ids_dedup: HashSet<_> = cell_ids.iter().collect();
     cell_ids_dedup.len() == len_cell_ids_non_dedup
 }
 

@@ -32,6 +32,7 @@ pub struct ProverContext {
     // TODO: and we use the lagrange variant to compute the commitment to the polynomial.
     //
     // TODO: We can remove it in a later commit, once the API has settled.
+    #[allow(dead_code)]
     commit_key: CommitKey,
     /// This is only used to save us from doing an IDFT when committing
     /// to the polynomial.
@@ -43,6 +44,12 @@ pub struct ProverContext {
     //
     // The prover needs the verifier context to recover the cells and then compute the proofs
     verifier_context: VerifierContext,
+}
+
+impl Default for ProverContext {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl ProverContext {
@@ -117,13 +124,13 @@ impl ProverContext {
             .collect::<Vec<_>>();
         let cells: [Cell; CELLS_PER_EXT_BLOB] = cells
             .try_into()
-            .expect(&format!("expected {} number of cells", CELLS_PER_EXT_BLOB));
+            .unwrap_or_else(|_| panic!("expected {} number of cells", CELLS_PER_EXT_BLOB));
 
         // Serialize the proofs into `KZGProof`s.
         let proofs: Vec<_> = proofs.iter().map(serialize_g1_compressed).collect();
         let proofs: [KZGProof; CELLS_PER_EXT_BLOB] = proofs
             .try_into()
-            .expect(&format!("expected {} number of proofs", CELLS_PER_EXT_BLOB));
+            .unwrap_or_else(|_| panic!("expected {} number of proofs", CELLS_PER_EXT_BLOB));
 
         Ok((cells, proofs))
     }
@@ -151,12 +158,13 @@ impl ProverContext {
             .collect::<Vec<_>>();
         let cells: [Cell; CELLS_PER_EXT_BLOB] = cells
             .try_into()
-            .expect(&format!("expected {} number of cells", CELLS_PER_EXT_BLOB));
+            .unwrap_or_else(|_| panic!("expected {} number of cells", CELLS_PER_EXT_BLOB));
 
         Ok(cells)
     }
 
     /// Recovers the cells and computes the KZG proofs, given a subset of cells.
+    #[allow(deprecated)]
     pub fn recover_cells_and_proofs(
         &self,
         cell_ids: Vec<CellID>,
@@ -168,7 +176,7 @@ impl ProverContext {
         let cells = self
             .verifier_context
             .recover_all_cells(cell_ids, cells)
-            .map_err(|err| ProverError::RecoveryFailure(err))?;
+            .map_err(ProverError::RecoveryFailure)?;
 
         // Concatenate the cells together and extract the blob.
         let extension_blob = cells.into_iter().flatten().collect::<Vec<_>>();

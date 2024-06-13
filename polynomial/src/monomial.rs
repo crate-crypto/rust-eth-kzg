@@ -27,8 +27,8 @@ pub fn poly_add(a: PolyCoeff, b: PolyCoeff) -> PolyCoeff {
 /// For a polynomial, `f(x)`, this method computes the result of `-f(x)`
 /// and returns the result.
 pub fn poly_neg(mut a: PolyCoeff) -> PolyCoeff {
-    for i in 0..a.len() {
-        a[i] = -a[i];
+    for element in &mut a {
+        *element = -*element;
     }
     a
 }
