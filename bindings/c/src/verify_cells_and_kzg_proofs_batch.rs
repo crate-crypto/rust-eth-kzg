@@ -1,6 +1,4 @@
-use crate::pointer_utils::{
-    create_slice_view, deref_const, deref_mut, deref_to_vec_of_slices_const,
-};
+use crate::pointer_utils::{create_slice_view, deref_const, deref_mut, ptr_ptr_to_vec_slice_const};
 use crate::{verification_result_to_bool_cresult, CResult, PeerDASContext};
 use eip7594::constants::{BYTES_PER_CELL, BYTES_PER_COMMITMENT};
 
@@ -45,15 +43,15 @@ pub(crate) fn _verify_cell_kzg_proof_batch(
     // Dereference the input pointers
     //
     let ctx = deref_const(ctx).verifier_ctx();
-    let row_commitments = deref_to_vec_of_slices_const(
+    let row_commitments = ptr_ptr_to_vec_slice_const(
         row_commitments,
         row_commitments_length as usize,
         BYTES_PER_COMMITMENT,
     );
     let row_indices = create_slice_view(row_indices, row_indices_length as usize);
     let column_indices = create_slice_view(column_indices, column_indices_length as usize);
-    let cells = deref_to_vec_of_slices_const(cells, cells_length as usize, BYTES_PER_CELL);
-    let proofs = deref_to_vec_of_slices_const(proofs, proofs_length as usize, BYTES_PER_COMMITMENT);
+    let cells = ptr_ptr_to_vec_slice_const(cells, cells_length as usize, BYTES_PER_CELL);
+    let proofs = ptr_ptr_to_vec_slice_const(proofs, proofs_length as usize, BYTES_PER_COMMITMENT);
     let verified = deref_mut(verified);
 
     // Computation

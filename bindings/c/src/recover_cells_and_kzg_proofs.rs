@@ -1,5 +1,5 @@
 use crate::pointer_utils::{
-    create_slice_view, deref_const, deref_to_vec_of_slices_const, write_to_2d_slice,
+    create_slice_view, deref_const, ptr_ptr_to_vec_slice_const, write_to_2d_slice,
 };
 use crate::{CResult, PeerDASContext};
 use eip7594::constants::{BYTES_PER_CELL, CELLS_PER_EXT_BLOB};
@@ -18,7 +18,7 @@ pub(crate) fn _recover_all_cells_and_proofs(
     // Dereference the input pointers
     //
     let ctx = deref_const(ctx).prover_ctx();
-    let cells = deref_to_vec_of_slices_const(cells, cells_length as usize, BYTES_PER_CELL);
+    let cells = ptr_ptr_to_vec_slice_const(cells, cells_length as usize, BYTES_PER_CELL);
     let cell_ids = create_slice_view(cell_ids, cell_ids_length as usize);
 
     // Computation
