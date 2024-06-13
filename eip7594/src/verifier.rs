@@ -18,6 +18,7 @@ use kzg_multi_open::{
     proof::verify_multi_opening_naive, reverse_bit_order,
 };
 
+/// Errors that can occur while calling a method in the Verifier API
 #[derive(Debug)]
 pub enum VerifierError {
     Serialization(SerializationError),
@@ -56,6 +57,7 @@ pub enum VerifierError {
     },
 }
 
+/// The context object that is used to call functions in the verifier API.
 pub struct VerifierContext {
     opening_key: OpeningKey,
     /// The cosets that we want to verify evaluations against.
@@ -84,6 +86,8 @@ impl VerifierContext {
             rs: ReedSolomon::new(FIELD_ELEMENTS_PER_BLOB, EXTENSION_FACTOR),
         }
     }
+
+    /// Verify that a cell is consistent with a commitment using a KZG proof.
     pub fn verify_cell_kzg_proof(
         &self,
         commitment_bytes: Bytes48Ref,
@@ -111,6 +115,11 @@ impl VerifierContext {
         }
     }
 
+    /// This is the batch version of `verify_cell_kzg_proof`.
+    ///
+    /// Given a collection of commitments, cells and proofs, this functions verifies that
+    /// the cells are consistent with the commitments using the KZG proofs.
+    ///
     // TODO: take a slice instead of vectors here or something opaque like impl Iterator<Item = &[u8]>
     pub fn verify_cell_kzg_proof_batch<T: AsRef<[u8]> + Clone>(
         &self,
@@ -178,6 +187,10 @@ impl VerifierContext {
         Ok(())
     }
 
+    /// Given a list of cell IDs and cells, this function recovers the missing cells.
+    #[deprecated(
+        note = "This method will be removed from the public API, ie made crate private. Use `recover_cells_and_proofs` instead."
+    )]
     pub fn recover_all_cells(
         &self,
         cell_ids: Vec<CellID>,

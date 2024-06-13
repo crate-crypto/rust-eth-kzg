@@ -29,6 +29,7 @@ fn deserialize_bytes_to_scalars(bytes: &[u8]) -> Result<Vec<Scalar>, Serializati
     }
     Ok(scalars)
 }
+
 pub(crate) fn deserialize_blob_to_scalars(
     blob_bytes: &[u8],
 ) -> Result<Vec<Scalar>, SerializationError> {

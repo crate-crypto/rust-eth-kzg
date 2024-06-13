@@ -17,12 +17,15 @@ use crate::{
     BlobRef, Bytes48Ref, Cell, CellID, CellRef, KZGCommitment, KZGProof,
 };
 
+/// Errors that can occur while calling a method in the Prover API
 #[derive(Debug)]
 pub enum ProverError {
     Serialization(SerializationError),
     RecoveryFailure(VerifierError),
 }
 
+/// Context object that is used to call functions in the prover API.
+/// This includes, computing the commitments, proofs and cells.
 pub struct ProverContext {
     fk20: FK20,
     // TODO: We don't need the commit key, since we use FK20 to compute the proofs
@@ -45,8 +48,16 @@ pub struct ProverContext {
 impl ProverContext {
     pub fn new() -> Self {
         let (commit_key, _) = create_eth_commit_opening_keys();
+        // The number of points that we will make an opening proof for,
+        // ie a proof will attest to the value of the polynomial at these points.
         let point_set_size = FIELD_ELEMENTS_PER_CELL;
+
+        // The number of points that we will be making proofs for.
+        //
+        // Note: it is easy to calculate the number of proofs that we need to make
+        // by doing number_of_points_to_open / point_set_size.
         let number_of_points_to_open = FIELD_ELEMENTS_PER_EXT_BLOB;
+
         let fk20 = FK20::new(&commit_key, point_set_size, number_of_points_to_open);
 
         let poly_domain = Domain::new(FIELD_ELEMENTS_PER_BLOB);
@@ -63,27 +74,43 @@ impl ProverContext {
         }
     }
 
+    /// Computes the KZG commitment to the polynomial represented by the blob.
     pub fn blob_to_kzg_commitment(&self, blob: BlobRef) -> Result<KZGCommitment, ProverError> {
+        // Deserialize the blob into scalars. The blob is in lagrange form.
         let mut scalars =
             serialization::deserialize_blob_to_scalars(blob).map_err(ProverError::Serialization)?;
+
+        // Reverse the order of the scalars, so that they are in normal order.
+        // ie not in bit-reversed order.
         reverse_bit_order(&mut scalars);
 
+        // Commit to the polynomial.
         let commitment: G1Point = self.commit_key_lagrange.commit_g1(&scalars).into();
+
+        // Serialize the commitment.
         Ok(serialize_g1_compressed(&commitment))
     }
 
+    /// Computes the cells and the KZG proofs for the given blob.
     pub fn compute_cells_and_kzg_proofs(
         &self,
         blob: BlobRef,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
-        // Deserialize the blob into scalars (lagrange form)
+        // Deserialize the blob into scalars. The blob is in lagrange form.
         let mut scalars =
             serialization::deserialize_blob_to_scalars(blob).map_err(ProverError::Serialization)?;
+
+        // Reverse the order of the scalars, so that they are in normal order.
+        // ie not in bit-reversed order.
         reverse_bit_order(&mut scalars);
 
+        // Convert the polynomial from lagrange to monomial form.
         let poly_coeff = self.poly_domain.ifft_scalars(scalars);
+
+        // Compute the proofs and the evaluations of the polynomial.
         let (proofs, evaluations) = self.fk20.compute_multi_opening_proofs(poly_coeff);
 
+        // Serialize the evaluations into `Cell`s.
         let cells = evaluations
             .iter()
             .map(|eval| serialization::serialize_scalars_to_cell(eval))
@@ -92,6 +119,7 @@ impl ProverContext {
             .try_into()
             .expect(&format!("expected {} number of cells", CELLS_PER_EXT_BLOB));
 
+        // Serialize the proofs into `KZGProof`s.
         let proofs: Vec<_> = proofs.iter().map(serialize_g1_compressed).collect();
         let proofs: [KZGProof; CELLS_PER_EXT_BLOB] = proofs
             .try_into()
@@ -100,15 +128,23 @@ impl ProverContext {
         Ok((cells, proofs))
     }
 
+    #[deprecated(note = "This function is deprecated, use `compute_cells_and_kzg_proofs` instead")]
     pub fn compute_cells(&self, blob: BlobRef) -> Result<[Cell; CELLS_PER_EXT_BLOB], ProverError> {
-        // Deserialize the blob into scalars (lagrange form)
+        // Deserialize the blob into scalars. The blob is in lagrange form.
         let mut scalars =
             serialization::deserialize_blob_to_scalars(blob).map_err(ProverError::Serialization)?;
+
+        // Reverse the order of the scalars, so that they are in normal order.
+        // ie not in bit-reversed order.
         reverse_bit_order(&mut scalars);
 
+        // Convert the polynomial from lagrange to monomial form.
         let poly_coeff = self.poly_domain.ifft_scalars(scalars);
+
+        // Compute the evaluations of the polynomial at the points that we need to make proofs for.
         let evaluations = self.fk20.compute_evaluation_sets(poly_coeff);
 
+        // Serialize the evaluations into cells.
         let cells = evaluations
             .iter()
             .map(|eval| serialization::serialize_scalars_to_cell(eval))
@@ -120,24 +156,28 @@ impl ProverContext {
         Ok(cells)
     }
 
+    /// Recovers the cells and computes the KZG proofs, given a subset of cells.
     pub fn recover_cells_and_proofs(
         &self,
         cell_ids: Vec<CellID>,
         cells: Vec<CellRef>,
         _proofs: Vec<Bytes48Ref>,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
+        // Use erasure decoding to recover all of the cells.
+        // These will be in serialized form
         let cells = self
             .verifier_context
             .recover_all_cells(cell_ids, cells)
             .map_err(|err| ProverError::RecoveryFailure(err))?;
 
-        // Concatenate the cells together
+        // Concatenate the cells together and extract the blob.
         let extension_blob = cells.into_iter().flatten().collect::<Vec<_>>();
 
-        // We do not need the extension blob, only the blob
-        // which is the first BYTES_PER_BLOB bytes.
+        // To compute the proofs, we need the Blob.
+        // The blob will be the first BYTES_PER_BLOB bytes from the extension blob.
         let blob = &extension_blob[..BYTES_PER_BLOB];
 
+        // Compute the cells and the proofs for the given blob.
         self.compute_cells_and_kzg_proofs(blob)
     }
 }
