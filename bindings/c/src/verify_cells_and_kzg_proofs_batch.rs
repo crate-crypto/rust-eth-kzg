@@ -1,5 +1,5 @@
 use crate::pointer_utils::{
-    create_slice_view, deref_const, deref_mut, dereference_to_vec_of_slices_const,
+    create_slice_view_with_null, deref_const, deref_mut, dereference_to_vec_of_slices_const,
 };
 use crate::{verification_result_to_bool_cresult, CResult, PeerDASContext};
 use eip7594::constants::{BYTES_PER_CELL, BYTES_PER_COMMITMENT};
@@ -32,12 +32,15 @@ pub(crate) fn _verify_cell_kzg_proof_batch(
     // TODO: This is an easy guarantee to put in languages and does not add a lot of code.
     //
     // TODO: We should also keep the null pointer checks so that we never have UB if the library is used incorrectly.
+    //
+    // TODO: We should be able to remove this and have the code just return an empty slice if the length is 0.
+    // TODO: then remove the length checks and have it handled by the underlying library.
     if cells_length == 0 {
         unsafe { *verified = true };
         return Ok(());
     }
 
-    // Pointer checks
+    // Dereference the input pointers
     //
     let ctx = deref_const(ctx)
         .map_err(|_| CResult::with_error("context has a null ptr"))?
@@ -48,47 +51,19 @@ pub(crate) fn _verify_cell_kzg_proof_batch(
         BYTES_PER_COMMITMENT,
     )
     .map_err(|_| CResult::with_error("could not dereference row_commitments"))?;
-    let row_indices = deref_const(row_indices)
+    let row_indices = create_slice_view_with_null(row_indices, row_indices_length as usize)
         .map_err(|_| CResult::with_error("could not dereference row_indices"))?;
-    let column_indices = deref_const(column_indices)
-        .map_err(|_| CResult::with_error("could not dereference column_indices"))?;
+    let column_indices =
+        create_slice_view_with_null(column_indices, column_indices_length as usize)
+            .map_err(|_| CResult::with_error("could not dereference column_indices"))?;
     let cells = dereference_to_vec_of_slices_const(cells, cells_length as usize, BYTES_PER_CELL)
         .map_err(|_| CResult::with_error("could not dereference cells"))?;
     let proofs =
-        dereference_to_vec_of_slices_const(proofs, cells_length as usize, BYTES_PER_COMMITMENT)
+        dereference_to_vec_of_slices_const(proofs, proofs_length as usize, BYTES_PER_COMMITMENT)
             .map_err(|_| CResult::with_error("could not dereference proofs"))?;
     let verified = deref_mut(verified).map_err(|_| {
         CResult::with_error("could not dereference pointer to the output verified flag")
     })?;
-
-    // Length checks
-    //
-    let num_cells = (cells_length) as usize;
-
-    if proofs_length as usize != num_cells {
-        return Err(CResult::with_error(&format!(
-            "Invalid proofs length. Expected: {}, Got: {}",
-            num_cells, proofs_length
-        )));
-    }
-    if (row_indices_length as usize) != num_cells {
-        return Err(CResult::with_error(&format!(
-            "Invalid row_indices length. Expected: {}, Got: {}",
-            num_cells, row_indices_length
-        )));
-    }
-
-    if (column_indices_length as usize) != num_cells {
-        return Err(CResult::with_error(&format!(
-            "Invalid column_indices length. Expected: {}, Got: {}",
-            num_cells, column_indices_length
-        )));
-    }
-
-    // Convert immutable references to slices
-    //
-    let row_indices = create_slice_view(row_indices, num_cells as usize);
-    let column_indices = create_slice_view(column_indices, num_cells as usize);
 
     // Computation
     //
