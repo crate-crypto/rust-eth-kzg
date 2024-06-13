@@ -24,27 +24,7 @@ pub use eip7594::constants::{
 use eip7594::prover::ProverContext as eip7594_ProverContext;
 use eip7594::verifier::{VerifierContext as eip7594_VerifierContext, VerifierError};
 
-/*
-
-A note on safety and API:
-
-- It is also the callers responsibility to ensure that pointers are properly aligned. We do not check that *ctx PeerDASContext
-   points to a PeerDASContext, we simply deref.
-
-- TODO(put this above every function) It is the callers responsibility to ensure that pointers to pointers point to the same type of data.
-    - We could make this our responsibility, but then we would need to pass in all sizes for every element in the 2d array.
-
-- It is the callers responsibility to ensure that the pointers that get passed in point to the minimum number of bytes required, to dereference them safely.
-    - If the pointers, point to region of memory that is less than the minimum number of bytes required, then this method will read from random memory.
-    - If the pointers point to a region of memory that is more than the minimum number of bytes required, then this method will essentially truncate the memory region.
-
-- For a particular instance, the length of the some parameters like blobs will always be the same.
-  This means we do not need to pass the length in as a parameter, but we do so, so that we can check the users expectations on
-  the expected length.
-
-  The alternative is to have the code calling the FFI API to check the length of the blob before calling this method.
-  However this is not ideal, because every language called via the FFI API will need to repeat the same checks.
-*/
+// TODO: Add this into eip7594 spec tests
 
 /// The context that will be used to create and verify proofs.
 pub struct PeerDASContext {
