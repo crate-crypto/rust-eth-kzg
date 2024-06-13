@@ -25,7 +25,6 @@ use eip7594::prover::ProverContext as eip7594_ProverContext;
 use eip7594::verifier::{VerifierContext as eip7594_VerifierContext, VerifierError};
 
 // TODO: Perhaps we remove undefined behavior or safety header since violating safety usually means ub
-
 /*
 
 A note on safety and API:
@@ -174,7 +173,7 @@ pub extern "C" fn free_error_message(c_message: *mut std::os::raw::c_char) {
 /// # Safety
 ///
 /// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
-/// - The caller must ensure that `blob` points to a region of memory that is at least `blob_len` bytes.
+/// - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
 /// - The caller must ensure that `out` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
 #[no_mangle]
 #[must_use]
@@ -197,9 +196,11 @@ pub extern "C" fn blob_to_kzg_commitment(
 /// Safety:
 ///
 /// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
-/// - The caller must ensure that `blob` points to a region of memory that is at least `blob_len` bytes.
-/// - The caller must ensure that `out_cells` points to a region of memory that is at least `NUM_BYTES_CELLS` bytes.
-/// - The caller must ensure that `out_proofs` points to a region of memory that is at least `NUM_BYTES_PROOFS` bytes.
+/// - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
+/// - The caller must ensure that `out_cells` points to a region of memory that is at least `CELLS_PER_EXT_BLOB` elements
+///   and that each element is at least `BYTES_PER_CELL` bytes.
+/// - The caller must ensure that `out_proofs` points to a region of memory that is at least `CELLS_PER_EXT_BLOB` elements
+///   and that each element is at least `BYTES_PER_COMMITMENT` bytes.
 #[no_mangle]
 #[must_use]
 pub extern "C" fn compute_cells_and_kzg_proofs(
@@ -220,9 +221,9 @@ pub extern "C" fn compute_cells_and_kzg_proofs(
 /// Safety:
 ///
 /// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
-/// - The caller must ensure that `cell` points to a region of memory that is at least `cell_length` bytes.
-/// - The caller must ensure that `commitment` points to a region of memory that is at least `commitment_length` bytes.
-/// - The caller must ensure that `proof` points to a region of memory that is at least `proof_length` bytes.
+/// - The caller must ensure that `cell` points to a region of memory that is at least `BYTES_PER_CELLS` bytes.
+/// - The caller must ensure that `commitment` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+/// - The caller must ensure that `proof` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
 /// - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
 //
 // TODO: Can we create a new structure that allows us to hold a pointer+length? example struct Slice {ptr : *const u8, len: u64}
@@ -281,12 +282,14 @@ fn verification_result_to_bool_cresult(
 /// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
 /// - The caller must ensure that `row_commitments` points to a region of memory that is at least `row_commitments_length` commitments
 ///   and that each commitment is at least `BYTES_PER_COMMITMENT` bytes.
-/// - The caller must ensure that `row_indices` points to a region of memory that is at least `num_cells` elements.
-/// - The caller must ensure that `column_indices` points to a region of memory that is at least `num_cells` elements.
+/// - The caller must ensure that `row_indices` points to a region of memory that is at least `num_cells` elements
+///   and that each element is 8 bytes.
+/// - The caller must ensure that `column_indices` points to a region of memory that is at least `num_cells` elements
+///   and that each element is 8 bytes.
 /// - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` proof and
 ///   that each cell is at least `BYTES_PER_CELL` bytes
 /// - The caller must ensure that `proofs` points to a region of memory that is at least `proofs_length` proofs
-/// and that each proof is at least `BYTES_PER_COMMITMENT` bytes.
+///    and that each proof is at least `BYTES_PER_COMMITMENT` bytes.
 /// - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
 #[no_mangle]
 #[must_use]
@@ -334,10 +337,11 @@ pub extern "C" fn verify_cell_kzg_proof_batch(
 /// # Safety
 /// - The caller must ensure that the pointers are valid. If pointers are null, this method will return an error.
 /// - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` cells
-/// and that each cell is at least `BYTES_PER_CELL` bytes.
-/// - The caller must ensure that `cell_ids` points to a region of memory that is at least `cell_ids_length` cell ids.
+///   and that each cell is at least `BYTES_PER_CELL` bytes.
+/// - The caller must ensure that `cell_ids` points to a region of memory that is at least `cell_ids_length` cell ids
+///   and that each cell id is 8 bytes.
 /// - The caller must ensure that `out_cells` points to a region of memory that is at least `CELLS_PER_EXT_BLOB` cells
-/// and that each cell is at least `BYTES_PER_CELL` bytes.
+///   and that each cell is at least `BYTES_PER_CELL` bytes.
 /// - The caller must ensure that `out_proofs` points to a region of memory that is at least `CELLS_PER_EXT_BLOB` proofs
 ///   and that each proof is at least `BYTES_PER_COMMITMENT` bytes.
 #[no_mangle]
