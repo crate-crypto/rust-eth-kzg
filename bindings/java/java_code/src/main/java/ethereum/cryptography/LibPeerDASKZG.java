@@ -1,5 +1,4 @@
 package ethereum.cryptography;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -8,19 +7,15 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
 public class LibPeerDASKZG implements AutoCloseable{
-    // These constants were taken from c-kzg
-    //
-    // The following constants are used so that downstream callers do not need to 
-    // re-define them.
-    //
     // TODO: Add equality tests
+    //
     /** The number of bytes in a KZG commitment. */
     public static final int BYTES_PER_COMMITMENT = 48;
     /** The number of bytes in a KZG proof. */
     public static final int BYTES_PER_PROOF = 48;
     /** The number of bytes in a BLS scalar field element. */
     public static final int BYTES_PER_FIELD_ELEMENT = 32;
-    /** The number of field elements in a blob. */
+    /** The number of bytes in a blob. */
     public static final int BYTES_PER_BLOB = 131_072;
     /** The number of columns in an extended blob. */
     public static final int MAX_NUM_COLUMNS = 128;
@@ -116,7 +111,6 @@ public class LibPeerDASKZG implements AutoCloseable{
     }
 
     /** Loads the appropriate native library based on your platform. */
-    // Copied from c-kzg
     private static void loadNativeLibrary() {
 
         String osName = System.getProperty("os.name").toLowerCase();
