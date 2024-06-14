@@ -116,10 +116,10 @@ impl ProverContext {
         &self,
         poly_coeff: Vec<Scalar>,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
-        // Compute the proofs and the evaluations of the polynomial.
+        // Compute the proofs and the evaluations for the polynomial.
         let (proofs, evaluation_sets) = self.fk20.compute_multi_opening_proofs(poly_coeff);
 
-        // Serialize the evaluations into `Cell`s.
+        // Serialize the evaluation sets into `Cell`s.
         let cells = evaluation_sets_to_cells(evaluation_sets.into_iter());
 
         // Serialize the proofs into `KZGProof`s.
