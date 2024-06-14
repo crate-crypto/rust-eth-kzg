@@ -47,7 +47,10 @@ fn compute_cells_and_kzg_proofs<'local>(
     blob: JByteArray<'local>,
 ) -> Result<JObject<'local>, Error> {
     let blob = env.convert_byte_array(blob)?;
+    let blob = slice_to_array_ref(&blob, "blob")?;
+
     let (cells, proofs) = ctx.prover_ctx().compute_cells_and_kzg_proofs(&blob)?;
+    let cells = cells.map(|cell| *cell);
     cells_and_proofs_to_jobject(env, &cells, &proofs).map_err(Error::from)
 }
 
@@ -73,6 +76,8 @@ fn blob_to_kzg_commitment<'local>(
     blob: JByteArray<'local>,
 ) -> Result<JByteArray<'local>, Error> {
     let blob = env.convert_byte_array(blob)?;
+    let blob = slice_to_array_ref(&blob, "blob")?;
+
     let commitment = ctx.prover_ctx().blob_to_kzg_commitment(&blob)?;
     env.byte_array_from_slice(&commitment).map_err(Error::from)
 }
@@ -108,6 +113,7 @@ fn verify_cell_kzg_proof(
     let commitment_bytes = env.convert_byte_array(commitment_bytes)?;
     let cell_id = cell_id as u64;
     let cell = env.convert_byte_array(cell)?;
+    let cell = slice_to_array_ref(&cell, "cell")?;
     let proof_bytes = env.convert_byte_array(proof_bytes)?;
 
     match ctx
@@ -164,11 +170,24 @@ fn verify_cell_kzg_proof_batch<'local>(
     let cells = jobject_array_to_2d_byte_array(env, cells)?;
     let proofs = jobject_array_to_2d_byte_array(env, proofs)?;
 
+    let cells: Vec<_> = cells
+        .iter()
+        .map(|cell| slice_to_array_ref(cell, "cell"))
+        .collect::<Result<_, _>>()?;
+    let commitments: Vec<_> = commitment_bytes
+        .iter()
+        .map(|commitment| slice_to_array_ref(commitment, "commitment"))
+        .collect::<Result<_, _>>()?;
+    let proofs: Vec<_> = proofs
+        .iter()
+        .map(|proof| slice_to_array_ref(proof, "proof"))
+        .collect::<Result<_, _>>()?;
+
     match ctx.verifier_ctx().verify_cell_kzg_proof_batch(
-        commitment_bytes,
+        commitments,
         row_indices,
         column_indices,
-        cells.iter().map(|cell| cell.as_slice()).collect(),
+        cells,
         proofs,
     ) {
         Ok(_) => Ok(jboolean::from(true)),
@@ -203,13 +222,15 @@ fn recover_cells_and_kzg_proofs<'local>(
 ) -> Result<JObject<'local>, Error> {
     let cell_ids = jlongarray_to_vec_u64(env, cell_ids)?;
     let cells = jobject_array_to_2d_byte_array(env, cells)?;
+    let cells: Vec<_> = cells
+        .iter()
+        .map(|cell| slice_to_array_ref(cell, "cell"))
+        .collect::<Result<_, _>>()?;
 
-    let (recovered_cells, recovered_proofs) = ctx.prover_ctx().recover_cells_and_proofs(
-        cell_ids,
-        cells.iter().map(|x| x.as_slice()).collect(),
-        vec![],
-    )?;
-
+    let (recovered_cells, recovered_proofs) =
+        ctx.prover_ctx()
+            .recover_cells_and_proofs(cell_ids, cells, vec![])?;
+    let recovered_cells = recovered_cells.map(|cell| *cell);
     cells_and_proofs_to_jobject(env, &recovered_cells, &recovered_proofs).map_err(Error::from)
 }
 
@@ -311,6 +332,11 @@ fn throw_on_error(env: &mut JNIEnv, err: Error, func_name: &'static str) {
         Error::Jni(err) => format!("{:?}", err),
         Error::Prover(err) => format!("{:?}", err),
         Error::Verifier(err) => format!("{:?}", err),
+        Error::IncorrectSize {
+            expected,
+            got,
+            name,
+        } => format!("{name} is not the correct size. expected: {expected}\ngot: {got}"),
     };
     let msg = format!(
         "function {} has thrown an exception, with reason: {}",
@@ -318,4 +344,15 @@ fn throw_on_error(env: &mut JNIEnv, err: Error, func_name: &'static str) {
     );
     env.throw_new("java/lang/IllegalArgumentException", msg)
         .expect("Failed to throw exception");
+}
+
+fn slice_to_array_ref<'a, const N: usize>(
+    slice: &'a [u8],
+    name: &'static str,
+) -> Result<&'a [u8; N], Error> {
+    slice.try_into().map_err(|_| Error::IncorrectSize {
+        expected: N,
+        got: slice.len(),
+        name,
+    })
 }

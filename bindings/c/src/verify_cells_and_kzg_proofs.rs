@@ -1,4 +1,4 @@
-use crate::pointer_utils::{create_slice_view, deref_const, deref_mut};
+use crate::pointer_utils::{create_array_ref, deref_const, deref_mut};
 use crate::{verification_result_to_bool_cresult, CResult, PeerDASContext};
 use eip7594::constants::{BYTES_PER_CELL, BYTES_PER_COMMITMENT};
 
@@ -18,9 +18,9 @@ pub(crate) fn _verify_cell_kzg_proof(
     // Dereference the input pointers
     //
     let ctx = deref_const(ctx).verifier_ctx();
-    let cell = create_slice_view(cell, BYTES_PER_CELL);
-    let commitment = create_slice_view(commitment, BYTES_PER_COMMITMENT);
-    let proof = create_slice_view(proof, BYTES_PER_COMMITMENT);
+    let cell = create_array_ref::<BYTES_PER_CELL, _>(cell);
+    let commitment = create_array_ref::<BYTES_PER_COMMITMENT, _>(commitment);
+    let proof = create_array_ref::<BYTES_PER_COMMITMENT, _>(proof);
 
     // Computation
     //

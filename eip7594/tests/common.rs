@@ -1,5 +1,3 @@
-use eip7594::{Bytes48, Cell};
-
 /// Data from the test input could also be malformed,
 /// So we use this type to represent that.
 /// For example, although a proof should be 48 bytes, the test input
@@ -47,12 +45,4 @@ fn remove_hex_prefix(s: &str) -> &str {
 pub fn bytes_from_hex(bytes: &str) -> Vec<u8> {
     let bytes = remove_hex_prefix(&bytes);
     hex::decode(bytes).unwrap()
-}
-pub fn bytes48_from_hex(bytes: &str) -> Bytes48 {
-    bytes_from_hex(bytes).try_into().unwrap()
-}
-
-pub fn cell_from_hex(cell: &str) -> Cell {
-    let cell = remove_hex_prefix(&cell);
-    hex::decode(cell).unwrap().try_into().unwrap()
 }

@@ -1,4 +1,4 @@
-use bls12_381::G1Point;
+use bls12_381::{G1Point, Scalar};
 use kzg_multi_open::{
     commit_key::{CommitKey, CommitKeyLagrange},
     create_eth_commit_opening_keys,
@@ -9,12 +9,12 @@ use kzg_multi_open::{
 
 use crate::{
     constants::{
-        BYTES_PER_BLOB, CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL,
+        CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL,
         FIELD_ELEMENTS_PER_EXT_BLOB,
     },
     serialization::{self, serialize_g1_compressed, SerializationError},
     verifier::{VerifierContext, VerifierError},
-    BlobRef, Bytes48Ref, Cell, CellID, CellRef, KZGCommitment, KZGProof,
+    BlobRefFixed, Bytes48RefFixed, Cell, CellID, CellRefFixed, KZGCommitment, KZGProof,
 };
 
 /// Errors that can occur while calling a method in the Prover API
@@ -82,7 +82,7 @@ impl ProverContext {
     }
 
     /// Computes the KZG commitment to the polynomial represented by the blob.
-    pub fn blob_to_kzg_commitment(&self, blob: BlobRef) -> Result<KZGCommitment, ProverError> {
+    pub fn blob_to_kzg_commitment(&self, blob: BlobRefFixed) -> Result<KZGCommitment, ProverError> {
         // Deserialize the blob into scalars. The blob is in lagrange form.
         let mut scalars =
             serialization::deserialize_blob_to_scalars(blob).map_err(ProverError::Serialization)?;
@@ -101,7 +101,7 @@ impl ProverContext {
     /// Computes the cells and the KZG proofs for the given blob.
     pub fn compute_cells_and_kzg_proofs(
         &self,
-        blob: BlobRef,
+        blob: BlobRefFixed,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
         // Deserialize the blob into scalars. The blob is in lagrange form.
         let mut scalars =
@@ -118,13 +118,7 @@ impl ProverContext {
         let (proofs, evaluations) = self.fk20.compute_multi_opening_proofs(poly_coeff);
 
         // Serialize the evaluations into `Cell`s.
-        let cells = evaluations
-            .iter()
-            .map(|eval| serialization::serialize_scalars_to_cell(eval))
-            .collect::<Vec<_>>();
-        let cells: [Cell; CELLS_PER_EXT_BLOB] = cells
-            .try_into()
-            .unwrap_or_else(|_| panic!("expected {} number of cells", CELLS_PER_EXT_BLOB));
+        let cells = evaluations_to_cells(evaluations.into_iter());
 
         // Serialize the proofs into `KZGProof`s.
         let proofs: Vec<_> = proofs.iter().map(serialize_g1_compressed).collect();
@@ -136,7 +130,10 @@ impl ProverContext {
     }
 
     #[deprecated(note = "This function is deprecated, use `compute_cells_and_kzg_proofs` instead")]
-    pub fn compute_cells(&self, blob: BlobRef) -> Result<[Cell; CELLS_PER_EXT_BLOB], ProverError> {
+    pub fn compute_cells(
+        &self,
+        blob: BlobRefFixed,
+    ) -> Result<[Cell; CELLS_PER_EXT_BLOB], ProverError> {
         // Deserialize the blob into scalars. The blob is in lagrange form.
         let mut scalars =
             serialization::deserialize_blob_to_scalars(blob).map_err(ProverError::Serialization)?;
@@ -152,13 +149,7 @@ impl ProverContext {
         let evaluations = self.fk20.compute_evaluation_sets(poly_coeff);
 
         // Serialize the evaluations into cells.
-        let cells = evaluations
-            .iter()
-            .map(|eval| serialization::serialize_scalars_to_cell(eval))
-            .collect::<Vec<_>>();
-        let cells: [Cell; CELLS_PER_EXT_BLOB] = cells
-            .try_into()
-            .unwrap_or_else(|_| panic!("expected {} number of cells", CELLS_PER_EXT_BLOB));
+        let cells = evaluations_to_cells(evaluations.into_iter());
 
         Ok(cells)
     }
@@ -168,26 +159,49 @@ impl ProverContext {
     pub fn recover_cells_and_proofs(
         &self,
         cell_ids: Vec<CellID>,
-        cells: Vec<CellRef>,
-        _proofs: Vec<Bytes48Ref>,
+        cells: Vec<CellRefFixed>,
+        _proofs: Vec<Bytes48RefFixed>,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
-        // Use erasure decoding to recover all of the cells.
-        // These will be in serialized form
-        let cells = self
+        // Use erasure decoding to recover the codeword.
+        // TODO: Make this return the polynomial coeff and then just copy-paste the rest of
+        // TODO the code from compute_cells_and_kzg_proofs
+        let recovered_codeword = self
             .verifier_context
-            .recover_all_cells(cell_ids, cells)
+            .recover_polynomial(cell_ids, cells)
             .map_err(ProverError::RecoveryFailure)?;
 
-        // Concatenate the cells together and extract the blob.
-        let extension_blob = cells.into_iter().flatten().collect::<Vec<_>>();
+        // The first FIELD_ELEMENTS_PER_BLOB elements correspond to the polynomial
+        // represented by the blob.
+        let blob_polynomial = &recovered_codeword[..FIELD_ELEMENTS_PER_BLOB];
 
         // To compute the proofs, we need the Blob.
         // The blob will be the first BYTES_PER_BLOB bytes from the extension blob.
-        let blob = &extension_blob[..BYTES_PER_BLOB];
+        let blob: Vec<_> = blob_polynomial
+            .into_iter()
+            .map(Scalar::to_bytes_be)
+            .flatten()
+            .collect();
 
         // Compute the cells and the proofs for the given blob.
-        self.compute_cells_and_kzg_proofs(blob)
+        self.compute_cells_and_kzg_proofs(&blob.try_into().unwrap())
     }
+}
+
+pub(crate) fn evaluations_to_cells<T: AsRef<[Scalar]>>(
+    evaluations: impl Iterator<Item = T>,
+) -> [Cell; CELLS_PER_EXT_BLOB] {
+    let cells: Vec<Cell> = evaluations
+        .map(|eval| serialization::serialize_scalars_to_cell(eval.as_ref()))
+        .map(|cell| {
+            cell.into_boxed_slice()
+                .try_into()
+                .expect("infallible: Vec<u8> should have length equal to BYTES_PER_CELL")
+        })
+        .collect();
+
+    cells
+        .try_into()
+        .unwrap_or_else(|_| panic!("expected {} number of cells", CELLS_PER_EXT_BLOB))
 }
 
 #[cfg(test)]
@@ -203,7 +217,9 @@ mod tests {
 
         let blob_bytes = hex::decode(BLOB_STR).unwrap();
 
-        let got_commitment = ctx.blob_to_kzg_commitment(&blob_bytes).unwrap();
+        let got_commitment = ctx
+            .blob_to_kzg_commitment(&blob_bytes.try_into().unwrap())
+            .unwrap();
         let expected_commitment = eth_commitment().to_compressed();
 
         assert_eq!(got_commitment, expected_commitment);
@@ -216,7 +232,9 @@ mod tests {
 
         let blob_bytes = hex::decode(BLOB_STR).unwrap();
 
-        let (got_cells, got_proofs) = ctx.compute_cells_and_kzg_proofs(&blob_bytes).unwrap();
+        let (got_cells, got_proofs) = ctx
+            .compute_cells_and_kzg_proofs(&blob_bytes.try_into().unwrap())
+            .unwrap();
 
         let expected_proofs = PROOFS_STR;
         let expected_cells = CELLS_STR;
@@ -226,7 +244,7 @@ mod tests {
             let expected_cell_str = expected_cells[k];
 
             let got_proof_str = hex::encode(&got_proofs[k]);
-            let got_cells_str = hex::encode(&got_cells[k]);
+            let got_cells_str = hex::encode(&*got_cells[k]);
 
             assert_eq!(got_cells_str, expected_cell_str);
             assert_eq!(got_proof_str, expected_proof_str);

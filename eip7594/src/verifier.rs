@@ -5,11 +5,9 @@ use crate::{
         BYTES_PER_CELL, CELLS_PER_EXT_BLOB, EXTENSION_FACTOR, FIELD_ELEMENTS_PER_BLOB,
         FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB,
     },
-    serialization::{
-        deserialize_cell_to_scalars, deserialize_compressed_g1, serialize_scalars_to_cell,
-        SerializationError,
-    },
-    Bytes48Ref, Cell, CellID, CellRef, ColumnIndex, RowIndex,
+    prover::evaluations_to_cells,
+    serialization::{deserialize_cell_to_scalars, deserialize_compressed_g1, SerializationError},
+    Bytes48Ref, Bytes48RefFixed, Cell, CellID, CellRefFixed, ColumnIndex, RowIndex,
 };
 use bls12_381::Scalar;
 use erasure_codes::{reed_solomon::Erasures, ReedSolomon};
@@ -97,7 +95,7 @@ impl VerifierContext {
         &self,
         commitment_bytes: Bytes48Ref,
         cell_id: CellID,
-        cell: CellRef,
+        cell: CellRefFixed,
         proof_bytes: Bytes48Ref,
     ) -> Result<(), VerifierError> {
         sanity_check_cells_and_cell_ids(&[cell_id], &[cell])?;
@@ -124,18 +122,16 @@ impl VerifierContext {
     ///
     /// Given a collection of commitments, cells and proofs, this functions verifies that
     /// the cells are consistent with the commitments using the KZG proofs.
-    ///
-    // TODO: take a slice instead of vectors here or something opaque like impl Iterator<Item = &[u8]>
-    pub fn verify_cell_kzg_proof_batch<T: AsRef<[u8]> + Clone>(
+    pub fn verify_cell_kzg_proof_batch(
         &self,
         // This is a deduplicated list of row commitments
         // It is not indicative of the total number of commitments in the batch.
         // This is what row_indices is used for.
-        row_commitments_bytes: Vec<T>,
+        row_commitments_bytes: Vec<Bytes48RefFixed>,
         row_indices: Vec<RowIndex>,
         column_indices: Vec<ColumnIndex>,
-        cells: Vec<CellRef>,
-        proofs_bytes: Vec<T>,
+        cells: Vec<CellRefFixed>,
+        proofs_bytes: Vec<Bytes48RefFixed>,
     ) -> Result<(), VerifierError> {
         // TODO: This currently uses the naive method
         //
@@ -193,8 +189,19 @@ impl VerifierContext {
     pub fn recover_all_cells(
         &self,
         cell_ids: Vec<CellID>,
-        cells: Vec<CellRef>, // TODO: We could use an AsRef here or use a strongly typed array
-    ) -> Result<Vec<Cell>, VerifierError> {
+        cells: Vec<CellRefFixed>,
+    ) -> Result<[Cell; CELLS_PER_EXT_BLOB], VerifierError> {
+        let recovered_codeword = self.recover_polynomial(cell_ids, cells)?;
+        Ok(evaluations_to_cells(
+            recovered_codeword.chunks_exact(FIELD_ELEMENTS_PER_CELL),
+        ))
+    }
+
+    pub(crate) fn recover_polynomial(
+        &self,
+        cell_ids: Vec<CellID>,
+        cells: Vec<CellRefFixed>,
+    ) -> Result<Vec<Scalar>, VerifierError> {
         // TODO: We should check that code does not assume that the CellIDs are sorted.
 
         sanity_check_cells_and_cell_ids(&cell_ids, &cells)?;
@@ -237,8 +244,11 @@ impl VerifierContext {
             }
         }
 
-        let coset_evaluations: Result<Vec<_>, _> =
-            cells.into_iter().map(deserialize_cell_to_scalars).collect();
+        let coset_evaluations: Result<Vec<_>, _> = cells
+            .into_iter()
+            .map(AsRef::as_ref)
+            .map(deserialize_cell_to_scalars)
+            .collect();
         let coset_evaluations = coset_evaluations.map_err(VerifierError::Serialization)?;
 
         // Fill in the missing coset_evaluation_sets in bit-reversed order
@@ -270,10 +280,7 @@ impl VerifierContext {
         // Reverse the order of the recovered points to be in bit-reversed order
         reverse_bit_order(&mut recovered_codeword);
 
-        Ok(recovered_codeword
-            .chunks_exact(FIELD_ELEMENTS_PER_CELL)
-            .map(serialize_scalars_to_cell)
-            .collect())
+        Ok(recovered_codeword)
     }
 }
 
@@ -286,7 +293,7 @@ fn is_cell_ids_unique(cell_ids: &[CellID]) -> bool {
 
 fn sanity_check_cells_and_cell_ids(
     cell_ids: &[CellID],
-    cells: &[CellRef],
+    cells: &[CellRefFixed],
 ) -> Result<(), VerifierError> {
     // Check that the number of cell IDs is equal to the number of cells
     if cell_ids.len() != cells.len() {
@@ -364,7 +371,7 @@ mod tests {
 
         for k in 0..proofs_bytes.len() {
             let proof_bytes = proofs_bytes[k];
-            let cell_bytes = cells_bytes[k].clone();
+            let cell_bytes = cells_bytes[k].clone().try_into().unwrap();
             let cell_id = k as u64;
 
             assert!(ctx
@@ -374,11 +381,18 @@ mod tests {
 
         assert!(ctx
             .verify_cell_kzg_proof_batch(
-                vec![commitment_bytes; proofs_bytes.len()],
+                vec![&commitment_bytes; proofs_bytes.len()],
                 vec![0; proofs_bytes.len()],
                 (0..proofs_bytes.len()).map(|x| x as u64).collect(),
-                cells_bytes.iter().map(|cell| cell.as_slice()).collect(),
-                proofs_bytes,
+                cells_bytes
+                    .iter()
+                    .map(Vec::as_slice)
+                    .map(|cell| cell.try_into().unwrap())
+                    .collect(),
+                proofs_bytes
+                    .iter()
+                    .map(|proof| proof.try_into().unwrap())
+                    .collect(),
             )
             .is_ok());
     }
@@ -413,10 +427,16 @@ mod tests {
         let recovered_cells = ctx
             .recover_all_cells(
                 cell_ids_to_keep,
-                cells_to_keep.iter().map(|v| v.as_slice()).collect(),
+                cells_to_keep
+                    .iter()
+                    .map(Vec::as_slice)
+                    .map(|v| v.try_into().unwrap())
+                    .collect(),
             )
             .unwrap();
 
-        assert_eq!(recovered_cells, all_cells);
+        for (recovered_cell, expected_cell) in recovered_cells.into_iter().zip(all_cells) {
+            assert_eq!(&recovered_cell[..], &expected_cell[..])
+        }
     }
 }

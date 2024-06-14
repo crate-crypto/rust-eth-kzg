@@ -8,8 +8,6 @@ mod common;
 mod serde_ {
     use crate::common::{bytes_from_hex, UnsafeBytes};
 
-    use super::common::cell_from_hex;
-    use eip7594::Cell;
     use serde::Deserialize;
 
     #[derive(Deserialize)]
@@ -31,7 +29,7 @@ mod serde_ {
     pub struct TestVector {
         pub commitment: UnsafeBytes,
         pub cell_id: u64,
-        pub cell: Cell,
+        pub cell: UnsafeBytes,
         pub proof: UnsafeBytes,
         pub output: Option<bool>,
     }
@@ -48,7 +46,7 @@ mod serde_ {
             let commitment = bytes_from_hex(&yaml_test_vector.input.commitment);
             let proof = bytes_from_hex(&yaml_test_vector.input.proof);
             let cell_id = yaml_test_vector.input.cell_id;
-            let cell = cell_from_hex(&yaml_test_vector.input.cell);
+            let cell = bytes_from_hex(&yaml_test_vector.input.cell);
 
             let output = yaml_test_vector.output;
 
@@ -74,10 +72,18 @@ fn test_verify_cell_kzg_proof() {
         let yaml_data = fs::read_to_string(&test_file).unwrap();
         let test = TestVector::from_str(&yaml_data);
 
+        let cell = match (test.cell).try_into() {
+            Ok(cell) => cell,
+            Err(_) => {
+                assert!(test.output.is_none());
+                continue;
+            }
+        };
+
         match verifier_context.verify_cell_kzg_proof(
             &test.commitment,
             test.cell_id,
-            &test.cell,
+            &cell,
             &test.proof,
         ) {
             Ok(_) => {

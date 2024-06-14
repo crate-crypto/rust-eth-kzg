@@ -8,7 +8,6 @@ mod common;
 mod serde_ {
     use crate::common::{bytes_from_hex, UnsafeBytes};
 
-    use super::common::cell_from_hex;
     use serde::Deserialize;
 
     #[derive(Deserialize)]
@@ -56,7 +55,7 @@ mod serde_ {
                 .input
                 .cells
                 .into_iter()
-                .map(|cell| cell_from_hex(&cell))
+                .map(|cell| bytes_from_hex(&cell))
                 .collect();
             let proofs: Vec<_> = yaml_test_vector
                 .input
@@ -92,12 +91,57 @@ fn test_verify_cell_kzg_proof_batch() {
         let yaml_data = fs::read_to_string(&test_file).unwrap();
         let test = TestVector::from_str(&yaml_data);
 
+        let cells: Result<_, _> = test
+            .cells
+            .iter()
+            .map(Vec::as_slice)
+            .map(|v| v.try_into())
+            .collect();
+
+        let cells = match cells {
+            Ok(cells) => cells,
+            Err(_) => {
+                assert!(test.output.is_none());
+                continue;
+            }
+        };
+
+        let commitments: Result<_, _> = test
+            .row_commitments
+            .iter()
+            .map(Vec::as_slice)
+            .map(|v| v.try_into())
+            .collect();
+
+        let commitments = match commitments {
+            Ok(commitments) => commitments,
+            Err(_) => {
+                assert!(test.output.is_none());
+                continue;
+            }
+        };
+
+        let proofs: Result<_, _> = test
+            .proofs
+            .iter()
+            .map(Vec::as_slice)
+            .map(|v| v.try_into())
+            .collect();
+
+        let proofs = match proofs {
+            Ok(proofs) => proofs,
+            Err(_) => {
+                assert!(test.output.is_none());
+                continue;
+            }
+        };
+
         match verifier_context.verify_cell_kzg_proof_batch(
-            test.row_commitments.iter().map(|v| v.as_slice()).collect(),
+            commitments,
             test.row_indices,
             test.column_indices,
-            test.cells.iter().map(|v| v.as_slice()).collect(),
-            test.proofs.iter().map(|v| v.as_slice()).collect(),
+            cells,
+            proofs,
         ) {
             Ok(_) => {
                 // We arrive at this point if the proof verified as true

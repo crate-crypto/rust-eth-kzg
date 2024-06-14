@@ -1,4 +1,4 @@
-use constants::BYTES_PER_COMMITMENT;
+use constants::{BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT};
 use prover::ProverContext;
 use verifier::VerifierContext;
 
@@ -17,10 +17,14 @@ pub type Blob = Vec<u8>;
 // TODO: doing this for now, since the js api will explicitly give us a slice and not a reference to a vector
 // TODO: downside of this is that we lose type safety
 pub type BlobRef<'a> = &'a [u8];
+pub type BlobRefFixed<'a> = &'a [u8; BYTES_PER_BLOB];
 pub type Bytes48Ref<'a> = &'a [u8];
-pub type CellRef<'a> = &'a [u8];
+pub type Bytes48RefFixed<'a> = &'a [u8; 48];
 
-pub type Cell = Vec<u8>;
+pub type CellRef<'a> = &'a [u8];
+pub type CellRefFixed<'a> = &'a [u8; BYTES_PER_CELL];
+
+pub type Cell = Box<[u8; BYTES_PER_CELL]>;
 pub type KZGProof = [u8; BYTES_PER_COMMITMENT];
 pub type KZGCommitment = [u8; BYTES_PER_COMMITMENT];
 pub type CellID = u64;

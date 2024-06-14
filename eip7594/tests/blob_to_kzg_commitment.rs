@@ -1,14 +1,15 @@
 use common::collect_test_files;
+use eip7594::constants::BYTES_PER_BLOB;
 use serde_::TestVector;
 use std::fs;
 
 mod common;
 
 mod serde_ {
-    use crate::common::bytes48_from_hex;
+
+    use crate::common::UnsafeBytes;
 
     use super::common::bytes_from_hex;
-    use eip7594::{Blob, Bytes48};
     use serde::Deserialize;
 
     #[derive(Deserialize)]
@@ -25,8 +26,8 @@ mod serde_ {
     }
 
     pub struct TestVector {
-        pub blob: Blob,
-        pub commitment: Option<Bytes48>,
+        pub blob: UnsafeBytes,
+        pub commitment: Option<UnsafeBytes>,
     }
 
     impl TestVector {
@@ -44,7 +45,7 @@ mod serde_ {
             let input = bytes_from_hex(&input);
 
             let commitment = match output {
-                Some(commitment) => Some(bytes48_from_hex(&commitment)),
+                Some(commitment) => Some(bytes_from_hex(&commitment)),
                 None => None,
             };
 
@@ -67,11 +68,21 @@ fn test_blob_to_kzg_commitment() {
         let yaml_data = fs::read_to_string(test_file).unwrap();
         let test = TestVector::from_str(&yaml_data);
 
-        match prover_context.blob_to_kzg_commitment(&test.blob) {
+        //
+        let blob: &[u8; BYTES_PER_BLOB] = match (&test.blob[..]).try_into() {
+            Ok(blob) => blob,
+            Err(_) => {
+                // Blob does not have a valid size
+                assert!(test.commitment.is_none());
+                continue;
+            }
+        };
+
+        match prover_context.blob_to_kzg_commitment(blob) {
             Ok(commitment) => {
                 let expected_commitment = test.commitment.unwrap();
 
-                assert_eq!(commitment, expected_commitment);
+                assert_eq!(&commitment[..], &expected_commitment);
             }
             Err(_) => {
                 // On an error, we expect the output to be null

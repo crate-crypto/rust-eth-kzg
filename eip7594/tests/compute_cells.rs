@@ -5,8 +5,10 @@ use std::fs;
 mod common;
 
 mod serde_ {
-    use super::common::{bytes_from_hex, cell_from_hex};
-    use eip7594::{Blob, Cell};
+    use crate::common::UnsafeBytes;
+
+    use super::common::bytes_from_hex;
+    use eip7594::Blob;
     use serde::Deserialize;
 
     #[derive(Deserialize)]
@@ -24,7 +26,7 @@ mod serde_ {
 
     pub struct TestVector {
         pub blob: Blob,
-        pub cells: Option<Vec<Cell>>,
+        pub cells: Option<Vec<UnsafeBytes>>,
     }
 
     impl TestVector {
@@ -43,7 +45,7 @@ mod serde_ {
 
             let output = match output {
                 Some(cells) => {
-                    let cells: Vec<_> = cells.iter().map(|cell| cell_from_hex(cell)).collect();
+                    let cells: Vec<_> = cells.iter().map(|cell| bytes_from_hex(cell)).collect();
                     Some(cells)
                 }
                 None => None,
@@ -68,7 +70,15 @@ fn test_compute_cells() {
         let yaml_data = fs::read_to_string(test_file).unwrap();
         let test = TestVector::from_str(&yaml_data);
 
-        match prover_context.compute_cells(&test.blob) {
+        let blob = match test.blob.try_into() {
+            Ok(blob) => blob,
+            Err(_) => {
+                assert!(test.cells.is_none());
+                continue;
+            }
+        };
+
+        match prover_context.compute_cells(&blob) {
             Ok(cells) => {
                 let expected_cells = test.cells.unwrap();
 
@@ -77,7 +87,7 @@ fn test_compute_cells() {
 
                     let got_cell = &cells[k];
 
-                    assert_eq!(got_cell, expected_cell);
+                    assert_eq!(&got_cell[..], &expected_cell[..]);
                 }
             }
             Err(_) => {

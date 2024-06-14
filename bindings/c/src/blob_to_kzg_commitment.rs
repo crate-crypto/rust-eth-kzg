@@ -1,6 +1,6 @@
 use eip7594::constants::{BYTES_PER_BLOB, BYTES_PER_COMMITMENT};
 
-use crate::pointer_utils::{create_slice_view, deref_const, write_to_slice};
+use crate::pointer_utils::{create_array_ref, deref_const, write_to_slice};
 use crate::{CResult, PeerDASContext};
 
 pub(crate) fn _blob_to_kzg_commitment(
@@ -13,10 +13,13 @@ pub(crate) fn _blob_to_kzg_commitment(
     // Dereference the input pointers
     //
     let ctx = deref_const(ctx).prover_ctx();
-    let blob = create_slice_view(blob, BYTES_PER_BLOB);
+    let blob = create_array_ref::<BYTES_PER_BLOB, _>(blob);
 
     // Computation
     //
+    let blob = blob
+        .try_into()
+        .expect("infallible: blob should have size {BYTES_PER_BLOB}");
     let commitment = ctx
         .blob_to_kzg_commitment(blob)
         .map_err(|err| CResult::with_error(&format!("{:?}", err)))?;

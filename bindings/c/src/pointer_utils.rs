@@ -22,22 +22,22 @@ pub(crate) fn ptr_ptr_to_slice_slice_mut<'a, T>(
 }
 
 /// Dereference a raw pointer to a pointer to a vector of slices
-pub(crate) fn ptr_ptr_to_vec_slice_const<'a>(
+pub(crate) fn ptr_ptr_to_vec_slice_const<'a, const INNER_LEN: usize>(
     ptr_ptr: *const *const u8,
     outer_len: usize,
-    inner_len: usize,
-) -> Vec<&'a [u8]> {
+) -> Vec<&'a [u8; INNER_LEN]> {
     if outer_len == 0 {
         return Vec::new();
     }
 
     let vec_slice: &[*const u8] = unsafe { std::slice::from_raw_parts(ptr_ptr, outer_len) };
 
-    let mut result: Vec<&[u8]> = Vec::with_capacity(outer_len);
+    let mut result: Vec<&[u8; INNER_LEN]> = Vec::with_capacity(outer_len);
 
     // Convert each inner pointer to a slice of u8
     for ptr in vec_slice.iter() {
-        result.push(create_slice_view(*ptr, inner_len));
+        let slice = create_array_ref::<INNER_LEN, _>(*ptr);
+        result.push(slice);
     }
 
     result
@@ -62,9 +62,13 @@ pub(crate) fn write_to_2d_slice<T: Copy, const N: usize>(
     }
 }
 
-/// Constructs a slice from a pointer and a length.
+/// Constructs a array_ref from a pointer and a length.
 ///
 /// If the length is 0, an empty slice is returned regardless of the pointer.
+pub(crate) fn create_array_ref<'a, const LEN: usize, T>(ptr: *const T) -> &'a [T; LEN] {
+    let slice = create_slice_view(ptr, LEN);
+    slice.try_into().expect("item should have length {LEN}")
+}
 pub(crate) fn create_slice_view<'a, T>(ptr: *const T, len: usize) -> &'a [T] {
     if len == 0 {
         &[]

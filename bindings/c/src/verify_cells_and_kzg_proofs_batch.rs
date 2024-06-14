@@ -44,15 +44,14 @@ pub(crate) fn _verify_cell_kzg_proof_batch(
     // Dereference the input pointers
     //
     let ctx = deref_const(ctx).verifier_ctx();
-    let row_commitments = ptr_ptr_to_vec_slice_const(
+    let row_commitments = ptr_ptr_to_vec_slice_const::<BYTES_PER_COMMITMENT>(
         row_commitments,
         row_commitments_length as usize,
-        BYTES_PER_COMMITMENT,
     );
     let row_indices = create_slice_view(row_indices, row_indices_length as usize);
     let column_indices = create_slice_view(column_indices, column_indices_length as usize);
-    let cells = ptr_ptr_to_vec_slice_const(cells, cells_length as usize, BYTES_PER_CELL);
-    let proofs = ptr_ptr_to_vec_slice_const(proofs, proofs_length as usize, BYTES_PER_COMMITMENT);
+    let cells = ptr_ptr_to_vec_slice_const::<BYTES_PER_CELL>(cells, cells_length as usize);
+    let proofs = ptr_ptr_to_vec_slice_const::<BYTES_PER_COMMITMENT>(proofs, proofs_length as usize);
     let verified = deref_mut(verified);
 
     // Computation

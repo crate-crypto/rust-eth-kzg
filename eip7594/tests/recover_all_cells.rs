@@ -5,8 +5,8 @@ use std::fs;
 mod common;
 
 mod serde_ {
-    use super::common::cell_from_hex;
-    use eip7594::Cell;
+    use crate::common::{bytes_from_hex, UnsafeBytes};
+
     use serde::Deserialize;
 
     #[derive(Deserialize)]
@@ -25,8 +25,8 @@ mod serde_ {
 
     pub struct TestVector {
         pub input_cell_ids: Vec<u64>,
-        pub input_cells: Vec<Cell>,
-        pub output_cells: Option<Vec<Cell>>,
+        pub input_cells: Vec<UnsafeBytes>,
+        pub output_cells: Option<Vec<UnsafeBytes>>,
     }
 
     impl TestVector {
@@ -44,13 +44,15 @@ mod serde_ {
                 .input
                 .cells
                 .iter()
-                .map(|cell| cell_from_hex(cell))
+                .map(|cell| bytes_from_hex(cell))
                 .collect();
 
             let output = match yaml_test_vector.output {
                 Some(cells) => {
-                    let cells: Vec<_> =
-                        cells.into_iter().map(|cell| cell_from_hex(&cell)).collect();
+                    let cells: Vec<_> = cells
+                        .into_iter()
+                        .map(|cell| bytes_from_hex(&cell))
+                        .collect();
                     Some(cells)
                 }
                 None => None,
@@ -76,7 +78,20 @@ fn test_recover_all_cells() {
         let yaml_data = fs::read_to_string(test_file).unwrap();
         let test = TestVector::from_str(&yaml_data);
 
-        let input_cells = test.input_cells.iter().map(|v| v.as_slice()).collect();
+        let input_cells: Result<_, _> = test
+            .input_cells
+            .iter()
+            .map(Vec::as_slice)
+            .map(|v| v.try_into())
+            .collect();
+
+        let input_cells = match input_cells {
+            Ok(input_cells) => input_cells,
+            Err(_) => {
+                assert!(test.output_cells.is_none());
+                continue;
+            }
+        };
 
         match verifier_context.recover_all_cells(test.input_cell_ids, input_cells) {
             Ok(cells) => {
@@ -87,7 +102,7 @@ fn test_recover_all_cells() {
 
                     let got_cell = &cells[k];
 
-                    assert_eq!(got_cell, expected_cell);
+                    assert_eq!(&got_cell[..], expected_cell);
                 }
             }
             Err(_) => {

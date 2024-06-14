@@ -1,6 +1,11 @@
 #[derive(Debug)]
 pub enum Error {
     Jni(jni::errors::Error),
+    IncorrectSize {
+        expected: usize,
+        got: usize,
+        name: &'static str,
+    },
     Prover(eip7594::prover::ProverError),
     Verifier(eip7594::verifier::VerifierError),
 }

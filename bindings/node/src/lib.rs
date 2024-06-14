@@ -55,6 +55,7 @@ impl ProverContextJs {
   pub fn blob_to_kzg_commitment(&self, blob: Uint8Array) -> Result<Uint8Array> {
     let blob = blob.as_ref();
     let prover_context = &self.inner;
+    let blob = slice_to_array_ref(blob, "blob")?;
 
     let commitment = prover_context.blob_to_kzg_commitment(blob).map_err(|err| {
       Error::from_reason(format!(
@@ -75,6 +76,8 @@ impl ProverContextJs {
     let blob = blob.as_ref();
     let prover_context = &self.inner;
 
+    let blob = slice_to_array_ref(blob, "blob")?;
+
     let (cells, proofs) = prover_context
       .compute_cells_and_kzg_proofs(blob)
       .map_err(|err| {
@@ -86,7 +89,7 @@ impl ProverContextJs {
 
     let cells_uint8array = cells
       .into_iter()
-      .map(Uint8Array::from)
+      .map(|cell| Uint8Array::from(cell.to_vec()))
       .collect::<Vec<Uint8Array>>();
     let proofs_uint8array = proofs
       .into_iter()
@@ -155,6 +158,8 @@ impl VerifierContextJs {
 
     let verifier_context = &self.inner;
 
+    let cell = slice_to_array_ref(cell, "cell")?;
+
     let valid = verifier_context.verify_cell_kzg_proof(commitment, cell_id_u64, cell, proof);
     match valid {
       Ok(_) => Ok(true),
@@ -189,9 +194,18 @@ impl VerifierContextJs {
     let row_indices: Vec<_> = row_indices.into_iter().map(bigint_to_u64).collect();
     let column_indices: Vec<_> = column_indices.into_iter().map(bigint_to_u64).collect();
 
-    let commitments: Vec<_> = commitments.iter().map(|comm| comm.as_ref()).collect();
-    let cells: Vec<_> = cells.iter().map(|cell| cell.as_ref()).collect();
-    let proofs: Vec<_> = proofs.iter().map(|proof| proof.as_ref()).collect();
+    let commitments: Vec<_> = commitments
+      .iter()
+      .map(|commitment| slice_to_array_ref(commitment, "commitment"))
+      .collect::<Result<_, _>>()?;
+    let cells: Vec<_> = cells
+      .iter()
+      .map(|cell| slice_to_array_ref(cell, "cell"))
+      .collect::<Result<_, _>>()?;
+    let proofs: Vec<_> = proofs
+      .iter()
+      .map(|proof| slice_to_array_ref(proof, "proof"))
+      .collect::<Result<_, _>>()?;
 
     let verifier_context = &self.inner;
 
@@ -236,13 +250,18 @@ impl VerifierContextJs {
 
     let verifier_context = &self.inner;
 
+    let cells: Vec<_> = cells
+      .iter()
+      .map(|cell| slice_to_array_ref(cell, "cell"))
+      .collect::<Result<_, _>>()?;
+
     let cells = verifier_context
       .recover_all_cells(cell_ids, cells)
       .map_err(|err| Error::from_reason(format!("failed to compute compute_cells: {:?}", err)))?;
 
     let cells_uint8array = cells
       .into_iter()
-      .map(Uint8Array::from)
+      .map(|cell| Uint8Array::from(cell.to_vec()))
       .collect::<Vec<Uint8Array>>();
 
     Ok(cells_uint8array)
@@ -263,4 +282,17 @@ fn bigint_to_u64(value: BigInt) -> u64 {
   let (signed, value_u128, _) = value.get_u128();
   assert!(!signed, "value should be an unsigned integer");
   value_u128 as u64
+}
+
+fn slice_to_array_ref<'a, const N: usize>(
+  slice: &'a [u8],
+  name: &'static str,
+) -> Result<&'a [u8; N]> {
+  slice.try_into().map_err(|err| {
+    Error::from_reason(format!(
+      "{name} must have size {N}, found size {}\n err:{}",
+      slice.len(),
+      err
+    ))
+  })
 }

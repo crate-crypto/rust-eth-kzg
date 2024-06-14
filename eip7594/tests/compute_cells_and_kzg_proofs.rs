@@ -5,8 +5,9 @@ use std::fs;
 mod common;
 
 mod serde_ {
-    use super::common::{bytes48_from_hex, bytes_from_hex, cell_from_hex};
-    use eip7594::{Blob, Bytes48, Cell};
+    use crate::common::UnsafeBytes;
+
+    use super::common::bytes_from_hex;
     use serde::Deserialize;
 
     #[derive(Deserialize)]
@@ -24,12 +25,12 @@ mod serde_ {
 
     #[derive(Debug, Clone)]
     pub struct KZGProofsAndCells {
-        pub proofs: Vec<Bytes48>,
-        pub cells: Vec<Cell>,
+        pub proofs: Vec<UnsafeBytes>,
+        pub cells: Vec<UnsafeBytes>,
     }
 
     pub struct TestVector {
-        pub blob: Blob,
+        pub blob: UnsafeBytes,
         pub proofs_and_cells: Option<KZGProofsAndCells>,
     }
 
@@ -51,9 +52,9 @@ mod serde_ {
                 Some((cells, kzg_proofs)) => {
                     let kzg_proofs: Vec<_> = kzg_proofs
                         .iter()
-                        .map(|proof| bytes48_from_hex(proof))
+                        .map(|proof| bytes_from_hex(proof))
                         .collect();
-                    let cells: Vec<_> = cells.iter().map(|cell| cell_from_hex(cell)).collect();
+                    let cells: Vec<_> = cells.iter().map(|cell| bytes_from_hex(cell)).collect();
                     Some((kzg_proofs, cells))
                 }
                 None => None,
@@ -81,7 +82,15 @@ fn test_compute_cells_and_kzg_proofs() {
         let yaml_data = fs::read_to_string(test_file).unwrap();
         let test = TestVector::from_str(&yaml_data);
 
-        match prover_context.compute_cells_and_kzg_proofs(&test.blob) {
+        let blob = match test.blob.try_into() {
+            Ok(blob) => blob,
+            Err(_) => {
+                assert!(test.proofs_and_cells.is_none());
+                continue;
+            }
+        };
+
+        match prover_context.compute_cells_and_kzg_proofs(&blob) {
             Ok((cells, proofs)) => {
                 let expected_proofs_and_cells = test.proofs_and_cells.unwrap();
 
@@ -95,8 +104,8 @@ fn test_compute_cells_and_kzg_proofs() {
                     let got_proof = &proofs[k];
                     let got_cell = &cells[k];
 
-                    assert_eq!(got_cell, expected_cell);
-                    assert_eq!(got_proof, expected_proof);
+                    assert_eq!(&got_cell[..], expected_cell);
+                    assert_eq!(&got_proof[..], expected_proof);
                 }
             }
             Err(_) => {
