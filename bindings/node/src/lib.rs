@@ -286,6 +286,10 @@ fn bigint_to_u64(value: BigInt) -> u64 {
   value_u128 as u64
 }
 
+/// Convert a slice into a reference to an array
+///
+/// This is needed as the API for rust library does
+/// not accept slices.
 fn slice_to_array_ref<'a, const N: usize>(
   slice: &'a [u8],
   name: &'static str,

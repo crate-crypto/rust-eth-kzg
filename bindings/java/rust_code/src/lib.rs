@@ -351,6 +351,10 @@ fn throw_on_error(env: &mut JNIEnv, err: Error, func_name: &'static str) {
         .expect("Failed to throw exception");
 }
 
+/// Convert a slice into a reference to an array
+///
+/// This is needed as the API for rust library does
+/// not accept slices.
 fn slice_to_array_ref<'a, const N: usize>(
     slice: &'a [u8],
     name: &'static str,
