@@ -17,9 +17,6 @@ pub(crate) fn _blob_to_kzg_commitment(
 
     // Computation
     //
-    let blob = blob
-        .try_into()
-        .expect("infallible: blob should have size {BYTES_PER_BLOB}");
     let commitment = ctx
         .blob_to_kzg_commitment(blob)
         .map_err(|err| CResult::with_error(&format!("{:?}", err)))?;

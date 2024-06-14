@@ -177,9 +177,8 @@ impl ProverContext {
         // To compute the proofs, we need the Blob.
         // The blob will be the first BYTES_PER_BLOB bytes from the extension blob.
         let blob: Vec<_> = blob_polynomial
-            .into_iter()
-            .map(Scalar::to_bytes_be)
-            .flatten()
+            .iter()
+            .flat_map(Scalar::to_bytes_be)
             .collect();
 
         // Compute the cells and the proofs for the given blob.

@@ -49,7 +49,7 @@ fn compute_cells_and_kzg_proofs<'local>(
     let blob = env.convert_byte_array(blob)?;
     let blob = slice_to_array_ref(&blob, "blob")?;
 
-    let (cells, proofs) = ctx.prover_ctx().compute_cells_and_kzg_proofs(&blob)?;
+    let (cells, proofs) = ctx.prover_ctx().compute_cells_and_kzg_proofs(blob)?;
     let cells = cells.map(|cell| *cell);
     cells_and_proofs_to_jobject(env, &cells, &proofs).map_err(Error::from)
 }
@@ -78,7 +78,7 @@ fn blob_to_kzg_commitment<'local>(
     let blob = env.convert_byte_array(blob)?;
     let blob = slice_to_array_ref(&blob, "blob")?;
 
-    let commitment = ctx.prover_ctx().blob_to_kzg_commitment(&blob)?;
+    let commitment = ctx.prover_ctx().blob_to_kzg_commitment(blob)?;
     env.byte_array_from_slice(&commitment).map_err(Error::from)
 }
 
@@ -118,7 +118,7 @@ fn verify_cell_kzg_proof(
 
     match ctx
         .verifier_ctx()
-        .verify_cell_kzg_proof(&commitment_bytes, cell_id, &cell, &proof_bytes)
+        .verify_cell_kzg_proof(&commitment_bytes, cell_id, cell, &proof_bytes)
     {
         Ok(_) => Ok(jboolean::from(true)),
         Err(VerifierError::InvalidProof) => Ok(jboolean::from(false)),

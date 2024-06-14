@@ -17,9 +17,6 @@ pub(crate) fn _compute_cells_and_kzg_proofs(
 
     // Computation
     //
-    let blob = blob
-        .try_into()
-        .expect("infallible: blob should have size {BYTES_PER_BLOB}");
     let (cells, proofs) = ctx
         .compute_cells_and_kzg_proofs(blob)
         .map_err(|err| CResult::with_error(&format!("{:?}", err)))?;

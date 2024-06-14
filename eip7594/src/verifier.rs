@@ -165,7 +165,7 @@ impl VerifierContext {
 
         let row_commitments_bytes: Vec<_> = row_indices
             .iter()
-            .map(|row_index| row_commitments_bytes[*row_index as usize].clone())
+            .map(|row_index| row_commitments_bytes[*row_index as usize])
             .collect();
 
         for k in 0..row_commitments_bytes.len() {
