@@ -114,6 +114,13 @@ impl ProverContext {
         // Convert the polynomial from lagrange to monomial form.
         let poly_coeff = self.poly_domain.ifft_scalars(scalars);
 
+        self.compute_cells_and_kzg_proofs_from_poly_coeff(poly_coeff)
+    }
+
+    fn compute_cells_and_kzg_proofs_from_poly_coeff(
+        &self,
+        poly_coeff: Vec<Scalar>,
+    ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
         // Compute the proofs and the evaluations of the polynomial.
         let (proofs, evaluations) = self.fk20.compute_multi_opening_proofs(poly_coeff);
 
@@ -162,27 +169,13 @@ impl ProverContext {
         cells: Vec<CellRefFixed>,
         _proofs: Vec<Bytes48RefFixed>,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
-        // Use erasure decoding to recover the codeword.
-        // TODO: Make this return the polynomial coeff and then just copy-paste the rest of
-        // TODO the code from compute_cells_and_kzg_proofs
-        let recovered_codeword = self
+        // Use erasure decoding to recover the polynomial corresponding to the blob in monomial form
+        let poly_coeff = self
             .verifier_context
-            .recover_polynomial(cell_ids, cells)
+            .recover_polynomial_coeff(cell_ids, cells)
             .map_err(ProverError::RecoveryFailure)?;
 
-        // The first FIELD_ELEMENTS_PER_BLOB elements correspond to the polynomial
-        // represented by the blob.
-        let blob_polynomial = &recovered_codeword[..FIELD_ELEMENTS_PER_BLOB];
-
-        // To compute the proofs, we need the Blob.
-        // The blob will be the first BYTES_PER_BLOB bytes from the extension blob.
-        let blob: Vec<_> = blob_polynomial
-            .iter()
-            .flat_map(Scalar::to_bytes_be)
-            .collect();
-
-        // Compute the cells and the proofs for the given blob.
-        self.compute_cells_and_kzg_proofs(&blob.try_into().unwrap())
+        self.compute_cells_and_kzg_proofs_from_poly_coeff(poly_coeff)
     }
 }
 
