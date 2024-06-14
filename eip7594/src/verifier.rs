@@ -191,13 +191,13 @@ impl VerifierContext {
         cell_ids: Vec<CellID>,
         cells: Vec<CellRefFixed>,
     ) -> Result<[Cell; CELLS_PER_EXT_BLOB], VerifierError> {
-        let recovered_codeword = self.recover_polynomial(cell_ids, cells)?;
+        let recovered_codeword = self.recover_extended_polynomial(cell_ids, cells)?;
         Ok(evaluations_to_cells(
             recovered_codeword.chunks_exact(FIELD_ELEMENTS_PER_CELL),
         ))
     }
 
-    pub(crate) fn recover_polynomial(
+    pub(crate) fn recover_polynomial_coeff(
         &self,
         cell_ids: Vec<CellID>,
         cells: Vec<CellRefFixed>,
@@ -269,13 +269,26 @@ impl VerifierContext {
 
         // We now have the evaluations in normal order and we know the indices/erasures that are missing
         // in normal order.
-        let mut recovered_codeword = self.rs.recover_polynomial_codeword(
+        Ok(self.rs.recover_polynomial_coefficient(
             coset_evaluations_flattened,
             Erasures::Cells {
                 cell_size: FIELD_ELEMENTS_PER_CELL,
                 cells: missing_cell_ids,
             },
-        );
+        ))
+    }
+
+    #[deprecated(
+        note = "This method will no longer be used, given we do not need to recover the full extended polynomial"
+    )]
+    pub(crate) fn recover_extended_polynomial(
+        &self,
+        cell_ids: Vec<CellID>,
+        cells: Vec<CellRefFixed>,
+    ) -> Result<Vec<Scalar>, VerifierError> {
+        let poly_coeff = self.recover_polynomial_coeff(cell_ids, cells)?;
+
+        let mut recovered_codeword = self.rs.domain_extended().fft_scalars(poly_coeff);
 
         // Reverse the order of the recovered points to be in bit-reversed order
         reverse_bit_order(&mut recovered_codeword);
