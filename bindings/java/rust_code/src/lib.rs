@@ -87,14 +87,14 @@ pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_verifyCellKZGPro
     mut env: JNIEnv<'local>,
     _class: JClass,
     ctx_ptr: jlong,
-    commitment_bytes: JByteArray<'local>,
+    commitment: JByteArray<'local>,
     cell_id: jlong,
     cell: JByteArray<'local>,
-    proof_bytes: JByteArray<'local>,
+    proof: JByteArray<'local>,
 ) -> jboolean {
     let ctx = unsafe { &*(ctx_ptr as *const PeerDASContext) };
 
-    match verify_cell_kzg_proof(&mut env, ctx, commitment_bytes, cell_id, cell, proof_bytes) {
+    match verify_cell_kzg_proof(&mut env, ctx, commitment, cell_id, cell, proof) {
         Ok(result) => result,
         Err(err) => {
             throw_on_error(&mut env, err, "verifyCellKZGProof");
@@ -105,20 +105,25 @@ pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_verifyCellKZGPro
 fn verify_cell_kzg_proof(
     env: &mut JNIEnv,
     ctx: &PeerDASContext,
-    commitment_bytes: JByteArray,
+    commitment: JByteArray,
     cell_id: jlong,
     cell: JByteArray,
-    proof_bytes: JByteArray,
+    proof: JByteArray,
 ) -> Result<jboolean, Error> {
-    let commitment_bytes = env.convert_byte_array(commitment_bytes)?;
+    let commitment = env.convert_byte_array(commitment)?;
+    let commitment = slice_to_array_ref(&commitment, "commitment")?;
+
     let cell_id = cell_id as u64;
+
     let cell = env.convert_byte_array(cell)?;
     let cell = slice_to_array_ref(&cell, "cell")?;
-    let proof_bytes = env.convert_byte_array(proof_bytes)?;
+
+    let proof = env.convert_byte_array(proof)?;
+    let proof = slice_to_array_ref(&proof, "proof")?;
 
     match ctx
         .verifier_ctx()
-        .verify_cell_kzg_proof(&commitment_bytes, cell_id, cell, &proof_bytes)
+        .verify_cell_kzg_proof(commitment, cell_id, cell, proof)
     {
         Ok(_) => Ok(jboolean::from(true)),
         Err(VerifierError::InvalidProof) => Ok(jboolean::from(false)),
@@ -131,7 +136,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_verifyCellKZGPro
     mut env: JNIEnv<'local>,
     _class: JClass,
     ctx_ptr: jlong,
-    commitment_bytes: JObjectArray<'local>,
+    commitment: JObjectArray<'local>,
     row_indices: JLongArray,
     column_indices: JLongArray,
     cells: JObjectArray<'local>,
@@ -142,7 +147,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_verifyCellKZGPro
     match verify_cell_kzg_proof_batch(
         &mut env,
         ctx,
-        commitment_bytes,
+        commitment,
         row_indices,
         column_indices,
         cells,
@@ -158,13 +163,13 @@ pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_verifyCellKZGPro
 fn verify_cell_kzg_proof_batch<'local>(
     env: &mut JNIEnv,
     ctx: &PeerDASContext,
-    commitment_bytes: JObjectArray<'local>,
+    commitment: JObjectArray<'local>,
     row_indices: JLongArray,
     column_indices: JLongArray,
     cells: JObjectArray<'local>,
     proofs: JObjectArray<'local>,
 ) -> Result<jboolean, Error> {
-    let commitment_bytes = jobject_array_to_2d_byte_array(env, commitment_bytes)?;
+    let commitment = jobject_array_to_2d_byte_array(env, commitment)?;
     let row_indices = jlongarray_to_vec_u64(env, row_indices)?;
     let column_indices = jlongarray_to_vec_u64(env, column_indices)?;
     let cells = jobject_array_to_2d_byte_array(env, cells)?;
@@ -174,7 +179,7 @@ fn verify_cell_kzg_proof_batch<'local>(
         .iter()
         .map(|cell| slice_to_array_ref(cell, "cell"))
         .collect::<Result<_, _>>()?;
-    let commitments: Vec<_> = commitment_bytes
+    let commitments: Vec<_> = commitment
         .iter()
         .map(|commitment| slice_to_array_ref(commitment, "commitment"))
         .collect::<Result<_, _>>()?;

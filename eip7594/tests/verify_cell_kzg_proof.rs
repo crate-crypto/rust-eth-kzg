@@ -79,13 +79,22 @@ fn test_verify_cell_kzg_proof() {
                 continue;
             }
         };
+        let commitment = match (test.commitment).try_into() {
+            Ok(commitment) => commitment,
+            Err(_) => {
+                assert!(test.output.is_none());
+                continue;
+            }
+        };
+        let proof = match (test.proof).try_into() {
+            Ok(proof) => proof,
+            Err(_) => {
+                assert!(test.output.is_none());
+                continue;
+            }
+        };
 
-        match verifier_context.verify_cell_kzg_proof(
-            &test.commitment,
-            test.cell_id,
-            &cell,
-            &test.proof,
-        ) {
+        match verifier_context.verify_cell_kzg_proof(&commitment, test.cell_id, &cell, &proof) {
             Ok(_) => {
                 // We arrive at this point if the proof verified as true
                 assert!(test.output.unwrap())

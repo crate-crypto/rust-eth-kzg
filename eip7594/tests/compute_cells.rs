@@ -8,7 +8,6 @@ mod serde_ {
     use crate::common::UnsafeBytes;
 
     use super::common::bytes_from_hex;
-    use eip7594::Blob;
     use serde::Deserialize;
 
     #[derive(Deserialize)]
@@ -25,7 +24,7 @@ mod serde_ {
     }
 
     pub struct TestVector {
-        pub blob: Blob,
+        pub blob: UnsafeBytes,
         pub cells: Option<Vec<UnsafeBytes>>,
     }
 

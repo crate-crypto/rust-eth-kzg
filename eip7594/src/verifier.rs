@@ -7,7 +7,7 @@ use crate::{
     },
     prover::evaluations_to_cells,
     serialization::{deserialize_cell_to_scalars, deserialize_compressed_g1, SerializationError},
-    Bytes48Ref, Bytes48RefFixed, Cell, CellID, CellRefFixed, ColumnIndex, RowIndex,
+    Bytes48RefFixed, Cell, CellID, CellRefFixed, ColumnIndex, RowIndex,
 };
 use bls12_381::Scalar;
 use erasure_codes::{reed_solomon::Erasures, ReedSolomon};
@@ -93,10 +93,10 @@ impl VerifierContext {
     /// Verify that a cell is consistent with a commitment using a KZG proof.
     pub fn verify_cell_kzg_proof(
         &self,
-        commitment_bytes: Bytes48Ref,
+        commitment_bytes: Bytes48RefFixed,
         cell_id: CellID,
         cell: CellRefFixed,
-        proof_bytes: Bytes48Ref,
+        proof_bytes: Bytes48RefFixed,
     ) -> Result<(), VerifierError> {
         sanity_check_cells_and_cell_ids(&[cell_id], &[cell])?;
 
@@ -170,10 +170,10 @@ impl VerifierContext {
 
         for k in 0..row_commitments_bytes.len() {
             let row_index = row_indices[k];
-            let row_commitment_bytes = row_commitments_bytes[row_index as usize].as_ref();
+            let row_commitment_bytes = row_commitments_bytes[row_index as usize];
             let column_index = column_indices[k];
             let cell = cells[k];
-            let proof_bytes = proofs_bytes[k].as_ref();
+            let proof_bytes = proofs_bytes[k];
 
             // Verify and return early if the proof is invalid
             self.verify_cell_kzg_proof(row_commitment_bytes, column_index, cell, proof_bytes)?;

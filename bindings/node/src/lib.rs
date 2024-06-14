@@ -159,6 +159,8 @@ impl VerifierContextJs {
     let verifier_context = &self.inner;
 
     let cell = slice_to_array_ref(cell, "cell")?;
+    let commitment = slice_to_array_ref(commitment, "commitment")?;
+    let proof = slice_to_array_ref(proof, "proof")?;
 
     let valid = verifier_context.verify_cell_kzg_proof(commitment, cell_id_u64, cell, proof);
     match valid {
