@@ -1,4 +1,4 @@
-use crate::{serialization::SerializationError, CellID};
+use crate::CellID;
 
 /// Errors that can occur while calling a method in the Prover API
 #[derive(Debug)]
@@ -44,4 +44,14 @@ pub enum VerifierError {
         cells_len: usize,
         proofs_len: usize,
     },
+}
+
+/// Errors that can occur during deserialization of untrusted input from the public API
+#[derive(Debug)]
+pub enum SerializationError {
+    CouldNotDeserializeScalar { bytes: Vec<u8> },
+    CouldNotDeserializeG1Point { bytes: Vec<u8> },
+    ScalarHasInvalidLength { bytes: Vec<u8>, length: usize },
+    BlobHasInvalidLength { bytes: Vec<u8>, length: usize },
+    G1PointHasInvalidLength { bytes: Vec<u8>, length: usize },
 }

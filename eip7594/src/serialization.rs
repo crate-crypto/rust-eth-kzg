@@ -3,14 +3,7 @@ use crate::constants::{
 };
 use bls12_381::{G1Point, Scalar};
 
-#[derive(Debug)]
-pub enum SerializationError {
-    CouldNotDeserializeScalar { bytes: Vec<u8> },
-    CouldNotDeserializeG1Point { bytes: Vec<u8> },
-    ScalarHasInvalidLength { bytes: Vec<u8>, length: usize },
-    BlobHasInvalidLength { bytes: Vec<u8>, length: usize },
-    G1PointHasInvalidLength { bytes: Vec<u8>, length: usize },
-}
+pub use crate::errors::SerializationError;
 
 fn deserialize_bytes_to_scalars(bytes: &[u8]) -> Result<Vec<Scalar>, SerializationError> {
     // Check that the bytes are a multiple of the scalar size
