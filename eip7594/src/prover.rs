@@ -132,25 +132,10 @@ impl ProverContext {
     }
 
     #[deprecated(note = "This function is deprecated, use `compute_cells_and_kzg_proofs` instead")]
+    #[allow(deprecated)]
     pub fn compute_cells(&self, blob: BlobRef) -> Result<[Cell; CELLS_PER_EXT_BLOB], ProverError> {
-        // Deserialize the blob into scalars. The blob is in lagrange form.
-        let mut scalars =
-            serialization::deserialize_blob_to_scalars(blob).map_err(ProverError::Serialization)?;
-
-        // Reverse the order of the scalars, so that they are in normal order.
-        // ie not in bit-reversed order.
-        reverse_bit_order(&mut scalars);
-
-        // Convert the polynomial from lagrange to monomial form.
-        let poly_coeff = self.poly_domain.ifft_scalars(scalars);
-
-        // Compute the evaluations of the polynomial at the points that we need to make proofs for.
-        let evaluation_sets = self.fk20.compute_evaluation_sets(poly_coeff);
-
-        // Serialize the evaluations into cells.
-        let cells = evaluation_sets_to_cells(evaluation_sets.into_iter());
-
-        Ok(cells)
+        self.compute_cells_and_kzg_proofs(blob)
+            .map(|(cells, _)| cells)
     }
 
     /// Recovers the cells and computes the KZG proofs, given a subset of cells.
