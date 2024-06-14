@@ -5,20 +5,17 @@ use verifier::VerifierContext;
 // TODO: We can remove this once we hook up the consensus-specs fixed test vectors.
 pub mod consensus_specs_fixed_test_vector;
 
-// TODO: The methods are currently not sanity checking the inputs. Example: we can pass &vec![4096] to compute_cells
-// TODO as a blob and it will panic later on in the program.
-
 pub mod constants;
 pub mod prover;
 mod serialization;
 pub mod verifier;
 
-pub type BlobRefFixed<'a> = &'a [u8; BYTES_PER_BLOB];
-pub type Bytes48RefFixed<'a> = &'a [u8; 48];
-
-pub type CellRefFixed<'a> = &'a [u8; BYTES_PER_CELL];
+pub type BlobRef<'a> = &'a [u8; BYTES_PER_BLOB];
+pub type Bytes48Ref<'a> = &'a [u8; 48];
 
 pub type Cell = Box<[u8; BYTES_PER_CELL]>;
+pub type CellRef<'a> = &'a [u8; BYTES_PER_CELL];
+
 pub type KZGProof = [u8; BYTES_PER_COMMITMENT];
 pub type KZGCommitment = [u8; BYTES_PER_COMMITMENT];
 pub type CellID = u64;

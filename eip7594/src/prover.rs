@@ -14,7 +14,7 @@ use crate::{
     },
     serialization::{self, serialize_g1_compressed, SerializationError},
     verifier::{VerifierContext, VerifierError},
-    BlobRefFixed, Bytes48RefFixed, Cell, CellID, CellRefFixed, KZGCommitment, KZGProof,
+    BlobRef, Bytes48Ref, Cell, CellID, CellRef, KZGCommitment, KZGProof,
 };
 
 /// Errors that can occur while calling a method in the Prover API
@@ -82,7 +82,7 @@ impl ProverContext {
     }
 
     /// Computes the KZG commitment to the polynomial represented by the blob.
-    pub fn blob_to_kzg_commitment(&self, blob: BlobRefFixed) -> Result<KZGCommitment, ProverError> {
+    pub fn blob_to_kzg_commitment(&self, blob: BlobRef) -> Result<KZGCommitment, ProverError> {
         // Deserialize the blob into scalars. The blob is in lagrange form.
         let mut scalars =
             serialization::deserialize_blob_to_scalars(blob).map_err(ProverError::Serialization)?;
@@ -101,7 +101,7 @@ impl ProverContext {
     /// Computes the cells and the KZG proofs for the given blob.
     pub fn compute_cells_and_kzg_proofs(
         &self,
-        blob: BlobRefFixed,
+        blob: BlobRef,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
         // Deserialize the blob into scalars. The blob is in lagrange form.
         let mut scalars =
@@ -137,10 +137,7 @@ impl ProverContext {
     }
 
     #[deprecated(note = "This function is deprecated, use `compute_cells_and_kzg_proofs` instead")]
-    pub fn compute_cells(
-        &self,
-        blob: BlobRefFixed,
-    ) -> Result<[Cell; CELLS_PER_EXT_BLOB], ProverError> {
+    pub fn compute_cells(&self, blob: BlobRef) -> Result<[Cell; CELLS_PER_EXT_BLOB], ProverError> {
         // Deserialize the blob into scalars. The blob is in lagrange form.
         let mut scalars =
             serialization::deserialize_blob_to_scalars(blob).map_err(ProverError::Serialization)?;
@@ -166,8 +163,8 @@ impl ProverContext {
     pub fn recover_cells_and_proofs(
         &self,
         cell_ids: Vec<CellID>,
-        cells: Vec<CellRefFixed>,
-        _proofs: Vec<Bytes48RefFixed>,
+        cells: Vec<CellRef>,
+        _proofs: Vec<Bytes48Ref>,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
         // Use erasure decoding to recover the polynomial corresponding to the blob in monomial form
         let poly_coeff = self

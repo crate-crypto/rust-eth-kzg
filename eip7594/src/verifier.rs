@@ -7,7 +7,7 @@ use crate::{
     },
     prover::evaluations_to_cells,
     serialization::{deserialize_cell_to_scalars, deserialize_compressed_g1, SerializationError},
-    Bytes48RefFixed, Cell, CellID, CellRefFixed, ColumnIndex, RowIndex,
+    Bytes48Ref, Cell, CellID, CellRef, ColumnIndex, RowIndex,
 };
 use bls12_381::Scalar;
 use erasure_codes::{reed_solomon::Erasures, ReedSolomon};
@@ -93,10 +93,10 @@ impl VerifierContext {
     /// Verify that a cell is consistent with a commitment using a KZG proof.
     pub fn verify_cell_kzg_proof(
         &self,
-        commitment_bytes: Bytes48RefFixed,
+        commitment_bytes: Bytes48Ref,
         cell_id: CellID,
-        cell: CellRefFixed,
-        proof_bytes: Bytes48RefFixed,
+        cell: CellRef,
+        proof_bytes: Bytes48Ref,
     ) -> Result<(), VerifierError> {
         sanity_check_cells_and_cell_ids(&[cell_id], &[cell])?;
 
@@ -127,11 +127,11 @@ impl VerifierContext {
         // This is a deduplicated list of row commitments
         // It is not indicative of the total number of commitments in the batch.
         // This is what row_indices is used for.
-        row_commitments_bytes: Vec<Bytes48RefFixed>,
+        row_commitments_bytes: Vec<Bytes48Ref>,
         row_indices: Vec<RowIndex>,
         column_indices: Vec<ColumnIndex>,
-        cells: Vec<CellRefFixed>,
-        proofs_bytes: Vec<Bytes48RefFixed>,
+        cells: Vec<CellRef>,
+        proofs_bytes: Vec<Bytes48Ref>,
     ) -> Result<(), VerifierError> {
         // TODO: This currently uses the naive method
         //
@@ -190,7 +190,7 @@ impl VerifierContext {
     pub fn recover_all_cells(
         &self,
         cell_ids: Vec<CellID>,
-        cells: Vec<CellRefFixed>,
+        cells: Vec<CellRef>,
     ) -> Result<[Cell; CELLS_PER_EXT_BLOB], VerifierError> {
         let recovered_codeword = self.recover_extended_polynomial(cell_ids, cells)?;
         Ok(evaluations_to_cells(
@@ -201,7 +201,7 @@ impl VerifierContext {
     pub(crate) fn recover_polynomial_coeff(
         &self,
         cell_ids: Vec<CellID>,
-        cells: Vec<CellRefFixed>,
+        cells: Vec<CellRef>,
     ) -> Result<Vec<Scalar>, VerifierError> {
         // TODO: We should check that code does not assume that the CellIDs are sorted.
 
@@ -286,7 +286,7 @@ impl VerifierContext {
     pub(crate) fn recover_extended_polynomial(
         &self,
         cell_ids: Vec<CellID>,
-        cells: Vec<CellRefFixed>,
+        cells: Vec<CellRef>,
     ) -> Result<Vec<Scalar>, VerifierError> {
         let poly_coeff = self.recover_polynomial_coeff(cell_ids, cells)?;
 
@@ -308,7 +308,7 @@ fn is_cell_ids_unique(cell_ids: &[CellID]) -> bool {
 
 fn sanity_check_cells_and_cell_ids(
     cell_ids: &[CellID],
-    cells: &[CellRefFixed],
+    cells: &[CellRef],
 ) -> Result<(), VerifierError> {
     // Check that the number of cell IDs is equal to the number of cells
     if cell_ids.len() != cells.len() {
