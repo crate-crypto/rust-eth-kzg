@@ -186,6 +186,7 @@ impl VerifierContext {
     #[deprecated(
         note = "This method will be removed from the public API, ie made crate private. Use `recover_cells_and_proofs` instead."
     )]
+    #[allow(deprecated)]
     pub fn recover_all_cells(
         &self,
         cell_ids: Vec<CellID>,
@@ -281,6 +282,7 @@ impl VerifierContext {
     #[deprecated(
         note = "This method will no longer be used, given we do not need to recover the full extended polynomial"
     )]
+    #[allow(deprecated)]
     pub(crate) fn recover_extended_polynomial(
         &self,
         cell_ids: Vec<CellID>,
