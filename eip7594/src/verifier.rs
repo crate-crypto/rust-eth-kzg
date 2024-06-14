@@ -5,7 +5,7 @@ use crate::{
         BYTES_PER_CELL, CELLS_PER_EXT_BLOB, EXTENSION_FACTOR, FIELD_ELEMENTS_PER_BLOB,
         FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB,
     },
-    prover::evaluations_to_cells,
+    prover::evaluation_sets_to_cells,
     serialization::{deserialize_cell_to_scalars, deserialize_compressed_g1, SerializationError},
     Bytes48Ref, Cell, CellID, CellRef, ColumnIndex, RowIndex,
 };
@@ -193,7 +193,7 @@ impl VerifierContext {
         cells: Vec<CellRef>,
     ) -> Result<[Cell; CELLS_PER_EXT_BLOB], VerifierError> {
         let recovered_codeword = self.recover_extended_polynomial(cell_ids, cells)?;
-        Ok(evaluations_to_cells(
+        Ok(evaluation_sets_to_cells(
             recovered_codeword.chunks_exact(FIELD_ELEMENTS_PER_CELL),
         ))
     }

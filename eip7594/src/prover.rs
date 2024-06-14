@@ -122,10 +122,10 @@ impl ProverContext {
         poly_coeff: Vec<Scalar>,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
         // Compute the proofs and the evaluations of the polynomial.
-        let (proofs, evaluations) = self.fk20.compute_multi_opening_proofs(poly_coeff);
+        let (proofs, evaluation_sets) = self.fk20.compute_multi_opening_proofs(poly_coeff);
 
         // Serialize the evaluations into `Cell`s.
-        let cells = evaluations_to_cells(evaluations.into_iter());
+        let cells = evaluation_sets_to_cells(evaluation_sets.into_iter());
 
         // Serialize the proofs into `KZGProof`s.
         let proofs: Vec<_> = proofs.iter().map(serialize_g1_compressed).collect();
@@ -150,10 +150,10 @@ impl ProverContext {
         let poly_coeff = self.poly_domain.ifft_scalars(scalars);
 
         // Compute the evaluations of the polynomial at the points that we need to make proofs for.
-        let evaluations = self.fk20.compute_evaluation_sets(poly_coeff);
+        let evaluation_sets = self.fk20.compute_evaluation_sets(poly_coeff);
 
         // Serialize the evaluations into cells.
-        let cells = evaluations_to_cells(evaluations.into_iter());
+        let cells = evaluation_sets_to_cells(evaluation_sets.into_iter());
 
         Ok(cells)
     }
@@ -176,7 +176,8 @@ impl ProverContext {
     }
 }
 
-pub(crate) fn evaluations_to_cells<T: AsRef<[Scalar]>>(
+/// Converts a a set of scalars (evaluations) to the `Cell` type
+pub(crate) fn evaluation_sets_to_cells<T: AsRef<[Scalar]>>(
     evaluations: impl Iterator<Item = T>,
 ) -> [Cell; CELLS_PER_EXT_BLOB] {
     let cells: Vec<Cell> = evaluations
