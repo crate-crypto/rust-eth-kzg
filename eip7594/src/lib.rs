@@ -10,6 +10,8 @@ pub mod verifier;
 pub type BlobRef<'a> = &'a [u8; BYTES_PER_BLOB];
 pub type Bytes48Ref<'a> = &'a [u8; 48];
 
+// TODO: We require a bit of feedback re usage to know whether we should make
+// TODO: Cell type just be Vec<u8> -- This would avoid accidental stack overflows.
 pub type Cell = Box<[u8; BYTES_PER_CELL]>;
 pub type CellRef<'a> = &'a [u8; BYTES_PER_CELL];
 
