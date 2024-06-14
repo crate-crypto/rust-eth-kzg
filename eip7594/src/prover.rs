@@ -1,3 +1,5 @@
+pub use crate::errors::ProverError;
+
 use bls12_381::{G1Point, Scalar};
 use kzg_multi_open::{
     commit_key::{CommitKey, CommitKeyLagrange},
@@ -12,17 +14,10 @@ use crate::{
         CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL,
         FIELD_ELEMENTS_PER_EXT_BLOB,
     },
-    serialization::{self, serialize_g1_compressed, SerializationError},
-    verifier::{VerifierContext, VerifierError},
+    serialization::{self, serialize_g1_compressed},
+    verifier::VerifierContext,
     BlobRef, Bytes48Ref, Cell, CellID, CellRef, KZGCommitment, KZGProof,
 };
-
-/// Errors that can occur while calling a method in the Prover API
-#[derive(Debug)]
-pub enum ProverError {
-    Serialization(SerializationError),
-    RecoveryFailure(VerifierError),
-}
 
 /// Context object that is used to call functions in the prover API.
 /// This includes, computing the commitments, proofs and cells.

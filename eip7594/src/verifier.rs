@@ -1,12 +1,14 @@
 use std::collections::HashSet;
 
+pub use crate::errors::VerifierError;
+
 use crate::{
     constants::{
         BYTES_PER_CELL, CELLS_PER_EXT_BLOB, EXTENSION_FACTOR, FIELD_ELEMENTS_PER_BLOB,
         FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB,
     },
     prover::evaluation_sets_to_cells,
-    serialization::{deserialize_cell_to_scalars, deserialize_compressed_g1, SerializationError},
+    serialization::{deserialize_cell_to_scalars, deserialize_compressed_g1},
     Bytes48Ref, Cell, CellID, CellRef, ColumnIndex, RowIndex,
 };
 use bls12_381::Scalar;
@@ -15,45 +17,6 @@ use kzg_multi_open::{
     create_eth_commit_opening_keys, opening_key::OpeningKey, polynomial::domain::Domain,
     proof::verify_multi_opening_naive, reverse_bit_order,
 };
-
-/// Errors that can occur while calling a method in the Verifier API
-#[derive(Debug)]
-pub enum VerifierError {
-    Serialization(SerializationError),
-    CellIDsNotEqualToNumberOfCells {
-        num_cell_ids: usize,
-        num_cells: usize,
-    },
-    CellIDsNotUnique,
-    NotEnoughCellsToReconstruct {
-        num_cells_received: usize,
-        min_cells_needed: usize,
-    },
-    TooManyCellsHaveBeenGiven {
-        num_cells_received: usize,
-        max_cells_needed: usize,
-    },
-    CellDoesNotContainEnoughBytes {
-        cell_id: CellID,
-        num_bytes: usize,
-        expected_num_bytes: usize,
-    },
-    CellIDOutOfRange {
-        cell_id: CellID,
-        max_number_of_cells: u64,
-    },
-    InvalidRowID {
-        row_id: u64,
-        max_number_of_rows: u64,
-    },
-    InvalidProof,
-    BatchVerificationInputsMustHaveSameLength {
-        row_indices_len: usize,
-        column_indices_len: usize,
-        cells_len: usize,
-        proofs_len: usize,
-    },
-}
 
 /// The context object that is used to call functions in the verifier API.
 pub struct VerifierContext {
@@ -262,7 +225,7 @@ impl VerifierContext {
             let start = (cell_id as usize) * FIELD_ELEMENTS_PER_CELL;
             let end = start + FIELD_ELEMENTS_PER_CELL;
 
-            coset_evaluations_flattened_rbo[start..end].copy_from_slice(coset_evals.as_slice());
+            coset_evaluations_flattened_rbo[start..end].copy_from_slice(&coset_evals);
         }
 
         let mut coset_evaluations_flattened = coset_evaluations_flattened_rbo;

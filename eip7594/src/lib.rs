@@ -22,6 +22,8 @@ pub type CellID = u64;
 pub type RowIndex = u64;
 pub type ColumnIndex = u64;
 
+mod errors;
+
 /// The context that will be used to create and verify proofs.
 pub struct PeerDASContext {
     pub prover_ctx: ProverContext,
