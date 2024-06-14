@@ -307,13 +307,7 @@ fn sanity_check_cells_and_cell_ids(
 #[cfg(test)]
 mod tests {
 
-    use std::ops::Range;
-
-    use crate::{
-        consensus_specs_fixed_test_vector::{CELLS_STR, COMMITMENT_STR, PROOFS_STR},
-        constants::CELLS_PER_EXT_BLOB,
-        verifier::{is_cell_ids_unique, VerifierContext},
-    };
+    use crate::verifier::is_cell_ids_unique;
 
     #[test]
     fn test_cell_ids_unique() {
@@ -325,96 +319,5 @@ mod tests {
         assert!(!is_cell_ids_unique(&cell_ids));
         let cell_ids = vec![0, 0, 0];
         assert!(!is_cell_ids_unique(&cell_ids));
-    }
-
-    #[test]
-    fn test_proofs_verify() {
-        // Setup
-        let ctx = VerifierContext::new();
-
-        let commitment_str = COMMITMENT_STR;
-        let commitment_bytes: [u8; 48] = hex::decode(commitment_str).unwrap().try_into().unwrap();
-
-        let proofs_str = PROOFS_STR;
-        let proofs_bytes: Vec<[u8; 48]> = proofs_str
-            .iter()
-            .map(|proof_str| hex::decode(proof_str).unwrap().try_into().unwrap())
-            .collect();
-
-        let cells_str = CELLS_STR;
-        let cells_bytes: Vec<Vec<u8>> = cells_str
-            .into_iter()
-            .map(|cell_str| hex::decode(cell_str).unwrap())
-            .collect();
-
-        for k in 0..proofs_bytes.len() {
-            let proof_bytes = proofs_bytes[k];
-            let cell_bytes = cells_bytes[k].clone().try_into().unwrap();
-            let cell_id = k as u64;
-
-            assert!(ctx
-                .verify_cell_kzg_proof(&commitment_bytes, cell_id, &cell_bytes, &proof_bytes)
-                .is_ok());
-        }
-
-        assert!(ctx
-            .verify_cell_kzg_proof_batch(
-                vec![&commitment_bytes; proofs_bytes.len()],
-                vec![0; proofs_bytes.len()],
-                (0..proofs_bytes.len()).map(|x| x as u64).collect(),
-                cells_bytes
-                    .iter()
-                    .map(Vec::as_slice)
-                    .map(|cell| cell.try_into().unwrap())
-                    .collect(),
-                proofs_bytes
-                    .iter()
-                    .map(|proof| proof.try_into().unwrap())
-                    .collect(),
-            )
-            .is_ok());
-    }
-
-    #[test]
-    fn test_recover_all_cells() {
-        let ctx = VerifierContext::new();
-        let num_cells_to_keep = CELLS_PER_EXT_BLOB / 2;
-
-        fn generate_unique_random_numbers(range: Range<u64>, n: usize) -> Vec<u64> {
-            use rand::prelude::SliceRandom;
-            let mut numbers: Vec<_> = range.into_iter().collect();
-            numbers.shuffle(&mut rand::thread_rng());
-            numbers.into_iter().take(n).collect()
-        }
-
-        let cell_ids_to_keep = generate_unique_random_numbers(0..128, num_cells_to_keep);
-        let cells_as_hex_strings: Vec<_> = cell_ids_to_keep
-            .iter()
-            .map(|cell_id| CELLS_STR[*cell_id as usize])
-            .collect();
-        let cells_to_keep: Vec<_> = cells_as_hex_strings
-            .into_iter()
-            .map(|cell_str| hex::decode(cell_str).unwrap())
-            .collect();
-
-        let all_cells: Vec<_> = CELLS_STR
-            .into_iter()
-            .map(|cell_str| hex::decode(cell_str).unwrap())
-            .collect();
-
-        let recovered_cells = ctx
-            .recover_all_cells(
-                cell_ids_to_keep,
-                cells_to_keep
-                    .iter()
-                    .map(Vec::as_slice)
-                    .map(|v| v.try_into().unwrap())
-                    .collect(),
-            )
-            .unwrap();
-
-        for (recovered_cell, expected_cell) in recovered_cells.into_iter().zip(all_cells) {
-            assert_eq!(&recovered_cell[..], &expected_cell[..])
-        }
     }
 }

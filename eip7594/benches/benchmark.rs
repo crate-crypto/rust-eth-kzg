@@ -1,5 +1,5 @@
+use bls12_381::Scalar;
 use criterion::{criterion_group, criterion_main, Criterion};
-use eip7594::consensus_specs_fixed_test_vector::eth_polynomial;
 use kzg_multi_open::{
     create_eth_commit_opening_keys, fk20::naive, polynomial::domain::Domain, reverse_bit_order,
 };
@@ -8,7 +8,9 @@ use kzg_multi_open::{
 pub fn bench_compute_proof_with_naive_fk20(c: &mut Criterion) {
     const POLYNOMIAL_LEN: usize = 4096;
 
-    let mut polynomial_4096 = eth_polynomial();
+    let mut polynomial_4096: Vec<_> = (0..POLYNOMIAL_LEN)
+        .map(|i| -Scalar::from(i as u64))
+        .collect();
     reverse_bit_order(&mut polynomial_4096);
     let domain = Domain::new(POLYNOMIAL_LEN);
     let polynomial_4096 = domain.ifft_scalars(polynomial_4096);

@@ -2,9 +2,6 @@ use constants::{BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT};
 use prover::ProverContext;
 use verifier::VerifierContext;
 
-// TODO: We can remove this once we hook up the consensus-specs fixed test vectors.
-pub mod consensus_specs_fixed_test_vector;
-
 pub mod constants;
 pub mod prover;
 mod serialization;
@@ -51,13 +48,12 @@ impl PeerDASContext {
 
 #[cfg(test)]
 mod tests {
+    use bls12_381::Scalar;
     use kzg_multi_open::polynomial::domain::Domain;
     use kzg_multi_open::{
         create_eth_commit_opening_keys, fk20::naive, proof::compute_multi_opening_naive,
         reverse_bit_order,
     };
-
-    use crate::consensus_specs_fixed_test_vector::eth_polynomial;
 
     // This test becomes redundant once we have consensus-specs fixed test vectors
     // added. Although, it may be beneficial to test consensus-specs fixed test vectors against
@@ -81,7 +77,9 @@ mod tests {
 
         const NUMBER_OF_PROOFS: usize = NUMBER_OF_POINTS_TO_EVALUATE / NUMBER_OF_POINTS_PER_PROOF;
         let proof_domain = Domain::new(NUMBER_OF_PROOFS);
-        let mut polynomial = eth_polynomial();
+        let mut polynomial: Vec<_> = (0..POLYNOMIAL_LEN)
+            .map(|i| -Scalar::from(i as u64))
+            .collect();
         // Polynomial really corresponds to the evaluation form, so we need
         // to apply bit reverse order and then IFFT to get the coefficients
         reverse_bit_order(&mut polynomial);
