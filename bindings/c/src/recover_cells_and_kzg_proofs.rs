@@ -26,8 +26,7 @@ pub(crate) fn _recover_all_cells_and_proofs(
     let (recovered_cells, recovered_proofs) = ctx
         .recover_cells_and_proofs(cell_ids.to_vec(), cells, vec![])
         .map_err(|err| CResult::with_error(&format!("{:?}", err)))?;
-    // TODO: Ideally would like to avoid unboxing Cells since they are quite large.
-    let recovered_cells_unboxed = recovered_cells.map(|cell| *cell);
+    let recovered_cells_unboxed = recovered_cells.map(|cell| cell.to_vec());
 
     // Write to output
     write_to_2d_slice::<_, CELLS_PER_EXT_BLOB>(out_cells, recovered_cells_unboxed);
