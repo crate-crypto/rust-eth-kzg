@@ -15,10 +15,8 @@ rayon = { workspace = true }
 pairing = { version = "0.23" }
 
 # blstrs related dependencies
-blst = { version = "0.3.1", default-features = false, features = [
-    "portable",
-    "no-threads",
-] }
+blst = { version = "0.3.1", default-features = false, features = ["portable"] }
+
 # __private_bench feature is used to allow us to access the base field
 blstrs = { version = "0.7.1", features = ["__private_bench"] }
 ff = "0.13.0"
