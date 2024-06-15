@@ -13,6 +13,7 @@ kzg_multi_open = { workspace = true }
 bls12_381 = { workspace = true }
 hex = { workspace = true }
 erasure_codes = { workspace = true }
+rayon = { workspace = true }
 
 [dev-dependencies]
 criterion = "0.5.1"

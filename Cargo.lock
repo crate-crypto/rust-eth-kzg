@@ -532,6 +532,7 @@ dependencies = [
  "criterion",
  "hex",
  "rand",
+ "rayon",
  "serde",
  "serde_yaml",
 ]

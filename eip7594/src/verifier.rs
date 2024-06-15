@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, sync::Arc};
 
 pub use crate::errors::VerifierError;
 
@@ -17,9 +17,11 @@ use kzg_multi_open::{
     create_eth_commit_opening_keys, opening_key::OpeningKey, polynomial::domain::Domain,
     proof::verify_multi_opening_naive, reverse_bit_order,
 };
+use rayon::ThreadPool;
 
 /// The context object that is used to call functions in the verifier API.
 pub struct VerifierContext {
+    thread_pool: Arc<ThreadPool>,
     opening_key: OpeningKey,
     /// The cosets that we want to verify evaluations against.
     bit_reversed_cosets: Vec<Vec<Scalar>>,
@@ -35,6 +37,19 @@ impl Default for VerifierContext {
 
 impl VerifierContext {
     pub fn new() -> VerifierContext {
+        const DEFAULT_NUM_THREADS: usize = 16;
+        Self::with_num_threads(DEFAULT_NUM_THREADS)
+    }
+
+    pub fn with_num_threads(num_threads: usize) -> VerifierContext {
+        let thread_pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(num_threads)
+            .build()
+            .unwrap();
+        Self::from_thread_pool(Arc::new(thread_pool))
+    }
+
+    pub(crate) fn from_thread_pool(thread_pool: Arc<ThreadPool>) -> VerifierContext {
         let (_, opening_key) = create_eth_commit_opening_keys();
 
         let domain_extended = Domain::new(FIELD_ELEMENTS_PER_EXT_BLOB);
@@ -47,6 +62,7 @@ impl VerifierContext {
             .collect();
 
         VerifierContext {
+            thread_pool,
             opening_key,
             bit_reversed_cosets: cosets,
             rs: ReedSolomon::new(FIELD_ELEMENTS_PER_BLOB, EXTENSION_FACTOR),
@@ -61,24 +77,32 @@ impl VerifierContext {
         cell: CellRef,
         proof_bytes: Bytes48Ref,
     ) -> Result<(), VerifierError> {
-        sanity_check_cells_and_cell_ids(&[cell_id], &[cell])?;
+        self.thread_pool.install(|| {
+            sanity_check_cells_and_cell_ids(&[cell_id], &[cell])?;
 
-        let commitment =
-            deserialize_compressed_g1(commitment_bytes).map_err(VerifierError::Serialization)?;
-        let proof = deserialize_compressed_g1(proof_bytes).map_err(VerifierError::Serialization)?;
+            let commitment = deserialize_compressed_g1(commitment_bytes)
+                .map_err(VerifierError::Serialization)?;
+            let proof =
+                deserialize_compressed_g1(proof_bytes).map_err(VerifierError::Serialization)?;
 
-        let coset = &self.bit_reversed_cosets[cell_id as usize];
+            let coset = &self.bit_reversed_cosets[cell_id as usize];
 
-        let output_points =
-            deserialize_cell_to_scalars(cell).map_err(VerifierError::Serialization)?;
+            let output_points =
+                deserialize_cell_to_scalars(cell).map_err(VerifierError::Serialization)?;
 
-        let ok =
-            verify_multi_opening_naive(&self.opening_key, commitment, proof, coset, &output_points);
-        if ok {
-            Ok(())
-        } else {
-            Err(VerifierError::InvalidProof)
-        }
+            let ok = verify_multi_opening_naive(
+                &self.opening_key,
+                commitment,
+                proof,
+                coset,
+                &output_points,
+            );
+            if ok {
+                Ok(())
+            } else {
+                Err(VerifierError::InvalidProof)
+            }
+        })
     }
 
     /// This is the batch version of `verify_cell_kzg_proof`.
@@ -96,53 +120,55 @@ impl VerifierContext {
         cells: Vec<CellRef>,
         proofs_bytes: Vec<Bytes48Ref>,
     ) -> Result<(), VerifierError> {
-        // TODO: This currently uses the naive method
-        //
-        // All inputs must have the same length according to the specs.
-        let same_length = (row_indices.len() == column_indices.len())
-            & (row_indices.len() == cells.len())
-            & (row_indices.len() == proofs_bytes.len());
-        if !same_length {
-            return Err(VerifierError::BatchVerificationInputsMustHaveSameLength {
-                row_indices_len: row_indices.len(),
-                column_indices_len: column_indices.len(),
-                cells_len: cells.len(),
-                proofs_len: proofs_bytes.len(),
-            });
-        }
-
-        // If there are no inputs, we return early with no error
-        if cells.is_empty() {
-            return Ok(());
-        }
-
-        // Check that the row indices are within the correct range
-        for row_index in &row_indices {
-            if *row_index >= row_commitments_bytes.len() as u64 {
-                return Err(VerifierError::InvalidRowID {
-                    row_id: *row_index,
-                    max_number_of_rows: row_commitments_bytes.len() as u64,
+        self.thread_pool.install(|| {
+            // TODO: This currently uses the naive method
+            //
+            // All inputs must have the same length according to the specs.
+            let same_length = (row_indices.len() == column_indices.len())
+                & (row_indices.len() == cells.len())
+                & (row_indices.len() == proofs_bytes.len());
+            if !same_length {
+                return Err(VerifierError::BatchVerificationInputsMustHaveSameLength {
+                    row_indices_len: row_indices.len(),
+                    column_indices_len: column_indices.len(),
+                    cells_len: cells.len(),
+                    proofs_len: proofs_bytes.len(),
                 });
             }
-        }
 
-        let row_commitments_bytes: Vec<_> = row_indices
-            .iter()
-            .map(|row_index| row_commitments_bytes[*row_index as usize])
-            .collect();
+            // If there are no inputs, we return early with no error
+            if cells.is_empty() {
+                return Ok(());
+            }
 
-        for k in 0..row_commitments_bytes.len() {
-            let row_index = row_indices[k];
-            let row_commitment_bytes = row_commitments_bytes[row_index as usize];
-            let column_index = column_indices[k];
-            let cell = cells[k];
-            let proof_bytes = proofs_bytes[k];
+            // Check that the row indices are within the correct range
+            for row_index in &row_indices {
+                if *row_index >= row_commitments_bytes.len() as u64 {
+                    return Err(VerifierError::InvalidRowID {
+                        row_id: *row_index,
+                        max_number_of_rows: row_commitments_bytes.len() as u64,
+                    });
+                }
+            }
 
-            // Verify and return early if the proof is invalid
-            self.verify_cell_kzg_proof(row_commitment_bytes, column_index, cell, proof_bytes)?;
-        }
+            let row_commitments_bytes: Vec<_> = row_indices
+                .iter()
+                .map(|row_index| row_commitments_bytes[*row_index as usize])
+                .collect();
 
-        Ok(())
+            for k in 0..row_commitments_bytes.len() {
+                let row_index = row_indices[k];
+                let row_commitment_bytes = row_commitments_bytes[row_index as usize];
+                let column_index = column_indices[k];
+                let cell = cells[k];
+                let proof_bytes = proofs_bytes[k];
+
+                // Verify and return early if the proof is invalid
+                self.verify_cell_kzg_proof(row_commitment_bytes, column_index, cell, proof_bytes)?;
+            }
+
+            Ok(())
+        })
     }
 
     /// Given a list of cell IDs and cells, this function recovers the missing cells.
@@ -155,10 +181,12 @@ impl VerifierContext {
         cell_ids: Vec<CellID>,
         cells: Vec<CellRef>,
     ) -> Result<[Cell; CELLS_PER_EXT_BLOB], VerifierError> {
-        let recovered_codeword = self.recover_extended_polynomial(cell_ids, cells)?;
-        Ok(evaluation_sets_to_cells(
-            recovered_codeword.chunks_exact(FIELD_ELEMENTS_PER_CELL),
-        ))
+        self.thread_pool.install(|| {
+            let recovered_codeword = self.recover_extended_polynomial(cell_ids, cells)?;
+            Ok(evaluation_sets_to_cells(
+                recovered_codeword.chunks_exact(FIELD_ELEMENTS_PER_CELL),
+            ))
+        })
     }
 
     pub(crate) fn recover_polynomial_coeff(

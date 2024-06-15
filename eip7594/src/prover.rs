@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 pub use crate::errors::ProverError;
 
 use bls12_381::{G1Point, Scalar};
@@ -8,6 +10,7 @@ use kzg_multi_open::{
     polynomial::domain::Domain,
     reverse_bit_order,
 };
+use rayon::ThreadPool;
 
 use crate::{
     constants::{
@@ -22,6 +25,8 @@ use crate::{
 /// Context object that is used to call functions in the prover API.
 /// This includes, computing the commitments, proofs and cells.
 pub struct ProverContext {
+    thread_pool: Arc<ThreadPool>,
+
     fk20: FK20,
     // TODO: We don't need the commit key, since we use FK20 to compute the proofs
     // TODO: and we use the lagrange variant to compute the commitment to the polynomial.
@@ -49,6 +54,19 @@ impl Default for ProverContext {
 
 impl ProverContext {
     pub fn new() -> Self {
+        const DEFAULT_NUM_THREADS: usize = 16;
+        Self::with_num_threads(DEFAULT_NUM_THREADS)
+    }
+
+    pub fn with_num_threads(num_threads: usize) -> Self {
+        let thread_pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(num_threads)
+            .build()
+            .unwrap();
+        Self::from_threads_pool(Arc::new(thread_pool))
+    }
+
+    pub(crate) fn from_threads_pool(thread_pool: Arc<ThreadPool>) -> Self {
         let (commit_key, _) = create_eth_commit_opening_keys();
         // The number of points that we will make an opening proof for,
         // ie a proof will attest to the value of the polynomial at these points.
@@ -72,25 +90,28 @@ impl ProverContext {
             commit_key,
             poly_domain,
             commit_key_lagrange,
-            verifier_context: VerifierContext::new(),
+            verifier_context: VerifierContext::from_thread_pool(thread_pool.clone()),
+            thread_pool,
         }
     }
 
     /// Computes the KZG commitment to the polynomial represented by the blob.
     pub fn blob_to_kzg_commitment(&self, blob: BlobRef) -> Result<KZGCommitment, ProverError> {
-        // Deserialize the blob into scalars. The blob is in lagrange form.
-        let mut scalars =
-            serialization::deserialize_blob_to_scalars(blob).map_err(ProverError::Serialization)?;
+        self.thread_pool.install(|| {
+            // Deserialize the blob into scalars. The blob is in lagrange form.
+            let mut scalars = serialization::deserialize_blob_to_scalars(blob)
+                .map_err(ProverError::Serialization)?;
 
-        // Reverse the order of the scalars, so that they are in normal order.
-        // ie not in bit-reversed order.
-        reverse_bit_order(&mut scalars);
+            // Reverse the order of the scalars, so that they are in normal order.
+            // ie not in bit-reversed order.
+            reverse_bit_order(&mut scalars);
 
-        // Commit to the polynomial.
-        let commitment: G1Point = self.commit_key_lagrange.commit_g1(&scalars).into();
+            // Commit to the polynomial.
+            let commitment: G1Point = self.commit_key_lagrange.commit_g1(&scalars).into();
 
-        // Serialize the commitment.
-        Ok(serialize_g1_compressed(&commitment))
+            // Serialize the commitment.
+            Ok(serialize_g1_compressed(&commitment))
+        })
     }
 
     /// Computes the cells and the KZG proofs for the given blob.
@@ -98,18 +119,20 @@ impl ProverContext {
         &self,
         blob: BlobRef,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
-        // Deserialize the blob into scalars. The blob is in lagrange form.
-        let mut scalars =
-            serialization::deserialize_blob_to_scalars(blob).map_err(ProverError::Serialization)?;
+        self.thread_pool.install(|| {
+            // Deserialize the blob into scalars. The blob is in lagrange form.
+            let mut scalars = serialization::deserialize_blob_to_scalars(blob)
+                .map_err(ProverError::Serialization)?;
 
-        // Reverse the order of the scalars, so that they are in normal order.
-        // ie not in bit-reversed order.
-        reverse_bit_order(&mut scalars);
+            // Reverse the order of the scalars, so that they are in normal order.
+            // ie not in bit-reversed order.
+            reverse_bit_order(&mut scalars);
 
-        // Convert the polynomial from lagrange to monomial form.
-        let poly_coeff = self.poly_domain.ifft_scalars(scalars);
+            // Convert the polynomial from lagrange to monomial form.
+            let poly_coeff = self.poly_domain.ifft_scalars(scalars);
 
-        self.compute_cells_and_kzg_proofs_from_poly_coeff(poly_coeff)
+            self.compute_cells_and_kzg_proofs_from_poly_coeff(poly_coeff)
+        })
     }
 
     fn compute_cells_and_kzg_proofs_from_poly_coeff(
@@ -134,8 +157,10 @@ impl ProverContext {
     #[deprecated(note = "This function is deprecated, use `compute_cells_and_kzg_proofs` instead")]
     #[allow(deprecated)]
     pub fn compute_cells(&self, blob: BlobRef) -> Result<[Cell; CELLS_PER_EXT_BLOB], ProverError> {
-        self.compute_cells_and_kzg_proofs(blob)
-            .map(|(cells, _)| cells)
+        self.thread_pool.install(|| {
+            self.compute_cells_and_kzg_proofs(blob)
+                .map(|(cells, _)| cells)
+        })
     }
 
     /// Recovers the cells and computes the KZG proofs, given a subset of cells.
@@ -146,13 +171,15 @@ impl ProverContext {
         cells: Vec<CellRef>,
         _proofs: Vec<Bytes48Ref>,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
-        // Use erasure decoding to recover the polynomial corresponding to the blob in monomial form
-        let poly_coeff = self
-            .verifier_context
-            .recover_polynomial_coeff(cell_ids, cells)
-            .map_err(ProverError::RecoveryFailure)?;
+        self.thread_pool.install(|| {
+            // Use erasure decoding to recover the polynomial corresponding to the blob in monomial form
+            let poly_coeff = self
+                .verifier_context
+                .recover_polynomial_coeff(cell_ids, cells)
+                .map_err(ProverError::RecoveryFailure)?;
 
-        self.compute_cells_and_kzg_proofs_from_poly_coeff(poly_coeff)
+            self.compute_cells_and_kzg_proofs_from_poly_coeff(poly_coeff)
+        })
     }
 }
 
