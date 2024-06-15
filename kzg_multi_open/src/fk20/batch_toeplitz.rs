@@ -1,6 +1,7 @@
 use bls12_381::fixed_base_msm::FixedBaseMSM;
 use bls12_381::G1Projective;
 use polynomial::domain::Domain;
+use rayon::prelude::*;
 
 use super::toeplitz::ToeplitzMatrix;
 use crate::fk20::toeplitz::CirculantMatrix;
@@ -96,7 +97,7 @@ impl BatchToeplitzMatrixVecMul {
         }
         let result: Vec<_> = self
             .precomputed_fft_vectors
-            .iter()
+            .par_iter()
             .zip(msm_scalars)
             .map(|(points, scalars)| points.msm(scalars))
             .collect();
