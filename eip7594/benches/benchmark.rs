@@ -1,12 +1,13 @@
 use bls12_381::Scalar;
 use criterion::{criterion_group, criterion_main, Criterion};
-use eip7594::prover::ProverContext;
+use eip7594::{prover::ProverContext, trusted_setup};
 
 /// This is here for reference, same as the above `bench_compute_proof_without_fk20`.
 pub fn bench_compute_cells_and_kzg_proofs(c: &mut Criterion) {
     const POLYNOMIAL_LEN: usize = 4096;
 
-    let prover_context = ProverContext::with_num_threads(100);
+    let trusted_setup = trusted_setup::TrustedSetup::default();
+    let prover_context = ProverContext::with_num_threads(&trusted_setup, 100);
 
     let polynomial_4096: Vec<_> = (0..POLYNOMIAL_LEN)
         .map(|i| -Scalar::from(i as u64))

@@ -9,13 +9,14 @@ use crate::{
     },
     prover::evaluation_sets_to_cells,
     serialization::{deserialize_cell_to_scalars, deserialize_compressed_g1},
+    trusted_setup::TrustedSetup,
     Bytes48Ref, Cell, CellID, CellRef, ColumnIndex, RowIndex,
 };
 use bls12_381::Scalar;
 use erasure_codes::{reed_solomon::Erasures, ReedSolomon};
 use kzg_multi_open::{
-    create_eth_commit_opening_keys, opening_key::OpeningKey, polynomial::domain::Domain,
-    proof::verify_multi_opening_naive, reverse_bit_order,
+    opening_key::OpeningKey, polynomial::domain::Domain, proof::verify_multi_opening_naive,
+    reverse_bit_order,
 };
 use rayon::ThreadPool;
 
@@ -31,27 +32,30 @@ pub struct VerifierContext {
 
 impl Default for VerifierContext {
     fn default() -> Self {
-        Self::new()
+        let trusted_setup = TrustedSetup::default();
+        Self::new(&trusted_setup)
     }
 }
 
 impl VerifierContext {
-    pub fn new() -> VerifierContext {
+    pub fn new(trusted_setup: &TrustedSetup) -> VerifierContext {
         const DEFAULT_NUM_THREADS: usize = 16;
-        Self::with_num_threads(DEFAULT_NUM_THREADS)
+        Self::with_num_threads(trusted_setup, DEFAULT_NUM_THREADS)
     }
 
-    pub fn with_num_threads(num_threads: usize) -> VerifierContext {
+    pub fn with_num_threads(trusted_setup: &TrustedSetup, num_threads: usize) -> VerifierContext {
         let thread_pool = rayon::ThreadPoolBuilder::new()
             .num_threads(num_threads)
             .build()
             .unwrap();
-        Self::from_thread_pool(Arc::new(thread_pool))
+        Self::from_thread_pool(trusted_setup, Arc::new(thread_pool))
     }
 
-    pub(crate) fn from_thread_pool(thread_pool: Arc<ThreadPool>) -> VerifierContext {
-        let (_, opening_key) = create_eth_commit_opening_keys();
-
+    pub(crate) fn from_thread_pool(
+        trusted_setup: &TrustedSetup,
+        thread_pool: Arc<ThreadPool>,
+    ) -> VerifierContext {
+        let opening_key = OpeningKey::from(trusted_setup);
         let domain_extended = Domain::new(FIELD_ELEMENTS_PER_EXT_BLOB);
         let mut domain_extended_roots = domain_extended.roots.clone();
         reverse_bit_order(&mut domain_extended_roots);

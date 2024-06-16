@@ -1,10 +1,12 @@
 use constants::{BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT};
 use prover::ProverContext;
+use trusted_setup::TrustedSetup;
 use verifier::VerifierContext;
 
 pub mod constants;
 pub mod prover;
 mod serialization;
+pub mod trusted_setup;
 pub mod verifier;
 
 pub type BlobRef<'a> = &'a [u8; BYTES_PER_BLOB];
@@ -31,9 +33,10 @@ pub struct PeerDASContext {
 
 impl Default for PeerDASContext {
     fn default() -> Self {
+        let trusted_setup = TrustedSetup::default();
         PeerDASContext {
-            prover_ctx: ProverContext::new(),
-            verifier_ctx: VerifierContext::new(),
+            prover_ctx: ProverContext::new(&trusted_setup),
+            verifier_ctx: VerifierContext::new(&trusted_setup),
         }
     }
 }

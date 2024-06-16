@@ -5,7 +5,6 @@ pub use crate::errors::ProverError;
 use bls12_381::{G1Point, Scalar};
 use kzg_multi_open::{
     commit_key::{CommitKey, CommitKeyLagrange},
-    create_eth_commit_opening_keys,
     fk20::FK20,
     polynomial::domain::Domain,
     reverse_bit_order,
@@ -18,6 +17,7 @@ use crate::{
         FIELD_ELEMENTS_PER_EXT_BLOB,
     },
     serialization::{self, serialize_g1_compressed},
+    trusted_setup::TrustedSetup,
     verifier::VerifierContext,
     BlobRef, Bytes48Ref, Cell, CellID, CellRef, KZGCommitment, KZGProof,
 };
@@ -48,26 +48,30 @@ pub struct ProverContext {
 
 impl Default for ProverContext {
     fn default() -> Self {
-        Self::new()
+        let trusted_setup = TrustedSetup::default();
+        Self::new(&trusted_setup)
     }
 }
 
 impl ProverContext {
-    pub fn new() -> Self {
+    pub fn new(trusted_setup: &TrustedSetup) -> Self {
         const DEFAULT_NUM_THREADS: usize = 16;
-        Self::with_num_threads(DEFAULT_NUM_THREADS)
+        Self::with_num_threads(&trusted_setup, DEFAULT_NUM_THREADS)
     }
 
-    pub fn with_num_threads(num_threads: usize) -> Self {
+    pub fn with_num_threads(trusted_setup: &TrustedSetup, num_threads: usize) -> Self {
         let thread_pool = rayon::ThreadPoolBuilder::new()
             .num_threads(num_threads)
             .build()
             .unwrap();
-        Self::from_threads_pool(Arc::new(thread_pool))
+        Self::from_threads_pool(trusted_setup, Arc::new(thread_pool))
     }
 
-    pub(crate) fn from_threads_pool(thread_pool: Arc<ThreadPool>) -> Self {
-        let (commit_key, _) = create_eth_commit_opening_keys();
+    pub(crate) fn from_threads_pool(
+        trusted_setup: &TrustedSetup,
+        thread_pool: Arc<ThreadPool>,
+    ) -> Self {
+        let commit_key = CommitKey::from(trusted_setup);
         // The number of points that we will make an opening proof for,
         // ie a proof will attest to the value of the polynomial at these points.
         let point_set_size = FIELD_ELEMENTS_PER_CELL;
@@ -90,7 +94,10 @@ impl ProverContext {
             commit_key,
             poly_domain,
             commit_key_lagrange,
-            verifier_context: VerifierContext::from_thread_pool(thread_pool.clone()),
+            verifier_context: VerifierContext::from_thread_pool(
+                &trusted_setup,
+                thread_pool.clone(),
+            ),
             thread_pool,
         }
     }

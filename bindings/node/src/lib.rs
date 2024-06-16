@@ -47,7 +47,7 @@ impl ProverContextJs {
   #[napi(constructor)]
   pub fn new() -> Self {
     ProverContextJs {
-      inner: Arc::new(ProverContext::new()),
+      inner: Arc::new(ProverContext::default()),
     }
   }
 
@@ -139,7 +139,7 @@ impl VerifierContextJs {
   #[napi(constructor)]
   pub fn new() -> Self {
     VerifierContextJs {
-      inner: Arc::new(VerifierContext::new()),
+      inner: Arc::new(VerifierContext::default()),
     }
   }
 

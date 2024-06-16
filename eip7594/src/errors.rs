@@ -47,6 +47,7 @@ pub enum VerifierError {
 }
 
 /// Errors that can occur during deserialization of untrusted input from the public API
+/// or the trusted setup.
 #[derive(Debug)]
 pub enum SerializationError {
     CouldNotDeserializeScalar { bytes: Vec<u8> },

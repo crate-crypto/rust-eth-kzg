@@ -62,7 +62,7 @@ const TEST_DIR: &str = "../consensus_test_vectors/blob_to_kzg_commitment";
 fn test_blob_to_kzg_commitment() {
     let test_files = collect_test_files(TEST_DIR).unwrap();
 
-    let prover_context = eip7594::prover::ProverContext::new();
+    let prover_context = eip7594::prover::ProverContext::default();
 
     for test_file in test_files {
         let yaml_data = fs::read_to_string(test_file).unwrap();

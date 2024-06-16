@@ -63,7 +63,7 @@ const TEST_DIR: &str = "../consensus_test_vectors/compute_cells";
 fn test_compute_cells() {
     let test_files = collect_test_files(TEST_DIR).unwrap();
 
-    let prover_context = eip7594::prover::ProverContext::new();
+    let prover_context = eip7594::prover::ProverContext::default();
 
     for test_file in test_files {
         let yaml_data = fs::read_to_string(test_file).unwrap();

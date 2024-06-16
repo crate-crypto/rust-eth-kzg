@@ -9,8 +9,10 @@ pub mod proof;
 // Re-export the polynomial crate
 pub use polynomial;
 
-// TODO: We can replace this with a file being embedded in the future.
 // This is simply the trusted setup file from the ethereum ceremony
+#[deprecated(
+    note = "FK20 tests can use any trusted setup, not just the Ethereum one. This will be removed in the future for a random insecure setup."
+)]
 pub mod eth_trusted_setup;
 
 /// This is a placeholder method for creating the commit and opening keys for the ethereum
