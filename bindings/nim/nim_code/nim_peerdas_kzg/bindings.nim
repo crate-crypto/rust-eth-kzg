@@ -1,6 +1,7 @@
 import os
-import ../build_utils
-import ../header
+import build_utils
+
+import header
 export header
 
 when defined(windows):

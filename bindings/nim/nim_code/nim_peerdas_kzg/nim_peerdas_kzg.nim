@@ -1,4 +1,4 @@
-import nim_peerdas_kzg/bindings
+import bindings
 
 import results
 export results
