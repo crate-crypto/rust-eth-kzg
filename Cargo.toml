@@ -20,7 +20,7 @@ authors = ["Kevaundray Wedderburn <kev@the.dev>"]
 edition = "2021"
 license = "MIT"
 version = "0.3.0"
-rust-version = "1.66"
+rust-version = "1.70"
 repository = "https://github.com/crate-crypto/peerdas-kzg"
 
 [workspace.dependencies]
