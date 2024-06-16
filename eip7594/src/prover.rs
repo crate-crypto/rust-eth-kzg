@@ -56,7 +56,7 @@ impl Default for ProverContext {
 impl ProverContext {
     pub fn new(trusted_setup: &TrustedSetup) -> Self {
         const DEFAULT_NUM_THREADS: usize = 16;
-        Self::with_num_threads(&trusted_setup, DEFAULT_NUM_THREADS)
+        Self::with_num_threads(trusted_setup, DEFAULT_NUM_THREADS)
     }
 
     pub fn with_num_threads(trusted_setup: &TrustedSetup, num_threads: usize) -> Self {
@@ -94,10 +94,7 @@ impl ProverContext {
             commit_key,
             poly_domain,
             commit_key_lagrange,
-            verifier_context: VerifierContext::from_thread_pool(
-                &trusted_setup,
-                thread_pool.clone(),
-            ),
+            verifier_context: VerifierContext::from_thread_pool(trusted_setup, thread_pool.clone()),
             thread_pool,
         }
     }
