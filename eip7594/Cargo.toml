@@ -14,12 +14,14 @@ bls12_381 = { workspace = true }
 hex = { workspace = true }
 erasure_codes = { workspace = true }
 rayon = { workspace = true }
+serde = { version = "1.0.203", features = ["derive"] }
+serde_json = "1.0"
+rust-embed = { version = "8.4.0", features = ["compression"] }
 
 [dev-dependencies]
 criterion = "0.5.1"
 rand = "0.8.4"
 hex = "0.4.3"
-serde = "1.0.203"
 #TODO: note that serde_yaml is now deprecated
 serde_yaml = "0.9.34"
 
