@@ -5,10 +5,12 @@ use rayon::prelude::*;
 
 use super::toeplitz::ToeplitzMatrix;
 use crate::fk20::toeplitz::CirculantMatrix;
+
 /// BatchToeplitz is a structure that optimizes for the usecase where:
 /// - You need to do multiple matrix-vector multiplications and sum them together
 /// - The vector is known at compile time, so you can precompute it's FFT
 /// - For now, the vector is a group element. We don't have any other usecases in the codebase.
+#[derive(Debug)]
 pub struct BatchToeplitzMatrixVecMul {
     /// fft_vectors represents the group elements in the FFT domain.
     /// This means when we are computing the matrix-vector multiplication by embedding it

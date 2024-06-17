@@ -10,6 +10,7 @@ pub enum Erasures {
     Cells { cell_size: usize, cells: Vec<usize> },
 }
 
+#[derive(Debug)]
 pub struct ReedSolomon {
     expansion_factor: usize,
     poly_len: usize,

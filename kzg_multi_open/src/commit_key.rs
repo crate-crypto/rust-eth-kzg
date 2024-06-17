@@ -20,6 +20,7 @@ pub struct CommitKey {
 /// - `i` ranges from 0 to `degree`
 /// -  L_i is the i'th lagrange polynomial
 /// - `G` is some generator of the group
+#[derive(Debug)]
 pub struct CommitKeyLagrange {
     pub g1s: Vec<G1Projective>,
 }

@@ -3,6 +3,7 @@ use blstrs::{Fp, G1Affine};
 
 /// FixedBasedMSM computes a multi scalar multiplication by precomputing a table of points.
 /// It uses batch addition to amortize the cost of adding these points together.
+#[derive(Debug)]
 pub struct FixedBaseMSM {
     table: Vec<blst::blst_p1_affine>,
     wbits: usize,

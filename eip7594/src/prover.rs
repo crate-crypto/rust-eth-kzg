@@ -24,6 +24,7 @@ use crate::{
 
 /// Context object that is used to call functions in the prover API.
 /// This includes, computing the commitments, proofs and cells.
+#[derive(Debug)]
 pub struct ProverContext {
     thread_pool: Arc<ThreadPool>,
 

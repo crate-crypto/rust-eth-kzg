@@ -18,6 +18,7 @@ use crate::{commit_key::CommitKey, reverse_bit_order};
 
 /// FK20 initializes all of the components needed to compute a KZG multipoint
 /// proof using the FK20 method.
+#[derive(Debug)]
 pub struct FK20 {
     batch_toeplitz: BatchToeplitzMatrixVecMul,
     /// FK20 allows you to open multiple points at once. This is the number of points in

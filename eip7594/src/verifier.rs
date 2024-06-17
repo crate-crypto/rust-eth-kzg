@@ -21,6 +21,7 @@ use kzg_multi_open::{
 use rayon::ThreadPool;
 
 /// The context object that is used to call functions in the verifier API.
+#[derive(Debug)]
 pub struct VerifierContext {
     thread_pool: Arc<ThreadPool>,
     opening_key: OpeningKey,

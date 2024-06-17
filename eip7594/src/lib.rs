@@ -26,6 +26,7 @@ pub type ColumnIndex = u64;
 mod errors;
 
 /// The context that will be used to create and verify proofs.
+#[derive(Debug)]
 pub struct PeerDASContext {
     pub prover_ctx: ProverContext,
     pub verifier_ctx: VerifierContext,
