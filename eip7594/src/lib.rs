@@ -1,7 +1,7 @@
 use constants::{BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT};
-use prover::ProverContext;
-use trusted_setup::TrustedSetup;
-use verifier::VerifierContext;
+pub use prover::ProverContext;
+pub use trusted_setup::TrustedSetup;
+pub use verifier::VerifierContext;
 
 pub mod constants;
 pub mod prover;
@@ -43,6 +43,17 @@ impl Default for PeerDASContext {
 }
 
 impl PeerDASContext {
+    pub fn with_threads(trusted_setup: &TrustedSetup, num_threads: usize) -> Self {
+        let thread_pool = std::sync::Arc::new(rayon::ThreadPoolBuilder::new()
+            .num_threads(num_threads)
+            .build()
+            .unwrap());
+        PeerDASContext {
+            prover_ctx: ProverContext::from_threads_pool(trusted_setup, thread_pool.clone()),
+            verifier_ctx: VerifierContext::from_thread_pool(trusted_setup, thread_pool),
+        }
+    }
+
     pub fn prover_ctx(&self) -> &ProverContext {
         &self.prover_ctx
     }
