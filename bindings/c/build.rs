@@ -5,6 +5,11 @@ use std::path::PathBuf;
 const DIR_FOR_HEADER: &str = "build";
 
 fn main() {
+    // linker flags
+    // Link libm on Unix-like systems (needed due to use of num_cpus crate)
+    #[cfg(not(target_os = "windows"))]
+    println!("cargo:rustc-link-lib=m");
+
     println!("cargo:rerun-if-changed=src/");
     let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
     let package_name = env::var("CARGO_PKG_NAME").unwrap();
