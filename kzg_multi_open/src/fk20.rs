@@ -96,6 +96,8 @@ impl FK20 {
         let mut proofs = self.proof_domain.fft_g1(h_poly_commitments);
         // apply reverse bit order permutation, since fft_g1 was applied using
         // the regular order.
+        // TODO: move this to eip7594 module
+        // TODO: same for evaluation sets -- we could then move evaluation sets to reed solomon crate
         reverse_bit_order(&mut proofs);
         let mut proofs_affine = vec![G1Point::identity(); proofs.len()];
         // TODO: This does not seem to be using the batch affine trick
@@ -130,13 +132,6 @@ impl FK20 {
             m
         );
 
-        let k = m / l;
-        assert!(
-            k.is_power_of_two(),
-            "expected k to be a power of two, found {}",
-            k
-        );
-
         // Reverse polynomial so highest coefficient is first.
         // See 3.1.1 of the FK20 paper, for the ordering.
         polynomial.reverse();
@@ -148,8 +143,6 @@ impl FK20 {
         let mut matrices = Vec::with_capacity(toeplitz_rows.len());
         // We want to do `l` toeplitz matrix multiplications
         for row in toeplitz_rows.into_iter() {
-            // TODO: We could have a special constructor/Toeplitz struct for the column,
-            // TODO: if this allocation shows to be non-performant.
             let mut toeplitz_column = vec![Scalar::from(0u64); row.len()];
             toeplitz_column[0] = row[0];
 
