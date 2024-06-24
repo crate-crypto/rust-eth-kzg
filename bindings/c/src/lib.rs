@@ -1,5 +1,3 @@
-extern crate eip7594;
-
 mod blob_to_kzg_commitment;
 use blob_to_kzg_commitment::_blob_to_kzg_commitment;
 
