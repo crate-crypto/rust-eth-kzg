@@ -5,6 +5,7 @@ use polynomial::{domain::Domain, monomial::vanishing_poly};
 
 // The erasures can be either indices of the polynomial
 // or groups of indices
+#[derive(Debug, Clone)]
 pub enum Erasures {
     Indices(Vec<usize>),
     Cells { cell_size: usize, cells: Vec<usize> },
