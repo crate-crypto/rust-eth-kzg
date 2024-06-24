@@ -19,3 +19,6 @@ when defined(windows):
   {.passL: "-lws2_32".}
   {.passL: "-lntdll".}
   {.passL: "-luserenv".}
+else:
+  # Link math library for non-Windows platforms
+  {.passL: "-lm".}
