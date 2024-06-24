@@ -40,7 +40,7 @@ impl BatchToeplitzMatrixVecMul {
 
         // Precompute the FFT of the vectors
         let vectors: Vec<Vec<G1Projective>> = vectors
-            .into_iter()
+            .into_par_iter()
             .map(|vector| circulant_domain.fft_g1(vector))
             .collect();
 
@@ -53,7 +53,7 @@ impl BatchToeplitzMatrixVecMul {
 
         let table_bits = 9;
         let precomputed_table: Vec<_> = transposed_msm_vectors
-            .into_iter()
+            .into_par_iter()
             .map(|v| FixedBaseMSM::new(v, table_bits))
             .collect();
 
