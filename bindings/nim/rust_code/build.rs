@@ -2,7 +2,7 @@ use std::env;
 use std::path::PathBuf;
 
 /// The path where the generated header file will be written relative to bindings folder.
-const PATH_FOR_NIM_HEADER: &str = "nim/nim_code/src/header.nim";
+const PATH_FOR_NIM_HEADER: &str = "nim/nim_code/nim_peerdas_kzg/header.nim";
 
 fn main() {
     println!(
