@@ -40,4 +40,4 @@ jobs:
 
       - name: Test Nim project
         working-directory: bindings/nim/nim_code
-        run: nimble test -Y
+        run: nimble test -Y --verbose
