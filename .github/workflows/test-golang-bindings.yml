@@ -25,7 +25,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Run compile script
-        run: ./scripts/compile.sh
+        run: ./scripts/compile.sh golang
         shell: bash
 
       - name: Set up Go
