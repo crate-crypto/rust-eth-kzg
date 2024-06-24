@@ -327,6 +327,7 @@ fn sanity_check_cells_and_cell_ids(
     // Check that each cell has the right amount of bytes
     for (i, cell) in cells.iter().enumerate() {
         if cell.len() != BYTES_PER_CELL {
+            // TODO: This check should always be true
             return Err(VerifierError::CellDoesNotContainEnoughBytes {
                 cell_id: cell_ids[i],
                 num_bytes: cell.len(),
