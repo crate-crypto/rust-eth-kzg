@@ -44,10 +44,12 @@ impl Default for PeerDASContext {
 
 impl PeerDASContext {
     pub fn with_threads(trusted_setup: &TrustedSetup, num_threads: usize) -> Self {
-        let thread_pool = std::sync::Arc::new(rayon::ThreadPoolBuilder::new()
-            .num_threads(num_threads)
-            .build()
-            .unwrap());
+        let thread_pool = std::sync::Arc::new(
+            rayon::ThreadPoolBuilder::new()
+                .num_threads(num_threads)
+                .build()
+                .unwrap(),
+        );
         PeerDASContext {
             prover_ctx: ProverContext::from_threads_pool(trusted_setup, thread_pool.clone()),
             verifier_ctx: VerifierContext::from_thread_pool(trusted_setup, thread_pool),
