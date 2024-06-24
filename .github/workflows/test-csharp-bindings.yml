@@ -24,6 +24,9 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Add zigbuild
+        run: cargo install cargo-zigbuild
+
       - name: Run compile script
         run: ./scripts/compile.sh csharp
         shell: bash
