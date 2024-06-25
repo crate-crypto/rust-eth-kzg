@@ -28,7 +28,22 @@ jobs:
     - name: Create dummy project and initialize Gradle
       run: |
         mkdir -p src/main/java/org/peerdas/kzg
-        echo "package org.peerdas.kzg; public class DummyClass { public static void main(String[] args) { System.out.println(\"Hello from PeerDAS KZG DummyClass\"); } }" > src/main/java/org/peerdas/kzg/DummyClass.java
+        echo "package org.peerdas.kzg;
+
+        /**
+         * DummyClass is a simple class for testing the build and deployment process.
+         */
+        public class DummyClass {
+
+            /**
+             * Main method that prints a hello message.
+             *
+             * @param args command line arguments
+             */
+            public static void main(String[] args) {
+                System.out.println(\"Hello from PeerDAS KZG DummyClass\");
+            }
+        }" > src/main/java/org/peerdas/kzg/DummyClass.java
         
         echo "plugins {
           id 'java-library'
