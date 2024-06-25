@@ -115,7 +115,7 @@ jobs:
         JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY_JAVA_PUBLISHING }}
         JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        ./gradlew jreleaserConfig clean publish jreleaserFullRelease --stacktrace --info
+        ./gradlew jreleaserConfig clean build publish jreleaserFullRelease jreleaserChangelog --stacktrace --info
 
     - name: JReleaser output
       if: always()
