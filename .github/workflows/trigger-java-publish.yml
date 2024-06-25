@@ -60,7 +60,7 @@ jobs:
               from components.java
               pom {
                 name = 'PeerDAS KZG Dummy Library'
-                description = project.description
+                description = 'Using a dummy description, want to use project.description but get errors'
                 url = 'https://github.com/crate-crypto/peerdas-kzg'
                 licenses {
                   license {
@@ -94,7 +94,7 @@ jobs:
 
         jreleaser {
           project {
-            description = project.description
+            description = 'Using a dummy description, want to use project.description but get errors'
             copyright = \"Copyright © \${copyrightYear} The PeerDAS KZG authors\"
           }
           signing {
