@@ -40,6 +40,10 @@ jobs:
         group = 'io.github.kevaundray.dummy'
         version = '0.0.1-SNAPSHOT'
         
+        description = 'A dummy library for testing PeerDAS KZG operations publication'
+        def year = java.time.Year.now().getValue()
+        def copyrightYear = (year == 2024) ? \"2024\" : \"2024-\$year\"
+        
         java {
           withJavadocJar()
           withSourcesJar()
@@ -55,7 +59,7 @@ jobs:
               from components.java
               pom {
                 name = 'PeerDAS KZG Dummy Library'
-                description = 'A dummy library for testing PeerDAS KZG operations publication'
+                description = project.description
                 url = 'https://github.com/crate-crypto/peerdas-kzg'
                 licenses {
                   license {
@@ -88,6 +92,10 @@ jobs:
         }
         
         jreleaser {
+          project {
+            description = project.description
+            copyright = \"Copyright © \${copyrightYear} The PeerDAS KZG authors\"
+          }
           signing {
             active = 'ALWAYS'
             armored = true
