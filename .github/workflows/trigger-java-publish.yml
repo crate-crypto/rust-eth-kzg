@@ -31,35 +31,27 @@ jobs:
         echo "package org.peerdas.kzg; public class DummyClass { public static void main(String[] args) { System.out.println(\"Hello from PeerDAS KZG DummyClass\"); } }" > src/main/java/org/peerdas/kzg/DummyClass.java
         
         echo "plugins {
-          id 'java'
+          id 'java-library'
           id 'maven-publish'
-          id 'signing'
           id 'org.jreleaser' version '1.12.0'
         }
         
         group = 'io.github.kevaundray.dummy'
         version = '0.0.1-SNAPSHOT'
         
-        ext.projectDescription = 'A dummy library for testing PeerDAS KZG operations publication'
-        def year = java.time.Year.now().getValue()
-        def copyrightYear = (year == 2024) ? \"2024\" : \"2024-\$year\"
-        
         java {
           withJavadocJar()
           withSourcesJar()
         }
         
-        repositories {
-          mavenCentral()
-        }
-        
         publishing {
           publications {
-            mavenJava(MavenPublication) {
+            maven(MavenPublication) {
               from components.java
+        
               pom {
                 name = 'PeerDAS KZG Dummy Library'
-                description = projectDescription
+                description = 'A dummy library for testing PeerDAS KZG operations publication'
                 url = 'https://github.com/crate-crypto/peerdas-kzg'
                 licenses {
                   license {
@@ -82,20 +74,15 @@ jobs:
               }
             }
           }
-        }
         
-        signing {
-          def signingKey = System.getenv('GPG_PRIVATE_KEY')
-          def signingPassword = System.getenv('GPG_PASSPHRASE')
-          useInMemoryPgpKeys(signingKey, signingPassword)
-          sign publishing.publications.mavenJava
+          repositories {
+            maven {
+              url = layout.buildDirectory.dir('staging-deploy')
+            }
+          }
         }
         
         jreleaser {
-          project {
-            description = projectDescription
-            copyright = \"Copyright © \${copyrightYear} The PeerDAS KZG authors\"
-          }
           signing {
             active = 'ALWAYS'
             armored = true
@@ -106,7 +93,8 @@ jobs:
                 sonatype {
                   active = 'ALWAYS'
                   url = 'https://central.sonatype.com/api/v1/publisher'
-                  stagingRepository('target/staging-deploy')
+                  stagingRepository('build/staging-deploy')
+                  snapshotUrl = 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
                 }
               }
             }
@@ -124,10 +112,8 @@ jobs:
         JRELEASER_GPG_SECRET_KEY: ${{ secrets.GPG_PRIVATE_KEY_JAVA_PUBLISHING }}
         JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY_JAVA_PUBLISHING }}
         JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY_JAVA_PUBLISHING }}
-        GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE_JAVA_PUBLISHING }}
       run: |
-        ./gradlew jreleaserDeploy --stacktrace --info
+        ./gradlew clean publish jreleaserDeploy --stacktrace --info
 
     - name: JReleaser output
       if: always()
