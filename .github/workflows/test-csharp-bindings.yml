@@ -24,6 +24,9 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Setup Zig
+        uses: goto-bus-stop/setup-zig@v2
+        
       - name: Add zigbuild
         run: cargo install cargo-zigbuild
 
