@@ -22,7 +22,7 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
 
-    - name: Create dummy project
+    - name: Create dummy project and initialize Gradle
       run: |
         mkdir -p src/main/java/org/peerdas/kzg
         echo "package org.peerdas.kzg; public class DummyClass { public static void main(String[] args) { System.out.println(\"Hello from PeerDAS KZG DummyClass\"); } }" > src/main/java/org/peerdas/kzg/DummyClass.java
@@ -56,6 +56,9 @@ jobs:
             }
           }
         }" > build.gradle
+
+        # Initialize Gradle wrapper
+        gradle wrapper
 
     - name: Publish dummy package
       run: ./gradlew publish
