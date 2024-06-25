@@ -52,7 +52,7 @@ jobs:
         }
         
         group = 'io.github.kevaundray.dummy'
-        version = '0.0.2'
+        version = '0.0.3'
         
         java {
           withJavadocJar()
@@ -113,23 +113,10 @@ jobs:
               }
             }
           }
-        }
-
-        tasks.register('createJReleaserOutputDir') {
-          doLast {
-            mkdir 'build/jreleaser'
-          }
-        }
-
-        tasks.named('jreleaserFullRelease') {
-          dependsOn 'createJReleaserOutputDir'
         }" > build.gradle
 
         # Initialize Gradle wrapper
         gradle wrapper
-
-    - name: Create JReleaser output directory
-      run: mkdir -p build/jreleaser
 
     - name: Publish dummy package to Maven Central
       env:
@@ -140,7 +127,7 @@ jobs:
         JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY_JAVA_PUBLISHING }}
         JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        ./gradlew clean createJReleaserOutputDir jreleaserConfig build publish jreleaserFullRelease jreleaserChangelog -d --stacktrace --info
+        ./gradlew clean build publish jreleaserFullRelease jreleaserChangelog -d --stacktrace --info
 
     - name: JReleaser output
       if: always()
