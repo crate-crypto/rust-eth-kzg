@@ -98,6 +98,16 @@ jobs:
               }
             }
           }
+        }
+
+        tasks.register('createJReleaserOutputDir') {
+          doLast {
+            mkdir 'build/jreleaser'
+          }
+        }
+
+        tasks.named('jreleaserFullRelease') {
+          dependsOn 'createJReleaserOutputDir'
         }" > build.gradle
 
         # Initialize Gradle wrapper
@@ -115,7 +125,7 @@ jobs:
         JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY_JAVA_PUBLISHING }}
         JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        ./gradlew jreleaserConfig clean build publish jreleaserFullRelease jreleaserChangelog --stacktrace --info
+        ./gradlew createJReleaserOutputDir jreleaserConfig clean build publish jreleaserFullRelease jreleaserChangelog --stacktrace --info
 
     - name: JReleaser output
       if: always()
