@@ -115,8 +115,8 @@ jobs:
           }
         }
 
-        # TODO: Find out why jreleaser does not just create this
-        # Directory.
+        // TODO: Find out why jreleaser does not just create this
+        // Directory.
         tasks.register('createJReleaserOutputDir') {
           doLast {
             mkdir 'build/jreleaser'
