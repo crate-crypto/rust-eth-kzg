@@ -36,31 +36,30 @@ jobs:
           id 'signing'
           id 'org.jreleaser' version '1.12.0'
         }
-
+        
         group = 'io.github.kevaundray.dummy'
         version = '0.0.1-SNAPSHOT'
-
+        
+        ext.projectDescription = 'A dummy library for testing PeerDAS KZG operations publication'
         def year = java.time.Year.now().getValue()
         def copyrightYear = (year == 2024) ? \"2024\" : \"2024-\$year\"
-
-        description = 'A dummy library for testing PeerDAS KZG operations publication'
-
+        
         java {
           withJavadocJar()
           withSourcesJar()
         }
-
+        
         repositories {
           mavenCentral()
         }
-
+        
         publishing {
           publications {
             mavenJava(MavenPublication) {
               from components.java
               pom {
                 name = 'PeerDAS KZG Dummy Library'
-                description = 'Using a dummy description, want to use project.description but get errors'
+                description = projectDescription
                 url = 'https://github.com/crate-crypto/peerdas-kzg'
                 licenses {
                   license {
@@ -84,17 +83,17 @@ jobs:
             }
           }
         }
-
+        
         signing {
           def signingKey = System.getenv('GPG_PRIVATE_KEY')
           def signingPassword = System.getenv('GPG_PASSPHRASE')
           useInMemoryPgpKeys(signingKey, signingPassword)
           sign publishing.publications.mavenJava
         }
-
+        
         jreleaser {
           project {
-            description = 'Using a dummy description, want to use project.description but get errors'
+            description = projectDescription
             copyright = \"Copyright © \${copyrightYear} The PeerDAS KZG authors\"
           }
           signing {
@@ -107,7 +106,7 @@ jobs:
                 sonatype {
                   active = 'ALWAYS'
                   url = 'https://central.sonatype.com/api/v1/publisher'
-                  stagingRepositories = ['target/staging-deploy']
+                  stagingRepository('target/staging-deploy')
                 }
               }
             }
