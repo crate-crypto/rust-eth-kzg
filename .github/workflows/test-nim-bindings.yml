@@ -9,6 +9,9 @@ on:
       - master
   workflow_dispatch:
 
+env:
+  NIM_CC: vcc
+
 jobs:
   build-and-test:
     runs-on: ${{ matrix.os }}
