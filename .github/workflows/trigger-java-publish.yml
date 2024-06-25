@@ -52,7 +52,7 @@ jobs:
         }
         
         group = 'io.github.kevaundray.dummy'
-        version = '0.0.4'
+        version = '0.0.5'
         
         java {
           withJavadocJar()
@@ -115,6 +115,8 @@ jobs:
           }
         }
 
+        # TODO: Find out why jreleaser does not just create this
+        # Directory.
         tasks.register('createJReleaserOutputDir') {
           doLast {
             mkdir 'build/jreleaser'
@@ -127,8 +129,6 @@ jobs:
 
         # Initialize Gradle wrapper
         gradle wrapper
-    # TODO: Find out why jreleaser does not just create this
-    # Directory.
     - name: Publish dummy package to Maven Central
       env:
         JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.CENTRAL_PORTAL_TOKEN_USERNAME }}
