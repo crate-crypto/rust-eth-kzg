@@ -98,6 +98,12 @@ jobs:
               }
             }
           }
+        }
+
+        tasks.named('jreleaserDeploy').configure {
+          doFirst {
+            mkdir \"build/jreleaser\"
+          }
         }" > build.gradle
 
         # Initialize Gradle wrapper
