@@ -123,7 +123,7 @@ case "$OS" in
         # so we add a wildcard to match the prefix
     MINGW64_NT-*|CYGWIN_NT-*|"Windows")
         TARGET_NAME="x86_64-pc-windows-msvc"
-        STATIC_LIB_NAME="lib${LIB_NAME}.a"
+        STATIC_LIB_NAME="${LIB_NAME}.a"
         DYNAMIC_LIB_NAME="${LIB_NAME}.dll"
         ;;
     *)
