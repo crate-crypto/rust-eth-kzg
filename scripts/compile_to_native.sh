@@ -122,7 +122,7 @@ case "$OS" in
         # Github runners will return MINGW64_NT-10.0-20348
         # so we add a wildcard to match the prefix
     MINGW64_NT-*|CYGWIN_NT-*|"Windows")
-        TARGET_NAME="x86_64-pc-windows-gnu"
+        TARGET_NAME="x86_64-pc-windows-msvc"
         STATIC_LIB_NAME="lib${LIB_NAME}.a"
         DYNAMIC_LIB_NAME="${LIB_NAME}.dll"
         ;;
