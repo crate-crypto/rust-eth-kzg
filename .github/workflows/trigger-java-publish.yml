@@ -110,8 +110,8 @@ jobs:
 
     - name: Publish dummy package to Maven Central
       env:
-        JRELEASER_NEXUS2_USERNAME: ${{ secrets.CENTRAL_PORTAL_TOKEN_USERNAME }}
-        JRELEASER_NEXUS2_PASSWORD: ${{ secrets.CENTRAL_PORTAL_TOKEN_PASSWORD }}
+        JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.CENTRAL_PORTAL_TOKEN_USERNAME }}
+        JRELEASER_MAVENCENTRAL_PASSWORD: ${{ secrets.CENTRAL_PORTAL_TOKEN_PASSWORD }}
         JRELEASER_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE_JAVA_PUBLISHING }}
         JRELEASER_GPG_SECRET_KEY: ${{ secrets.GPG_PRIVATE_KEY_JAVA_PUBLISHING }}
         JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY_JAVA_PUBLISHING }}
@@ -119,7 +119,7 @@ jobs:
         GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY_JAVA_PUBLISHING }}
         GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE_JAVA_PUBLISHING }}
       run: |
-        ./gradlew jreleaserDeploy --release-repository=mavenCentral
+        ./gradlew jreleaserDeploy --stacktrace --info
 
     - name: JReleaser output
       if: always()
