@@ -3,6 +3,7 @@ plugins {
     id "java-test-fixtures"
     id "me.champeau.jmh" version "0.7.0"
     id "com.diffplug.spotless" version "6.17.0"
+    id 'maven-publish'
 }
 
 group = 'ethereum.cryptography'
@@ -30,6 +31,27 @@ dependencies {
     testFixturesImplementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}")
 }
 
+// TODO: Re-evaluate whether we should keep this
 test {
     useJUnitPlatform()
+    dependsOn cleanTest
+    testLogging.showStandardStreams = true
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            url = uri("https://maven.pkg.github.com/crate-crypto/peerdas-kzg")
+            credentials {
+                username = System.getenv("GITHUB_GRADLE_USERNAME")
+                password = System.getenv("GITHUB_GRADLE_PASSWORD")
+            }
+        }
+    }
+    publications {
+        gpr(MavenPublication) {
+            from(components.java)
+        }
+    }
 }
