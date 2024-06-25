@@ -113,10 +113,24 @@ jobs:
               }
             }
           }
+        }
+
+        tasks.register('createJReleaserOutputDir') {
+          doLast {
+            mkdir 'build/jreleaser'
+          }
+        }
+
+        tasks.named('jreleaserFullRelease') {
+          dependsOn 'createJReleaserOutputDir'
         }" > build.gradle
 
         # Initialize Gradle wrapper
         gradle wrapper
+    # TODO: Find out why jreleaser does not just create this
+    # Directory.
+    - name: Create JReleaser output directory
+      run: mkdir -p build/jreleaser
 
     - name: Publish dummy package to Maven Central
       env:
@@ -127,7 +141,7 @@ jobs:
         JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY_JAVA_PUBLISHING }}
         JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        ./gradlew clean build publish jreleaserFullRelease jreleaserChangelog -d --stacktrace --info
+        ./gradlew clean createJReleaserOutputDir jreleaserConfig build publish jreleaserFullRelease --stacktrace --info
 
     - name: JReleaser output
       if: always()
