@@ -138,8 +138,8 @@ if [[ "$ARCH" == "universal" ]]; then
     check_rust_target_installed "x86_64-apple-darwin"
     check_rust_target_installed "aarch64-apple-darwin"
 
-    cargo zigbuild --release --target=x86_64-apple-darwin
-    cargo zigbuild --release --target=aarch64-apple-darwin
+    cargo build --release --target=x86_64-apple-darwin
+    cargo build --release --target=aarch64-apple-darwin
 
     # Create the universal binary
     mkdir -p "$OUT_DIR/$TARGET_NAME"
@@ -153,7 +153,7 @@ if [[ "$ARCH" == "universal" ]]; then
 else
 
     check_rust_target_installed "$TARGET_NAME"
-    cargo zigbuild --release --target=$TARGET_NAME
+    cargo build --release --target=$TARGET_NAME
 
     # Create the output directory if it doesn't exist
     mkdir -p "$OUT_DIR/$TARGET_NAME"
