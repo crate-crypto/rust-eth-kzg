@@ -52,7 +52,7 @@ jobs:
         }
         
         group = 'io.github.kevaundray.dummy'
-        version = '0.0.1'
+        version = '0.0.2'
         
         java {
           withJavadocJar()
