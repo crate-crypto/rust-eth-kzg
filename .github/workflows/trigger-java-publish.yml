@@ -93,8 +93,7 @@ jobs:
                 sonatype {
                   active = 'ALWAYS'
                   url = 'https://central.sonatype.com/api/v1/publisher'
-                  stagingRepository('build/staging-deploy')
-                  snapshotUrl = 'https://s01.oss.sonatype.org/content/repositories/snapshots/'
+                  stagingRepository('target/staging-deploy')
                 }
               }
             }
