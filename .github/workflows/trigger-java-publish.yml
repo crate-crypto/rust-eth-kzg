@@ -34,7 +34,7 @@ jobs:
           id 'java'
           id 'maven-publish'
           id 'signing'
-          id 'org.jreleaser' version '1.8.0'
+          id 'org.jreleaser' version '1.12.0'
         }
         
         group = 'io.github.kevaundray.dummy'
