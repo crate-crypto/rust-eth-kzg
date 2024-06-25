@@ -103,6 +103,9 @@ jobs:
         # Initialize Gradle wrapper
         gradle wrapper
 
+    - name: Create JReleaser output directory
+      run: mkdir -p build/jreleaser
+
     - name: Publish dummy package to Maven Central
       env:
         JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.CENTRAL_PORTAL_TOKEN_USERNAME }}
