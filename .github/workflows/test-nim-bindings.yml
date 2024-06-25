@@ -41,11 +41,18 @@ jobs:
         run: ./scripts/compile.sh nim
         shell: bash
 
-      - name: Setup Nim
-        uses: jiro4989/setup-nim-action@v1
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          nim-version: 'stable'
+      - name: Install Nim
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            curl -O https://nim-lang.org/choosenim/init.ps1
+            powershell -ExecutionPolicy ByPass -File init.ps1 -y
+            echo "$HOME/.nimble/bin" >> $GITHUB_PATH
+          else
+            curl https://nim-lang.org/choosenim/init.sh -sSf | sh -s -- -y
+            echo "$HOME/.nimble/bin" >> $GITHUB_PATH
+          fi
+          choosenim stable
       
       - name: Install Nimble dependencies
         working-directory: bindings/nim/nim_code
