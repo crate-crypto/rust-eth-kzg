@@ -60,6 +60,9 @@ jobs:
       # - name: Rename cross.toml file so cargo uses the correct linkers
       #   run: |
       #     mv .cargo/config.cross.toml .cargo/config.toml
+      - name: Install both Mac targets
+        run: |
+          rustup target add x86_64-apple-darwin aarch64-apple-darwin
 
       - name: Run compile script
         run: |
