@@ -93,7 +93,7 @@ mod serde_ {
 
 const TEST_DIR: &str = "../consensus_test_vectors/recover_cells_and_kzg_proofs";
 #[test]
-fn test_recover_all_cells() {
+fn test_recover_cells_and_proofs() {
     let test_files = collect_test_files(TEST_DIR).unwrap();
 
     let ctx = eip7594::prover::ProverContext::default();
@@ -138,7 +138,7 @@ fn test_recover_all_cells() {
 
         match ctx.recover_cells_and_proofs(test.input_cell_ids, input_cells, proofs.iter().collect()) {
             Ok((cells, proofs)) => {
-                let expected_proofs_and_cells = test.proofs_and_cells.expect(&format!("{:?}", test_file));
+                let expected_proofs_and_cells = test.proofs_and_cells.unwrap();
 
                 let expected_proofs = expected_proofs_and_cells.proofs;
                 let expected_cells = expected_proofs_and_cells.cells;
@@ -151,7 +151,7 @@ fn test_recover_all_cells() {
                     let got_cell = &cells[k];
 
                     assert_eq!(&got_cell[..], expected_cell);
-                    assert_eq!(&got_proof[..], expected_proof, "{:?}", test_file);
+                    assert_eq!(&got_proof[..], expected_proof);
                 }
             }
             Err(_) => {
