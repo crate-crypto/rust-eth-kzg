@@ -70,6 +70,7 @@ jobs:
           .github/scripts/compile_all_targets_java.sh
 
       - name: Publish Java package to Maven Central
+        working-directory: bindings/java/java_code
         env:
           JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.CENTRAL_PORTAL_TOKEN_USERNAME }}
           JRELEASER_MAVENCENTRAL_TOKEN: ${{ secrets.CENTRAL_PORTAL_TOKEN_PASSWORD }}
@@ -86,5 +87,5 @@ jobs:
         with:
           name: jreleaser-logs
           path: |
-            build/jreleaser/trace.log
-            build/jreleaser/output.properties
+            bindings/java/java_code/build/jreleaser/trace.log
+            bindings/java/java_code/build/jreleaser/output.properties
