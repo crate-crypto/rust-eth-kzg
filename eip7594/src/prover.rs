@@ -177,6 +177,7 @@ impl ProverContext {
         _proofs: Vec<Bytes48Ref>,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
         self.thread_pool.install(|| {
+            // TODO: Eventually this will be removed in consensus-specs
             // Check proofs are valid so when test vectors are added
             // this passes, even though we so not use them.
             for proof in _proofs {
