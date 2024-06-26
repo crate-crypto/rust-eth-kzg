@@ -20,6 +20,11 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@1.74.1
 
+      - name: Install all of the relevant targets
+        run: |
+          chmod x .github/scripts/install_all_targets.sh
+          .github/scripts/install_all_targets.sh
+
       - name: Install .NET SDK
         uses: actions/setup-dotnet@v3
         with:
@@ -58,8 +63,8 @@ jobs:
 
       - name: Run compile script
         run: |
-          chmod +x scripts/compile_all_targets_c_sharp.sh
-          scripts/compile_all_targets_c_sharp.sh
+          chmod +x .github/scripts/compile_all_targets_c_sharp.sh
+          .github/scripts/compile_all_targets_c_sharp.sh
 
       - name: Restore NuGet packages
         working-directory: bindings/csharp/csharp_code/PeerDASKZG.bindings
