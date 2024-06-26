@@ -3,6 +3,8 @@ use crate::CellID;
 /// Errors that can occur while calling a method in the Prover API
 #[derive(Debug)]
 pub enum ProverError {
+    // TODO: This will be getting removed, waiting for consensus-specs PR
+    NumProofsDoesNotEqualNumCells,
     Serialization(SerializationError),
     RecoveryFailure(VerifierError),
 }
