@@ -22,7 +22,7 @@ jobs:
 
       - name: Install all of the relevant targets
         run: |
-          chmod x .github/scripts/install_all_targets.sh
+          chmod +x .github/scripts/install_all_targets.sh
           .github/scripts/install_all_targets.sh
         
       - name: Set up JDK
