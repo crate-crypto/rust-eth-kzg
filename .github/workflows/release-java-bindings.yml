@@ -40,26 +40,26 @@ jobs:
         with:
           python-version: '3.x'
 
-      - name: Install Homebrew
-        run: |
-          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      # - name: Install Homebrew
+      #   run: |
+      #     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
-      - name: Install mingw-w64 for Windows cross-compilation
-        run: |
-          brew install mingw-w64
+      # - name: Install mingw-w64 for Windows cross-compilation
+      #   run: |
+      #     brew install mingw-w64
       
-      - name: Install linker for x86_64-unknown-linux-gnu
-        run: |
-          brew install SergioBenitez/osxct/x86_64-unknown-linux-gnu
+      # - name: Install linker for x86_64-unknown-linux-gnu
+      #   run: |
+      #     brew install SergioBenitez/osxct/x86_64-unknown-linux-gnu
     
-      - name: Install linker for aarch64-unknown-linux-gnu
-        run: |
-          brew tap messense/homebrew-macos-cross-toolchains
-          brew install aarch64-unknown-linux-gnu
+      # - name: Install linker for aarch64-unknown-linux-gnu
+      #   run: |
+      #     brew tap messense/homebrew-macos-cross-toolchains
+      #     brew install aarch64-unknown-linux-gnu
 
-      - name: Rename cross.toml file so cargo uses the correct linkers
-        run: |
-          mv .cargo/config.cross.toml .cargo/config.toml
+      # - name: Rename cross.toml file so cargo uses the correct linkers
+      #   run: |
+      #     mv .cargo/config.cross.toml .cargo/config.toml
 
       - name: Run compile script
         run: |
