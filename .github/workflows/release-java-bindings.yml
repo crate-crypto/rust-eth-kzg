@@ -20,6 +20,10 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@1.74.1
 
+      - name: Install all of the relevant targets
+        run: |
+          rustup target add x86_64-apple-darwin aarch64-apple-darwin x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu x86_64-pc-windows-gnu
+        
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
@@ -40,29 +44,26 @@ jobs:
         with:
           python-version: '3.x'
 
-      # - name: Install Homebrew
-      #   run: |
-      #     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-      # - name: Install mingw-w64 for Windows cross-compilation
-      #   run: |
-      #     brew install mingw-w64
-      
-      # - name: Install linker for x86_64-unknown-linux-gnu
-      #   run: |
-      #     brew install SergioBenitez/osxct/x86_64-unknown-linux-gnu
-    
-      # - name: Install linker for aarch64-unknown-linux-gnu
-      #   run: |
-      #     brew tap messense/homebrew-macos-cross-toolchains
-      #     brew install aarch64-unknown-linux-gnu
-
-      # - name: Rename cross.toml file so cargo uses the correct linkers
-      #   run: |
-      #     mv .cargo/config.cross.toml .cargo/config.toml
-      - name: Install both Mac targets
+      - name: Install Homebrew
         run: |
-          rustup target add x86_64-apple-darwin aarch64-apple-darwin
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+      - name: Install mingw-w64 for Windows cross-compilation
+        run: |
+          brew install mingw-w64
+      
+      - name: Install linker for x86_64-unknown-linux-gnu
+        run: |
+          brew install SergioBenitez/osxct/x86_64-unknown-linux-gnu
+    
+      - name: Install linker for aarch64-unknown-linux-gnu
+        run: |
+          brew tap messense/homebrew-macos-cross-toolchains
+          brew install aarch64-unknown-linux-gnu
+
+      - name: Rename cross.toml file so cargo uses the correct linkers
+        run: |
+          mv .cargo/config.cross.toml .cargo/config.toml
 
       - name: Run compile script
         run: |
