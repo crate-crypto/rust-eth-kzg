@@ -22,7 +22,8 @@ jobs:
 
       - name: Install all of the relevant targets
         run: |
-          rustup target add x86_64-apple-darwin aarch64-apple-darwin x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu x86_64-pc-windows-gnu
+          chmod x ./scripts/install_all_targets.sh
+          ./scripts/install_all_targets.sh
         
       - name: Set up JDK
         uses: actions/setup-java@v3
