@@ -86,7 +86,6 @@ publishing {
 jreleaser {
   // Jreleaser will look for .git and its at the top level repository
   gitRootSearch = true
-  gitRootDir = file("${project.rootDir}/../..")
   
   signing {
     active = 'ALWAYS'
