@@ -184,12 +184,13 @@ impl ProverContext {
                 let _ = serialization::deserialize_compressed_g1(proof)
                     .map_err(ProverError::Serialization)?;
             }
+
             // Use erasure decoding to recover the polynomial corresponding to the blob in monomial form
             let poly_coeff = self
                 .verifier_context
                 .recover_polynomial_coeff(cell_ids, cells)
                 .map_err(ProverError::RecoveryFailure)?;
-
+            let poly_coeff = poly_coeff[..FIELD_ELEMENTS_PER_BLOB].to_vec();
             self.compute_cells_and_kzg_proofs_from_poly_coeff(poly_coeff)
         })
     }
