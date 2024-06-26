@@ -9,14 +9,79 @@ on:
 
 jobs:
   publish:
-    name: Publish java bindings
-    runs-on: ubuntu-latest
+    name: Publish Java bindings
+    runs-on: macos-latest
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: master
 
-      - name: TODO java bindings code
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@1.74.1
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+    
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY_JAVA_PUBLISHING }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE_JAVA_PUBLISHING }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install Homebrew
         run: |
-              echo "Code to publish java bindings needs to be setup reference input: ${{ inputs.ref }}"
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+      - name: Install mingw-w64 for Windows cross-compilation
+        run: |
+          brew install mingw-w64
+      
+      - name: Install linker for x86_64-unknown-linux-gnu
+        run: |
+          brew install SergioBenitez/osxct/x86_64-unknown-linux-gnu
+    
+      - name: Install linker for aarch64-unknown-linux-gnu
+        run: |
+          brew tap messense/homebrew-macos-cross-toolchains
+          brew install aarch64-unknown-linux-gnu
+
+      - name: Rename cross.toml file so cargo uses the correct linkers
+        run: |
+          mv .cargo/config.cross.toml .cargo/config.toml
+
+      - name: Run compile script
+        run: |
+          chmod +x scripts/compile_all_targets_java.sh
+          scripts/compile_all_targets_java.sh
+
+      - name: Publish Java package to Maven Central
+        env:
+          JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.CENTRAL_PORTAL_TOKEN_USERNAME }}
+          JRELEASER_MAVENCENTRAL_TOKEN: ${{ secrets.CENTRAL_PORTAL_TOKEN_PASSWORD }}
+          JRELEASER_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE_JAVA_PUBLISHING }}
+          JRELEASER_GPG_SECRET_KEY: ${{ secrets.GPG_PRIVATE_KEY_JAVA_PUBLISHING }}
+          JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY_JAVA_PUBLISHING }}
+          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ./gradlew clean createJReleaserOutputDir jreleaserConfig build publish jreleaserFullRelease --stacktrace --info
+    
+      - name: JReleaser output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jreleaser-logs
+          path: |
+            build/jreleaser/trace.log
+            build/jreleaser/output.properties
