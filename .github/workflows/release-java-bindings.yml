@@ -63,8 +63,8 @@ jobs:
 
       - name: Run compile script
         run: |
-          chmod +x scripts/compile_all_targets_java.sh
-          scripts/compile_all_targets_java.sh
+          chmod +x .github/scripts/compile_all_targets_java.sh
+          .github/scripts/compile_all_targets_java.sh
 
       - name: Publish Java package to Maven Central
         env:
