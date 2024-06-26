@@ -266,13 +266,29 @@ impl VerifierContext {
 
         // We now have the evaluations in normal order and we know the indices/erasures that are missing
         // in normal order.
-        Ok(self.rs.recover_polynomial_coefficient(
+        let recovered_polynomial_coeff = self.rs.recover_polynomial_coefficient(
             coset_evaluations_flattened,
             Erasures::Cells {
                 cell_size: FIELD_ELEMENTS_PER_CELL,
                 cells: missing_cell_ids,
             },
-        ))
+        );
+        
+        // TODO: We could move this code into the ReedSolomon crate
+        // We extended our original data by EXTENSION_FACTOR
+        // The recovered polynomial in monomial and lagrange form
+        // should have the same length as the original data.
+        // All of the coefficients after the original data should be zero.
+        for i in FIELD_ELEMENTS_PER_BLOB..FIELD_ELEMENTS_PER_EXT_BLOB {
+            if recovered_polynomial_coeff[i] != Scalar::from(0u64) {
+                return Err(VerifierError::PolynomialHasInvalidLength {
+                    num_coefficients: i,
+                    expected_num_coefficients: FIELD_ELEMENTS_PER_BLOB,
+                });
+            }
+        }
+
+        Ok(recovered_polynomial_coeff[0..FIELD_ELEMENTS_PER_BLOB].to_vec())
     }
 
     #[deprecated(

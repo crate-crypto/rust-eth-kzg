@@ -46,6 +46,10 @@ pub enum VerifierError {
         cells_len: usize,
         proofs_len: usize,
     },
+    PolynomialHasInvalidLength {
+        num_coefficients: usize,
+        expected_num_coefficients: usize,
+    },
 }
 
 /// Errors that can occur during deserialization of untrusted input from the public API
