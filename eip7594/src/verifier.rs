@@ -161,15 +161,13 @@ impl VerifierContext {
                 .map(|row_index| row_commitments_bytes[*row_index as usize])
                 .collect();
 
-            for k in 0..row_commitments_bytes.len() {
-                let row_index = row_indices[k];
-                let row_commitment_bytes = row_commitments_bytes[row_index as usize];
+            for (k, row_commitment) in row_commitments_bytes.into_iter().enumerate() {
                 let column_index = column_indices[k];
                 let cell = cells[k];
                 let proof_bytes = proofs_bytes[k];
 
                 // Verify and return early if the proof is invalid
-                self.verify_cell_kzg_proof(row_commitment_bytes, column_index, cell, proof_bytes)?;
+                self.verify_cell_kzg_proof(row_commitment, column_index, cell, proof_bytes)?;
             }
 
             Ok(())
