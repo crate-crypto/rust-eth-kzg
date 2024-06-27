@@ -8,7 +8,7 @@ plugins {
 }
 
 group = 'io.github.crate-crypto'
-version = '0.0.6' // x-release-please-version
+version = '0.0.7' // x-release-please-version
 
 
 java {
@@ -86,7 +86,12 @@ publishing {
 jreleaser {
   // Jreleaser will look for .git and its at the top level repository
   gitRootSearch = true
-  
+  release {
+    // Skip releases as this is handled by release-please
+    github {
+      skipRelease = true
+    }
+  }
   signing {
     active = 'ALWAYS'
     armored = true
