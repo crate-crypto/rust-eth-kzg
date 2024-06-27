@@ -51,7 +51,7 @@ jobs:
         if: runner.os == 'Linux'
         run: cargo install cargo-zigbuild
       - name: Install cargo-xwin (Linux only)
-        if: runner.os == 'Linux' && !contains(matrix.settings.target, 'windows')
+        if: runner.os == 'Linux' && contains(matrix.settings.target, 'windows')
         run: cargo install cargo-xwin
       - name: Build (macOS)
         if: runner.os == 'macOS'
