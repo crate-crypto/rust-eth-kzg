@@ -56,7 +56,7 @@ jobs:
         if: runner.os == 'Linux'
         uses: goto-bus-stop/setup-zig@v2
         with:
-          version: 0.11.0
+          version: 0.13.0
 
       - name: Install cargo-zigbuild (Linux only)
         if: runner.os == 'Linux'
@@ -70,17 +70,17 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           rustup target add ${{ matrix.settings.target }}
-          cargo build --release --target ${{ matrix.settings.target }}
+          yarn build --release --target ${{ matrix.settings.target }}
         working-directory: bindings/node
 
       - name: Build (Linux)
         if: runner.os == 'Linux'
-        run: cargo zigbuild --release --target ${{ matrix.settings.target }}
+        run: yarn build --zig --release --target ${{ matrix.settings.target }}
         working-directory: bindings/node
 
       - name: Build (Windows)
         if: runner.os == 'Windows'
-        run: cargo xwin build --release --target ${{ matrix.settings.target }}
+        run: yarn build --release --target ${{ matrix.settings.target }}
         working-directory: bindings/node
 
       - name: Upload artifact
