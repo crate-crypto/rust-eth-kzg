@@ -43,14 +43,13 @@ jobs:
         run: yarn install
         working-directory: bindings/node
       - name: Setup Zig (Linux only)
-        if: runner.os == 'Linux'
         uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.13.0
       - name: Install cargo-zigbuild (Linux only)
         if: runner.os == 'Linux'
         run: cargo install cargo-zigbuild
-      - name: Install cargo-xwin (Linux only)
+      - name: Install cargo-xwin (Windows on Linux only)
         if: runner.os == 'Linux' && contains(matrix.settings.target, 'windows')
         run: cargo install cargo-xwin
       - name: Build (macOS)
