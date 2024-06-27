@@ -65,7 +65,7 @@ jobs:
         working-directory: bindings/node
       - name: Build (Windows on Linux)
         if: runner.os == 'Linux' && contains(matrix.settings.target, 'windows')
-        run: yarn build --xwin --release --target ${{ matrix.settings.target }}
+        run: yarn build --release --target ${{ matrix.settings.target }}
         working-directory: bindings/node
       - name: Upload artifact
         uses: actions/upload-artifact@v4
