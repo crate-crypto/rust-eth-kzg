@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -26,6 +28,31 @@ public class LibPeerDASKZGTest {
         context = new LibPeerDASKZG();
     }
 
+    @Test
+    void testMultipleInstanceCreation() {
+        LibPeerDASKZG instance1 = null;
+        LibPeerDASKZG instance2 = null;
+        try {
+            instance1 = new LibPeerDASKZG();
+            instance2 = new LibPeerDASKZG();
+            
+            assertNotNull(instance1);
+            assertNotNull(instance2);
+            assertNotEquals(instance1, instance2);
+            
+            // Test a simple operation to ensure both instances are functional
+            byte[] dummyBlob = new byte[LibPeerDASKZG.BYTES_PER_BLOB];
+            byte[] commitment1 = instance1.blobToKZGCommitment(dummyBlob);
+            byte[] commitment2 = instance2.blobToKZGCommitment(dummyBlob);
+            
+            assertNotNull(commitment1);
+            assertNotNull(commitment2);
+            assertArrayEquals(commitment1, commitment2);
+        } finally {
+            if (instance1 != null) instance1.close();
+            if (instance2 != null) instance2.close();
+        }
+    }
 
     @ParameterizedTest
     @MethodSource("ethereum.cryptography.TestUtils#getBlobToKzgCommitmentTests")

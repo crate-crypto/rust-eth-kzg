@@ -24,9 +24,24 @@ public class LibPeerDASKZG implements AutoCloseable{
 
     private long contextPtr;
 
+    private static volatile boolean libraryLoaded = false;
+    private static final Object libraryLock = new Object();
+
+
     public LibPeerDASKZG() {
-        loadNativeLibrary();
+        ensureLibraryLoaded();
         this.contextPtr = peerDASContextNew();
+    }
+
+    private static void ensureLibraryLoaded() {
+        if (!libraryLoaded) {
+            synchronized (libraryLock) {
+                if (!libraryLoaded) {
+                    loadNativeLibrary();
+                    libraryLoaded = true;
+                }
+            }
+        }
     }
 
     // TODO: Finalization was deprecated, we should find a method that does
