@@ -59,34 +59,49 @@ public class LibPeerDASKZG implements AutoCloseable{
         }
     }
 
+    // TODO: we could move this to the rust code but it requires a double pointer
+    // TODO: add this code to all bindings
+    private void checkContextHasNotBeenFreed() {
+        if (contextPtr == 0) {
+            throw new IllegalStateException("PeerDAS context has been destroyed");
+        }
+    }
+
     public byte[] blobToKZGCommitment(byte[] blob) {
+        checkContextHasNotBeenFreed();
         return blobToKZGCommitment(contextPtr, blob);
     }
     
     public CellsAndProofs computeCellsAndKZGProofs(byte[] blob) {
+        checkContextHasNotBeenFreed();
         CellsAndProofs cellsAndProofs = computeCellsAndKZGProofs(contextPtr, blob);
         return cellsAndProofs;
     }
 
     public byte[][] computeCells(byte[] blob) {
+        checkContextHasNotBeenFreed();
         CellsAndProofs cellsAndProofs = computeCellsAndKZGProofs(blob);
         return cellsAndProofs.cells;
     }
 
     public boolean verifyCellKZGProof(byte[] commitment, long cellID, byte[] cell, byte[] proof) {
+        checkContextHasNotBeenFreed();
         return verifyCellKZGProof(contextPtr, commitment, cellID, cell, proof);
     }
 
     public boolean verifyCellKZGProofBatch(byte[][] commitmentsArr, long[] rowIndices, long[] columnIndices, byte[][] cellsArr,
             byte[][] proofsArr) {
+                checkContextHasNotBeenFreed();
         return verifyCellKZGProofBatch(contextPtr, commitmentsArr, rowIndices, columnIndices, cellsArr, proofsArr);
     }
     
     public byte[][] recoverAllCells(long[] cellIDs, byte[][] cellsArr) {
+        checkContextHasNotBeenFreed();
         return recoverCellsAndProofs(cellIDs, cellsArr).cells;
     }
     
     public CellsAndProofs recoverCellsAndProofs(long[] cellIDs, byte[][] cellsArr) {
+        checkContextHasNotBeenFreed();
         return recoverCellsAndProof(contextPtr, cellIDs, cellsArr);
     }
 

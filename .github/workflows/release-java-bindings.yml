@@ -15,11 +15,16 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v4
         with:
-          ref: master
+          ref: ${{ inputs.ref }}
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@1.74.1
 
+      - name: Install all of the relevant targets
+        run: |
+          chmod +x .github/scripts/install_all_targets.sh
+          .github/scripts/install_all_targets.sh
+        
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
@@ -63,10 +68,11 @@ jobs:
 
       - name: Run compile script
         run: |
-          chmod +x scripts/compile_all_targets_java.sh
-          scripts/compile_all_targets_java.sh
+          chmod +x .github/scripts/compile_all_targets_java.sh
+          .github/scripts/compile_all_targets_java.sh
 
       - name: Publish Java package to Maven Central
+        working-directory: bindings/java/java_code
         env:
           JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.CENTRAL_PORTAL_TOKEN_USERNAME }}
           JRELEASER_MAVENCENTRAL_TOKEN: ${{ secrets.CENTRAL_PORTAL_TOKEN_PASSWORD }}
@@ -83,5 +89,5 @@ jobs:
         with:
           name: jreleaser-logs
           path: |
-            build/jreleaser/trace.log
-            build/jreleaser/output.properties
+            bindings/java/java_code/build/jreleaser/trace.log
+            bindings/java/java_code/build/jreleaser/output.properties
