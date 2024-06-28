@@ -117,8 +117,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: yarn
-          cache-dependency-path: 'bindings/node'
       - name: Install dependencies
         run: yarn install
         working-directory: bindings/node
@@ -175,7 +173,7 @@ jobs:
             cd bindings/node
             apt-get update && apt-get install -y nodejs npm
             npm install -g yarn
-            yarn install
+            wine-arm64 cmd.exe /c 'yarn install'
             wine-arm64 cmd.exe /c 'yarn test'
 
   publish:
