@@ -169,9 +169,7 @@ jobs:
         with:
           image: linaro/wine-arm64
           options: '-v ${{ github.workspace }}:/build -w /build'
-          run: |
-            set -euo pipefail
-            
+          run: |            
             echo "Download node windows-arm64"
             NODE_VERSION=20.0.0
             wget -q https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-win-arm64.zip
