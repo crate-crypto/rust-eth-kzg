@@ -165,13 +165,18 @@ jobs:
         run: yarn test
         working-directory: bindings/node
 
-    # Placeholder for Windows ARM64 testing
-    #   - name: Test bindings (Windows ARM64)
-    #     if: matrix.settings.target == 'aarch64-pc-windows-msvc'
-    #     shell: powershell
-    #     run: |
-    #       Write-Host "Testing Windows ARM64 is not implemented yet."
-    #     working-directory: bindings/node
+      - name: Test bindings (Windows ARM64)
+        if: matrix.settings.target == 'aarch64-pc-windows-msvc'
+        uses: addnab/docker-run-action@v3
+        with:
+          image: linaro/wine-arm64
+          options: '-v ${{ github.workspace }}:/build -w /build'
+          run: |
+            cd bindings/node
+            apt-get update && apt-get install -y nodejs npm
+            npm install -g yarn
+            yarn install
+            wine-arm64 cmd.exe /c 'yarn test'
 
   publish:
     name: Publish
