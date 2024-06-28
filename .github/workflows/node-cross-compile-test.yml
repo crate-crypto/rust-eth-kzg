@@ -47,7 +47,8 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.settings.target }}
-
+      # llvm-preview-tools are needed for xwin, because we are compiling assembly (blst)
+      # Alternatively, you can install llvm
       - name: Install llvm-preview-tools
         if: runner.os == 'Linux' && contains(matrix.settings.target, 'windows')
         run: rustup component add llvm-tools-preview 
