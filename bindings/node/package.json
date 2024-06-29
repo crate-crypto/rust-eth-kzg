@@ -6,7 +6,7 @@
     "artifacts": "napi artifacts",
     "build": "napi build --platform --release",
     "build:debug": "napi build --platform",
-    "prepublishOnly": "napi prepublish -t npm",
+    "prepublishOnly": "napi prepublish --skip-gh-release",
     "lint": "eslint --color --ext .ts __test__/",
     "test": "jest",
     "universal": "napi universal",
