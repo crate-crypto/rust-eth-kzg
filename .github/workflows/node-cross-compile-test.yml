@@ -225,15 +225,17 @@ jobs:
       - name: Publish
         if: ${{ inputs.release-type != 'none' }}
         run: |
-          npm config set provenance true
+          
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
           echo "//registry.yarnpkg.com/:_authToken=$NPM_TOKEN" >> ~/.npmrc
           if [ "${{inputs.release-type}}" = "release" ]; then
             yarn prepareAndPublishAddons
+            npm config set provenance true
             npm publish --access public
           elif [ "${{inputs.release-type}}" = "pre-release" ]; then
             yarn prereleaseVersion
             yarn prepareAndPublishAddons
+            npm config set provenance true
             npm publish --access public
           else
             echo "No release has been made"
