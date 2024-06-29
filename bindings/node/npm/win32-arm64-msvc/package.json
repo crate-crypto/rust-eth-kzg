@@ -1,0 +1,18 @@
+{
+  "name": "peerdas-kzg-win32-arm64-msvc",
+  "version": "0.2.1",
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "main": "peerdas-kzg.win32-arm64-msvc.node",
+  "files": [
+    "peerdas-kzg.win32-arm64-msvc.node"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  }
+}
