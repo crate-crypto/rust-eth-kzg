@@ -2,6 +2,7 @@
   "name": "@crate-crypto/peerdas-kzg",
   "version": "0.2.1",
   "scripts": {
+    "prereleaseVersion": "currentCommitHash=$(git rev-parse --short HEAD) && npm version prerelease --preid=$currentCommitHash",
     "artifacts": "napi artifacts",
     "build": "napi build --platform --release",
     "build:debug": "napi build --platform",
@@ -56,13 +57,5 @@
   },
   "bugs": {
     "url": "https://github.com/crate-crypto/peerdas-kzg/issues"
-  },
-  "optionalDependencies": {
-    "@crate-crypto/peerdas-kzg-win32-x64-msvc": "0.2.1",
-    "@crate-crypto/peerdas-kzg-darwin-x64": "0.2.1",
-    "@crate-crypto/peerdas-kzg-linux-x64-gnu": "0.2.1",
-    "@crate-crypto/peerdas-kzg-darwin-arm64": "0.2.1",
-    "@crate-crypto/peerdas-kzg-linux-arm64-gnu": "0.2.1",
-    "@crate-crypto/peerdas-kzg-win32-arm64-msvc": "0.2.1"
   }
 }
