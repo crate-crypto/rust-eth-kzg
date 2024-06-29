@@ -226,9 +226,9 @@ jobs:
           npm config set provenance true
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
 
-          if [[ ${{inputs.release-type}}]] == 'release'; then
+          if [[ ${{inputs.release-type}} == "release"]]; then
             npm publish --access public
-          elif [[ ${{inputs.release-type}}]] == pre-release'; then
+          elif [[ ${{inputs.release-type}} == "pre-release"]]; then
             currentCommitHash=$(git rev-parse --short HEAD)
             npm version prerelease --preid=$currentCommitHash
             npm publish --access public
