@@ -1,11 +1,15 @@
 {
   "name": "@crate-crypto/peerdas-kzg",
-  "version": "0.2.0",
+  "version": "0.2.1",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
+    "prereleaseVersion": "currentCommitHash=$(git rev-parse --short HEAD) && npm version prerelease --preid=$currentCommitHash",
     "artifacts": "napi artifacts",
     "build": "napi build --platform --release",
     "build:debug": "napi build --platform",
-    "prepublishOnly": "napi prepublish -t npm",
+    "prepareAndPublishAddons": "napi prepublish --skip-gh-release",
     "lint": "eslint --color --ext .ts __test__/",
     "test": "jest",
     "universal": "napi universal",
@@ -36,7 +40,7 @@
       "additional": [
         "aarch64-apple-darwin",
         "aarch64-unknown-linux-gnu",
-        "aarch64-unknown-linux-musl"
+        "aarch64-pc-windows-msvc"
       ]
     }
   },
@@ -52,7 +56,7 @@
   "homepage": "https://github.com/crate-crypto/peerdas-kzg#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com:crate-crypto/peerdas-kzg.git"
+    "url": "git+https://github.com/crate-crypto/peerdas-kzg.git"
   },
   "bugs": {
     "url": "https://github.com/crate-crypto/peerdas-kzg/issues"

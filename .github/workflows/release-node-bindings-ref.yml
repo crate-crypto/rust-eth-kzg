@@ -33,9 +33,9 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - host: macos-latest
+          - host: macos-13
             target: x86_64-apple-darwin
-          - host: macos-latest
+          - host: macos-14
             target: aarch64-apple-darwin
           - host: ubuntu-latest
             target: x86_64-unknown-linux-gnu
@@ -221,23 +221,37 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          path: bindings/node/artifacts
       - name: Move artifacts
         run: yarn artifacts
       - name: Publish
-        if:  ${{ inputs.release-type != 'none' }} 
+        if: ${{ inputs.release-type != 'none' }}
         run: |
-          npm config set provenance true
+          # TODO: We could remove the yarnpkg registry and set the npmregistry
+          # TODO: globally, by doing: yarn config set registry <registry-url>
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
-
-          if [[ ${{inputs.release-type}}]] == 'release'; then
-            npm publish --access public
-          elif [[ ${{inputs.release-type}}]] == pre-release'; then
-            currentCommitHash=$(git rev-parse --short HEAD)
-            npm version prerelease --preid=$currentCommitHash
-            npm publish --access public
+          echo "//registry.yarnpkg.com/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+          
+          if [ "${{inputs.release-type}}" = "release" ]; then
+            SHOULD_PUBLISH=true
+          elif [ "${{inputs.release-type}}" = "pre-release" ]; then
+            # Prepend the commit hash to the package.json files
+            # so we can publish a pre-release version
+            yarn prereleaseVersion
+            SHOULD_PUBLISH=true
           else
             echo "No release has been made"
+            SHOULD_PUBLISH=false
+          fi
+      
+          if [ "$SHOULD_PUBLISH" = true ]; then
+            # Prepare and publish the platform specific packages
+            yarn prepareAndPublishAddons
+            # Publish the base package, setting provenance
+            # to true as it's recommended. The platform specific packages
+            # don't need to have it, TODO but we could edit them to pass provenance.
+            npm config set provenance true
+            npm publish --access public
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
