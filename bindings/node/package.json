@@ -2,6 +2,7 @@
   "name": "@crate-crypto/peerdas-kzg",
   "version": "0.2.1",
   "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
     "access": "public"
   },
   "scripts": {
