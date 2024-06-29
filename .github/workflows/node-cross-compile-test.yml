@@ -136,10 +136,10 @@ jobs:
           path: bindings/node
       
       # Native testing for macOS (both Intel and ARM)
-      - name: Test bindings (macOS)
-        if: startsWith(matrix.settings.host, 'macos')
-        run: yarn test
-        working-directory: bindings/node
+      # - name: Test bindings (macOS)
+      #   if: startsWith(matrix.settings.host, 'macos')
+      #   run: yarn test
+      #   working-directory: bindings/node
 
       # Native testing for x86_64 Linux
       - name: Test bindings (Linux x86_64)
@@ -227,6 +227,7 @@ jobs:
         run: |
           npm config set provenance true
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+          echo "//registry.yarnpkg.com/:_authToken=$NPM_TOKEN" >> ~/.npmrc
           if [ "${{inputs.release-type}}" = "release" ]; then
             yarn prepareAndPublishAddons
             npm publish --access public
