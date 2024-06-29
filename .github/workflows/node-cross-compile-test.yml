@@ -13,6 +13,15 @@ on:
       ref:
         description: The reference (branch/tag/commit) to checkout
         required: true
+      release-type:
+        type: choice
+        required: false
+        default: none
+        description: Indicates whether we want to make a release and if which one
+        options:
+          - pre-release # Release a pre-release version to npm
+          - release # release an official version to npm
+          - none # Make no release
 
 jobs:
   build:
@@ -47,7 +56,8 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.settings.target }}
-
+      # llvm-preview-tools are needed for xwin, because we are compiling assembly (blst)
+      # Alternatively, you can install llvm
       - name: Install llvm-preview-tools
         if: runner.os == 'Linux' && contains(matrix.settings.target, 'windows')
         run: rustup component add llvm-tools-preview 
@@ -101,7 +111,7 @@ jobs:
             target: aarch64-unknown-linux-gnu
           - host: windows-latest
             target: x86_64-pc-windows-msvc
-          - host: windows-latest
+          - host: ubuntu-latest
             target: aarch64-pc-windows-msvc
         node:
           - '20'
@@ -116,8 +126,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: yarn
-          cache-dependency-path: 'bindings/node'
       - name: Install dependencies
         run: yarn install
         working-directory: bindings/node
@@ -163,14 +171,28 @@ jobs:
         if: matrix.settings.target == 'x86_64-pc-windows-msvc'
         run: yarn test
         working-directory: bindings/node
-
-    # Placeholder for Windows ARM64 testing
-    #   - name: Test bindings (Windows ARM64)
-    #     if: matrix.settings.target == 'aarch64-pc-windows-msvc'
-    #     shell: powershell
-    #     run: |
-    #       Write-Host "Testing Windows ARM64 is not implemented yet."
-    #     working-directory: bindings/node
+      # TODO: Its kind of hard to test windows on arm64 w yarn
+      # The approach of using linaro/wine-arm64 is the most promising
+      # We can add it back after some debugging 
+      # - name: Test bindings (Windows ARM64)
+      #   if: matrix.settings.target == 'aarch64-pc-windows-msvc'
+      #   uses: addnab/docker-run-action@v3
+      #   with:
+      #     image: linaro/wine-arm64
+      #     options: '-v ${{ github.workspace }}:/build -w /build'
+      #     run: |            
+      #       echo "Download node windows-arm64"
+      #       NODE_VERSION=20.0.0
+      #       wget -q https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-win-arm64.zip
+      #       unzip -q node-*.zip
+      #       mv node-*-win-arm64 /node
+            
+      #       cd bindings/node
+      #       echo "Run tests"
+      #       wine-arm64 /node/node.exe --version
+      #       wine-arm64 /node/npm.cmd install -g yarn
+      #       wine-arm64 /node/yarn.cmd install
+      #       wine-arm64 /node/yarn.cmd test
 
   publish:
     name: Publish
@@ -199,15 +221,19 @@ jobs:
       - name: Move artifacts
         run: yarn artifacts
       - name: Publish
+        if:  ${{ inputs.release-type != 'none' }} 
         run: |
           npm config set provenance true
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
-          if [[ ${{ inputs.ref }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+
+          if [[ ${{inputs.release-type}}]] == 'release'; then
             npm publish --access public
-          elif [[ ${{ inputs.ref }} =~ ^[a-zA-Z0-9_-]+$ ]]; then
-            npm publish --tag next --access public
+          elif [[ ${{inputs.release-type}}]] == pre-release'; then
+            currentCommitHash=$(git rev-parse --short HEAD)
+            npm version prerelease --preid=$currentCommitHash
+            npm publish --access public
           else
-            echo "Invalid ref format. Skipping publish."
+            echo "No release has been made"
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
