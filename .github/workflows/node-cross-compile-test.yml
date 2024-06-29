@@ -229,8 +229,7 @@ jobs:
           if [[ ${{inputs.release-type}} == "release"]]; then
             npm publish --access public
           elif [[ ${{inputs.release-type}} == "pre-release"]]; then
-            currentCommitHash=$(git rev-parse --short HEAD)
-            npm version prerelease --preid=$currentCommitHash
+            yarn prereleaseVersion
             npm publish --access public
           else
             echo "No release has been made"
