@@ -29,9 +29,9 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - host: macos-latest
-            target: x86_64-apple-darwin
-          - host: macos-latest
+          # - host: macos-13
+          #   target: x86_64-apple-darwin
+          - host: macos-14
             target: aarch64-apple-darwin
           # - host: ubuntu-latest
           #   target: x86_64-unknown-linux-gnu
@@ -101,8 +101,8 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - host: macos-13
-            target: x86_64-apple-darwin
+          # - host: macos-13
+          #   target: x86_64-apple-darwin
           - host: macos-14
             target: aarch64-apple-darwin
           # - host: ubuntu-latest
