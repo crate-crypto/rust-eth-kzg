@@ -228,17 +228,27 @@ jobs:
           
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
           echo "//registry.yarnpkg.com/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+          
           if [ "${{inputs.release-type}}" = "release" ]; then
-            yarn prepareAndPublishAddons
-            npm config set provenance true
-            npm publish --access public
+            SHOULD_PUBLISH=true
           elif [ "${{inputs.release-type}}" = "pre-release" ]; then
+            # Prepend the commit hash to the package.json files
+            # so we can publish a pre-release version
             yarn prereleaseVersion
-            yarn prepareAndPublishAddons
-            npm config set provenance true
-            npm publish --access public
+            SHOULD_PUBLISH=true
           else
             echo "No release has been made"
+            SHOULD_PUBLISH=false
+          fi
+      
+          if [ "$SHOULD_PUBLISH" = true ]; then
+            # Prepare and publish the platform specific packages
+            yarn prepareAndPublishAddons
+            # Publish the base package, setting provenance
+            # to true as it's recommended. The platform specific packages
+            # don't need to have it, TODO but we could edit them to pass provenance.
+            npm config set provenance true
+            npm publish --access public
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
