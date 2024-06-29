@@ -53,7 +53,7 @@
   "homepage": "https://github.com/crate-crypto/peerdas-kzg#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com:crate-crypto/peerdas-kzg.git"
+    "url": "git+https://github.com/crate-crypto/peerdas-kzg.git"
   },
   "bugs": {
     "url": "https://github.com/crate-crypto/peerdas-kzg/issues"
