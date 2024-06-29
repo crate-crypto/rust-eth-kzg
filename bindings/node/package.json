@@ -1,6 +1,9 @@
 {
   "name": "@crate-crypto/peerdas-kzg",
   "version": "0.2.1",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "prereleaseVersion": "currentCommitHash=$(git rev-parse --short HEAD) && npm version prerelease --preid=$currentCommitHash",
     "artifacts": "napi artifacts",

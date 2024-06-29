@@ -1,6 +1,9 @@
 {
   "name": "@crate-crypto/peerdas-kzg-win32-arm64-msvc",
   "version": "0.2.1",
+  "publishConfig": {
+    "access": "public"
+  },
   "os": [
     "win32"
   ],
