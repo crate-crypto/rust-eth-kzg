@@ -19,7 +19,7 @@ on:
         default: none
         description: Indicates whether we want to make a release and if which one
         options:
-          - pre-release # Release a pre-rlease version to npm
+          - pre-release # Release a pre-release version to npm
           - release # release an official version to npm
           - none # Make no release
 
