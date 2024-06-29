@@ -1,5 +1,5 @@
 {
-  "name": "peerdas-kzg-darwin-arm64",
+  "name": "@crate-crypto/peerdas-kzg-darwin-arm64",
   "version": "0.0.0",
   "os": [
     "darwin"
