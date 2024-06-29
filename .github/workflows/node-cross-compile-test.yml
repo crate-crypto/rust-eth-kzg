@@ -227,9 +227,11 @@ jobs:
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
 
           if [[ ${{inputs.release-type}} == "release"]]; then
+            yarn prepareAndPublishAddons
             npm publish --access public
           elif [[ ${{inputs.release-type}} == "pre-release"]]; then
             yarn prereleaseVersion
+            yarn prepareAndPublishAddons
             npm publish --access public
           else
             echo "No release has been made"
