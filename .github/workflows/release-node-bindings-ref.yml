@@ -115,7 +115,7 @@ jobs:
             target: aarch64-unknown-linux-gnu
           - host: windows-latest
             target: x86_64-pc-windows-msvc
-          - host: ubuntu-latest
+          - host: windows-arm64
             target: aarch64-pc-windows-msvc
         node:
           - '20'
@@ -161,28 +161,12 @@ jobs:
         if: matrix.settings.target == 'x86_64-pc-windows-msvc'
         run: yarn test
         working-directory: bindings/node
-      # TODO: Its kind of hard to test windows on arm64 w yarn
-      # The approach of using linaro/wine-arm64 is the most promising
-      # We can add it back after some debugging 
-      # - name: Test bindings (Windows ARM64)
-      #   if: matrix.settings.target == 'aarch64-pc-windows-msvc'
-      #   uses: addnab/docker-run-action@v3
-      #   with:
-      #     image: linaro/wine-arm64
-      #     options: '-v ${{ github.workspace }}:/build -w /build'
-      #     run: |            
-      #       echo "Download node windows-arm64"
-      #       NODE_VERSION=20.0.0
-      #       wget -q https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-win-arm64.zip
-      #       unzip -q node-*.zip
-      #       mv node-*-win-arm64 /node
-            
-      #       cd bindings/node
-      #       echo "Run tests"
-      #       wine-arm64 /node/node.exe --version
-      #       wine-arm64 /node/npm.cmd install -g yarn
-      #       wine-arm64 /node/yarn.cmd install
-      #       wine-arm64 /node/yarn.cmd test
+
+      # Native testing for arm64 Windows
+      - name: Test bindings (Windows arm64)
+        if: matrix.settings.target == 'aarch64-pc-windows-msvc'
+        run: yarn test
+        working-directory: bindings/node
 
   publish:
     name: Publish
