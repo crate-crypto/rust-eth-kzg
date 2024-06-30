@@ -139,7 +139,7 @@ jobs:
       - name: Install Git using Chocolatey
         shell: powershell
         run: |
-          choco install git -y
+          C:\ProgramData\chocolatey\bin\choco.exe install git -y
 
       - name: Verify Git installation
         shell: powershell
