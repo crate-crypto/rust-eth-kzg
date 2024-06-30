@@ -123,15 +123,32 @@ jobs:
     name: Test - ${{ matrix.settings.target }} - node@${{ matrix.node }}
     runs-on: ${{ matrix.settings.host }}
     steps:
-      - name: Check for WSL Git
+
+      - name: Check for winget
         shell: powershell
         run: |
-          if (Get-Command wsl -ErrorAction SilentlyContinue) {
-            Write-Host "WSL is available, checking for Git"
-            wsl git --version
+          if (Get-Command winget -ErrorAction SilentlyContinue) {
+            Write-Host "winget is already installed"
           } else {
-            Write-Host "WSL is not available"
+            Write-Host "winget is not installed"
           }
+
+      - name: Install winget
+        shell: powershell
+        run: |
+          $progressPreference = 'silentlyContinue'
+          Write-Information "Downloading WinGet and its dependencies..."
+          Invoke-WebRequest -Uri https://aka.ms/getwinget -OutFile Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
+          Invoke-WebRequest -Uri https://aka.ms/Microsoft.VCLibs.x64.14.00.Desktop.appx -OutFile Microsoft.VCLibs.x64.14.00.Desktop.appx
+          Invoke-WebRequest -Uri https://github.com/microsoft/microsoft-ui-xaml/releases/download/v2.7.3/Microsoft.UI.Xaml.2.7.x64.appx -OutFile Microsoft.UI.Xaml.2.7.x64.appx
+          Add-AppxPackage Microsoft.VCLibs.x64.14.00.Desktop.appx
+          Add-AppxPackage Microsoft.UI.Xaml.2.7.x64.appx
+          Add-AppxPackage Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle
+
+      - name: Install Git using winget
+        shell: powershell
+        run: |
+          winget install --id Git.Git -e --source winget --accept-package-agreements --accept-source-agreements
 
       - name: Check Git version
         run: git --version
