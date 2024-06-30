@@ -123,6 +123,17 @@ jobs:
     name: Test - ${{ matrix.settings.target }} - node@${{ matrix.node }}
     runs-on: ${{ matrix.settings.host }}
     steps:
+      - name: Check for Windows-native Git
+        shell: powershell
+        run: |
+          $gitPath = "C:\Program Files\Git\cmd\git.exe"
+          if (Test-Path $gitPath) {
+            Write-Host "Windows-native Git found"
+            $env:PATH += ";C:\Program Files\Git\cmd"
+            git --version
+          } else {
+            Write-Host "Windows-native Git not found"
+          }
 
       - name: Check Git version
         run: git --version
