@@ -33,16 +33,16 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - host: macos-13
-            target: x86_64-apple-darwin
-          - host: macos-14
-            target: aarch64-apple-darwin
-          - host: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-          - host: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-          - host: ubuntu-latest
-            target: x86_64-pc-windows-msvc
+          # - host: macos-13
+          #   target: x86_64-apple-darwin
+          # - host: macos-14
+          #   target: aarch64-apple-darwin
+          # - host: ubuntu-latest
+          #   target: x86_64-unknown-linux-gnu
+          # - host: ubuntu-latest
+          #   target: aarch64-unknown-linux-gnu
+          # - host: ubuntu-latest
+          #   target: x86_64-pc-windows-msvc
           - host: ubuntu-latest
             target: aarch64-pc-windows-msvc
 
@@ -105,16 +105,16 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - host: macos-13
-            target: x86_64-apple-darwin
-          - host: macos-14
-            target: aarch64-apple-darwin
-          - host: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-          - host: linux-arm64
-            target: aarch64-unknown-linux-gnu
-          - host: windows-latest
-            target: x86_64-pc-windows-msvc
+          # - host: macos-13
+          #   target: x86_64-apple-darwin
+          # - host: macos-14
+          #   target: aarch64-apple-darwin
+          # - host: ubuntu-latest
+          #   target: x86_64-unknown-linux-gnu
+          # - host: linux-arm64
+          #   target: aarch64-unknown-linux-gnu
+          # - host: windows-latest
+          #   target: x86_64-pc-windows-msvc
           - host: win-arm64
             target: aarch64-pc-windows-msvc
         node:
@@ -123,6 +123,14 @@ jobs:
     name: Test - ${{ matrix.settings.target }} - node@${{ matrix.node }}
     runs-on: ${{ matrix.settings.host }}
     steps:
+      - name: Install Git
+        uses: crazy-max/ghaction-chocolatey@v3
+        with:
+          args: install git -y
+
+      - name: Check Git version
+        run: git --version
+
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
