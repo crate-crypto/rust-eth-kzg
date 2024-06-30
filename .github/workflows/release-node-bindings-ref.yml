@@ -130,9 +130,16 @@ jobs:
           Set-ExecutionPolicy Bypass -Scope Process -Force
           [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
           iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+      - name: Install Git using Chocolatey
+        shell: powershell
+        run: |
+          choco install git -y
 
-      - name: Check Git version
-        run: git --version
+      - name: Verify Git installation
+        shell: powershell
+        run: |
+          refreshenv
+          git --version
 
       - uses: actions/checkout@v4
         with:
