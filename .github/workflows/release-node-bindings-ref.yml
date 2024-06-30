@@ -115,7 +115,7 @@ jobs:
             target: aarch64-unknown-linux-gnu
           - host: windows-latest
             target: x86_64-pc-windows-msvc
-          - host: windows-arm64
+          - host: win-arm64
             target: aarch64-pc-windows-msvc
         node:
           - '20'
