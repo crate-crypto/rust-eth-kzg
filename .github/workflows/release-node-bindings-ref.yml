@@ -147,17 +147,6 @@ jobs:
         run: |
           C:\ProgramData\chocolatey\bin\choco.exe install git -y
       
-      - name: Install Yarn
-        if: matrix.settings.target == 'aarch64-pc-windows-msvc'
-        run: |
-          npm install -g yarn
-          echo "$(npm config get prefix)/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-
-      - name: Verify Yarn installation
-        if: matrix.settings.target == 'aarch64-pc-windows-msvc'
-        run: |
-          yarn --version
-
       - name: Add Git to PATH and verify installation
         if: matrix.settings.target == 'aarch64-pc-windows-msvc'
         shell: powershell
@@ -206,6 +195,17 @@ jobs:
           node --version
           npm --version
 
+      - name: Install Yarn
+        if: matrix.settings.target == 'aarch64-pc-windows-msvc'
+        run: |
+          npm install -g yarn
+          echo "$(npm config get prefix)/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+  
+      - name: Verify Yarn installation
+        if: matrix.settings.target == 'aarch64-pc-windows-msvc'
+        run: |
+          yarn --version
+  
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
