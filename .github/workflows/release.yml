@@ -52,7 +52,7 @@ jobs:
             -   name: Dispatch to publish workflow
                 uses: benc-uk/workflow-dispatch@v1
                 with:
-                    workflow: release-node-bindings-ref.yml
+                    workflow: release-node-bindings.yml
                     ref: master
                     inputs: '{ "ref": "${{ needs.release-please.outputs.tag-name }}", "release-type": "release" }'
                     token: ${{ secrets.RELEASE_TOKEN }}
