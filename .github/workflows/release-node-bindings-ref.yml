@@ -141,20 +141,40 @@ jobs:
         run: |
           C:\ProgramData\chocolatey\bin\choco.exe install git -y
       
-      - name: Refresh environment and verify Git installation
+      - name: Locate Git and add to PATH
         shell: powershell
         run: |
-          Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
-          refreshenv
-          $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" + [System.Environment]::GetEnvironmentVariable("Path","User")
-          Write-Host "Current PATH: $env:Path"
-          if (Get-Command git -ErrorAction SilentlyContinue) {
-            git --version
-          } else {
-            Write-Host "Git command not found. Checking installation directory:"
-            Get-ChildItem "C:\Program Files\Git" -Recurse
-            throw "Git not found in PATH"
+          $commonPaths = @(
+            "C:\Program Files\Git\cmd",
+            "C:\Program Files (x86)\Git\cmd",
+            "C:\Git\cmd"
+          )
+          $gitPath = $null
+          foreach ($path in $commonPaths) {
+            if (Test-Path "$path\git.exe") {
+              $gitPath = $path
+              break
+            }
           }
+          if ($gitPath) {
+            Write-Host "Git found at: $gitPath"
+            $env:Path = "$gitPath;$env:Path"
+            [Environment]::SetEnvironmentVariable("Path", $env:Path, "Machine")
+            Write-Host "Updated PATH: $env:Path"
+          } else {
+            Write-Host "Git not found in common locations. Searching Program Files:"
+            $gitExe = Get-ChildItem "C:\Program Files" -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq "git.exe" } | Select-Object -First 1
+            if ($gitExe) {
+              $gitPath = $gitExe.DirectoryName
+              Write-Host "Git found at: $gitPath"
+              $env:Path = "$gitPath;$env:Path"
+              [Environment]::SetEnvironmentVariable("Path", $env:Path, "Machine")
+              Write-Host "Updated PATH: $env:Path"
+            } else {
+              throw "Git not found"
+            }
+          }
+    
 
       - name: Verify Git installation
         shell: powershell
