@@ -123,15 +123,6 @@ jobs:
     name: Test - ${{ matrix.settings.target }} - node@${{ matrix.node }}
     runs-on: ${{ matrix.settings.host }}
     steps:
-      - name: Install Git
-        run: |
-          $gitVersion = "2.42.0.2"
-          $url = "https://github.com/git-for-windows/git/releases/download/v$gitVersion.windows.2/Git-$gitVersion-64-bit.exe"
-          $output = "$env:TEMP\GitInstaller.exe"
-          Invoke-WebRequest -Uri $url -OutFile $output
-          Start-Process -FilePath $output -Args "/VERYSILENT /NORESTART /NOCANCEL /SP- /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS /COMPONENTS='icons,ext\reg\shellhere,assoc,assoc_sh'" -Wait
-          $env:PATH += ";C:\Program Files\Git\cmd"
-        shell: powershell
 
       - name: Check Git version
         run: git --version
