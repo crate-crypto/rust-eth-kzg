@@ -123,16 +123,14 @@ jobs:
     name: Test - ${{ matrix.settings.target }} - node@${{ matrix.node }}
     runs-on: ${{ matrix.settings.host }}
     steps:
-      - name: Check for Windows-native Git
+      - name: Check for WSL Git
         shell: powershell
         run: |
-          $gitPath = "C:\Program Files\Git\cmd\git.exe"
-          if (Test-Path $gitPath) {
-            Write-Host "Windows-native Git found"
-            $env:PATH += ";C:\Program Files\Git\cmd"
-            git --version
+          if (Get-Command wsl -ErrorAction SilentlyContinue) {
+            Write-Host "WSL is available, checking for Git"
+            wsl git --version
           } else {
-            Write-Host "Windows-native Git not found"
+            Write-Host "WSL is not available"
           }
 
       - name: Check Git version
