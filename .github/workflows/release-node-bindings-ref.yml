@@ -127,7 +127,7 @@ jobs:
       # Windows arm64 doesn't have git it seems or choco.
       # We install choco and then git
       - name: Install Chocolatey
-        if: matrix.settings.target == 'aarch64-pc-windows-msvc'
+        if: matrix.settings.host == 'win-arm64'
         shell: powershell
         run: |
           Set-ExecutionPolicy Bypass -Scope Process -Force
@@ -135,6 +135,7 @@ jobs:
           iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
       - name: Add Chocolatey to PATH
+        if: matrix.settings.host == 'win-arm64'
         shell: powershell
         run: |
           $chocoPath = "C:\ProgramData\chocolatey\bin"
@@ -142,18 +143,21 @@ jobs:
           echo "$chocoPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
             
       - name: Verify Chocolatey installation
+        if: matrix.settings.host == 'win-arm64'
         shell: powershell
         run: choco --version
 
       - name: Install Git using Chocolatey Action
+        if: matrix.settings.host == 'win-arm64'
         uses: crazy-max/ghaction-chocolatey@v2
         with:
           args: install git -y
 
       - name: Verify Git installation
-        if: matrix.settings.target == 'aarch64-pc-windows-msvc'
+        if: matrix.settings.host == 'win-arm64'
         shell: powershell
         run: |
+          refreshenv
           git --version
         
       - name: Setup node
@@ -162,13 +166,13 @@ jobs:
           node-version: ${{ matrix.node }}
 
       - name: Install Yarn
-        if: matrix.settings.target == 'aarch64-pc-windows-msvc'
+        if: matrix.settings.host == 'win-arm64'
         run: |
           npm install -g yarn
           echo "$(npm config get prefix)/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
   
       - name: Verify Yarn installation
-        if: matrix.settings.target == 'aarch64-pc-windows-msvc'
+        if: matrix.settings.host == 'win-arm64'
         run: |
           yarn --version
   
