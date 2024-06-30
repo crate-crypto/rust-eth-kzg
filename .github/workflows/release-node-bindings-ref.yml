@@ -52,52 +52,52 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
-      - name: Setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.settings.target }}
-      # llvm-preview-tools are needed for xwin, because we are compiling assembly (blst)
-      # Alternatively, you can install llvm
-      - name: Install llvm-preview-tools
-        if: runner.os == 'Linux' && contains(matrix.settings.target, 'windows')
-        run: rustup component add llvm-tools-preview 
-      - name: Install dependencies
-        run: yarn install
-        working-directory: bindings/node
-      - name: Setup Zig (Linux only)
-        uses: goto-bus-stop/setup-zig@v2
-        with:
-          version: 0.13.0
-      - name: Install cargo-zigbuild (Linux only)
-        if: runner.os == 'Linux'
-        run: cargo install cargo-zigbuild
-      - name: Install cargo-xwin (Windows on Linux only)
-        if: runner.os == 'Linux' && contains(matrix.settings.target, 'windows')
-        run: cargo install cargo-xwin
-      - name: Build (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          rustup target add ${{ matrix.settings.target }}
-          yarn build --release --target ${{ matrix.settings.target }}
-        working-directory: bindings/node
-      - name: Build (Linux)
-        if: runner.os == 'Linux' && !contains(matrix.settings.target, 'windows')
-        run: yarn build --zig --release --target ${{ matrix.settings.target }}
-        working-directory: bindings/node
-      - name: Build (Windows on Linux)
-        if: runner.os == 'Linux' && contains(matrix.settings.target, 'windows')
-        run: yarn build --release --target ${{ matrix.settings.target }}
-        working-directory: bindings/node
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: bindings-${{ matrix.settings.target }}
-          path: bindings/node/${{ env.APP_NAME }}.*.node
-          if-no-files-found: error
+      # - name: Setup node
+      #   uses: actions/setup-node@v4
+      #   with:
+      #     node-version: 20
+      # - name: Install Rust toolchain
+      #   uses: dtolnay/rust-toolchain@stable
+      #   with:
+      #     targets: ${{ matrix.settings.target }}
+      # # llvm-preview-tools are needed for xwin, because we are compiling assembly (blst)
+      # # Alternatively, you can install llvm
+      # - name: Install llvm-preview-tools
+      #   if: runner.os == 'Linux' && contains(matrix.settings.target, 'windows')
+      #   run: rustup component add llvm-tools-preview 
+      # - name: Install dependencies
+      #   run: yarn install
+      #   working-directory: bindings/node
+      # - name: Setup Zig (Linux only)
+      #   uses: goto-bus-stop/setup-zig@v2
+      #   with:
+      #     version: 0.13.0
+      # - name: Install cargo-zigbuild (Linux only)
+      #   if: runner.os == 'Linux'
+      #   run: cargo install cargo-zigbuild
+      # - name: Install cargo-xwin (Windows on Linux only)
+      #   if: runner.os == 'Linux' && contains(matrix.settings.target, 'windows')
+      #   run: cargo install cargo-xwin
+      # - name: Build (macOS)
+      #   if: runner.os == 'macOS'
+      #   run: |
+      #     rustup target add ${{ matrix.settings.target }}
+      #     yarn build --release --target ${{ matrix.settings.target }}
+      #   working-directory: bindings/node
+      # - name: Build (Linux)
+      #   if: runner.os == 'Linux' && !contains(matrix.settings.target, 'windows')
+      #   run: yarn build --zig --release --target ${{ matrix.settings.target }}
+      #   working-directory: bindings/node
+      # - name: Build (Windows on Linux)
+      #   if: runner.os == 'Linux' && contains(matrix.settings.target, 'windows')
+      #   run: yarn build --release --target ${{ matrix.settings.target }}
+      #   working-directory: bindings/node
+      # - name: Upload artifact
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: bindings-${{ matrix.settings.target }}
+      #     path: bindings/node/${{ env.APP_NAME }}.*.node
+      #     if-no-files-found: error
 
   test:
     needs: build
