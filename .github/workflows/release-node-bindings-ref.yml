@@ -130,10 +130,15 @@ jobs:
           Set-ExecutionPolicy Bypass -Scope Process -Force
           [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
           iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+      - name: Add Chocolatey to PATH
+        shell: powershell
+        run: |
+          $env:PATH = "C:\ProgramData\chocolatey\bin;$env:PATH"
+          [Environment]::SetEnvironmentVariable("Path", $env:PATH, "Machine")
+          Write-Host "Updated PATH: $env:PATH"
       - name: Install Git using Chocolatey
         shell: powershell
         run: |
-          refreshenv
           choco install git -y
 
       - name: Verify Git installation
