@@ -123,6 +123,7 @@ jobs:
     name: Test - ${{ matrix.settings.target }} - node@${{ matrix.node }}
     runs-on: ${{ matrix.settings.host }}
     steps:
+      
       # Windows arm64 doesn't have git it seems or choco.
       # We install choco and then git
       - name: Install Chocolatey
@@ -134,37 +135,31 @@ jobs:
           iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 
       - name: Add Chocolatey to PATH
-        if: matrix.settings.target == 'aarch64-pc-windows-msvc'
         shell: powershell
         run: |
-          $env:PATH = "C:\ProgramData\chocolatey\bin;$env:PATH"
-          [Environment]::SetEnvironmentVariable("Path", $env:PATH, "Machine")
-          Write-Host "Updated PATH: $env:PATH"
+          $chocoPath = "C:\ProgramData\chocolatey\bin"
+          $env:Path = "$chocoPath;$env:Path"
+          echo "$chocoPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+            
+      - name: Verify Chocolatey installation
+        shell: powershell
+        run: choco --version
 
-      - name: Install Git using Chocolatey
-        if: matrix.settings.target == 'aarch64-pc-windows-msvc'
-        shell: powershell
-        run: |
-          C:\ProgramData\chocolatey\bin\choco.exe install git -y
-      
-      - name: Add Git to PATH and verify installation
-        shell: powershell
-        run: |
-          $gitPath = "C:\Program Files\Git\cmd"
-          $env:Path = "$gitPath;$env:Path"
-          echo "$gitPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-          git --version
-        
+      - name: Install Git using Chocolatey Action
+        uses: crazy-max/ghaction-chocolatey@v2
+        with:
+          args: install git -y
+
       - name: Verify Git installation
         if: matrix.settings.target == 'aarch64-pc-windows-msvc'
         shell: powershell
         run: |
           git --version
         
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Setup node
+        uses: actions/setup-node@v4
         with:
-          node-version: '22' 
+          node-version: ${{ matrix.node }}
 
       - name: Install Yarn
         if: matrix.settings.target == 'aarch64-pc-windows-msvc'
@@ -180,10 +175,6 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
-      - name: Setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node }}
 
       - name: Install dependencies
         run: yarn install
