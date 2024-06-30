@@ -1,4 +1,4 @@
-name: Node Napi CI
+name: Node Napi Cross compile testing
 env:
   DEBUG: napi:*
   APP_NAME: peerdas-kzg
@@ -7,16 +7,25 @@ permissions:
   contents: write
   id-token: write
 
-'on':
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
   workflow_dispatch:
     inputs:
       ref:
         description: The reference (branch/tag/commit) to checkout
         required: true
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+      release-type:
+        type: choice
+        required: false
+        default: none
+        description: Indicates whether we want to make a release and if which one
+        options:
+          - pre-release # Release a pre-release version to npm
+          - release # release an official version to npm
+          - none # Make no release
 
 jobs:
   build:
@@ -24,229 +33,206 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - host: macos-latest
-            target: x86_64-apple-darwin
-            build: yarn build --target x86_64-apple-darwin
-          - host: windows-latest
-            build: yarn build --target x86_64-pc-windows-msvc
-            target: x86_64-pc-windows-msvc
+          # - host: macos-13
+          #   target: x86_64-apple-darwin
+          # - host: macos-14
+          #   target: aarch64-apple-darwin
+          # - host: ubuntu-latest
+          #   target: x86_64-unknown-linux-gnu
+          # - host: ubuntu-latest
+          #   target: aarch64-unknown-linux-gnu
+          # - host: ubuntu-latest
+          #   target: x86_64-pc-windows-msvc
           - host: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian
-            build: cd bindings/node && yarn build --target x86_64-unknown-linux-gnu
-          - host: macos-latest
-            target: aarch64-apple-darwin
-            build: yarn build --target aarch64-apple-darwin
-          - host: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-            docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-debian-aarch64
-            build: cd bindings/node && yarn build --target aarch64-unknown-linux-gnu
-    name: stable - ${{ matrix.settings.target }} - node@20
+            target: aarch64-pc-windows-msvc
+
+    name: Build - ${{ matrix.settings.target }}
     runs-on: ${{ matrix.settings.host }}
-    defaults:
-      run:
-        working-directory: bindings/node
     steps:
       - uses: actions/checkout@v4
         with:
-            ref: ${{ inputs.ref }}
-      - name: Move config.toml
-        run: |
-          # Move up two directories to the root of the workspace
-          cd ../..
-
-          mv .cargo/config.node.cross.toml .cargo/config.toml
-      - uses: actions/checkout@v4
-        with:
-            ref: ${{ inputs.ref }}
+          ref: ${{ inputs.ref }}
       - name: Setup node
         uses: actions/setup-node@v4
-        if: ${{ !matrix.settings.docker }}
         with:
           node-version: 20
-          cache: yarn
-          cache-dependency-path: 'bindings/node'
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
-        if: ${{ !matrix.settings.docker }}
         with:
-          toolchain: stable
           targets: ${{ matrix.settings.target }}
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            .cargo-cache
-            target/
-          key: ${{ matrix.settings.target }}-cargo-${{ matrix.settings.host }}
-      - uses: goto-bus-stop/setup-zig@v2
-        if: ${{ matrix.settings.target == 'armv7-unknown-linux-gnueabihf' || matrix.settings.target == 'armv7-unknown-linux-musleabihf' }}
-        with:
-          version: 0.11.0
-      - name: Setup toolchain
-        run: ${{ matrix.settings.setup }}
-        if: ${{ matrix.settings.setup }}
-        shell: bash
-      - name: Setup node x86
-        if: matrix.settings.target == 'i686-pc-windows-msvc'
-        run: yarn config set supportedArchitectures.cpu "ia32"
-        shell: bash
+      # llvm-preview-tools are needed for xwin, because we are compiling assembly (blst)
+      # Alternatively, you can install llvm
+      - name: Install llvm-preview-tools
+        if: runner.os == 'Linux' && contains(matrix.settings.target, 'windows')
+        run: rustup component add llvm-tools-preview 
       - name: Install dependencies
         run: yarn install
-      - name: Setup node x86
-        uses: actions/setup-node@v4
-        if: matrix.settings.target == 'i686-pc-windows-msvc'
+        working-directory: bindings/node
+      - name: Setup Zig (Linux only)
+        uses: goto-bus-stop/setup-zig@v2
         with:
-          node-version: 20
-          cache: yarn
-          cache-dependency-path: 'bindings/node'
-          architecture: x86
-      - name: Build in docker
-        uses: addnab/docker-run-action@v3
-        if: ${{ matrix.settings.docker }}
-        with:
-          image: ${{ matrix.settings.docker }}
-          options: '--user 0:0 -v ${{ github.workspace }}/.cargo-cache/git/db:/usr/local/cargo/git/db -v ${{ github.workspace }}/.cargo/registry/cache:/usr/local/cargo/registry/cache -v ${{ github.workspace }}/.cargo/registry/index:/usr/local/cargo/registry/index -v ${{ github.workspace }}:/build -w /build'
-          run: ${{ matrix.settings.build }}
-      - name: Build
-        run: ${{ matrix.settings.build }}
-        if: ${{ !matrix.settings.docker }}
-        shell: bash
+          version: 0.13.0
+      - name: Install cargo-zigbuild (Linux only)
+        if: runner.os == 'Linux'
+        run: cargo install cargo-zigbuild
+      - name: Install cargo-xwin (Windows on Linux only)
+        if: runner.os == 'Linux' && contains(matrix.settings.target, 'windows')
+        run: cargo install cargo-xwin
+      - name: Build (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          rustup target add ${{ matrix.settings.target }}
+          yarn build --release --target ${{ matrix.settings.target }}
+        working-directory: bindings/node
+      - name: Build (Linux)
+        if: runner.os == 'Linux' && !contains(matrix.settings.target, 'windows')
+        run: yarn build --zig --release --target ${{ matrix.settings.target }}
+        working-directory: bindings/node
+      - name: Build (Windows on Linux)
+        if: runner.os == 'Linux' && contains(matrix.settings.target, 'windows')
+        run: yarn build --release --target ${{ matrix.settings.target }}
+        working-directory: bindings/node
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: bindings-${{ matrix.settings.target }}
           path: bindings/node/${{ env.APP_NAME }}.*.node
           if-no-files-found: error
-  test-macOS-windows-binding:
-    name: Test bindings on ${{ matrix.settings.target }} - node@${{ matrix.node }}
-    needs:
-      - build
+
+  test:
+    needs: build
     strategy:
       fail-fast: false
       matrix:
         settings:
-          - host: macos-latest
+          - host: macos-13
             target: x86_64-apple-darwin
+          - host: macos-14
+            target: aarch64-apple-darwin
+          - host: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - host: linux-arm64
+            target: aarch64-unknown-linux-gnu
           - host: windows-latest
             target: x86_64-pc-windows-msvc
+          - host: win-arm64
+            target: aarch64-pc-windows-msvc
         node:
           - '20'
+
+    name: Test - ${{ matrix.settings.target }} - node@${{ matrix.node }}
     runs-on: ${{ matrix.settings.host }}
-    defaults:
-      run:
-        working-directory: bindings/node
     steps:
-      - uses: actions/checkout@v4
+      
+      # Windows arm64 doesn't have git it seems or choco.
+      # We install choco and then git
+      - name: Install Chocolatey
+        if: matrix.settings.host == 'win-arm64'
+        shell: powershell
+        run: |
+          Set-ExecutionPolicy Bypass -Scope Process -Force
+          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+          iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+      - name: Add Chocolatey to PATH
+        if: matrix.settings.host == 'win-arm64'
+        shell: powershell
+        run: |
+          $chocoPath = "C:\ProgramData\chocolatey\bin"
+          $env:Path = "$chocoPath;$env:Path"
+          echo "$chocoPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+            
+      - name: Verify Chocolatey installation
+        if: matrix.settings.host == 'win-arm64'
+        shell: powershell
+        run: choco --version
+
+      - name: Install Git using Chocolatey Action
+        if: matrix.settings.host == 'win-arm64'
+        uses: crazy-max/ghaction-chocolatey@v2
         with:
-            ref: ${{ inputs.ref }}
+          args: install git -y
+          
+      - name: Add Git to PATH and verify installation
+        if: matrix.settings.host == 'win-arm64'
+        shell: powershell
+        run: |
+          $gitPath = "C:\Program Files\Git\cmd"
+          $env:Path = "$gitPath;$env:Path"
+          echo "$gitPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          git --version
+        
       - name: Setup node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: yarn
-          cache-dependency-path: 'bindings/node'
-          architecture: x64
+
+      - name: Install Yarn
+        if: matrix.settings.host == 'win-arm64'
+        run: |
+          npm install -g yarn
+          echo "$(npm config get prefix)/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+  
+      - name: Verify Yarn installation
+        if: matrix.settings.host == 'win-arm64'
+        run: |
+          yarn --version
+  
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
       - name: Install dependencies
         run: yarn install
+        working-directory: bindings/node
+
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           name: bindings-${{ matrix.settings.target }}
           path: bindings/node
-      - name: Test bindings
+      
+      # Native testing for macOS (both Intel and ARM)
+      - name: Test bindings (macOS)
+        if: startsWith(matrix.settings.host, 'macos')
         run: yarn test
-  test-linux-x64-gnu-binding:
-    name: Test bindings on Linux-x64-gnu - node@${{ matrix.node }}
-    needs:
-      - build
-    strategy:
-      fail-fast: false
-      matrix:
-        node:
-          - '20'
-    runs-on: ubuntu-latest
-    defaults:
-      run:
         working-directory: bindings/node
-    steps:
-      - uses: actions/checkout@v4
-        with:
-            ref: ${{ inputs.ref }}
-      - name: Setup node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node }}
-          cache: yarn
-          cache-dependency-path: 'bindings/node'
-      - name: Install dependencies
-        run: yarn install
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: bindings-x86_64-unknown-linux-gnu
-          path: bindings/node
-      - name: Test bindings
-        run: docker run --rm -v $(pwd):/build -w /build node:${{ matrix.node }}-slim yarn test
-  test-linux-aarch64-gnu-binding:
-    name: Test bindings on aarch64-unknown-linux-gnu - node@${{ matrix.node }}
-    needs:
-      - build
-    strategy:
-      fail-fast: false
-      matrix:
-        node:
-          - '20'
-    runs-on: ubuntu-latest
-    defaults:
-      run:
+
+      # Native testing for x86_64 Linux
+      - name: Test bindings (Linux x86_64)
+        if: matrix.settings.target == 'x86_64-unknown-linux-gnu'
+        run: yarn test
         working-directory: bindings/node
-    steps:
-      - uses: actions/checkout@v4
-        with:
-            ref: ${{ inputs.ref }}
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: bindings-aarch64-unknown-linux-gnu
-          path: bindings/node
-      - name: Install dependencies
-        run: |
-          yarn config set supportedArchitectures.cpu "arm64"
-          yarn config set supportedArchitectures.libc "glibc"
-          yarn install
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
-      - run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
-      - name: Setup and run tests
-        uses: addnab/docker-run-action@v3
-        with:
-          image: node:${{ matrix.node }}-slim
-          options: '--platform linux/arm64 -v ${{ github.workspace }}:/build -w /build'
-          run: |
-            cd bindings/node
-            set -e
-            yarn test
-            ls -la
+
+      - name: Test bindings (Linux ARM64)
+        if: matrix.settings.target == 'aarch64-unknown-linux-gnu'
+        run: yarn test
+        working-directory: bindings/node
+
+      # Native testing for x86_64 Windows
+      - name: Test bindings (Windows x86_64)
+        if: matrix.settings.target == 'x86_64-pc-windows-msvc'
+        run: yarn test
+        working-directory: bindings/node
+
+      # Native testing for arm64 Windows
+      - name: Test bindings (Windows arm64)
+        if: matrix.settings.target == 'aarch64-pc-windows-msvc'
+        run: yarn test
+        working-directory: bindings/node
+
   publish:
     name: Publish
     runs-on: ubuntu-latest
     needs:
-      - test-macOS-windows-binding
-      - test-linux-x64-gnu-binding
-      - test-linux-aarch64-gnu-binding
+      - test
     defaults:
       run:
         working-directory: bindings/node
     steps:
       - uses: actions/checkout@v4
         with:
-            ref: ${{ inputs.ref }}
+          ref: ${{ inputs.ref }}
       - name: Setup node
         uses: actions/setup-node@v4
         with:
@@ -258,19 +244,37 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          path: bindings/node/artifacts
       - name: Move artifacts
         run: yarn artifacts
       - name: Publish
+        if: ${{ inputs.release-type != 'none' }}
         run: |
-          npm config set provenance true
+          # TODO: We could remove the yarnpkg registry and set the npmregistry
+          # TODO: globally, by doing: yarn config set registry <registry-url>
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
-          if [[ ${{ inputs.ref }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            npm publish --access public
-          elif [[ ${{ inputs.ref }} =~ ^[a-zA-Z0-9_-]+$ ]]; then
-            npm publish --tag next --access public
+          echo "//registry.yarnpkg.com/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+          
+          if [ "${{inputs.release-type}}" = "release" ]; then
+            SHOULD_PUBLISH=true
+          elif [ "${{inputs.release-type}}" = "pre-release" ]; then
+            # Prepend the commit hash to the package.json files
+            # so we can publish a pre-release version
+            yarn prereleaseVersion
+            SHOULD_PUBLISH=true
           else
-            echo "Invalid ref format. Skipping publish."
+            echo "No release has been made"
+            SHOULD_PUBLISH=false
+          fi
+      
+          if [ "$SHOULD_PUBLISH" = true ]; then
+            # Prepare and publish the platform specific packages
+            yarn prepareAndPublishAddons
+            # Publish the base package, setting provenance
+            # to true as it's recommended. The platform specific packages
+            # don't need to have it, TODO but we could edit them to pass provenance.
+            npm config set provenance true
+            npm publish --access public
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
