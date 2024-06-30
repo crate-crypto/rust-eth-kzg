@@ -192,6 +192,9 @@ jobs:
           name: bindings-${{ matrix.settings.target }}
           path: bindings/node
       
+      - name: List files
+        run: ls -laR
+
       # Native testing for macOS (both Intel and ARM)
       - name: Test bindings (macOS)
         if: startsWith(matrix.settings.host, 'macos')
