@@ -196,6 +196,30 @@ jobs:
         run: Get-ChildItem -Force -Recurse | Select-Object Mode, LastWriteTime, Length, FullName
         shell: powershell
 
+      - name: Diagnostic Information
+        shell: pwsh
+        run: |
+          Write-Host "Node.js version and architecture:"
+          node -p "process.arch + ' ' + process.version"
+      
+          Write-Host "`nNODE_MODULE_VERSION:"
+          node -p "process.versions.modules"
+      
+          Write-Host "`nSystem Type:"
+          systeminfo | findstr "System Type"
+      
+          Write-Host "`nDirectory contents:"
+          Get-ChildItem -Force -Recurse .\bindings\node | Select-Object FullName, Length, LastWriteTime
+      
+          Write-Host "`nFile details:"
+          Get-Item .\bindings\node\peerdas-kzg.win32-arm64-msvc.node | Select-Object *
+      
+          Write-Host "`nTrying to load the module in Node.js REPL:"
+          node -e "try { require('./bindings/node/peerdas-kzg.win32-arm64-msvc.node'); console.log('Module loaded successfully'); } catch (error) { console.error('Error loading module:', error.message); }"
+      
+          Write-Host "`nChecking for missing DLLs:"
+          Get-Content .\bindings\node\peerdas-kzg.win32-arm64-msvc.node | Select-String -Pattern "\.dll" -AllMatches | ForEach-Object { $_.Matches } | ForEach-Object { $_.Value } | Sort-Object -Unique
+      
       # Native testing for macOS (both Intel and ARM)
       - name: Test bindings (macOS)
         if: startsWith(matrix.settings.host, 'macos')
