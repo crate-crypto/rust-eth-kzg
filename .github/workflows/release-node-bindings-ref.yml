@@ -125,26 +125,35 @@ jobs:
     steps:
       # Windows arm64 doesn't have git it seems or choco.
       # We install choco and then git
-      # - name: Install Chocolatey
-      #   if: matrix.settings.target == 'aarch64-pc-windows-msvc'
-      #   shell: powershell
-      #   run: |
-      #     Set-ExecutionPolicy Bypass -Scope Process -Force
-      #     [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-      #     iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-      # - name: Add Chocolatey to PATH
-      #   if: matrix.settings.target == 'aarch64-pc-windows-msvc'
-      #   shell: powershell
-      #   run: |
-      #     $env:PATH = "C:\ProgramData\chocolatey\bin;$env:PATH"
-      #     [Environment]::SetEnvironmentVariable("Path", $env:PATH, "Machine")
-      #     Write-Host "Updated PATH: $env:PATH"
-      # - name: Install Git using Chocolatey
-      #   if: matrix.settings.target == 'aarch64-pc-windows-msvc'
-      #   shell: powershell
-      #   run: |
-      #     C:\ProgramData\chocolatey\bin\choco.exe install git -y
+      - name: Install Chocolatey
+        if: matrix.settings.target == 'aarch64-pc-windows-msvc'
+        shell: powershell
+        run: |
+          Set-ExecutionPolicy Bypass -Scope Process -Force
+          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+          iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+      - name: Add Chocolatey to PATH
+        if: matrix.settings.target == 'aarch64-pc-windows-msvc'
+        shell: powershell
+        run: |
+          $env:PATH = "C:\ProgramData\chocolatey\bin;$env:PATH"
+          [Environment]::SetEnvironmentVariable("Path", $env:PATH, "Machine")
+          Write-Host "Updated PATH: $env:PATH"
+      - name: Install Git using Chocolatey
+        if: matrix.settings.target == 'aarch64-pc-windows-msvc'
+        shell: powershell
+        run: |
+          C:\ProgramData\chocolatey\bin\choco.exe install git -y
       
+      - name: Install Yarn
+        run: |
+          npm install -g yarn
+          echo "$(npm config get prefix)/bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Verify Yarn installation
+        run: |
+          yarn --version
+
       - name: Add Git to PATH and verify installation
         if: matrix.settings.target == 'aarch64-pc-windows-msvc'
         shell: powershell
