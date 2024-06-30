@@ -141,39 +141,34 @@ jobs:
         run: |
           C:\ProgramData\chocolatey\bin\choco.exe install git -y
       
-      - name: Locate Git and add to PATH
+      - name: Add Git to PATH and verify installation
         shell: powershell
         run: |
-          $commonPaths = @(
-            "C:\Program Files\Git\cmd",
-            "C:\Program Files (x86)\Git\cmd",
-            "C:\Git\cmd"
-          )
-          $gitPath = $null
-          foreach ($path in $commonPaths) {
-            if (Test-Path "$path\git.exe") {
-              $gitPath = $path
-              break
-            }
-          }
-          if ($gitPath) {
+          $gitPath = "C:\Program Files\Git\cmd"
+          if (Test-Path (Join-Path $gitPath "git.exe")) {
             Write-Host "Git found at: $gitPath"
+            
+            # Update PATH for current process
             $env:Path = "$gitPath;$env:Path"
-            [Environment]::SetEnvironmentVariable("Path", $env:Path, "Machine")
+            
+            # Update PATH for future processes in this job
+            echo "$gitPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+            
             Write-Host "Updated PATH: $env:Path"
-          } else {
-            Write-Host "Git not found in common locations. Searching Program Files:"
-            $gitExe = Get-ChildItem "C:\Program Files" -Recurse -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq "git.exe" } | Select-Object -First 1
-            if ($gitExe) {
-              $gitPath = $gitExe.DirectoryName
-              Write-Host "Git found at: $gitPath"
-              $env:Path = "$gitPath;$env:Path"
-              [Environment]::SetEnvironmentVariable("Path", $env:Path, "Machine")
-              Write-Host "Updated PATH: $env:Path"
+            
+            # Verify Git is accessible
+            Write-Host "`nAttempting to run 'git --version':"
+            git --version
+            
+            if ($LASTEXITCODE -eq 0) {
+              Write-Host "Git successfully added to PATH and is working."
             } else {
-              throw "Git not found"
+              throw "Git command failed. Exit code: $LASTEXITCODE"
             }
+          } else {
+            throw "Git not found at expected location: $gitPath"
           }
+        
     
 
       - name: Verify Git installation
