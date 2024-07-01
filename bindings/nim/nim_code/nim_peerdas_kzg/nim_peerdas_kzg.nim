@@ -81,9 +81,11 @@ type
 # for the custom destructor so it must ensure that
 # this is not called twice.
 # https://forum.nim-lang.org/t/11229
-proc `=destroy`(x: typeof KZGCtx()[]) =
-  if x.ctx_ptr != nil:
-    peerdas_context_free(x.ctx_ptr)
+# TODO: Fix (this does not work in nimbus)
+# TOOD: `Error: signature for '=destroy' must be proc[T: object](x: var T)`
+# proc `=destroy`(x: typeof KZGCtx()[]) =
+#   if x.ctx_ptr != nil:
+#     peerdas_context_free(x.ctx_ptr)
 
 proc newKZGCtx*(): KZGCtx =
   var kzgCtx = KZGCtx()
