@@ -59,9 +59,9 @@ proc free_error_message*(c_message: pointer): void {.importc: "free_error_messag
 #
 # - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
 #   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
-proc blob_to_kzg_commitment*(ctx: ptr PeerDASContext,
-                             blob: pointer,
-                             outx: pointer): CResult {.importc: "blob_to_kzg_commitment".}
+proc peerdas_blob_to_kzg_commitment*(ctx: ptr PeerDASContext,
+                                     blob: pointer,
+                                     outx: pointer): CResult {.importc: "peerdas_blob_to_kzg_commitment".}
 
 ## Computes the cells and KZG proofs for a given blob.
 #
@@ -78,10 +78,10 @@ proc blob_to_kzg_commitment*(ctx: ptr PeerDASContext,
 #
 # - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
 #   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
-proc compute_cells_and_kzg_proofs*(ctx: ptr PeerDASContext,
-                                   blob: pointer,
-                                   out_cells: ptr pointer,
-                                   out_proofs: ptr pointer): CResult {.importc: "compute_cells_and_kzg_proofs".}
+proc peerdas_compute_cells_and_kzg_proofs*(ctx: ptr PeerDASContext,
+                                           blob: pointer,
+                                           out_cells: ptr pointer,
+                                           out_proofs: ptr pointer): CResult {.importc: "peerdas_compute_cells_and_kzg_proofs".}
 
 ## Verifies a cell corresponds to a particular commitment.
 #
@@ -96,12 +96,12 @@ proc compute_cells_and_kzg_proofs*(ctx: ptr PeerDASContext,
 #  - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
 #    If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
 #
-proc verify_cell_kzg_proof*(ctx: ptr PeerDASContext,
-                            cell: pointer,
-                            commitment: pointer,
-                            cell_id: uint64,
-                            proof: pointer,
-                            verified: pointer): CResult {.importc: "verify_cell_kzg_proof".}
+proc peerdas_verify_cell_kzg_proof*(ctx: ptr PeerDASContext,
+                                    cell: pointer,
+                                    commitment: pointer,
+                                    cell_id: uint64,
+                                    proof: pointer,
+                                    verified: pointer): CResult {.importc: "peerdas_verify_cell_kzg_proof".}
 
 ## Verifies a batch of cells and their KZG proofs.
 #
@@ -128,18 +128,18 @@ proc verify_cell_kzg_proof*(ctx: ptr PeerDASContext,
 #
 # - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
 #   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
-proc verify_cell_kzg_proof_batch*(ctx: ptr PeerDASContext,
-                                  row_commitments_length: uint64,
-                                  row_commitments: ptr pointer,
-                                  row_indices_length: uint64,
-                                  row_indices: pointer,
-                                  column_indices_length: uint64,
-                                  column_indices: pointer,
-                                  cells_length: uint64,
-                                  cells: ptr pointer,
-                                  proofs_length: uint64,
-                                  proofs: ptr pointer,
-                                  verified: pointer): CResult {.importc: "verify_cell_kzg_proof_batch".}
+proc peerdas_verify_cell_kzg_proof_batch*(ctx: ptr PeerDASContext,
+                                          row_commitments_length: uint64,
+                                          row_commitments: ptr pointer,
+                                          row_indices_length: uint64,
+                                          row_indices: pointer,
+                                          column_indices_length: uint64,
+                                          column_indices: pointer,
+                                          cells_length: uint64,
+                                          cells: ptr pointer,
+                                          proofs_length: uint64,
+                                          proofs: ptr pointer,
+                                          verified: pointer): CResult {.importc: "peerdas_verify_cell_kzg_proof_batch".}
 
 ## Recovers all cells and their KZG proofs from the given cell ids and cells
 #
@@ -163,13 +163,13 @@ proc verify_cell_kzg_proof_batch*(ctx: ptr PeerDASContext,
 #
 # - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
 #   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
-proc recover_cells_and_proofs*(ctx: ptr PeerDASContext,
-                               cells_length: uint64,
-                               cells: ptr pointer,
-                               cell_ids_length: uint64,
-                               cell_ids: pointer,
-                               out_cells: ptr pointer,
-                               out_proofs: ptr pointer): CResult {.importc: "recover_cells_and_proofs".}
+proc peerdas_recover_cells_and_proofs*(ctx: ptr PeerDASContext,
+                                       cells_length: uint64,
+                                       cells: ptr pointer,
+                                       cell_ids_length: uint64,
+                                       cell_ids: pointer,
+                                       out_cells: ptr pointer,
+                                       out_proofs: ptr pointer): CResult {.importc: "peerdas_recover_cells_and_proofs".}
 
 proc constant_bytes_per_cell*(): uint64 {.importc: "constant_bytes_per_cell".}
 
