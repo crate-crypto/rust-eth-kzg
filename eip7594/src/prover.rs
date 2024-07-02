@@ -19,7 +19,7 @@ use crate::{
     serialization::{self, serialize_g1_compressed},
     trusted_setup::TrustedSetup,
     verifier::VerifierContext,
-    BlobRef, Bytes48Ref, Cell, CellID, CellRef, KZGCommitment, KZGProof,
+    BlobRef, Cell, CellID, CellRef, KZGCommitment, KZGProof,
 };
 
 /// Context object that is used to call functions in the prover API.

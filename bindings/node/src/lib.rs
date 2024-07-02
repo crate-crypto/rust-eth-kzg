@@ -139,7 +139,8 @@ impl ProverContextJs {
       .map(|cell| slice_to_array_ref(cell, "cell"))
       .collect::<Result<_, _>>()?;
 
-      let (cells, proofs) = prover_context.recover_cells_and_proofs(cell_ids, cells)
+    let (cells, proofs) = prover_context
+      .recover_cells_and_proofs(cell_ids, cells)
       .map_err(|err| {
         Error::from_reason(format!(
           "failed to compute recover_cells_and_kzg_proofs: {:?}",
@@ -170,7 +171,6 @@ impl ProverContextJs {
   ) -> Result<CellsAndProofs> {
     self.recover_cells_and_kzg_proofs(cell_ids, cells)
   }
-
 }
 
 #[napi]

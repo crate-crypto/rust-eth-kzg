@@ -253,7 +253,7 @@ impl VerifierContext {
                 cells: missing_cell_ids,
             },
         );
-        
+
         // TODO: We could move this code into the ReedSolomon crate
         // We extended our original data by EXTENSION_FACTOR
         // The recovered polynomial in monomial and lagrange form

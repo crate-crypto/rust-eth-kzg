@@ -17,13 +17,11 @@ mod serde_ {
 
     type YamlOutput = (Vec<String>, Vec<String>);
 
-
     #[derive(Debug, Clone)]
     pub struct KZGProofsAndCells {
         pub proofs: Vec<UnsafeBytes>,
         pub cells: Vec<UnsafeBytes>,
     }
-
 
     #[derive(Deserialize)]
     struct YamlTestVector {
@@ -103,7 +101,7 @@ fn test_recover_cells_and_proofs() {
                 continue;
             }
         };
-        
+
         match ctx.recover_cells_and_proofs(test.input_cell_ids, input_cells) {
             Ok((cells, proofs)) => {
                 let expected_proofs_and_cells = test.proofs_and_cells.unwrap();
