@@ -119,10 +119,6 @@ proc computeCellsAndProofs*(ctx: KZGCtx, blob : Blob): Result[CellsAndProofs, st
   )
   verify_result(res, ret)
 
-proc computeCells*(ctx: KZGCtx, blob : Blob): Result[Cells, string] {.gcsafe.} =  
-  let res = ?computeCellsAndProofs(ctx, blob)
-  ok(res.cells)
-
 proc verifyCellKZGProof*(ctx: KZGCtx, commitment: Bytes48, cellId: uint64, cell: Cell, proof: Bytes48): Result[bool, string] =
   var valid: bool
 
@@ -198,9 +194,3 @@ proc recoverCellsAndProofs*(ctx: KZGCtx,
   )
 
   verify_result(res, ret)
-
-proc recoverCells*(ctx: KZGCtx,
-                   cellIds: openArray[uint64],
-                   cells: openArray[Cell]): Result[Cells, string] {.gcsafe.} =
-  let res = ?recoverCellsAndProofs(ctx, cellIds, cells)
-  ok(res.cells)

@@ -289,44 +289,6 @@ impl VerifierContextJs {
   ) -> Result<bool> {
     self.verify_cell_kzg_proof_batch(commitments, row_indices, column_indices, cells, proofs)
   }
-
-  #[allow(deprecated)]
-  #[napi]
-  pub fn recover_all_cells(
-    &self,
-    cell_ids: Vec<BigInt>,
-    cells: Vec<Uint8Array>,
-  ) -> Result<Vec<Uint8Array>> {
-    let cell_ids: Vec<_> = cell_ids.into_iter().map(bigint_to_u64).collect();
-    let cells: Vec<_> = cells.iter().map(|cell| cell.as_ref()).collect();
-
-    let verifier_context = &self.inner;
-
-    let cells: Vec<_> = cells
-      .iter()
-      .map(|cell| slice_to_array_ref(cell, "cell"))
-      .collect::<Result<_, _>>()?;
-
-    let cells = verifier_context
-      .recover_all_cells(cell_ids, cells)
-      .map_err(|err| Error::from_reason(format!("failed to compute compute_cells: {:?}", err)))?;
-
-    let cells_uint8array = cells
-      .into_iter()
-      .map(|cell| Uint8Array::from(cell.to_vec()))
-      .collect::<Vec<Uint8Array>>();
-
-    Ok(cells_uint8array)
-  }
-
-  #[napi]
-  pub async fn async_recover_all_cells(
-    &self,
-    cell_ids: Vec<BigInt>,
-    cells: Vec<Uint8Array>,
-  ) -> Result<Vec<Uint8Array>> {
-    self.recover_all_cells(cell_ids, cells)
-  }
 }
 
 // We use bigint because u64 cannot be used as an argument, see : https://napi.rs/docs/concepts/values.en#bigint

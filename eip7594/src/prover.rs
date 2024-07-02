@@ -159,17 +159,7 @@ impl ProverContext {
         Ok((cells, proofs))
     }
 
-    #[deprecated(note = "This function is deprecated, use `compute_cells_and_kzg_proofs` instead")]
-    #[allow(deprecated)]
-    pub fn compute_cells(&self, blob: BlobRef) -> Result<[Cell; CELLS_PER_EXT_BLOB], ProverError> {
-        self.thread_pool.install(|| {
-            self.compute_cells_and_kzg_proofs(blob)
-                .map(|(cells, _)| cells)
-        })
-    }
-
     /// Recovers the cells and computes the KZG proofs, given a subset of cells.
-    #[allow(deprecated)]
     pub fn recover_cells_and_proofs(
         &self,
         cell_ids: Vec<CellID>,

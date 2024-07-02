@@ -30,6 +30,4 @@ export class VerifierContextJs {
   asyncVerifyCellKzgProof(commitment: Uint8Array, cellId: bigint, cell: Uint8Array, proof: Uint8Array): Promise<boolean>
   verifyCellKzgProofBatch(commitments: Array<Uint8Array>, rowIndices: Array<bigint>, columnIndices: Array<bigint>, cells: Array<Uint8Array>, proofs: Array<Uint8Array>): boolean
   asyncVerifyCellKzgProofBatch(commitments: Array<Uint8Array>, rowIndices: Array<bigint>, columnIndices: Array<bigint>, cells: Array<Uint8Array>, proofs: Array<Uint8Array>): Promise<boolean>
-  recoverAllCells(cellIds: Array<bigint>, cells: Array<Uint8Array>): Array<Uint8Array>
-  asyncRecoverAllCells(cellIds: Array<bigint>, cells: Array<Uint8Array>): Promise<Array<Uint8Array>>
 }

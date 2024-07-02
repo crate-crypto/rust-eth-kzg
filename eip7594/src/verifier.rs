@@ -174,24 +174,6 @@ impl VerifierContext {
         })
     }
 
-    /// Given a list of cell IDs and cells, this function recovers the missing cells.
-    #[deprecated(
-        note = "This method will be removed from the public API, ie made crate private. Use `recover_cells_and_proofs` instead."
-    )]
-    #[allow(deprecated)]
-    pub fn recover_all_cells(
-        &self,
-        cell_ids: Vec<CellID>,
-        cells: Vec<CellRef>,
-    ) -> Result<[Cell; CELLS_PER_EXT_BLOB], VerifierError> {
-        self.thread_pool.install(|| {
-            let recovered_codeword = self.recover_extended_polynomial(cell_ids, cells)?;
-            Ok(evaluation_sets_to_cells(
-                recovered_codeword.chunks_exact(FIELD_ELEMENTS_PER_CELL),
-            ))
-        })
-    }
-
     pub(crate) fn recover_polynomial_coeff(
         &self,
         cell_ids: Vec<CellID>,
@@ -287,25 +269,6 @@ impl VerifierContext {
         }
 
         Ok(recovered_polynomial_coeff[0..FIELD_ELEMENTS_PER_BLOB].to_vec())
-    }
-
-    #[deprecated(
-        note = "This method will no longer be used, given we do not need to recover the full extended polynomial"
-    )]
-    #[allow(deprecated)]
-    pub(crate) fn recover_extended_polynomial(
-        &self,
-        cell_ids: Vec<CellID>,
-        cells: Vec<CellRef>,
-    ) -> Result<Vec<Scalar>, VerifierError> {
-        let poly_coeff = self.recover_polynomial_coeff(cell_ids, cells)?;
-
-        let mut recovered_codeword = self.rs.domain_extended().fft_scalars(poly_coeff);
-
-        // Reverse the order of the recovered points to be in bit-reversed order
-        reverse_bit_order(&mut recovered_codeword);
-
-        Ok(recovered_codeword)
     }
 }
 

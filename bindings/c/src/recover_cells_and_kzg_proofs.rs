@@ -4,7 +4,7 @@ use crate::pointer_utils::{
 use crate::{CResult, PeerDASContext};
 use eip7594::constants::{BYTES_PER_CELL, CELLS_PER_EXT_BLOB};
 
-pub(crate) fn _recover_all_cells_and_proofs(
+pub(crate) fn _recover_cells_and_proofs(
     ctx: *const PeerDASContext,
     cells_length: u64,
     cells: *const *const u8,

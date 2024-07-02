@@ -61,13 +61,6 @@ impl ReedSolomon {
         recover_polynomial_evaluations(&self.domain_extended, codeword_with_errors, missing_indices)
     }
 
-    #[deprecated(
-        note = "This method is exposed to allow the caller to convert a polynomial coeff into a codeword. When recover_all_cells is removed, we can remove this too"
-    )]
-    pub fn domain_extended(&self) -> &Domain {
-        &self.domain_extended
-    }
-
     pub fn recover_polynomial_coefficient(
         &self,
         codeword_with_errors: Vec<Scalar>,

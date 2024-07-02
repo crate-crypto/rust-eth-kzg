@@ -386,7 +386,7 @@ public class ReferenceTests
             
             try
             {
-                (byte[][] recoveredCells, byte[][] recoveredProofs) = _context.RecoverCellsAndKZGProofs(cellIndices, cells, new byte[0][]);
+                (byte[][] recoveredCells, byte[][] recoveredProofs) = _context.RecoverCellsAndKZGProofs(cellIndices, cells);
                 Assert.That(test.Output, Is.Not.EqualTo(null));
                 byte[][] expectedCells = GetByteArrays(test.Output.ElementAt(0));
                 Assert.That(recoveredCells, Is.EqualTo(expectedCells));
