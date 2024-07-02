@@ -72,10 +72,8 @@ pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
             ),
             |b| {
                 b.iter(|| {
-                    prover_context.recover_cells_and_proofs(
-                        half_cell_ids.to_vec(),
-                        half_cells.to_vec(),
-                    )
+                    prover_context
+                        .recover_cells_and_proofs(half_cell_ids.to_vec(), half_cells.to_vec())
                 })
             },
         );

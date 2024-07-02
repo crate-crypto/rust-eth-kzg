@@ -64,18 +64,6 @@ public sealed unsafe class PeerDASKZG : IDisposable
         return commitment;
     }
 
-    public unsafe byte[][] ComputeCells(byte[] blob)
-    {
-        // Length checks
-        if (blob.Length != BytesPerBlob)
-        {
-            throw new ArgumentException($"blob has an invalid length");
-        }
-
-        (byte[][] cells, _) = ComputeCellsAndKZGProofs(blob);
-        return cells;
-    }
-
     public unsafe (byte[][], byte[][]) ComputeCellsAndKZGProofs(byte[] blob)
     {
         // Length checks
@@ -231,13 +219,7 @@ public sealed unsafe class PeerDASKZG : IDisposable
         return verified;
     }
 
-    public byte[][] RecoverAllCells(ulong[] cellIds, byte[][] cells)
-    {
-        (byte[][] recoveredCells, _) = RecoverCellsAndKZGProofs(cellIds, cells, new byte[0][]);
-        return recoveredCells;
-    }
-
-    public (byte[][], byte[][]) RecoverCellsAndKZGProofs(ulong[] cellIds, byte[][] cells, byte[][] _proofs)
+    public (byte[][], byte[][]) RecoverCellsAndKZGProofs(ulong[] cellIds, byte[][] cells)
     {
 
         // Length checks

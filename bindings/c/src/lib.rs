@@ -11,7 +11,7 @@ mod verify_cells_and_kzg_proofs_batch;
 use verify_cells_and_kzg_proofs_batch::_verify_cell_kzg_proof_batch;
 
 mod recover_cells_and_kzg_proofs;
-use recover_cells_and_kzg_proofs::_recover_all_cells_and_proofs;
+use recover_cells_and_kzg_proofs::_recover_cells_and_proofs;
 
 pub(crate) mod pointer_utils;
 
@@ -344,7 +344,7 @@ pub extern "C" fn recover_cells_and_proofs(
     out_cells: *mut *mut u8,
     out_proofs: *mut *mut u8,
 ) -> CResult {
-    match _recover_all_cells_and_proofs(
+    match _recover_cells_and_proofs(
         ctx,
         cells_length,
         cells,

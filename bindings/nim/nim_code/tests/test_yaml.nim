@@ -15,11 +15,9 @@ const
   kzgPath* = currentSourcePath.rsplit(DirSep, 5)[0] & "/"
   testBase = kzgPath & "consensus_test_vectors/"
   BLOB_TO_KZG_COMMITMENT_TESTS = testBase & "blob_to_kzg_commitment"
-  COMPUTE_CELLS_TESTS = testBase & "compute_cells"
   COMPUTE_CELLS_AND_KZG_PROOFS_TESTS = testBase & "compute_cells_and_kzg_proofs"
   VERIFY_CELL_KZG_PROOF_TESTS = testBase & "verify_cell_kzg_proof"
   VERIFY_CELL_KZG_PROOF_BATCH_TESTS = testBase & "verify_cell_kzg_proof_batch"
-  RECOVER_ALL_CELLS_TESTS = testBase & "recover_all_cells"
   RECOVER_CELLS_AND_PROOFS_TESTS = testBase & "recover_cells_and_kzg_proofs"
 
 proc toTestName(x: string): string =
@@ -89,16 +87,6 @@ suite "yaml tests":
       res = ctx.blobToKZGCommitment(blob)
     checkBytes48(res)
 
-
-  runTests(COMPUTE_CELLS_TESTS):
-    let
-      blob = Blob.fromHex(n["input"]["blob"])
-      res = ctx.computeCells(blob)
-
-    checkRes(res):
-      let cells = Cell.fromHexList(n["output"])
-      check cells == res.get
-
   runTests(COMPUTE_CELLS_AND_KZG_PROOFS_TESTS):
     let
       blob = Blob.fromHex(n["input"]["blob"])
@@ -140,13 +128,3 @@ suite "yaml tests":
       proofs = KZGProof.fromHexList(n["input"]["proofs"])
       res = ctx.verifyCellKZGProofBatch(rowCommitments, rowIndices, columnIndices, cells, proofs)
     checkBool(res)
-
-  runTests(RECOVER_ALL_CELLS_TESTS):
-    let
-      cellIds = uint64.fromIntList(n["input"]["cell_ids"])
-      cells = Cell.fromHexList(n["input"]["cells"])
-      res = ctx.recoverCells(cellIds, cells)
-
-    checkRes(res):
-      let recovered = Cell.fromHexList(n["output"])
-      check recovered == res.get
