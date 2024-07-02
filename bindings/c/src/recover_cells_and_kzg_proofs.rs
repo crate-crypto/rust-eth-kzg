@@ -24,7 +24,7 @@ pub(crate) fn _recover_all_cells_and_proofs(
     // Computation
     //
     let (recovered_cells, recovered_proofs) = ctx
-        .recover_cells_and_proofs(cell_ids.to_vec(), cells, vec![])
+        .recover_cells_and_proofs(cell_ids.to_vec(), cells)
         .map_err(|err| CResult::with_error(&format!("{:?}", err)))?;
     let recovered_cells_unboxed = recovered_cells.map(|cell| cell.to_vec());
 
