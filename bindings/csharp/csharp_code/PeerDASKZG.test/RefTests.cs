@@ -31,11 +31,9 @@ public class ReferenceTests
     private PeerDASKZG _context;
     private const string TestDir = "../../../../../../../consensus_test_vectors";
     private readonly string _blobToKzgCommitmentTests = Path.Join(TestDir, "blob_to_kzg_commitment");
-    private readonly string _computeCellsTests = Path.Join(TestDir, "compute_cells");
     private readonly string _computeCellsAndKzgProofsTests = Path.Join(TestDir, "compute_cells_and_kzg_proofs");
     private readonly string _verifyCellKzgProofTests = Path.Join(TestDir, "verify_cell_kzg_proof");
     private readonly string _verifyCellKzgProofBatchTests = Path.Join(TestDir, "verify_cell_kzg_proof_batch");
-    private readonly string _recoverAllCellsTests = Path.Join(TestDir, "recover_all_cells");
     private readonly string _recoverCellsAndKzgProofsTests = Path.Join(TestDir, "recover_cells_and_kzg_proofs");
 
     private IDeserializer _deserializer;
@@ -94,53 +92,6 @@ public class ReferenceTests
                 Assert.That(test.Output, Is.Not.EqualTo(null));
                 byte[] expectedCommitment = GetBytes(test.Output);
                 Assert.That(commitment, Is.EqualTo(expectedCommitment));
-            }
-            catch
-            {
-                Assert.That(test.Output, Is.EqualTo(null));
-            }
-        }
-    }
-
-    #endregion
-
-    #region ComputeCells
-
-    private class ComputeCellsInput
-    {
-        public string Blob { get; set; } = null!;
-    }
-
-    private class ComputeCellsTest
-    {
-        public ComputeCellsInput Input { get; set; } = null!;
-        public List<string>? Output { get; set; } = null!;
-    }
-
-    [TestCase]
-    public void TestComputeCells()
-    {
-        Matcher matcher = new();
-        matcher.AddIncludePatterns(new[] { "*/*/data.yaml" });
-
-        IEnumerable<string> testFiles = matcher.GetResultsInFullPath(_computeCellsTests);
-        Assert.That(testFiles.Count(), Is.GreaterThan(0));
-
-        foreach (string testFile in testFiles)
-        {
-            string yaml = File.ReadAllText(testFile);
-            ComputeCellsTest test = _deserializer.Deserialize<ComputeCellsTest>(yaml);
-            Assert.That(test, Is.Not.EqualTo(null));
-
-            byte[][] cells;
-            byte[] blob = GetBytes(test.Input.Blob);
-
-            try
-            {
-                cells = _context.ComputeCells(blob);
-                Assert.That(test.Output, Is.Not.EqualTo(null));
-                byte[][] expectedCells = GetByteArrays(test.Output);
-                Assert.That(cells, Is.EqualTo(expectedCells));
             }
             catch
             {
@@ -294,54 +245,6 @@ public class ReferenceTests
             {
                 bool isCorrect = _context.VerifyCellKZGProofBatch(rowCommitments, rowIndices, columnIndices, cells, proofs);
                 Assert.That(isCorrect, Is.EqualTo(test.Output));
-            }
-            catch
-            {
-                Assert.That(test.Output, Is.EqualTo(null));
-            }
-        }
-    }
-
-    #endregion
-
-    #region RecoverAllCells
-
-    private class RecoverAllCellsInput
-    {
-        public List<ulong> CellIds { get; set; } = null!;
-        public List<string> Cells { get; set; } = null!;
-    }
-
-    private class RecoverAllCellsTest
-    {
-        public RecoverAllCellsInput Input { get; set; } = null!;
-        public List<string>? Output { get; set; } = null!;
-    }
-
-    [TestCase]
-    public void TestRecoverAllCells()
-    {
-        Matcher matcher = new();
-        matcher.AddIncludePatterns(new[] { "*/*/data.yaml" });
-
-        IEnumerable<string> testFiles = matcher.GetResultsInFullPath(_recoverAllCellsTests);
-        Assert.That(testFiles.Count(), Is.GreaterThan(0));
-
-        foreach (string testFile in testFiles)
-        {
-            string yaml = File.ReadAllText(testFile);
-            RecoverAllCellsTest test = _deserializerUnderscoreNaming.Deserialize<RecoverAllCellsTest>(yaml);
-            Assert.That(test, Is.Not.EqualTo(null));
-
-            ulong[] cellIds = test.Input.CellIds.ToArray();
-            byte[][] cells = GetByteArrays(test.Input.Cells);
-
-            try
-            {
-                byte[][] recoveredCells = _context.RecoverAllCells(cellIds, cells);
-                Assert.That(test.Output, Is.Not.EqualTo(null));
-                byte[][] expectedRecoveredCells = GetByteArrays(test.Output);
-                Assert.That(recoveredCells, Is.EqualTo(expectedRecoveredCells));
             }
             catch
             {
