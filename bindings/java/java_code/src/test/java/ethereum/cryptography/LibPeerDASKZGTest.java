@@ -89,6 +89,20 @@ public class LibPeerDASKZGTest {
     }
 
     @ParameterizedTest
+    @MethodSource("ethereum.cryptography.TestUtils#getRecoverCellsAndKzgProofsTests")
+    public void recoverCellsAndKzgProofsTests(final RecoverCellsAndKzgProofsTest test) {
+      try {
+        final CellsAndProofs recoveredCellsAndProofs =
+            context.recoverCellsAndProofs(
+                test.getInput().getCellIndices(), test.getInput().getCells());
+        assertArrayEquals(test.getOutput().getCells(), recoveredCellsAndProofs.getCells());
+        assertArrayEquals(test.getOutput().getProofs(), recoveredCellsAndProofs.getProofs());
+      } catch (IllegalArgumentException ex) {
+        assertNull(test.getOutput());
+      }
+    }
+
+    @ParameterizedTest
     @MethodSource("ethereum.cryptography.TestUtils#getVerifyCellKzgProofTests")
     public void verifyCellKzgProofTests(final VerifyCellKzgProofTest test) {
         try {

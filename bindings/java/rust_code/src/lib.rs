@@ -234,7 +234,7 @@ fn recover_cells_and_kzg_proofs<'local>(
 
     let (recovered_cells, recovered_proofs) =
         ctx.prover_ctx()
-            .recover_cells_and_proofs(cell_ids, cells, vec![])?;
+            .recover_cells_and_proofs(cell_ids, cells)?;
     let recovered_cells = recovered_cells.map(|cell| *cell);
     cells_and_proofs_to_jobject(env, &recovered_cells, &recovered_proofs).map_err(Error::from)
 }
