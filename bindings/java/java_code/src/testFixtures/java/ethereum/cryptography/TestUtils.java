@@ -35,6 +35,7 @@ public class TestUtils {
   private static final String VERIFY_CELL_KZG_PROOF_BATCH_TESTS =
       "../../../consensus_test_vectors/verify_cell_kzg_proof_batch/";
   private static final String RECOVER_ALL_CELLS_TESTS = "../../../consensus_test_vectors/recover_all_cells/";
+  private static final String RECOVER_CELLS_AND_KZG_PROOFS_TESTS = "../../../consensus_test_vectors/recover_cells_and_kzg_proofs/";
 
   public static byte[] flatten(final byte[]... bytes) {
     final int capacity = Arrays.stream(bytes).mapToInt(b -> b.length).sum();
@@ -146,6 +147,25 @@ public class TestUtils {
       for (String testFile : testFiles) {
         String jsonData = Files.readString(Path.of(testFile));
         RecoverAllCellsTest test = OBJECT_MAPPER.readValue(jsonData, RecoverAllCellsTest.class);
+        tests.add(test);
+      }
+    } catch (IOException ex) {
+      throw new UncheckedIOException(ex);
+    }
+
+    return tests.build().collect(Collectors.toList());
+  }
+
+  public static List<RecoverCellsAndKzgProofsTest> getRecoverCellsAndKzgProofsTests() {
+    final Stream.Builder<RecoverCellsAndKzgProofsTest> tests = Stream.builder();
+    List<String> testFiles = getTestFiles(RECOVER_CELLS_AND_KZG_PROOFS_TESTS);
+    assert !testFiles.isEmpty();
+
+    try {
+      for (String testFile : testFiles) {
+        String jsonData = Files.readString(Path.of(testFile));
+        RecoverCellsAndKzgProofsTest test =
+            OBJECT_MAPPER.readValue(jsonData, RecoverCellsAndKzgProofsTest.class);
         tests.add(test);
       }
     } catch (IOException ex) {

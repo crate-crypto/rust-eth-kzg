@@ -20,6 +20,7 @@ const
   VERIFY_CELL_KZG_PROOF_TESTS = testBase & "verify_cell_kzg_proof"
   VERIFY_CELL_KZG_PROOF_BATCH_TESTS = testBase & "verify_cell_kzg_proof_batch"
   RECOVER_ALL_CELLS_TESTS = testBase & "recover_all_cells"
+  RECOVER_CELLS_AND_PROOFS_TESTS = testBase & "recover_cells_and_kzg_proofs"
 
 proc toTestName(x: string): string =
   let parts = x.split(DirSep)
@@ -102,6 +103,18 @@ suite "yaml tests":
     let
       blob = Blob.fromHex(n["input"]["blob"])
       res = ctx.computeCellsAndProofs(blob)
+
+    checkRes(res):
+      let cells = Cell.fromHexList(n["output"][0])
+      check cells == res.get.cells
+      let proofs = KZGProof.fromHexList(n["output"][1])
+      check proofs == res.get.proofs
+    
+  runTests(RECOVER_CELLS_AND_PROOFS_TESTS):
+    let
+      cellIndices = uint64.fromIntList(n["input"]["cell_indices"])
+      cells = Cell.fromHexList(n["input"]["cells"])
+      res = ctx.recoverCellsAndProofs(cellIndices, cells)
 
     checkRes(res):
       let cells = Cell.fromHexList(n["output"][0])
