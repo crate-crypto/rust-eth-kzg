@@ -62,8 +62,6 @@ pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
         .into_iter()
         .map(|cell| cell.as_ref())
         .collect::<Vec<_>>();
-    let half_proofs = &proofs[..CELLS_PER_EXT_BLOB / 2];
-    let half_proofs = half_proofs.into_iter().collect::<Vec<_>>();
 
     for num_threads in THREAD_COUNTS {
         let prover_context = ProverContext::with_num_threads(&trusted_setup, num_threads);
@@ -77,7 +75,6 @@ pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
                     prover_context.recover_cells_and_proofs(
                         half_cell_ids.to_vec(),
                         half_cells.to_vec(),
-                        half_proofs.to_vec(),
                     )
                 })
             },
