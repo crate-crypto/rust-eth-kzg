@@ -2,7 +2,7 @@
 
 members = [
     "bindings/c",
-    "bindings/java/rust_code",
+    # "bindings/java/rust_code",
     "bindings/node",
     "bindings/nim/rust_code",
     "bindings/csharp/rust_code",
