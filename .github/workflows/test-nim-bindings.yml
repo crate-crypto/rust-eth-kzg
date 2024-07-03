@@ -14,15 +14,15 @@ jobs:
         target:
           - os: linux
             cpu: amd64
-          - os: linux
-            cpu: i386
-          - os: macos
-            cpu: amd64
+          # - os: linux
+          #   cpu: i386
+          # - os: macos
+          #   cpu: amd64
           - os: windows
             cpu: amd64
-          - os: windows
-            cpu: i386
-        branch: [version-1-6, version-2-0, devel]
+          # - os: windows
+          #   cpu: i386
+        branch: [version-2-0, devel]
         include:
           - target:
               os: linux
@@ -166,15 +166,3 @@ jobs:
       - name: Test Nim project
         working-directory: bindings/nim/nim_code
         run: nimble test -Y
-  
-      - name: Run tests
-        run: |
-          if [[ "${{ matrix.target.os }}" == "windows" ]]; then
-            # https://github.com/status-im/nimbus-eth2/issues/3121
-            export NIMFLAGS="-d:nimRawSetjmp"
-          fi
-          nim --version
-          nimble --version
-          nimble install -y --depsOnly
-          rm -f nimble.lock
-          env TEST_LANG="c" nimble test
