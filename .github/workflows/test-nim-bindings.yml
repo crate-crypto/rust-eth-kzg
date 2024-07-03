@@ -28,6 +28,21 @@ jobs:
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Install llvm-mingw dependency (Windows)
+        run: |
+          mkdir -p external
+          MINGW_BASE="https://github.com/mstorsjo/llvm-mingw/releases/download/20230905"
+          MINGW_URL="$MINGW_BASE/llvm-mingw-20230905-ucrt-x86_64.zip"
+          curl -L "$MINGW_URL" -o "external/mingw-amd64.zip"
+          7z x -y "external/mingw-amd64.zip" -oexternal/mingw-amd64/
+          mv external/mingw-amd64/**/* ./external/mingw-amd64
+
+      - name: Install DLLs dependencies (Windows)
+        run: |
+          mkdir -p external
+          curl -L "https://nim-lang.org/download/windeps.zip" -o external/windeps.zip
+          7z x -y external/windeps.zip -oexternal/dlls-amd64
+
       - name: Run compile script
         run: ./scripts/compile.sh nim
         shell: bash
