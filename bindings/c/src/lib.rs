@@ -154,7 +154,7 @@ pub unsafe extern "C" fn free_error_message(c_message: *mut std::os::raw::c_char
 ///   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
 #[no_mangle]
 #[must_use]
-pub extern "C" fn blob_to_kzg_commitment(
+pub extern "C" fn peerdas_blob_to_kzg_commitment(
     ctx: *const PeerDASContext,
 
     blob: *const u8,
@@ -184,7 +184,7 @@ pub extern "C" fn blob_to_kzg_commitment(
 ///   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
 #[no_mangle]
 #[must_use]
-pub extern "C" fn compute_cells_and_kzg_proofs(
+pub extern "C" fn peerdas_compute_cells_and_kzg_proofs(
     ctx: *const PeerDASContext,
 
     blob: *const u8,
@@ -214,7 +214,7 @@ pub extern "C" fn compute_cells_and_kzg_proofs(
 ///
 #[no_mangle]
 #[must_use]
-pub extern "C" fn verify_cell_kzg_proof(
+pub extern "C" fn peerdas_verify_cell_kzg_proof(
     ctx: *const PeerDASContext,
     cell: *const u8,
     commitment: *const u8,
@@ -269,7 +269,7 @@ fn verification_result_to_bool_cresult(
 ///   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
 #[no_mangle]
 #[must_use]
-pub extern "C" fn verify_cell_kzg_proof_batch(
+pub extern "C" fn peerdas_verify_cell_kzg_proof_batch(
     ctx: *const PeerDASContext,
 
     row_commitments_length: u64,
@@ -332,7 +332,7 @@ pub extern "C" fn verify_cell_kzg_proof_batch(
 ///   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
 #[no_mangle]
 #[must_use]
-pub extern "C" fn recover_cells_and_proofs(
+pub extern "C" fn peerdas_recover_cells_and_proofs(
     ctx: *const PeerDASContext,
 
     cells_length: u64,

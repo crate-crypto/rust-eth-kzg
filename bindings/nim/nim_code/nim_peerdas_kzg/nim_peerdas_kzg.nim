@@ -81,9 +81,11 @@ type
 # for the custom destructor so it must ensure that
 # this is not called twice.
 # https://forum.nim-lang.org/t/11229
-proc `=destroy`(x: typeof KZGCtx()[]) =
-  if x.ctx_ptr != nil:
-    peerdas_context_free(x.ctx_ptr)
+# TODO: Fix (this does not work in nimbus)
+# TOOD: `Error: signature for '=destroy' must be proc[T: object](x: var T)`
+# proc `=destroy`(x: typeof KZGCtx()[]) =
+#   if x.ctx_ptr != nil:
+#     peerdas_context_free(x.ctx_ptr)
 
 proc newKZGCtx*(): KZGCtx =
   var kzgCtx = KZGCtx()
@@ -94,7 +96,7 @@ proc newKZGCtx*(): KZGCtx =
 proc blobToKZGCommitment*(ctx: KZGCtx, blob : Blob): Result[KZGCommitment, string] {.gcsafe.} =
   var ret: KZGCommitment
   
-  let res = blob_to_kzg_commitment(
+  let res = peerdas_blob_to_kzg_commitment(
     ctx.ctx_ptr, 
     
     blob.bytes.getPtr, 
@@ -109,7 +111,7 @@ proc computeCellsAndProofs*(ctx: KZGCtx, blob : Blob): Result[CellsAndProofs, st
   let outCellsPtr = toPtrPtr(ret.cells) 
   let outProofsPtr = toPtrPtr(ret.proofs) 
   
-  let res = compute_cells_and_kzg_proofs(
+  let res = peerdas_compute_cells_and_kzg_proofs(
     ctx.ctx_ptr,
 
     blob.bytes.getPtr,
@@ -122,7 +124,7 @@ proc computeCellsAndProofs*(ctx: KZGCtx, blob : Blob): Result[CellsAndProofs, st
 proc verifyCellKZGProof*(ctx: KZGCtx, commitment: Bytes48, cellId: uint64, cell: Cell, proof: Bytes48): Result[bool, string] =
   var valid: bool
 
-  let res =  verify_cell_kzg_proof(
+  let res =  peerdas_verify_cell_kzg_proof(
     ctx.ctx_ptr, 
     
     cell.bytes.getPtr,
@@ -148,7 +150,7 @@ proc verifyCellKZGProofBatch*(ctx: KZGCtx, rowCommitments: openArray[Bytes48],
   let proofsPtr = toPtrPtr(proofs) 
   let commitmentsPtr = toPtrPtr(rowCommitments)
 
-  let res = verify_cell_kzg_proof_batch(
+  let res = peerdas_verify_cell_kzg_proof_batch(
     ctx.ctx_ptr, 
     
     uint64(len(rowCommitments)), 
@@ -180,7 +182,7 @@ proc recoverCellsAndProofs*(ctx: KZGCtx,
   let outProofsPtr = toPtrPtr(ret.proofs) 
   let inputCellsPtr = toPtrPtr(cells)
 
-  let res = recover_cells_and_proofs(
+  let res = peerdas_recover_cells_and_proofs(
     ctx.ctx_ptr,
 
     uint64(len(cells)),
