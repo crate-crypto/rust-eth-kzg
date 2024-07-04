@@ -2,7 +2,7 @@ use bls12_381::lincomb::{g1_lincomb, g1_lincomb_unsafe, g2_lincomb, g2_lincomb_u
 use bls12_381::{ff::Field, group::Group, G1Projective};
 use bls12_381::{G2Projective, Scalar};
 use crate_crypto_kzg_multi_open_fk20::fk20::FK20;
-use crate_crypto_kzg_multi_open_fk20::proof::compute_multi_opening_naive;
+use crate_crypto_kzg_multi_open_fk20::naive::compute_multi_opening;
 use crate_crypto_kzg_multi_open_fk20::{create_eth_commit_opening_keys, reverse_bit_order};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use polynomial::domain::Domain;
@@ -65,7 +65,7 @@ pub fn bench_compute_proof(c: &mut Criterion) {
         |b| {
             b.iter(|| {
                 for input_points in &chunked_bit_reversed_roots[0..num_proofs] {
-                    compute_multi_opening_naive(&ck, &polynomial_4096, input_points);
+                    compute_multi_opening(&ck, &polynomial_4096, input_points);
                 }
             })
         },

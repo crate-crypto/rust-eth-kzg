@@ -11,90 +11,22 @@ use crate::{commit_key::CommitKey, opening_key::OpeningKey, reverse_bit_order};
 /// since the points being opened are roots of unity.
 pub struct Proof {
     /// Commitment to the `witness` or quotient polynomial
-    quotient_commitment: G1Point,
+    pub quotient_commitment: G1Point,
     /// Evaluation of the polynomial at the input points.
     ///
     /// This implementation is only concerned with the case where the input points are roots of unity.
-    output_points: Vec<Scalar>,
+    pub output_points: Vec<Scalar>,
 }
 
-impl Proof {
-    // TODO(Note): It would be great if we could make this method take
-    // TODO: a commitment to the polynomial too. This would generalize
-    // TODO: quite nicely to multipoint reduction arguments that need to
-    // TODO: to use randomness since they need to hash the commitment.
-    pub fn compute(
-        commit_key: &CommitKey,
-        polynomial: &PolyCoeff,
-        input_points: &[Scalar],
-    ) -> Proof {
-        let (quotient_commitment, output_points) =
-            compute_multi_opening_naive(commit_key, polynomial, input_points);
 
-        Proof {
-            quotient_commitment,
-            output_points,
-        }
-    }
-    /// Verifies a multi-point opening proof.
-    /// TODO: We may want to return a Result here so that errors can
-    /// TODO be more descriptive.
-    pub fn verify(
-        &self,
-        opening_key: &OpeningKey,
-        commitment: G1Point,
-        input_points: &[Scalar],
-    ) -> bool {
-        verify_multi_opening_naive(
-            opening_key,
-            commitment,
-            self.quotient_commitment,
-            input_points,
-            &self.output_points,
-        )
-    }
-}
-
-/// Verifies a multi-opening proof using the general formula.
-///
-/// Note: This copies the exact implementation that the consensus-specs uses.
-pub fn verify_multi_opening_naive(
-    opening_key: &OpeningKey,
-    commitment: G1Point,
-    proof: G1Point,
-    input_points: &[Scalar],
-    output_points: &[Scalar],
-) -> bool {
-    // e([Commitment] - [I(x)], [1]) == e([Q(x)], [Z(X)])
-
-    let coordinates: Vec<_> = input_points
-        .iter()
-        .zip(output_points.iter())
-        .map(|(p, e)| (*p, *e))
-        .collect();
-    let r_x = lagrange_interpolate(&coordinates).unwrap();
-
-    let vanishing_poly = vanishing_poly(input_points);
-    let comm_vanishing_poly: G2Point = opening_key.commit_g2(&vanishing_poly).into();
-
-    let comm_r_x = opening_key.commit_g1(&r_x);
-    let comm_minus_r_x: G1Point = (G1Projective::from(commitment) - comm_r_x).into();
-    multi_pairings(&[
-        (&proof, &G2Prepared::from(comm_vanishing_poly)),
-        (&comm_minus_r_x, &G2Prepared::from(-opening_key.g2_gen())),
-    ])
-}
 
 
 fn compute_fiat_shamir_challenge(opening_key : &OpeningKey, row_commitments : &[G1Point], row_indices : &[u64], column_indices : &[u64], coset_evals : &[Vec<Scalar>], proofs : &[G1Point]) -> Scalar {
-    let domain_sep = "RCKZGCBATCH__V1_";
+    const DOMAIN_SEP : &str = "RCKZGCBATCH__V1_";
     let mut hash_input : Vec<u8> = Vec::new();
 
     // Domain separation
-    hash_input.extend(domain_sep.as_bytes());
-
-    const FIELD_ELEMENTS_PER_BLOB : u64 = 4096;
-    const FIELD_ELEMENTS_PER_CELL : u64 = 64;
+    hash_input.extend(DOMAIN_SEP.as_bytes());
     
     // polynomial bound
     hash_input.extend((opening_key.num_coefficients_in_polynomial as u64).to_be_bytes());
@@ -248,68 +180,4 @@ pub fn verify_multi_opening(opening_key : &OpeningKey, row_commitments : &[G1Poi
         (&random_sum_proofs.into(), &G2Prepared::from(s_pow_n)),
         (&rl.into(), &G2Prepared::from(-opening_key.g2_gen())),
     ])
-}
-
-/// Computes a multi-point opening proof using the general formula.
-///
-/// Note: This copies the implementation that the consensus-specs uses.
-/// With the exception that division is done using Ruffini's rule.
-pub fn compute_multi_opening_naive(
-    commit_key: &CommitKey,
-    polynomial: &PolyCoeff,
-    points: &[Scalar],
-) -> (G1Point, Vec<Scalar>) {
-    // Divides `self` by x-z using Ruffinis rule
-    fn divide_by_linear(poly: &[Scalar], z: Scalar) -> Vec<Scalar> {
-        let mut quotient: Vec<Scalar> = Vec::with_capacity(poly.len());
-        let mut k = Scalar::from(0u64);
-
-        for coeff in poly.iter().rev() {
-            let t = *coeff + k;
-            quotient.push(t);
-            k = z * t;
-        }
-
-        // Pop off the remainder term
-        quotient.pop();
-
-        // Reverse the results as monomial form stores coefficients starting with lowest degree
-        quotient.reverse();
-        quotient
-    }
-
-    let mut evaluations = Vec::new();
-    for point in points {
-        let evaluation = poly_eval(polynomial, point);
-        evaluations.push(evaluation);
-    }
-
-    // Compute f(x) - I(x) / \prod (x - z_i)
-    // Where I(x) is the polynomial such that r(z_i) = f(z_i) for all z_i
-    //
-    // We can speed up computation of I(x) by doing an IFFT, given the coset generator, since
-    // we know all of the points are of the form k * \omega where \omega is a root of unity
-
-    let coordinates: Vec<_> = points
-        .iter()
-        .zip(evaluations.iter())
-        .map(|(p, e)| (*p, *e))
-        .collect();
-
-    let r_x = lagrange_interpolate(&coordinates).unwrap();
-
-    // check that the r_x polynomial is correct, it should essentially be the polynomial that
-    // evaluates to f(z_i) = r(z_i)
-    for (point, evaluation) in points.iter().zip(evaluations.iter()) {
-        assert_eq!(poly_eval(&r_x, point), *evaluation);
-    }
-
-    let poly_shifted = poly_sub(polynomial.to_vec().clone(), r_x.clone());
-
-    let mut quotient_poly = poly_shifted.to_vec().clone();
-    for point in points.iter() {
-        quotient_poly = divide_by_linear(&quotient_poly, *point);
-    }
-
-    (commit_key.commit_g1(&quotient_poly).into(), evaluations)
 }
