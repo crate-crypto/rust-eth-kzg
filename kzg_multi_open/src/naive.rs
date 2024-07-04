@@ -49,8 +49,14 @@ pub fn verify_multi_opening(
 
 /// Computes a multi-point opening proof using the general formula.
 ///
-/// Note: This copies the implementation that the consensus-specs uses.
-/// With the exception that division is done using Ruffini's rule.
+/// This is done by committing to the following quotient polynomial:
+///     Q(X) = f(X) - I(X) / Z(X)
+/// Where:
+///     - I(X) is the degree `k-1` polynomial that agrees with f(x) at all `k` points
+///     - Z(X) is the degree `k` polynomial that evaluates to zero on all `k` points
+///
+/// We further note that since the degree of I(X) is less than the degree of Z(X),
+/// the computation can be simplified in monomial form to Q(X) = f(X) / Z(X)
 fn _compute_multi_opening_naive(
     commit_key: &CommitKey,
     polynomial: &PolyCoeff,
@@ -86,16 +92,16 @@ fn _compute_multi_opening_naive(
     //
     // We can speed up computation of I(x) by doing an IFFT, given the coset generator, since
     // we know all of the points are of the form k * \omega where \omega is a root of unity
+    // and `k` is what is known as a coset generator.
 
     let coordinates: Vec<_> = points
         .iter()
         .zip(evaluations.iter())
         .map(|(p, e)| (*p, *e))
         .collect();
+    let r_x = lagrange_interpolate(&coordinates).expect("lagrange interpolation failed");
 
-    let r_x = lagrange_interpolate(&coordinates).unwrap();
-
-    // check that the r_x polynomial is correct, it should essentially be the polynomial that
+    // Check that the r_x polynomial is correct, it should essentially be the polynomial that
     // evaluates to f(z_i) = r(z_i)
     for (point, evaluation) in points.iter().zip(evaluations.iter()) {
         assert_eq!(poly_eval(&r_x, point), *evaluation);
@@ -114,7 +120,17 @@ fn _compute_multi_opening_naive(
 
 /// Verifies a multi-opening proof using the general formula.
 ///
-/// Note: This copies the exact implementation that the consensus-specs uses.
+/// This is done by checking if the following equation holds:
+///     Q(x) Z(x) = f(X) - I(X)
+/// Where:
+///     f(X) is the polynomial that we want to verify opens at `k` points to `k` values
+///     Q(X) is the quotient polynomial computed by the prover
+///     I(X) is the degree k-1 polynomial that evaluates to `ys` at all `zs`` points
+///     Z(X) is the polynomial that evaluates to zero on all `k` points
+///
+/// The verifier receives the commitments to Q(X) and f(X), so they check the equation
+/// holds by using the following pairing equation:
+///     e([Q(X)]_1, [Z(X)]_2) == e([f(X)]_1 - [I(X)]_1, [1]_2)
 fn _verify_multi_opening_naive(
     opening_key: &OpeningKey,
     commitment: G1Point,
@@ -122,7 +138,6 @@ fn _verify_multi_opening_naive(
     input_points: &[Scalar],
     output_points: &[Scalar],
 ) -> bool {
-    // e([Commitment] - [I(x)], [1]) == e([Q(x)], [Z(X)])
 
     let coordinates: Vec<_> = input_points
         .iter()
