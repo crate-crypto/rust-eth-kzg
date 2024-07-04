@@ -74,36 +74,39 @@ mod tests {
         reverse_bit_order,
     };
 
-    // This test becomes redundant once we have consensus-specs fixed test vectors
-    // added. Although, it may be beneficial to test consensus-specs fixed test vectors against
-    // the naive implementation, if it doesn't add too much overhead.
+   // We can move this down into the fk20 module. 
+   // TODO: Currently we need a way to produce fake commit keys and opening keys
     #[test]
     fn test_consistency_between_naive_kzg_naive_fk20() {
         // Setup
+        //
         let (ck, _) = create_eth_commit_opening_keys();
-        const POLYNOMIAL_LEN: usize = 4096;
-        const NUMBER_OF_POINTS_TO_EVALUATE: usize = 2 * POLYNOMIAL_LEN;
-        let domain = Domain::new(POLYNOMIAL_LEN);
 
-        const NUMBER_OF_POINTS_PER_PROOF: usize = 64;
+        const POLYNOMIAL_LEN: usize = 4096;
+        let poly_domain = Domain::new(POLYNOMIAL_LEN);
+        
+        const NUMBER_OF_POINTS_TO_EVALUATE: usize = 2 * POLYNOMIAL_LEN;
         let domain_extended = Domain::new(NUMBER_OF_POINTS_TO_EVALUATE);
+        
+        const NUMBER_OF_POINTS_PER_PROOF: usize = 64;
         let mut domain_extended_roots = domain_extended.roots.clone();
         reverse_bit_order(&mut domain_extended_roots);
-
         let chunked_bit_reversed_roots: Vec<_> = domain_extended_roots
             .chunks(NUMBER_OF_POINTS_PER_PROOF)
             .collect();
 
         const NUMBER_OF_PROOFS: usize = NUMBER_OF_POINTS_TO_EVALUATE / NUMBER_OF_POINTS_PER_PROOF;
         let proof_domain = Domain::new(NUMBER_OF_PROOFS);
-        let mut polynomial: Vec<_> = (0..POLYNOMIAL_LEN)
+        let mut polynomial_lagrange: Vec<_> = (0..POLYNOMIAL_LEN)
             .map(|i| -Scalar::from(i as u64))
             .collect();
-        // Polynomial really corresponds to the evaluation form, so we need
-        // to apply bit reverse order and then IFFT to get the coefficients
-        reverse_bit_order(&mut polynomial);
-        let poly_coeff = domain.ifft_scalars(polynomial);
 
+        // Since polynomial_lagrange corresponds to the evaluation form, we need
+        // to apply bit reverse order and then IFFT to get the coefficient form
+        reverse_bit_order(&mut polynomial_lagrange);
+        let poly_coeff = poly_domain.ifft_scalars(polynomial_lagrange);
+
+        // Compute FK20 the naive way
         let (got_proofs, got_set_of_output_points) = naive::fk20_open_multi_point(
             &ck,
             &proof_domain,
@@ -114,8 +117,10 @@ mod tests {
 
         for k in 0..got_proofs.len() {
             let input_points = chunked_bit_reversed_roots[k];
+            // Compute the opening proofs the naive way (without fk20)
             let (expected_quotient_comm, expected_output_points) =
                 compute_multi_opening_naive(&ck, &poly_coeff, input_points);
+            
             assert_eq!(expected_output_points, got_set_of_output_points[k]);
             assert_eq!(expected_quotient_comm, got_proofs[k]);
         }
