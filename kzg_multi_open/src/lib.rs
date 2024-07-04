@@ -6,6 +6,10 @@ pub mod fk20;
 pub mod opening_key;
 pub mod proof;
 
+// TODO: put this under a feature flag, so we can use it within benchmarks
+// TODO: alternatively, put it under a test flag and never benchmark the naive implementations
+pub mod naive;
+
 // Re-export the polynomial crate
 pub use polynomial;
 
@@ -63,6 +67,68 @@ pub fn reverse_bit_order<T>(a: &mut [T]) {
         let rk = bitreverse(k, log_n);
         if k < rk {
             a.swap(rk as usize, k as usize);
+        }
+    }
+}
+
+
+
+#[cfg(test)]
+mod tests {
+    use bls12_381::Scalar;
+    use crate::polynomial::domain::Domain;
+    use crate::{
+        create_eth_commit_opening_keys, fk20::naive as fk20naive, naive as kzgnaive,
+        reverse_bit_order,
+    };
+
+   // We can move this down into the fk20 module. 
+   // TODO: Currently we need a way to produce fake commit keys and opening keys
+    #[test]
+    fn test_consistency_between_naive_kzg_naive_fk20() {
+        // Setup
+        //
+        let (ck, _) = create_eth_commit_opening_keys();
+
+        const POLYNOMIAL_LEN: usize = 4096;
+        let poly_domain = Domain::new(POLYNOMIAL_LEN);
+        
+        const NUMBER_OF_POINTS_TO_EVALUATE: usize = 2 * POLYNOMIAL_LEN;
+        let domain_extended = Domain::new(NUMBER_OF_POINTS_TO_EVALUATE);
+        
+        const NUMBER_OF_POINTS_PER_PROOF: usize = 64;
+        let mut domain_extended_roots = domain_extended.roots.clone();
+        reverse_bit_order(&mut domain_extended_roots);
+        let chunked_bit_reversed_roots: Vec<_> = domain_extended_roots
+            .chunks(NUMBER_OF_POINTS_PER_PROOF)
+            .collect();
+
+        const NUMBER_OF_PROOFS: usize = NUMBER_OF_POINTS_TO_EVALUATE / NUMBER_OF_POINTS_PER_PROOF;
+        let proof_domain = Domain::new(NUMBER_OF_PROOFS);
+        let polynomial_lagrange: Vec<_> = (0..POLYNOMIAL_LEN)
+            .map(|i| -Scalar::from(i as u64))
+            .collect();
+
+        let poly_coeff = poly_domain.ifft_scalars(polynomial_lagrange);
+
+        // Compute FK20 the naive way
+        let (got_proofs, got_set_of_output_points) = fk20naive::fk20_open_multi_point(
+            &ck,
+            &proof_domain,
+            &domain_extended,
+            &poly_coeff,
+            NUMBER_OF_POINTS_PER_PROOF,
+        );
+
+        for k in 0..got_proofs.len() {
+            let input_points = chunked_bit_reversed_roots[k];
+            // Compute the opening proofs the naive way (without fk20)
+            let expected_proof = kzgnaive::compute_multi_opening(&ck, &poly_coeff, input_points);
+            let expected_quotient_comm = expected_proof.quotient_commitment;
+            let expected_output_points = expected_proof.output_points;
+
+            assert_eq!(expected_output_points, got_set_of_output_points[k]);
+            assert_eq!(expected_quotient_comm, got_proofs[k]);
         }
     }
 }
