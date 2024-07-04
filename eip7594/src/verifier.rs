@@ -7,15 +7,14 @@ use crate::{
         BYTES_PER_CELL, CELLS_PER_EXT_BLOB, EXTENSION_FACTOR, FIELD_ELEMENTS_PER_BLOB,
         FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB,
     },
-    prover::evaluation_sets_to_cells,
     serialization::{deserialize_cell_to_scalars, deserialize_compressed_g1},
     trusted_setup::TrustedSetup,
-    Bytes48Ref, Cell, CellID, CellRef, ColumnIndex, RowIndex,
+    Bytes48Ref, CellID, CellRef, ColumnIndex, RowIndex,
 };
 use bls12_381::Scalar;
 use erasure_codes::{reed_solomon::Erasures, ReedSolomon};
 use kzg_multi_open::{
-    opening_key::OpeningKey, polynomial::domain::Domain, proof::verify_multi_opening_naive,
+    opening_key::OpeningKey, polynomial::domain::Domain, proof::verify_multi_opening,
     reverse_bit_order,
 };
 use rayon::ThreadPool;
@@ -83,37 +82,12 @@ impl VerifierContext {
         proof_bytes: Bytes48Ref,
     ) -> Result<(), VerifierError> {
         self.thread_pool.install(|| {
-            sanity_check_cells_and_cell_ids(&[cell_id], &[cell])?;
-
-            let commitment = deserialize_compressed_g1(commitment_bytes)
-                .map_err(VerifierError::Serialization)?;
-            let proof =
-                deserialize_compressed_g1(proof_bytes).map_err(VerifierError::Serialization)?;
-
-            let coset = &self.bit_reversed_cosets[cell_id as usize];
-
-            let output_points =
-                deserialize_cell_to_scalars(cell).map_err(VerifierError::Serialization)?;
-
-            let ok = verify_multi_opening_naive(
-                &self.opening_key,
-                commitment,
-                proof,
-                coset,
-                &output_points,
-            );
-            if ok {
-                Ok(())
-            } else {
-                Err(VerifierError::InvalidProof)
-            }
+            self.verify_cell_kzg_proof_batch(vec![commitment_bytes], vec![0], vec![cell_id], vec![cell], vec![proof_bytes])
         })
     }
 
-    /// This is the batch version of `verify_cell_kzg_proof`.
-    ///
     /// Given a collection of commitments, cells and proofs, this functions verifies that
-    /// the cells are consistent with the commitments using the KZG proofs.
+    /// the cells are consistent with the commitments using their respective KZG proofs.
     pub fn verify_cell_kzg_proof_batch(
         &self,
         // This is a deduplicated list of row commitments
@@ -126,8 +100,6 @@ impl VerifierContext {
         proofs_bytes: Vec<Bytes48Ref>,
     ) -> Result<(), VerifierError> {
         self.thread_pool.install(|| {
-            // TODO: This currently uses the naive method
-            //
             // All inputs must have the same length according to the specs.
             let same_length = (row_indices.len() == column_indices.len())
                 & (row_indices.len() == cells.len())
@@ -142,6 +114,11 @@ impl VerifierContext {
             }
 
             // If there are no inputs, we return early with no error
+            // Note: We do not check that the commitments are valid in this scenario.
+            // It is possible to "misuse" the API, by passing in invalid commitments
+            // with no cells, here.
+            // TODO: Perhaps return an error if the user passes in commitments with no
+            // TODO: row_indices/cells.
             if cells.is_empty() {
                 return Ok(());
             }
@@ -156,21 +133,51 @@ impl VerifierContext {
                 }
             }
 
-            let row_commitments_bytes: Vec<_> = row_indices
-                .iter()
-                .map(|row_index| row_commitments_bytes[*row_index as usize])
-                .collect();
-
-            for (k, row_commitment) in row_commitments_bytes.into_iter().enumerate() {
-                let column_index = column_indices[k];
-                let cell = cells[k];
-                let proof_bytes = proofs_bytes[k];
-
-                // Verify and return early if the proof is invalid
-                self.verify_cell_kzg_proof(row_commitment, column_index, cell, proof_bytes)?;
+            // Check that column indices are in the correct range
+            for column_index in &column_indices {
+                if *column_index >= CELLS_PER_EXT_BLOB as u64 {
+                    return Err(VerifierError::CellIDOutOfRange { cell_id: *column_index, max_number_of_cells: CELLS_PER_EXT_BLOB as u64 })
+                }
             }
 
-            Ok(())
+            let row_commitment_ = row_commitments_bytes
+                .iter()
+                .map(|row_commitment_bytes| deserialize_compressed_g1(*row_commitment_bytes))
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(VerifierError::Serialization)?;
+
+            let proofs_ = proofs_bytes
+                .iter()
+                .map(|proof_bytes| deserialize_compressed_g1(*proof_bytes))
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(VerifierError::Serialization)?;
+
+            let coset_evals = cells
+                .into_iter()
+                .map(|cells| deserialize_cell_to_scalars(cells))
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(VerifierError::Serialization)?;
+            
+            // TODO: This can be precomputed
+            let coset_shifts : Vec<_> = self.bit_reversed_cosets.iter().map(|coset| coset[0]).collect();
+            // TODO: For coset shift and bit_reversed_cosets, we should pass those in in normal order and bit reverse the column_indices 
+            // TODO so they are in normal order
+            let ok =  verify_multi_opening(
+                &self.opening_key,
+                &row_commitment_,
+                &row_indices,
+                &column_indices,
+                &coset_shifts,
+                &self.bit_reversed_cosets,
+                &coset_evals,
+                &proofs_
+            );
+
+            if ok {
+                Ok(())
+            } else {
+                Err(VerifierError::InvalidProof)
+            }
         })
     }
 
