@@ -1,6 +1,6 @@
-use crate::constants::{
-    BYTES_PER_BLOB, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1_POINT, FIELD_ELEMENTS_PER_CELL,
-};
+use crate::{constants::{
+    BYTES_PER_BLOB, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1_POINT, CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_CELL
+}, Cell};
 use bls12_381::{G1Point, Scalar};
 
 pub use crate::errors::SerializationError;
@@ -85,4 +85,22 @@ pub(crate) fn serialize_scalars_to_cell(scalars: &[Scalar]) -> Vec<u8> {
         bytes.extend_from_slice(&scalar.to_bytes_be());
     }
     bytes
+}
+
+/// Converts a a set of scalars (evaluations) to the `Cell` type
+pub(crate) fn evaluation_sets_to_cells<T: AsRef<[Scalar]>>(
+    evaluations: impl Iterator<Item = T>,
+) -> [Cell; CELLS_PER_EXT_BLOB] {
+    let cells: Vec<Cell> = evaluations
+        .map(|eval| serialize_scalars_to_cell(eval.as_ref()))
+        .map(|cell| {
+            cell.into_boxed_slice()
+                .try_into()
+                .expect("infallible: Vec<u8> should have length equal to BYTES_PER_CELL")
+        })
+        .collect();
+
+    cells
+        .try_into()
+        .unwrap_or_else(|_| panic!("expected {} number of cells", CELLS_PER_EXT_BLOB))
 }

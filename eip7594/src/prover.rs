@@ -74,7 +74,7 @@ impl ProverContext {
     ) -> Self {
         let commit_key = CommitKey::from(trusted_setup);
         // The number of points that we will make an opening proof for,
-        // ie a proof will attest to the value of the polynomial at these points.
+        // ie a proof will attest to the value of a polynomial at these points.
         let point_set_size = FIELD_ELEMENTS_PER_CELL;
 
         // The number of points that we will be making proofs for.
@@ -87,8 +87,7 @@ impl ProverContext {
 
         let poly_domain = Domain::new(FIELD_ELEMENTS_PER_BLOB);
 
-        // TODO: We can just deserialize these instead of doing this ifft
-        let commit_key_lagrange = commit_key.clone().into_lagrange(&poly_domain);
+        let commit_key_lagrange = CommitKeyLagrange::from(trusted_setup);
 
         ProverContext {
             fk20,
@@ -101,6 +100,9 @@ impl ProverContext {
     }
 
     /// Computes the KZG commitment to the polynomial represented by the blob.
+    /// 
+    /// Note: Currently this is the only place we use the lagrange form of the commitment key
+    /// We could get rid of it entirely, at the cost of an IDFT.
     pub fn blob_to_kzg_commitment(&self, blob: BlobRef) -> Result<KZGCommitment, ProverError> {
         self.thread_pool.install(|| {
             // Deserialize the blob into scalars. The blob is in lagrange form.
@@ -111,7 +113,7 @@ impl ProverContext {
             // ie not in bit-reversed order.
             reverse_bit_order(&mut scalars);
 
-            // Commit to the polynomial.
+            // Commit to the polynomial in lagrange form.
             let commitment: G1Point = self.commit_key_lagrange.commit_g1(&scalars).into();
 
             // Serialize the commitment.
@@ -140,17 +142,23 @@ impl ProverContext {
         })
     }
 
+    /// Computes the cells and KZG proofs, given a polynomial in monomial form.
     fn compute_cells_and_kzg_proofs_from_poly_coeff(
         &self,
         poly_coeff: Vec<Scalar>,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
-        // Compute the proofs and the evaluations for the polynomial.
+
+        // Check the degree of the polynomial. 
+        // All polynomials in monomial form at this level of the API, have the same degree.
+        assert_eq!(FIELD_ELEMENTS_PER_BLOB, poly_coeff.len());
+
+        // Compute the proofs and the evaluation sets for the polynomial.
         let (proofs, evaluation_sets) = self.fk20.compute_multi_opening_proofs(poly_coeff);
 
         // Serialize the evaluation sets into `Cell`s.
-        let cells = evaluation_sets_to_cells(evaluation_sets.into_iter());
+        let cells = serialization::evaluation_sets_to_cells(evaluation_sets.into_iter());
 
-        // Serialize the proofs into `KZGProof`s.
+        // Serialize the proofs into `KZGProof` objects.
         let proofs: Vec<_> = proofs.iter().map(serialize_g1_compressed).collect();
         let proofs: [KZGProof; CELLS_PER_EXT_BLOB] = proofs
             .try_into()
@@ -171,25 +179,8 @@ impl ProverContext {
                 .verifier_context
                 .recover_polynomial_coeff(cell_ids, cells)
                 .map_err(ProverError::RecoveryFailure)?;
+
             self.compute_cells_and_kzg_proofs_from_poly_coeff(poly_coeff)
         })
     }
-}
-
-/// Converts a a set of scalars (evaluations) to the `Cell` type
-pub(crate) fn evaluation_sets_to_cells<T: AsRef<[Scalar]>>(
-    evaluations: impl Iterator<Item = T>,
-) -> [Cell; CELLS_PER_EXT_BLOB] {
-    let cells: Vec<Cell> = evaluations
-        .map(|eval| serialization::serialize_scalars_to_cell(eval.as_ref()))
-        .map(|cell| {
-            cell.into_boxed_slice()
-                .try_into()
-                .expect("infallible: Vec<u8> should have length equal to BYTES_PER_CELL")
-        })
-        .collect();
-
-    cells
-        .try_into()
-        .unwrap_or_else(|_| panic!("expected {} number of cells", CELLS_PER_EXT_BLOB))
 }
