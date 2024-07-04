@@ -27,7 +27,13 @@ pub fn create_eth_commit_opening_keys() -> (CommitKey, OpeningKey) {
 
     let ck = CommitKey::new(g1s);
 
-    let vk = OpeningKey::new(g1s_65, g2s);
+    // A single proof will attest to the opening of 64 points.
+    let multi_opening_size = 64;
+
+    // We are making claims about a polynomial which has 4096 coefficients;
+    let num_coefficients_in_polynomial = 4096;
+
+    let vk = OpeningKey::new(g1s_65, g2s, multi_opening_size, num_coefficients_in_polynomial);
     (ck, vk)
 }
 

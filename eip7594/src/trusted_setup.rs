@@ -6,6 +6,8 @@ use kzg_multi_open::{
 use rust_embed::Embed;
 use serde::Deserialize;
 
+use crate::constants::{FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL};
+
 #[derive(Embed)]
 #[folder = "data"]
 struct EmbeddedData;
@@ -108,7 +110,7 @@ impl TrustedSetup {
         // to commit to the remainder/interpolation polynomial.
         let g1_points = deserialize_g1(&self.g1_monomial[..num_g2_points], subgroup_check);
 
-        OpeningKey::new(g1_points, g2_points)
+        OpeningKey::new(g1_points, g2_points, FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_BLOB)
     }
 
     /// Loads the official trusted setup file being used on mainnet from the embedded data folder.
