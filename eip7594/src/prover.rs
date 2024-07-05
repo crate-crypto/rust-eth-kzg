@@ -100,7 +100,7 @@ impl ProverContext {
     }
 
     /// Computes the KZG commitment to the polynomial represented by the blob.
-    /// 
+    ///
     /// Note: Currently this is the only place we use the lagrange form of the commitment key
     /// We could get rid of it entirely, at the cost of an IDFT.
     pub fn blob_to_kzg_commitment(&self, blob: BlobRef) -> Result<KZGCommitment, ProverError> {
@@ -147,14 +147,14 @@ impl ProverContext {
         &self,
         poly_coeff: Vec<Scalar>,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
-
-        // Check the degree of the polynomial. 
+        // Check the degree of the polynomial.
         // All polynomials in monomial form at this level of the API, have the same degree.
         assert_eq!(FIELD_ELEMENTS_PER_BLOB, poly_coeff.len());
 
         // Compute the proofs and the evaluation sets for the polynomial.
-        let (proofs, evaluation_sets) = self.fk20.compute_multi_opening_proofs(poly_coeff);
+        let proofs = self.fk20.compute_multi_opening_proofs(poly_coeff.clone());
 
+        let evaluation_sets = self.fk20.compute_evaluation_sets(poly_coeff);
         // Serialize the evaluation sets into `Cell`s.
         let cells = serialization::evaluation_sets_to_cells(evaluation_sets.into_iter());
 

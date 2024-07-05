@@ -37,7 +37,12 @@ pub fn create_eth_commit_opening_keys() -> (CommitKey, OpeningKey) {
     // We are making claims about a polynomial which has 4096 coefficients;
     let num_coefficients_in_polynomial = 4096;
 
-    let vk = OpeningKey::new(g1s_65, g2s, multi_opening_size, num_coefficients_in_polynomial);
+    let vk = OpeningKey::new(
+        g1s_65,
+        g2s,
+        multi_opening_size,
+        num_coefficients_in_polynomial,
+    );
     (ck, vk)
 }
 
@@ -71,19 +76,17 @@ pub fn reverse_bit_order<T>(a: &mut [T]) {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
-    use bls12_381::Scalar;
     use crate::polynomial::domain::Domain;
     use crate::{
         create_eth_commit_opening_keys, fk20::naive as fk20naive, naive as kzgnaive,
         reverse_bit_order,
     };
+    use bls12_381::Scalar;
 
-   // We can move this down into the fk20 module. 
-   // TODO: Currently we need a way to produce fake commit keys and opening keys
+    // We can move this down into the fk20 module.
+    // TODO: Currently we need a way to produce fake commit keys and opening keys
     #[test]
     fn test_consistency_between_naive_kzg_naive_fk20() {
         // Setup
@@ -92,18 +95,17 @@ mod tests {
 
         const POLYNOMIAL_LEN: usize = 4096;
         let poly_domain = Domain::new(POLYNOMIAL_LEN);
-        
+
         const NUMBER_OF_POINTS_TO_EVALUATE: usize = 2 * POLYNOMIAL_LEN;
         let domain_extended = Domain::new(NUMBER_OF_POINTS_TO_EVALUATE);
-        
-        const NUMBER_OF_POINTS_PER_PROOF: usize = 64;
+
+        const COSET_SIZE: usize = 64;
+
         let mut domain_extended_roots = domain_extended.roots.clone();
         reverse_bit_order(&mut domain_extended_roots);
-        let chunked_bit_reversed_roots: Vec<_> = domain_extended_roots
-            .chunks(NUMBER_OF_POINTS_PER_PROOF)
-            .collect();
+        let chunked_bit_reversed_roots: Vec<_> = domain_extended_roots.chunks(COSET_SIZE).collect();
 
-        const NUMBER_OF_PROOFS: usize = NUMBER_OF_POINTS_TO_EVALUATE / NUMBER_OF_POINTS_PER_PROOF;
+        const NUMBER_OF_PROOFS: usize = NUMBER_OF_POINTS_TO_EVALUATE / COSET_SIZE;
         let proof_domain = Domain::new(NUMBER_OF_PROOFS);
         let polynomial_lagrange: Vec<_> = (0..POLYNOMIAL_LEN)
             .map(|i| -Scalar::from(i as u64))
@@ -112,13 +114,10 @@ mod tests {
         let poly_coeff = poly_domain.ifft_scalars(polynomial_lagrange);
 
         // Compute FK20 the naive way
-        let (got_proofs, got_set_of_output_points) = fk20naive::fk20_open_multi_point(
-            &ck,
-            &proof_domain,
-            &domain_extended,
-            &poly_coeff,
-            NUMBER_OF_POINTS_PER_PROOF,
-        );
+        let got_proofs =
+            fk20naive::fk20_open_multi_point(&ck, &proof_domain, &poly_coeff, COSET_SIZE);
+        let got_set_of_output_points =
+            fk20naive::fk20_compute_evaluation_set(&poly_coeff, COSET_SIZE, domain_extended);
 
         for k in 0..got_proofs.len() {
             let input_points = chunked_bit_reversed_roots[k];

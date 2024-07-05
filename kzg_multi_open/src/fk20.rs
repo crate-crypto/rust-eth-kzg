@@ -98,10 +98,7 @@ impl FK20 {
         self.number_of_points_to_open / self.point_set_size
     }
 
-    pub fn compute_multi_opening_proofs(
-        &self,
-        polynomial: PolyCoeff,
-    ) -> (Vec<G1Point>, Vec<Vec<Scalar>>) {
+    pub fn compute_multi_opening_proofs(&self, polynomial: PolyCoeff) -> Vec<G1Point> {
         // Compute proofs for the polynomial
         let h_poly_commitments =
             self.compute_h_poly_commitments(polynomial.clone(), self.point_set_size);
@@ -115,9 +112,7 @@ impl FK20 {
         // TODO: This does not seem to be using the batch affine trick
         bls12_381::G1Projective::batch_normalize(&proofs, &mut proofs_affine);
 
-        let set_of_output_points = self.compute_evaluation_sets(polynomial);
-
-        (proofs_affine, set_of_output_points)
+        proofs_affine
     }
 
     pub fn compute_evaluation_sets(&self, polynomial: PolyCoeff) -> Vec<Vec<Scalar>> {
@@ -225,11 +220,12 @@ mod tests {
         let proof_domain = Domain::new(2 * poly_len / l);
         let ext_domain = Domain::new(2 * poly_len);
 
-        let (expected_proofs, expected_evaluations) =
-            naive::fk20_open_multi_point(&commit_key, &proof_domain, &ext_domain, &poly, l);
+        let expected_proofs = naive::fk20_open_multi_point(&commit_key, &proof_domain, &poly, l);
+        let expected_evaluations = naive::fk20_compute_evaluation_set(&poly, l, ext_domain);
 
         let fk20 = FK20::new(&commit_key, l, 2 * poly_len);
-        let (got_proofs, got_evaluations) = fk20.compute_multi_opening_proofs(poly);
+        let got_proofs = fk20.compute_multi_opening_proofs(poly.clone());
+        let got_evaluations = fk20.compute_evaluation_sets(poly);
 
         assert_eq!(got_proofs.len(), expected_proofs.len());
         assert_eq!(got_evaluations.len(), expected_evaluations.len());
