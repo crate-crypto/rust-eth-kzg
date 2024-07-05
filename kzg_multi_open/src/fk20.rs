@@ -16,18 +16,30 @@ use crate::fk20::batch_toeplitz::BatchToeplitzMatrixVecMul;
 use crate::fk20::toeplitz::ToeplitzMatrix;
 use crate::{commit_key::CommitKey, reverse_bit_order};
 
-/// FK20 initializes all of the components needed to compute a KZG multipoint
+/// FK20 initializes all of the components needed to compute a KZG multi point
 /// proof using the FK20 method.
+///
+/// The FK20 method gives an efficient algorithm for opening points, where
+/// the points are roots of unity. (It cannot be used to open arbitrary points)
+///
+/// See [Fk21](https://github.com/khovratovich/Kate/blob/master/Kate_amortized.pdf) for details
+/// on the scheme.
 #[derive(Debug)]
 pub struct FK20 {
     batch_toeplitz: BatchToeplitzMatrixVecMul,
-    /// FK20 allows you to open multiple points at once. This is the number of points in
-    /// a particular set. In the FK20 paper, this is referred to as `l` (ELL).
+    /// FK20 allows you to create a proof of an opening for multiple points.
+    /// Each proof will attest to the opening of `l` points.
+    /// In the FK20 paper, this is also referred to as `l` (ELL).
+    ///
     /// TODO(Note): This has ramifications for the number of G2 points, but it is not checked
     /// TODO: in the constructor here.
     point_set_size: usize,
-    /// The number of points in total that we want to open a polynomial at.
+    /// The total number of points that we want to open a polynomial at.
+    ///
+    /// Note: A proof will attest to `point_set_size` of these points at a
+    /// time.
     number_of_points_to_open: usize,
+    /// Domain used in FK20 to create the opening proofs
     proof_domain: Domain,
     ext_domain: Domain,
 }
