@@ -82,7 +82,13 @@ impl VerifierContext {
         proof_bytes: Bytes48Ref,
     ) -> Result<(), VerifierError> {
         self.thread_pool.install(|| {
-            self.verify_cell_kzg_proof_batch(vec![commitment_bytes], vec![0], vec![cell_id], vec![cell], vec![proof_bytes])
+            self.verify_cell_kzg_proof_batch(
+                vec![commitment_bytes],
+                vec![0],
+                vec![cell_id],
+                vec![cell],
+                vec![proof_bytes],
+            )
         })
     }
 
@@ -136,7 +142,10 @@ impl VerifierContext {
             // Check that column indices are in the correct range
             for column_index in &column_indices {
                 if *column_index >= CELLS_PER_EXT_BLOB as u64 {
-                    return Err(VerifierError::CellIDOutOfRange { cell_id: *column_index, max_number_of_cells: CELLS_PER_EXT_BLOB as u64 })
+                    return Err(VerifierError::CellIDOutOfRange {
+                        cell_id: *column_index,
+                        max_number_of_cells: CELLS_PER_EXT_BLOB as u64,
+                    });
                 }
             }
 
@@ -157,20 +166,23 @@ impl VerifierContext {
                 .map(|cells| deserialize_cell_to_scalars(cells))
                 .collect::<Result<Vec<_>, _>>()
                 .map_err(VerifierError::Serialization)?;
-            
+
             // TODO: This can be precomputed
-            let coset_shifts : Vec<_> = self.bit_reversed_cosets.iter().map(|coset| coset[0]).collect();
-            // TODO: For coset shift and bit_reversed_cosets, we should pass those in in normal order and bit reverse the column_indices 
+            let coset_shifts: Vec<_> = self
+                .bit_reversed_cosets
+                .iter()
+                .map(|coset| coset[0])
+                .collect();
+            // TODO: For coset shift and bit_reversed_cosets, we should pass those in in normal order and bit reverse the column_indices
             // TODO so they are in normal order
-            let ok =  verify_multi_opening(
+            let ok = verify_multi_opening(
                 &self.opening_key,
                 &row_commitment_,
                 &row_indices,
                 &column_indices,
                 &coset_shifts,
-                &self.bit_reversed_cosets,
                 &coset_evals,
-                &proofs_
+                &proofs_,
             );
 
             if ok {

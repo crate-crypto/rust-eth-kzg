@@ -92,7 +92,6 @@ pub fn verify_multi_opening(
     commitment_indices: &[u64],
     cell_indices: &[u64],
     coset_shifts: &[Scalar],
-    cosets: &[Vec<Scalar>],
     coset_evals: &[Vec<Scalar>],
     proofs: &[G1Point],
 ) -> bool {
