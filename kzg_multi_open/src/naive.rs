@@ -25,6 +25,14 @@ pub struct Proof {
 
 /// Naively computes an opening proof that attests to the evaluation of
 /// `polynomial` at `input_points`.
+//
+// Note: This method returns both the proof and the output points.
+// This does not follow the convention of the other methods which
+// produce proofs.
+//
+// This is done intentionally since that method
+// has additional checks that require the evaluations and computing
+// the output points, the naive way is quite expensive.
 pub fn compute_multi_opening(
     commit_key: &CommitKey,
     polynomial: &PolyCoeff,
