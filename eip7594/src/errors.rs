@@ -11,6 +11,18 @@ pub enum ProverError {
     RecoveryFailure(VerifierError),
 }
 
+impl From<SerializationError> for ProverError {
+    fn from(value: SerializationError) -> Self {
+        ProverError::Serialization(value)
+    }
+}
+
+impl From<VerifierError> for ProverError {
+    fn from(value: VerifierError) -> Self {
+        ProverError::RecoveryFailure(value)
+    }
+}
+
 /// Errors that can occur while calling a method in the Verifier API
 #[derive(Debug)]
 pub enum VerifierError {
@@ -58,6 +70,12 @@ pub enum VerifierError {
 impl From<DecodeError> for VerifierError {
     fn from(value: DecodeError) -> Self {
         VerifierError::ReedSolomon(value)
+    }
+}
+
+impl From<SerializationError> for VerifierError {
+    fn from(value: SerializationError) -> Self {
+        VerifierError::Serialization(value)
     }
 }
 

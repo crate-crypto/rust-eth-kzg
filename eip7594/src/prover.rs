@@ -100,8 +100,7 @@ impl ProverContext {
     pub fn blob_to_kzg_commitment(&self, blob: BlobRef) -> Result<KZGCommitment, ProverError> {
         self.thread_pool.install(|| {
             // Deserialize the blob into scalars.
-            let scalars = serialization::deserialize_blob_to_scalars(blob)
-                .map_err(ProverError::Serialization)?;
+            let scalars = serialization::deserialize_blob_to_scalars(blob)?;
 
             // Compute commitment using FK20
             let commitment = FK20::commit_to_data(&self.commit_key_lagrange, scalars);
@@ -118,8 +117,7 @@ impl ProverContext {
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
         self.thread_pool.install(|| {
             // Deserialize the blob into scalars.
-            let scalars = serialization::deserialize_blob_to_scalars(blob)
-                .map_err(ProverError::Serialization)?;
+            let scalars = serialization::deserialize_blob_to_scalars(blob)?;
 
             let (proofs, cells) = self.fk20.compute_multi_opening_proofs_on_data(scalars);
 
@@ -141,15 +139,15 @@ impl ProverContext {
             // is irrelevant.
             let poly_coeff = self
                 .verifier_context
-                .recover_polynomial_coeff(cell_ids, cells)
-                .map_err(ProverError::RecoveryFailure)?;
+                .recover_polynomial_coeff(cell_ids, cells)?;
 
             // Check the degree of the polynomial.
             assert_eq!(FIELD_ELEMENTS_PER_BLOB, poly_coeff.len());
 
             // Compute the proofs and the evaluation sets for the polynomial.
-            let (proofs, evaluation_sets) =
-                self.fk20.compute_multi_opening_proofs_poly_coeff(poly_coeff.clone());
+            let (proofs, evaluation_sets) = self
+                .fk20
+                .compute_multi_opening_proofs_poly_coeff(poly_coeff.clone());
 
             Ok(serialization::serialize_cells_and_proofs(
                 evaluation_sets,

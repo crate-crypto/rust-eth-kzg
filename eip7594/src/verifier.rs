@@ -144,20 +144,17 @@ impl VerifierContext {
             let row_commitment_ = row_commitments_bytes
                 .iter()
                 .map(|row_commitment_bytes| deserialize_compressed_g1(*row_commitment_bytes))
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(VerifierError::Serialization)?;
+                .collect::<Result<Vec<_>, _>>()?;
 
             let proofs_ = proofs_bytes
                 .iter()
                 .map(|proof_bytes| deserialize_compressed_g1(*proof_bytes))
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(VerifierError::Serialization)?;
+                .collect::<Result<Vec<_>, _>>()?;
 
             let coset_evals = cells
                 .into_iter()
                 .map(|cells| deserialize_cell_to_scalars(cells))
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(VerifierError::Serialization)?;
+                .collect::<Result<Vec<_>, _>>()?;
 
             let ok = verify_multi_opening(
                 &self.opening_key,
@@ -207,12 +204,11 @@ impl VerifierContext {
         }
 
         // Deserialize Cells into evaluations
-        let coset_evaluations: Result<Vec<_>, _> = cells
+        let coset_evaluations = cells
             .into_iter()
             .map(AsRef::as_ref)
             .map(deserialize_cell_to_scalars)
-            .collect();
-        let coset_evaluations = coset_evaluations.map_err(VerifierError::Serialization)?;
+            .collect::<Result<Vec<_>, _>>()?;
 
         let cell_ids = cell_ids.into_iter().map(|id| id as usize).collect();
 
