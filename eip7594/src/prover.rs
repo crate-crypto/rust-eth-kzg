@@ -99,21 +99,14 @@ impl ProverContext {
     }
 
     /// Computes the KZG commitment to the polynomial represented by the blob.
-    ///
-    /// Note: Currently this is the only place we use the lagrange form of the commitment key
-    /// We could get rid of it entirely, at the cost of an IDFT.
     pub fn blob_to_kzg_commitment(&self, blob: BlobRef) -> Result<KZGCommitment, ProverError> {
         self.thread_pool.install(|| {
-            // Deserialize the blob into scalars. The blob is in lagrange form.
-            let mut scalars = serialization::deserialize_blob_to_scalars(blob)
+            // Deserialize the blob into scalars.
+            let scalars = serialization::deserialize_blob_to_scalars(blob)
                 .map_err(ProverError::Serialization)?;
 
-            // Reverse the order of the scalars, so that they are in normal order.
-            // ie not in bit-reversed order.
-            reverse_bit_order(&mut scalars);
-
-            // Commit to the polynomial in lagrange form.
-            let commitment: G1Point = self.commit_key_lagrange.commit_g1(&scalars).into();
+            // Compute commitment using FK20
+            let commitment = FK20::commit_to_data(&self.commit_key_lagrange, scalars);
 
             // Serialize the commitment.
             Ok(serialize_g1_compressed(&commitment))

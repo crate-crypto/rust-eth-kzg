@@ -11,7 +11,7 @@ use bls12_381::{
 };
 use polynomial::{domain::Domain, monomial::PolyCoeff};
 
-use crate::commit_key::CommitKey;
+use crate::commit_key::{CommitKey, CommitKeyLagrange};
 use crate::fk20::{batch_toeplitz::BatchToeplitzMatrixVecMul, toeplitz::ToeplitzMatrix};
 
 pub use cosets::reverse_bit_order;
@@ -91,6 +91,20 @@ impl FK20 {
             proof_domain,
             ext_domain,
         }
+    }
+
+    /// Commit to the data that we will be creating Fk20 proofs over.
+    //
+    // Note: Currently this is the only place we use the lagrange form of the commitment key.
+    // We could get rid of it entirely, at the cost of an IDFT.
+    pub fn commit_to_data(commit_key: &CommitKeyLagrange, mut data: Vec<Scalar>) -> G1Point {
+        // Reverse the order of the scalars, so that they are in bit-reversed order.
+        //
+        // FK20 will operate over the bit-reversed permutation of the data.
+        reverse_bit_order(&mut data);
+
+        // Commit to the bit reversed data in lagrange form using the lagrange version of the commit key
+        commit_key.commit_g1(&data).into()
     }
 
     /// The number of proofs that will be produced.
