@@ -8,8 +8,8 @@ use napi_derive::napi;
 
 use eip7594::{
   constants,
-  prover::ProverContext,
   verifier::{VerifierContext, VerifierError},
+  PeerDASContext,
 };
 
 #[napi]
@@ -33,7 +33,7 @@ pub struct CellsAndProofs {
 
 #[napi]
 pub struct ProverContextJs {
-  inner: Arc<ProverContext>,
+  inner: Arc<PeerDASContext>,
 }
 
 impl Default for ProverContextJs {
@@ -47,7 +47,7 @@ impl ProverContextJs {
   #[napi(constructor)]
   pub fn new() -> Self {
     ProverContextJs {
-      inner: Arc::new(ProverContext::default()),
+      inner: Arc::new(PeerDASContext::default()),
     }
   }
 

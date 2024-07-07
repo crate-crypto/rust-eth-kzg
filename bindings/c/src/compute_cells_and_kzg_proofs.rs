@@ -12,7 +12,7 @@ pub(crate) fn _compute_cells_and_kzg_proofs(
 
     // Pointer checks
     //
-    let ctx = deref_const(ctx).prover_ctx();
+    let ctx = deref_const(ctx).inner();
     let blob = create_array_ref::<BYTES_PER_BLOB, _>(blob);
 
     // Computation

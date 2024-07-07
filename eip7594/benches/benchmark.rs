@@ -2,8 +2,7 @@ use bls12_381::Scalar;
 use criterion::{criterion_group, criterion_main, Criterion};
 use eip7594::{
     constants::{BYTES_PER_BLOB, CELLS_PER_EXT_BLOB},
-    prover::ProverContext,
-    trusted_setup, Cell, KZGCommitment, KZGProof, VerifierContext,
+    trusted_setup, Cell, KZGCommitment, KZGProof, PeerDASContext, VerifierContext,
 };
 
 const POLYNOMIAL_LEN: usize = 4096;
@@ -23,7 +22,7 @@ fn dummy_commitment_cells_and_proofs() -> (
     KZGCommitment,
     ([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]),
 ) {
-    let ctx = ProverContext::default();
+    let ctx = PeerDASContext::default();
     let blob = dummy_blob();
 
     let commitment = ctx.blob_to_kzg_commitment(&blob).unwrap();
@@ -38,13 +37,13 @@ pub fn bench_compute_cells_and_kzg_proofs(c: &mut Criterion) {
     let blob = dummy_blob();
 
     for num_threads in THREAD_COUNTS {
-        let prover_context = ProverContext::with_num_threads(&trusted_setup, num_threads);
+        let ctx = PeerDASContext::with_threads(&trusted_setup, num_threads);
         c.bench_function(
             &format!(
                 "computing cells_and_kzg_proofs - NUM_THREADS: {}",
                 num_threads
             ),
-            |b| b.iter(|| prover_context.compute_cells_and_kzg_proofs(&blob)),
+            |b| b.iter(|| ctx.compute_cells_and_kzg_proofs(&blob)),
         );
     }
 }
@@ -64,7 +63,7 @@ pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
         .collect::<Vec<_>>();
 
     for num_threads in THREAD_COUNTS {
-        let prover_context = ProverContext::with_num_threads(&trusted_setup, num_threads);
+        let ctx = PeerDASContext::with_threads(&trusted_setup, num_threads);
         c.bench_function(
             &format!(
                 "worse-case recover_cells_and_compute_proofs - NUM_THREADS: {}",
@@ -72,8 +71,7 @@ pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
             ),
             |b| {
                 b.iter(|| {
-                    prover_context
-                        .recover_cells_and_proofs(half_cell_indices.to_vec(), half_cells.to_vec())
+                    ctx.recover_cells_and_proofs(half_cell_indices.to_vec(), half_cells.to_vec())
                 })
             },
         );

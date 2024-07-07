@@ -13,6 +13,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_peerDASContextNe
     _env: JNIEnv,
     _class: JClass,
 ) -> jlong {
+    // TODO: Switch to using the Rust PeerDASContext object
     c_peerdas_kzg::peerdas_context_new() as jlong
 }
 
@@ -22,6 +23,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_peerDASContextDe
     _class: JClass,
     ctx_ptr: jlong,
 ) {
+    // TODO: Switch to using the Rust PeerDASContext object
     c_peerdas_kzg::peerdas_context_free(ctx_ptr as *mut PeerDASContext);
 }
 
@@ -49,7 +51,7 @@ fn compute_cells_and_kzg_proofs<'local>(
     let blob = env.convert_byte_array(blob)?;
     let blob = slice_to_array_ref(&blob, "blob")?;
 
-    let (cells, proofs) = ctx.prover_ctx().compute_cells_and_kzg_proofs(blob)?;
+    let (cells, proofs) = ctx.inner().compute_cells_and_kzg_proofs(blob)?;
     let cells = cells.map(|cell| *cell);
     cells_and_proofs_to_jobject(env, &cells, &proofs).map_err(Error::from)
 }
@@ -78,7 +80,7 @@ fn blob_to_kzg_commitment<'local>(
     let blob = env.convert_byte_array(blob)?;
     let blob = slice_to_array_ref(&blob, "blob")?;
 
-    let commitment = ctx.prover_ctx().blob_to_kzg_commitment(blob)?;
+    let commitment = ctx.inner().blob_to_kzg_commitment(blob)?;
     env.byte_array_from_slice(&commitment).map_err(Error::from)
 }
 
@@ -233,7 +235,7 @@ fn recover_cells_and_kzg_proofs<'local>(
         .collect::<Result<_, _>>()?;
 
     let (recovered_cells, recovered_proofs) =
-        ctx.prover_ctx().recover_cells_and_proofs(cell_ids, cells)?;
+        ctx.inner().recover_cells_and_proofs(cell_ids, cells)?;
     let recovered_cells = recovered_cells.map(|cell| *cell);
     cells_and_proofs_to_jobject(env, &recovered_cells, &recovered_proofs).map_err(Error::from)
 }
