@@ -19,9 +19,8 @@ pub type CellRef<'a> = &'a [u8; BYTES_PER_CELL];
 
 pub type KZGProof = [u8; BYTES_PER_COMMITMENT];
 pub type KZGCommitment = [u8; BYTES_PER_COMMITMENT];
-pub type CellID = u64;
+pub type CellIndex = u64;
 pub type RowIndex = u64;
-pub type ColumnIndex = u64;
 
 mod errors;
 

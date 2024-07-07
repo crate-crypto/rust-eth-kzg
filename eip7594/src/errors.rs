@@ -1,6 +1,6 @@
 use erasure_codes::errors::DecodeError;
 
-use crate::CellID;
+use crate::CellIndex;
 
 /// Errors that can occur while calling a method in the Prover API
 #[derive(Debug)]
@@ -41,12 +41,12 @@ pub enum VerifierError {
         max_cells_needed: usize,
     },
     CellDoesNotContainEnoughBytes {
-        cell_id: CellID,
+        cell_id: CellIndex,
         num_bytes: usize,
         expected_num_bytes: usize,
     },
     CellIDOutOfRange {
-        cell_id: CellID,
+        cell_id: CellIndex,
         max_number_of_cells: u64,
     },
     InvalidRowID {
@@ -56,7 +56,7 @@ pub enum VerifierError {
     InvalidProof,
     BatchVerificationInputsMustHaveSameLength {
         row_indices_len: usize,
-        column_indices_len: usize,
+        cell_indices_len: usize,
         cells_len: usize,
         proofs_len: usize,
     },

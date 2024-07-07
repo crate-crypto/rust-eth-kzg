@@ -9,7 +9,7 @@ use crate::{
     },
     serialization::{deserialize_cell_to_scalars, deserialize_compressed_g1},
     trusted_setup::TrustedSetup,
-    Bytes48Ref, CellID, CellRef, ColumnIndex, RowIndex,
+    Bytes48Ref, CellIndex, CellRef, RowIndex,
 };
 use bls12_381::Scalar;
 use erasure_codes::{reed_solomon::Erasures, ReedSolomon};
@@ -69,7 +69,7 @@ impl VerifierContext {
     pub fn verify_cell_kzg_proof(
         &self,
         commitment_bytes: Bytes48Ref,
-        cell_id: CellID,
+        cell_id: CellIndex,
         cell: CellRef,
         proof_bytes: Bytes48Ref,
     ) -> Result<(), VerifierError> {
@@ -93,25 +93,26 @@ impl VerifierContext {
         // This is what row_indices is used for.
         row_commitments_bytes: Vec<Bytes48Ref>,
         row_indices: Vec<RowIndex>,
-        column_indices: Vec<ColumnIndex>,
+        cell_indices: Vec<CellIndex>,
         cells: Vec<CellRef>,
         proofs_bytes: Vec<Bytes48Ref>,
     ) -> Result<(), VerifierError> {
         self.thread_pool.install(|| {
             // All inputs must have the same length according to the specs.
-            let same_length = (row_indices.len() == column_indices.len())
+            let same_length = (row_indices.len() == cell_indices.len())
                 & (row_indices.len() == cells.len())
                 & (row_indices.len() == proofs_bytes.len());
             if !same_length {
                 return Err(VerifierError::BatchVerificationInputsMustHaveSameLength {
                     row_indices_len: row_indices.len(),
-                    column_indices_len: column_indices.len(),
+                    cell_indices_len: cell_indices.len(),
                     cells_len: cells.len(),
                     proofs_len: proofs_bytes.len(),
                 });
             }
 
             // If there are no inputs, we return early with no error
+            //
             // Note: We do not check that the commitments are valid in this scenario.
             // It is possible to "misuse" the API, by passing in invalid commitments
             // with no cells, here.
@@ -130,7 +131,7 @@ impl VerifierContext {
             }
 
             // Check that column indices are in the correct range
-            for column_index in &column_indices {
+            for column_index in &cell_indices {
                 if *column_index >= CELLS_PER_EXT_BLOB as u64 {
                     return Err(VerifierError::CellIDOutOfRange {
                         cell_id: *column_index,
@@ -160,7 +161,7 @@ impl VerifierContext {
                 &self.opening_key,
                 &row_commitment_,
                 &row_indices,
-                &column_indices,
+                &cell_indices,
                 &self.coset_shifts,
                 &coset_evals,
                 &proofs_,
@@ -176,10 +177,38 @@ impl VerifierContext {
 
     pub(crate) fn recover_polynomial_coeff(
         &self,
-        cell_ids: Vec<CellID>,
+        cell_ids: Vec<CellIndex>,
         cells: Vec<CellRef>,
     ) -> Result<Vec<Scalar>, VerifierError> {
-        sanity_check_cells_and_cell_ids(&cell_ids, &cells)?;
+        // Check that the number of cell IDs is equal to the number of cells
+        if cell_ids.len() != cells.len() {
+            return Err(VerifierError::CellIDsNotEqualToNumberOfCells {
+                num_cell_ids: cell_ids.len(),
+                num_cells: cells.len(),
+            });
+        }
+
+        // Check that the Cell IDs are within the expected range
+        for cell_id in cell_ids.iter() {
+            if *cell_id >= (CELLS_PER_EXT_BLOB as u64) {
+                return Err(VerifierError::CellIDOutOfRange {
+                    cell_id: *cell_id,
+                    max_number_of_cells: CELLS_PER_EXT_BLOB as u64,
+                });
+            }
+        }
+
+        // Check that each cell has the right amount of bytes
+        for (i, cell) in cells.iter().enumerate() {
+            if cell.len() != BYTES_PER_CELL {
+                // TODO: This check should always be true
+                return Err(VerifierError::CellDoesNotContainEnoughBytes {
+                    cell_id: cell_ids[i],
+                    num_bytes: cell.len(),
+                    expected_num_bytes: BYTES_PER_CELL,
+                });
+            }
+        }
 
         // Check that we have no duplicate cell IDs
         if !is_cell_ids_unique(&cell_ids) {
@@ -249,46 +278,10 @@ fn find_missing_cell_indices(present_cell_indices: &[usize]) -> Vec<usize> {
 }
 
 /// Check if all of the cell ids are unique
-fn is_cell_ids_unique(cell_ids: &[CellID]) -> bool {
+fn is_cell_ids_unique(cell_ids: &[CellIndex]) -> bool {
     let len_cell_ids_non_dedup = cell_ids.len();
     let cell_ids_dedup: HashSet<_> = cell_ids.iter().collect();
     cell_ids_dedup.len() == len_cell_ids_non_dedup
-}
-
-fn sanity_check_cells_and_cell_ids(
-    cell_ids: &[CellID],
-    cells: &[CellRef],
-) -> Result<(), VerifierError> {
-    // Check that the number of cell IDs is equal to the number of cells
-    if cell_ids.len() != cells.len() {
-        return Err(VerifierError::CellIDsNotEqualToNumberOfCells {
-            num_cell_ids: cell_ids.len(),
-            num_cells: cells.len(),
-        });
-    }
-
-    // Check that the Cell IDs are within the expected range
-    for cell_id in cell_ids.iter() {
-        if *cell_id >= (CELLS_PER_EXT_BLOB as u64) {
-            return Err(VerifierError::CellIDOutOfRange {
-                cell_id: *cell_id,
-                max_number_of_cells: CELLS_PER_EXT_BLOB as u64,
-            });
-        }
-    }
-
-    // Check that each cell has the right amount of bytes
-    for (i, cell) in cells.iter().enumerate() {
-        if cell.len() != BYTES_PER_CELL {
-            // TODO: This check should always be true
-            return Err(VerifierError::CellDoesNotContainEnoughBytes {
-                cell_id: cell_ids[i],
-                num_bytes: cell.len(),
-                expected_num_bytes: BYTES_PER_CELL,
-            });
-        }
-    }
-    Ok(())
 }
 
 #[cfg(test)]

@@ -16,7 +16,7 @@ use crate::{
     serialization::{self, serialize_g1_compressed},
     trusted_setup::TrustedSetup,
     verifier::VerifierContext,
-    BlobRef, Cell, CellID, CellRef, KZGCommitment, KZGProof,
+    BlobRef, Cell, CellIndex, CellRef, KZGCommitment, KZGProof,
 };
 
 /// Context object that is used to call functions in the prover API.
@@ -128,7 +128,7 @@ impl ProverContext {
     /// Recovers the cells and computes the KZG proofs, given a subset of cells.
     pub fn recover_cells_and_proofs(
         &self,
-        cell_ids: Vec<CellID>,
+        cell_ids: Vec<CellIndex>,
         cells: Vec<CellRef>,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
         self.thread_pool.install(|| {
