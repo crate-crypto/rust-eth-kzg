@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 pub use crate::errors::ProverError;
 
-use bls12_381::{G1Point, Scalar};
+use bls12_381::Scalar;
 use kzg_multi_open::{
     commit_key::{CommitKey, CommitKeyLagrange},
     fk20::{reverse_bit_order, FK20},
@@ -166,7 +166,7 @@ impl ProverContext {
         cells: Vec<CellRef>,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
         self.thread_pool.install(|| {
-            // Use erasure decoding to recover the polynomial corresponding to the blob in monomial form
+            // Use erasure decoding to recover the polynomial corresponding to the bit-reversed blob in monomial form
             let poly_coeff = self
                 .verifier_context
                 .recover_polynomial_coeff(cell_ids, cells)
