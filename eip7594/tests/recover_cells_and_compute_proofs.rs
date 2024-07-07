@@ -30,7 +30,7 @@ mod serde_ {
     }
 
     pub struct TestVector {
-        pub input_cell_ids: Vec<u64>,
+        pub input_cell_indices: Vec<u64>,
         pub input_cells: Vec<UnsafeBytes>,
         pub proofs_and_cells: Option<KZGProofsAndCells>,
     }
@@ -44,7 +44,7 @@ mod serde_ {
 
     impl From<YamlTestVector> for TestVector {
         fn from(yaml_test_vector: YamlTestVector) -> Self {
-            let cell_ids = yaml_test_vector.input.cell_indices;
+            let cell_indices = yaml_test_vector.input.cell_indices;
 
             let input_cells: Vec<_> = yaml_test_vector
                 .input
@@ -65,7 +65,7 @@ mod serde_ {
             };
 
             TestVector {
-                input_cell_ids: cell_ids,
+                input_cell_indices: cell_indices,
                 input_cells: input_cells,
                 proofs_and_cells: output.map(|out| KZGProofsAndCells {
                     proofs: out.0,
@@ -102,7 +102,7 @@ fn test_recover_cells_and_proofs() {
             }
         };
 
-        match ctx.recover_cells_and_proofs(test.input_cell_ids, input_cells) {
+        match ctx.recover_cells_and_proofs(test.input_cell_indices, input_cells) {
             Ok((cells, proofs)) => {
                 let expected_proofs_and_cells = test.proofs_and_cells.unwrap();
 

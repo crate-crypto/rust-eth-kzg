@@ -128,7 +128,7 @@ impl ProverContext {
     /// Recovers the cells and computes the KZG proofs, given a subset of cells.
     pub fn recover_cells_and_proofs(
         &self,
-        cell_ids: Vec<CellIndex>,
+        cell_indices: Vec<CellIndex>,
         cells: Vec<CellRef>,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
         self.thread_pool.install(|| {
@@ -139,7 +139,7 @@ impl ProverContext {
             // is irrelevant.
             let poly_coeff = self
                 .verifier_context
-                .recover_polynomial_coeff(cell_ids, cells)?;
+                .recover_polynomial_coeff(cell_indices, cells)?;
 
             // Check the degree of the polynomial.
             assert_eq!(FIELD_ELEMENTS_PER_BLOB, poly_coeff.len());

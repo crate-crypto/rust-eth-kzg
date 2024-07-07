@@ -53,10 +53,10 @@ pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
     let trusted_setup = trusted_setup::TrustedSetup::default();
 
     let (_, (cells, proofs)) = dummy_commitment_cells_and_proofs();
-    let cell_ids: Vec<u64> = (0..cells.len()).map(|x| x as u64).collect();
+    let cell_indices: Vec<u64> = (0..cells.len()).map(|x| x as u64).collect();
 
     // Worse case is when half of the cells are missing
-    let half_cell_ids = &cell_ids[..CELLS_PER_EXT_BLOB / 2];
+    let half_cell_indices = &cell_indices[..CELLS_PER_EXT_BLOB / 2];
     let half_cells = &cells[..CELLS_PER_EXT_BLOB / 2];
     let half_cells = half_cells
         .into_iter()
@@ -73,7 +73,7 @@ pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
             |b| {
                 b.iter(|| {
                     prover_context
-                        .recover_cells_and_proofs(half_cell_ids.to_vec(), half_cells.to_vec())
+                        .recover_cells_and_proofs(half_cell_indices.to_vec(), half_cells.to_vec())
                 })
             },
         );

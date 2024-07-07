@@ -27,30 +27,30 @@ impl From<VerifierError> for ProverError {
 #[derive(Debug)]
 pub enum VerifierError {
     Serialization(SerializationError),
-    CellIDsNotEqualToNumberOfCells {
-        num_cell_ids: usize,
+    NumCellIndicesNotEqualToNumCells {
+        num_cell_indices: usize,
         num_cells: usize,
     },
-    CellIDsNotUnique,
+    CellIndicesNotUnique,
     NotEnoughCellsToReconstruct {
         num_cells_received: usize,
         min_cells_needed: usize,
     },
-    TooManyCellsHaveBeenGiven {
+    TooManyCellsReceived {
         num_cells_received: usize,
         max_cells_needed: usize,
     },
     CellDoesNotContainEnoughBytes {
-        cell_id: CellIndex,
+        cell_index: CellIndex,
         num_bytes: usize,
         expected_num_bytes: usize,
     },
-    CellIDOutOfRange {
-        cell_id: CellIndex,
+    CellIndexOutOfRange {
+        cell_index: CellIndex,
         max_number_of_cells: u64,
     },
-    InvalidRowID {
-        row_id: u64,
+    InvalidRowIndex {
+        row_index: u64,
         max_number_of_rows: u64,
     },
     InvalidProof,
