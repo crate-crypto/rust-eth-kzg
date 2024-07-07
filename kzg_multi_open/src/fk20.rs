@@ -206,8 +206,6 @@ impl FK20 {
         let mut proofs = self.proof_domain.fft_g1(h_poly_commitments);
         // apply reverse bit order permutation, since fft_g1 was applied using
         // the regular order.
-        // TODO: move this to eip7594 module
-        // TODO: same for evaluation sets -- we could then move evaluation sets to reed solomon crate
         reverse_bit_order(&mut proofs);
         let mut proofs_affine = vec![G1Point::identity(); proofs.len()];
         // TODO: This does not seem to be using the batch affine trick
