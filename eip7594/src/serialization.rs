@@ -1,6 +1,10 @@
-use crate::{constants::{
-    BYTES_PER_BLOB, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1_POINT, CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_CELL
-}, Cell};
+use crate::{
+    constants::{
+        BYTES_PER_BLOB, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1_POINT, CELLS_PER_EXT_BLOB,
+        FIELD_ELEMENTS_PER_CELL,
+    },
+    Cell, KZGProof,
+};
 use bls12_381::{G1Point, Scalar};
 
 pub use crate::errors::SerializationError;
@@ -103,4 +107,20 @@ pub(crate) fn evaluation_sets_to_cells<T: AsRef<[Scalar]>>(
     cells
         .try_into()
         .unwrap_or_else(|_| panic!("expected {} number of cells", CELLS_PER_EXT_BLOB))
+}
+
+pub(crate) fn serialize_cells_and_proofs(
+    evaluation_sets: Vec<Vec<Scalar>>,
+    proofs: Vec<G1Point>,
+) -> ([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]) {
+    // Serialize the evaluation sets into `Cell`s.
+    let cells = evaluation_sets_to_cells(evaluation_sets.into_iter());
+
+    // Serialize the proofs into `KZGProof` objects.
+    let proofs: Vec<_> = proofs.iter().map(serialize_g1_compressed).collect();
+    let proofs: [KZGProof; CELLS_PER_EXT_BLOB] = proofs
+        .try_into()
+        .unwrap_or_else(|_| panic!("expected {} number of proofs", CELLS_PER_EXT_BLOB));
+
+    (cells, proofs)
 }

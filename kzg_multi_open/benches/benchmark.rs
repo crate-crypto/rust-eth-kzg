@@ -73,6 +73,7 @@ pub fn bench_compute_proof(c: &mut Criterion) {
 
     let fk20 = FK20::new(
         &ck,
+        POLYNOMIAL_LEN,
         NUMBER_OF_POINTS_PER_PROOF,
         NUMBER_OF_POINTS_TO_EVALUATE,
     );

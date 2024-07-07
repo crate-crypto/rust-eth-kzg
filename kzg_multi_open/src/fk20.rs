@@ -41,17 +41,21 @@ pub struct FK20 {
     /// Domain used in FK20 to create the opening proofs
     proof_domain: Domain,
     ext_domain: Domain,
+    /// Domain used for converting polynomial to monomial form.
+    poly_domain: Domain,
 }
 
 impl FK20 {
     pub fn new(
         commit_key: &CommitKey,
+        polynomial_bound: usize,
         point_set_size: usize,
         number_of_points_to_open: usize,
     ) -> FK20 {
         assert!(point_set_size.is_power_of_two());
         assert!(number_of_points_to_open.is_power_of_two());
         assert!(number_of_points_to_open > point_set_size);
+        assert!(polynomial_bound.is_power_of_two());
 
         // 1. Compute the SRS vectors that we will multiply the toeplitz matrices by.
         //
@@ -84,12 +88,15 @@ impl FK20 {
         // The size of the extension domain corresponds to the number of points that we want to open
         let ext_domain = Domain::new(number_of_points_to_open);
 
+        let poly_domain = Domain::new(polynomial_bound);
+
         FK20 {
             batch_toeplitz,
             point_set_size,
             number_of_points_to_open,
             proof_domain,
             ext_domain,
+            poly_domain,
         }
     }
 
@@ -127,6 +134,18 @@ impl FK20 {
         bls12_381::G1Projective::batch_normalize(&proofs, &mut proofs_affine);
 
         proofs_affine
+    }
+
+    pub fn compute_multi_opening_proofs_on_data(
+        &self,
+        mut data: Vec<Scalar>,
+    ) -> (Vec<G1Point>, Vec<Vec<Scalar>>) {
+        reverse_bit_order(&mut data);
+        let poly_coeff = self.poly_domain.ifft_scalars(data);
+        // TODO: possibly revert change and have `compute_multi_opening_proofs` return the evaluations too
+        let proofs = self.compute_multi_opening_proofs(poly_coeff.clone());
+        let evaluation_sets = self.compute_evaluation_sets(poly_coeff);
+        (proofs, evaluation_sets)
     }
 
     pub fn compute_evaluation_sets(&self, polynomial: PolyCoeff) -> Vec<Vec<Scalar>> {
@@ -218,7 +237,7 @@ mod tests {
             .collect::<Vec<_>>();
         // Add the identity element to h_polys to pad it to a power of two
         expected_comm_h_polys.push(bls12_381::G1Projective::identity());
-        let fk20 = FK20::new(&commit_key, l, 2 * 4096);
+        let fk20 = FK20::new(&commit_key, 4096, l, 2 * 4096);
         let got_comm_h_polys = fk20.compute_h_poly_commitments(poly, l);
         assert_eq!(expected_comm_h_polys.len(), got_comm_h_polys.len());
         assert_eq!(expected_comm_h_polys, got_comm_h_polys);
@@ -237,7 +256,7 @@ mod tests {
         let expected_proofs = naive::fk20_open_multi_point(&commit_key, &proof_domain, &poly, l);
         let expected_evaluations = naive::fk20_compute_evaluation_set(&poly, l, ext_domain);
 
-        let fk20 = FK20::new(&commit_key, l, 2 * poly_len);
+        let fk20 = FK20::new(&commit_key, poly_len, l, 2 * poly_len);
         let got_proofs = fk20.compute_multi_opening_proofs(poly.clone());
         let got_evaluations = fk20.compute_evaluation_sets(poly);
 
