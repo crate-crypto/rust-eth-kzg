@@ -197,9 +197,9 @@ pub fn verify_multi_opening(
 
     // TODO: These .into are a bit expensive since they are converting from projective to affine
 
-    let s_pow_n: G2Point = s_pow_n.into();
+    let s_pow_n: G2Point = s_pow_n.into(); // TODO: This can be precomputed and stored in the opening-key
     multi_pairings(&[
         (&random_sum_proofs.into(), &G2Prepared::from(s_pow_n)),
-        (&rl.into(), &G2Prepared::from(-opening_key.g2_gen())),
+        (&rl.into(), &G2Prepared::from(-opening_key.g2_gen())), // TODO: We can precompute and store `G2Prepared::from(-opening_key.g2_gen())` in the openingkey too
     ])
 }

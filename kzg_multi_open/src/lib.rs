@@ -4,7 +4,6 @@ use opening_key::OpeningKey;
 pub mod commit_key;
 pub mod fk20;
 pub mod opening_key;
-pub mod proof;
 
 // TODO: put this under a feature flag, so we can use it within benchmarks
 // TODO: alternatively, put it under a test flag and never benchmark the naive implementations
@@ -49,6 +48,7 @@ pub fn create_eth_commit_opening_keys() -> (CommitKey, OpeningKey) {
 // Taken and modified from: https://github.com/filecoin-project/ec-gpu/blob/bdde768d0613ae546524c5612e2ad576a646e036/ec-gpu-gen/src/fft_cpu.rs#L10C8-L10C18
 // TODO: This could also be moved higher up in the stack. We only require cosets and to know their coset generator. How
 // TODO that is generated, can be abstracted away.
+// TODO: Put this into cosets module or polynomial
 pub fn reverse_bit_order<T>(a: &mut [T]) {
     fn bitreverse(mut n: u32, l: u32) -> u32 {
         let mut r = 0;
