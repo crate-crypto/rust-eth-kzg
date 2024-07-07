@@ -142,13 +142,13 @@ impl VerifierContext {
             // Deserialization
             //
             let row_commitment_ = row_commitments_bytes
-                .iter()
-                .map(|row_commitment_bytes| deserialize_compressed_g1(*row_commitment_bytes))
+                .into_iter()
+                .map(|row_commitment_bytes| deserialize_compressed_g1(row_commitment_bytes))
                 .collect::<Result<Vec<_>, _>>()?;
 
             let proofs_ = proofs_bytes
-                .iter()
-                .map(|proof_bytes| deserialize_compressed_g1(*proof_bytes))
+                .into_iter()
+                .map(|proof_bytes| deserialize_compressed_g1(proof_bytes))
                 .collect::<Result<Vec<_>, _>>()?;
 
             let coset_evals = cells

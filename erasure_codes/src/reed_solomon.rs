@@ -81,8 +81,8 @@ impl ReedSolomon {
         // have the same number of coefficients as the original data.
         //
         // All of the coefficients after the original data should be zero.
-        for i in self.poly_len..coefficients.len() {
-            if coefficients[i] != Scalar::from(0u64) {
+        for (i, coefficient) in coefficients.iter().enumerate().skip(self.poly_len) {
+            if *coefficient != Scalar::ZERO {
                 return Err(DecodeError::PolynomialHasInvalidLength {
                     num_coefficients: i,
                     expected_num_coefficients: self.poly_len,

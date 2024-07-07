@@ -166,8 +166,8 @@ impl FK20 {
         }
 
         // Iterate over each coset and place the evaluations in the correct locations
-        for (coset_index, coset_evals) in coset_indices.iter().zip(coset_evaluations) {
-            let start = (*coset_index as usize) * coset_len;
+        for (&coset_index, coset_evals) in coset_indices.iter().zip(coset_evaluations) {
+            let start = coset_index * coset_len;
             let end = start + coset_len;
 
             elements[start..end].copy_from_slice(&coset_evals);

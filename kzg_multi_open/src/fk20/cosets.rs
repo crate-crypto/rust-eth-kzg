@@ -54,9 +54,9 @@ pub fn coset_gens(num_points: usize, num_cosets: usize, bit_reversed: bool) -> V
         let generator = if bit_reversed {
             // TODO: We could just bit-reverse the `coset_gens` method instead
             let rev_i = reverse_bits(i, log2(num_cosets as u32)) as u64;
-            coset_gen.pow_vartime(&[rev_i])
+            coset_gen.pow_vartime([rev_i])
         } else {
-            coset_gen.pow_vartime(&[i as u64])
+            coset_gen.pow_vartime([i as u64])
         };
         coset_gens.push(generator);
     }

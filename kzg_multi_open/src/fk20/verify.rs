@@ -47,10 +47,7 @@ fn compute_fiat_shamir_challenge(
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
     hasher.update(hash_input);
-    let mut result: [u8; 32] = hasher
-        .finalize()
-        .try_into()
-        .expect("sha256 should return a 32 byte array");
+    let mut result: [u8; 32] = hasher.finalize().into();
 
     // For randomization, we only need a 128 bit scalar, since this is used for batch verification.
     // See for example, the randomizers section in : https://cr.yp.to/badbatch/badbatch-20120919.pdf
@@ -67,9 +64,7 @@ fn compute_fiat_shamir_challenge(
     // TODO: Could remove this, since it is statistically improbable
     // TODO: we add 1 to the scalar, so that it can never be 0
     // TODO: This is also taken from: https://cr.yp.to/badbatch/badbatch-20120919.pdf
-    let scalar = scalar + Scalar::ONE;
-
-    scalar
+    scalar + Scalar::ONE
 }
 
 fn compute_powers(value: Scalar, num_elements: usize) -> Vec<Scalar> {
@@ -186,7 +181,7 @@ pub fn verify_multi_opening(
     for k in 0..num_cells {
         // This is expensive and does not need to be done all the time.
         let h_k = coset_shifts[cell_indices[k] as usize];
-        let h_k_pow = h_k.pow_vartime(&[n as u64]);
+        let h_k_pow = h_k.pow_vartime([n as u64]);
         let wrp = r_powers[k] * h_k_pow;
         weighted_r_powers.push(wrp);
     }
