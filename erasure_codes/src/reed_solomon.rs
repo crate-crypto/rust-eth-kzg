@@ -8,6 +8,7 @@ use polynomial::{domain::Domain, monomial::vanishing_poly};
 #[derive(Debug, Clone)]
 pub enum Erasures {
     Indices(Vec<usize>),
+    // TODO: instead of Cells, use Cosets
     Cells { cell_size: usize, cells: Vec<usize> },
 }
 
