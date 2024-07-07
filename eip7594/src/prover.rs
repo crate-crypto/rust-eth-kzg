@@ -15,8 +15,7 @@ use crate::{
     },
     serialization::{self, serialize_g1_compressed},
     trusted_setup::TrustedSetup,
-    verifier::VerifierContext,
-    BlobRef, Cell, CellIndex, CellRef, KZGCommitment, KZGProof,
+    BlobRef, Cell, CellIndex, CellRef, KZGCommitment, KZGProof, PeerDASContext,
 };
 
 /// Context object that is used to call functions in the prover API.
@@ -35,11 +34,6 @@ pub struct ProverContext {
     /// This is only used to save us from doing an IDFT when committing
     /// to the polynomial.
     commit_key_lagrange: CommitKeyLagrange,
-
-    // Verifier context
-    //
-    // The prover needs the verifier context to recover the cells and then compute the proofs
-    verifier_context: VerifierContext,
 }
 
 impl Default for ProverContext {
@@ -91,19 +85,20 @@ impl ProverContext {
             fk20,
             commit_key,
             commit_key_lagrange,
-            verifier_context: VerifierContext::from_thread_pool(trusted_setup, thread_pool.clone()),
             thread_pool,
         }
     }
+}
 
+impl PeerDASContext {
     /// Computes the KZG commitment to the polynomial represented by the blob.
     pub fn blob_to_kzg_commitment(&self, blob: BlobRef) -> Result<KZGCommitment, ProverError> {
-        self.thread_pool.install(|| {
+        self.prover_ctx.thread_pool.install(|| {
             // Deserialize the blob into scalars.
             let scalars = serialization::deserialize_blob_to_scalars(blob)?;
 
             // Compute commitment using FK20
-            let commitment = FK20::commit_to_data(&self.commit_key_lagrange, scalars);
+            let commitment = FK20::commit_to_data(&self.prover_ctx.commit_key_lagrange, scalars);
 
             // Serialize the commitment.
             Ok(serialize_g1_compressed(&commitment))
@@ -115,14 +110,17 @@ impl ProverContext {
         &self,
         blob: BlobRef,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
-        self.thread_pool.install(|| {
+        self.prover_ctx.thread_pool.install(|| {
             // Deserialization
             //
             let scalars = serialization::deserialize_blob_to_scalars(blob)?;
 
             // Computation
             //
-            let (proofs, cells) = self.fk20.compute_multi_opening_proofs_on_data(scalars);
+            let (proofs, cells) = self
+                .prover_ctx
+                .fk20
+                .compute_multi_opening_proofs_on_data(scalars);
 
             Ok(serialization::serialize_cells_and_proofs(cells, proofs))
         })
@@ -140,16 +138,17 @@ impl ProverContext {
         cell_indices: Vec<CellIndex>,
         cells: Vec<CellRef>,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
-        self.thread_pool.install(|| {
+        self.prover_ctx.thread_pool.install(|| {
             // Recover polynomial
             //
             let poly_coeff = self
-                .verifier_context
+                .verifier_ctx
                 .recover_polynomial_coeff(cell_indices, cells)?;
 
             // Compute proofs and evaluation sets
             //
             let (proofs, evaluation_sets) = self
+                .prover_ctx
                 .fk20
                 .compute_multi_opening_proofs_poly_coeff(poly_coeff.clone());
 
