@@ -1,19 +1,17 @@
-// [FK20] is a paper by Dmitry Khovratovich and Dankrad Feist that describes a method for
-// efficiently opening a set of points when the opening points are roots of unity.
-
 mod batch_toeplitz;
-mod toeplitz;
-
+mod cosets;
 pub mod naive;
 
-use bls12_381::group::prime::PrimeCurveAffine;
-use bls12_381::group::Curve;
-use bls12_381::group::Group;
-use bls12_381::{G1Point, G1Projective, Scalar};
+mod toeplitz;
+pub mod verify;
+
+use bls12_381::{
+    group::{prime::PrimeCurveAffine, Curve, Group},
+    {G1Point, G1Projective, Scalar},
+};
 use polynomial::{domain::Domain, monomial::PolyCoeff};
 
-use crate::fk20::batch_toeplitz::BatchToeplitzMatrixVecMul;
-use crate::fk20::toeplitz::ToeplitzMatrix;
+use crate::fk20::{batch_toeplitz::BatchToeplitzMatrixVecMul, toeplitz::ToeplitzMatrix};
 use crate::{commit_key::CommitKey, reverse_bit_order};
 
 /// FK20 initializes all of the components needed to compute a KZG multi point
@@ -52,6 +50,7 @@ impl FK20 {
     ) -> FK20 {
         assert!(point_set_size.is_power_of_two());
         assert!(number_of_points_to_open.is_power_of_two());
+        assert!(number_of_points_to_open > point_set_size);
 
         // 1. Compute the SRS vectors that we will multiply the toeplitz matrices by.
         //
