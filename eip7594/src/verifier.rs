@@ -214,24 +214,20 @@ impl VerifierContext {
             .collect();
         let coset_evaluations = coset_evaluations.map_err(VerifierError::Serialization)?;
 
-        let coset_ids_coset_evals: Vec<(usize, Vec<Scalar>)> = cell_ids
-            .into_iter()
-            .zip(coset_evaluations)
-            .map(|(index, evals)| (index as usize, evals))
-            .collect();
+        let cell_ids = cell_ids.into_iter().map(|id| id as usize).collect();
 
-        let evaluations = FK20::recover_evaluations_in_domain_order(
-            FIELD_ELEMENTS_PER_EXT_BLOB,
-            coset_ids_coset_evals,
-        );
+        let (cell_indices_normal_order, flattened_coset_evaluations_normal_order) =
+            FK20::recover_evaluations_in_domain_order(
+                FIELD_ELEMENTS_PER_EXT_BLOB,
+                cell_ids,
+                coset_evaluations,
+            )
+            .expect("could not recover evaluations in domain order");
 
-        let (new_cell_ids, coset_evaluations_flattened) = evaluations.unwrap();
-        let missing_cell_ids = find_missing_cell_indices(&new_cell_ids);
+        let missing_cell_ids = find_missing_cell_indices(&cell_indices_normal_order);
 
-        // We now have the evaluations in domain order and we know the indices/erasures that are missing
-        // in domain order.
         let recovered_polynomial_coeff = self.rs.recover_polynomial_coefficient(
-            coset_evaluations_flattened,
+            flattened_coset_evaluations_normal_order,
             Erasures::Cells {
                 cell_size: FIELD_ELEMENTS_PER_CELL,
                 cells: missing_cell_ids,

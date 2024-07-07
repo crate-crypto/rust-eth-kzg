@@ -122,24 +122,28 @@ impl FK20 {
     /// we evaluated them on the relevant extended domain. The coset indices in domain order
     /// will also be returned.
     //
-    // For evaluations that are missing, this method will fill these in with zeroes
+    // For evaluations that are missing, this method will fill these in with zeroes.
     //
-    // TODO: We could possibly use None and have the caller convert it to zeroes
+    // Note: It is the callers responsibility to ensure that there are no duplicate
+    // coset indices.
     pub fn recover_evaluations_in_domain_order(
         domain_size: usize,
-        coset_index_coset_evals: Vec<(usize, Vec<Scalar>)>,
+        coset_indices: Vec<usize>,
+        coset_evaluations: Vec<Vec<Scalar>>,
     ) -> Option<(Vec<usize>, Vec<Scalar>)> {
-        if coset_index_coset_evals.is_empty() {
+        assert!(coset_indices.len() == coset_evaluations.len());
+
+        if coset_indices.is_empty() {
             return None;
         }
 
         let mut elements = vec![Scalar::from(0u64); domain_size];
 
         // Check that each coset has the same size
-        let coset_len = coset_index_coset_evals[0].1.len();
-        let same_len = coset_index_coset_evals
+        let coset_len = coset_evaluations[0].len();
+        let same_len = coset_evaluations
             .iter()
-            .all(|(_, coset)| coset.len() == coset_len);
+            .all(|coset| coset.len() == coset_len);
         if !same_len {
             return None;
         }
@@ -154,19 +158,19 @@ impl FK20 {
         // => coset_index * coset_len < k
         // => coset_index < k / coset_len
         let index_bound = domain_size / coset_len;
-        let all_coset_indices_within_bound = coset_index_coset_evals
+        let all_coset_indices_within_bound = coset_indices
             .iter()
-            .all(|(coset_index, _)| *coset_index < index_bound);
+            .all(|coset_index| *coset_index < index_bound);
         if !all_coset_indices_within_bound {
             return None;
         }
 
         // Iterate over each coset and place the evaluations in the correct locations
-        for (coset_index, coset_evals) in &coset_index_coset_evals {
+        for (coset_index, coset_evals) in coset_indices.iter().zip(coset_evaluations) {
             let start = (*coset_index as usize) * coset_len;
             let end = start + coset_len;
 
-            elements[start..end].copy_from_slice(coset_evals);
+            elements[start..end].copy_from_slice(&coset_evals);
         }
 
         // Now bit reverse the result, so we get the evaluations as if we had just done
@@ -178,9 +182,8 @@ impl FK20 {
         // the existing indices.
 
         let cosets_per_full_domain = domain_size / coset_len;
-        let new_coset_indices: Vec<_> = coset_index_coset_evals
-            .iter()
-            .map(|(index, _)| *index as usize)
+        let new_coset_indices: Vec<_> = coset_indices
+            .into_iter()
             .map(|rbo_coset_index| {
                 reverse_bits(rbo_coset_index, log2(cosets_per_full_domain as u32))
             })
