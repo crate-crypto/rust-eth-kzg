@@ -242,7 +242,8 @@ impl VerifierContext {
             coset_ids_coset_evals,
         );
 
-        let (missing_cell_ids, coset_evaluations_flattened) = evaluations.unwrap();
+        let (new_cell_ids, coset_evaluations_flattened) = evaluations.unwrap();
+        let missing_cell_ids = find_missing_cell_indices(&new_cell_ids);
 
         // We now have the evaluations in domain order and we know the indices/erasures that are missing
         // in domain order.
@@ -270,6 +271,20 @@ impl VerifierContext {
 
         Ok(recovered_polynomial_coeff[0..FIELD_ELEMENTS_PER_BLOB].to_vec())
     }
+}
+
+fn find_missing_cell_indices(present_cell_indices: &[usize]) -> Vec<usize> {
+    let cell_indices: HashSet<_> = present_cell_indices.iter().cloned().collect();
+
+    let mut missing = Vec::new();
+
+    for i in 0..CELLS_PER_EXT_BLOB {
+        if !cell_indices.contains(&i) {
+            missing.push(i);
+        }
+    }
+
+    missing
 }
 
 /// Check if all of the cell ids are unique

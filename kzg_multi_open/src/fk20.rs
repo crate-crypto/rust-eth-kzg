@@ -116,21 +116,16 @@ impl FK20 {
     }
 
     /// Given a group of coset evaluations, this method will return/reorder the evaluations as if
-    /// we evaluated them on the relevant extended domain. The missing coset indices in domain order
+    /// we evaluated them on the relevant extended domain. The coset indices in domain order
     /// will also be returned.
     //
     // For evaluations that are missing, this method will fill these in with zeroes
-    //
-    // Note: The rationale for returning the coset indices in domain order, is somewhat of an abstraction leak
-    // We deem it acceptable as it means the caller does not need to worry about reverse_bit_order.
     //
     // TODO: We could possibly use None and have the caller convert it to zeroes
     pub fn recover_evaluations_in_domain_order(
         domain_size: usize,
         coset_index_coset_evals: Vec<(usize, Vec<Scalar>)>,
     ) -> Option<(Vec<usize>, Vec<Scalar>)> {
-        use std::collections::HashSet;
-
         if coset_index_coset_evals.is_empty() {
             return None;
         }
@@ -175,23 +170,20 @@ impl FK20 {
         // and FFT on them.
         reverse_bit_order(&mut elements);
 
-        // Find out what coset indices are missing and bit reverse their index
-        // so we get their index in domain order
-        let coset_indices_received: HashSet<_> = coset_index_coset_evals
-            .into_iter()
-            .map(|(coset_index, _)| coset_index)
-            .collect();
-        let mut missing_coset_indices = Vec::new();
+        // The order of the coset indices in the returned vector will be different.
+        // The new indices of the cosets can be figured out by reverse bit ordering
+        // the existing indices.
+
         let cosets_per_full_domain = domain_size / coset_len;
+        let new_coset_indices: Vec<_> = coset_index_coset_evals
+            .iter()
+            .map(|(index, _)| *index as usize)
+            .map(|rbo_coset_index| {
+                reverse_bits(rbo_coset_index, log2(cosets_per_full_domain as u32))
+            })
+            .collect();
 
-        for i in 0..cosets_per_full_domain {
-            if !coset_indices_received.contains(&(i)) {
-                let rev_i = reverse_bits(i, log2(cosets_per_full_domain as u32));
-                missing_coset_indices.push(rev_i as usize);
-            }
-        }
-
-        Some((missing_coset_indices, elements))
+        Some((new_coset_indices, elements))
     }
 
     /// The number of proofs that will be produced.
