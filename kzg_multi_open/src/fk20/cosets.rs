@@ -39,7 +39,7 @@ pub fn reverse_bit_order<T>(a: &mut [T]) {
 /// - num_cosets denotes how many cosets we want to generate, analogously how many proofs we want to produce.
 ///
 /// Setting bit_reversed to true will generate the cosets in bit-reversed order.
-pub(crate) fn coset_gens(num_points: usize, num_cosets: usize, bit_reversed: bool) -> Vec<Scalar> {
+pub fn coset_gens(num_points: usize, num_cosets: usize, bit_reversed: bool) -> Vec<Scalar> {
     use bls12_381::ff::Field;
 
     // Compute the generator for the group containing all of the points.

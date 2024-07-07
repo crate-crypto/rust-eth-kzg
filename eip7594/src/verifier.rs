@@ -14,9 +14,8 @@ use crate::{
 use bls12_381::Scalar;
 use erasure_codes::{reed_solomon::Erasures, ReedSolomon};
 use kzg_multi_open::{
-    fk20::{reverse_bit_order, verify::verify_multi_opening, FK20},
+    fk20::{self, verify::verify_multi_opening, FK20},
     opening_key::OpeningKey,
-    polynomial::domain::Domain,
 };
 use rayon::ThreadPool;
 
@@ -25,9 +24,8 @@ use rayon::ThreadPool;
 pub struct VerifierContext {
     thread_pool: Arc<ThreadPool>,
     opening_key: OpeningKey,
-    /// The cosets that we want to verify evaluations against.
-    bit_reversed_cosets: Vec<Vec<Scalar>>,
-
+    // TODO: This can be moved into FK20 verification procedure
+    coset_shifts: Vec<Scalar>,
     rs: ReedSolomon,
 }
 
@@ -57,20 +55,13 @@ impl VerifierContext {
         thread_pool: Arc<ThreadPool>,
     ) -> VerifierContext {
         let opening_key = OpeningKey::from(trusted_setup);
-        let domain_extended = Domain::new(FIELD_ELEMENTS_PER_EXT_BLOB);
-        let mut domain_extended_roots = domain_extended.roots.clone();
-        reverse_bit_order(&mut domain_extended_roots);
-
-        let cosets: Vec<_> = domain_extended_roots
-            .chunks_exact(FIELD_ELEMENTS_PER_CELL)
-            .map(|coset| coset.to_vec())
-            .collect();
+        let coset_shifts = fk20::coset_gens(FIELD_ELEMENTS_PER_EXT_BLOB, CELLS_PER_EXT_BLOB, true);
 
         VerifierContext {
             thread_pool,
             opening_key,
-            bit_reversed_cosets: cosets,
             rs: ReedSolomon::new(FIELD_ELEMENTS_PER_BLOB, EXTENSION_FACTOR),
+            coset_shifts,
         }
     }
 
@@ -168,20 +159,12 @@ impl VerifierContext {
                 .collect::<Result<Vec<_>, _>>()
                 .map_err(VerifierError::Serialization)?;
 
-            // TODO: This can be precomputed
-            let coset_shifts: Vec<_> = self
-                .bit_reversed_cosets
-                .iter()
-                .map(|coset| coset[0])
-                .collect();
-            // TODO: For coset shift and bit_reversed_cosets, we should pass those in in normal order and bit reverse the column_indices
-            // TODO so they are in normal order
             let ok = verify_multi_opening(
                 &self.opening_key,
                 &row_commitment_,
                 &row_indices,
                 &column_indices,
-                &coset_shifts,
+                &self.coset_shifts,
                 &coset_evals,
                 &proofs_,
             );
