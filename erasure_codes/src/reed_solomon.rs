@@ -1,6 +1,7 @@
+use bls12_381::ff::Field;
 use bls12_381::{batch_inversion::batch_inverse, Scalar};
 
-use bls12_381::ff::Field;
+use crate::errors::DecodeError;
 use polynomial::{domain::Domain, monomial::vanishing_poly};
 
 // The erasures can be either indices of the polynomial
@@ -66,8 +67,31 @@ impl ReedSolomon {
         &self,
         codeword_with_errors: Vec<Scalar>,
         missing_indices: Erasures,
-    ) -> Vec<Scalar> {
-        recover_polynomial_coefficient(&self.domain_extended, codeword_with_errors, missing_indices)
+    ) -> Result<Vec<Scalar>, DecodeError> {
+        let coefficients = recover_polynomial_coefficient(
+            &self.domain_extended,
+            codeword_with_errors,
+            missing_indices,
+        );
+
+        // Check that the polynomial being returned has the correct degree
+        //
+        // This is the polynomial in coefficient form that corresponds to the
+        // data in lagrange form being returned. This means this polynomial will
+        // have the same number of coefficients as the original data.
+        //
+        // All of the coefficients after the original data should be zero.
+        for i in self.poly_len..coefficients.len() {
+            if coefficients[i] != Scalar::from(0u64) {
+                return Err(DecodeError::PolynomialHasInvalidLength {
+                    num_coefficients: i,
+                    expected_num_coefficients: self.poly_len,
+                });
+            }
+        }
+
+        // Return the truncated polynomial
+        Ok(coefficients[0..self.poly_len].to_vec())
     }
 }
 

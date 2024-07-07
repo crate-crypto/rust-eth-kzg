@@ -222,7 +222,7 @@ impl VerifierContext {
                 cell_ids,
                 coset_evaluations,
             )
-            .expect("could not recover evaluations in domain order");
+            .expect("could not recover evaluations in domain order"); // TODO: We could make this an error instead of panic
 
         let missing_cell_ids = find_missing_cell_indices(&cell_indices_normal_order);
 
@@ -232,23 +232,9 @@ impl VerifierContext {
                 cell_size: FIELD_ELEMENTS_PER_CELL,
                 cells: missing_cell_ids,
             },
-        );
+        )?;
 
-        // TODO: We could move this code into the ReedSolomon crate
-        // We extended our original data by EXTENSION_FACTOR
-        // The recovered polynomial in monomial and lagrange form
-        // should have the same length as the original data.
-        // All of the coefficients after the original data should be zero.
-        for i in FIELD_ELEMENTS_PER_BLOB..FIELD_ELEMENTS_PER_EXT_BLOB {
-            if recovered_polynomial_coeff[i] != Scalar::from(0u64) {
-                return Err(VerifierError::PolynomialHasInvalidLength {
-                    num_coefficients: i,
-                    expected_num_coefficients: FIELD_ELEMENTS_PER_BLOB,
-                });
-            }
-        }
-
-        Ok(recovered_polynomial_coeff[0..FIELD_ELEMENTS_PER_BLOB].to_vec())
+        Ok(recovered_polynomial_coeff)
     }
 }
 

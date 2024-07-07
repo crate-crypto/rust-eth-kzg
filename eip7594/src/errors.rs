@@ -1,3 +1,5 @@
+use erasure_codes::errors::DecodeError;
+
 use crate::CellID;
 
 /// Errors that can occur while calling a method in the Prover API
@@ -46,10 +48,17 @@ pub enum VerifierError {
         cells_len: usize,
         proofs_len: usize,
     },
+    ReedSolomon(DecodeError),
     PolynomialHasInvalidLength {
         num_coefficients: usize,
         expected_num_coefficients: usize,
     },
+}
+
+impl From<DecodeError> for VerifierError {
+    fn from(value: DecodeError) -> Self {
+        VerifierError::ReedSolomon(value)
+    }
 }
 
 /// Errors that can occur during deserialization of untrusted input from the public API
