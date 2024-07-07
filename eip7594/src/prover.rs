@@ -148,8 +148,8 @@ impl ProverContext {
             assert_eq!(FIELD_ELEMENTS_PER_BLOB, poly_coeff.len());
 
             // Compute the proofs and the evaluation sets for the polynomial.
-            let proofs = self.fk20.compute_multi_opening_proofs(poly_coeff.clone());
-            let evaluation_sets = self.fk20.compute_evaluation_sets(poly_coeff);
+            let (proofs, evaluation_sets) =
+                self.fk20.compute_multi_opening_proofs(poly_coeff.clone());
 
             Ok(serialization::serialize_cells_and_proofs(
                 evaluation_sets,

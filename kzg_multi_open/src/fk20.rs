@@ -199,19 +199,26 @@ impl FK20 {
         self.number_of_points_to_open / self.point_set_size
     }
 
-    pub fn compute_multi_opening_proofs(&self, polynomial: PolyCoeff) -> Vec<G1Point> {
+    pub fn compute_multi_opening_proofs(
+        &self,
+        polynomial: PolyCoeff,
+    ) -> (Vec<G1Point>, Vec<Vec<Scalar>>) {
         // Compute proofs for the polynomial
         let h_poly_commitments =
             self.compute_h_poly_commitments(polynomial.clone(), self.point_set_size);
         let mut proofs = self.proof_domain.fft_g1(h_poly_commitments);
+
         // apply reverse bit order permutation, since fft_g1 was applied using
-        // the regular order.
+        // the regular order, and we want the cosets to be in bit-reversed order
         reverse_bit_order(&mut proofs);
+
         let mut proofs_affine = vec![G1Point::identity(); proofs.len()];
         // TODO: This does not seem to be using the batch affine trick
         bls12_381::G1Projective::batch_normalize(&proofs, &mut proofs_affine);
 
-        proofs_affine
+        let evaluation_sets = self.compute_evaluation_sets(polynomial);
+
+        (proofs_affine, evaluation_sets)
     }
 
     pub fn compute_multi_opening_proofs_on_data(
@@ -220,10 +227,8 @@ impl FK20 {
     ) -> (Vec<G1Point>, Vec<Vec<Scalar>>) {
         reverse_bit_order(&mut data);
         let poly_coeff = self.poly_domain.ifft_scalars(data);
-        // TODO: possibly revert change and have `compute_multi_opening_proofs` return the evaluations too
-        let proofs = self.compute_multi_opening_proofs(poly_coeff.clone());
-        let evaluation_sets = self.compute_evaluation_sets(poly_coeff);
-        (proofs, evaluation_sets)
+
+        self.compute_multi_opening_proofs(poly_coeff)
     }
 
     pub fn compute_evaluation_sets(&self, polynomial: PolyCoeff) -> Vec<Vec<Scalar>> {
@@ -335,8 +340,7 @@ mod tests {
         let expected_evaluations = naive::fk20_compute_evaluation_set(&poly, l, ext_domain);
 
         let fk20 = FK20::new(&commit_key, poly_len, l, 2 * poly_len);
-        let got_proofs = fk20.compute_multi_opening_proofs(poly.clone());
-        let got_evaluations = fk20.compute_evaluation_sets(poly);
+        let (got_proofs, got_evaluations) = fk20.compute_multi_opening_proofs(poly.clone());
 
         assert_eq!(got_proofs.len(), expected_proofs.len());
         assert_eq!(got_evaluations.len(), expected_evaluations.len());
