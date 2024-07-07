@@ -191,7 +191,7 @@ impl FK20 {
         self.number_of_points_to_open / self.point_set_size
     }
 
-    pub fn compute_multi_opening_proofs(
+    pub fn compute_multi_opening_proofs_poly_coeff(
         &self,
         polynomial: PolyCoeff,
     ) -> (Vec<G1Point>, Vec<Vec<Scalar>>) {
@@ -220,7 +220,7 @@ impl FK20 {
         reverse_bit_order(&mut data);
         let poly_coeff = self.poly_domain.ifft_scalars(data);
 
-        self.compute_multi_opening_proofs(poly_coeff)
+        self.compute_multi_opening_proofs_poly_coeff(poly_coeff)
     }
 
     pub fn compute_evaluation_sets(&self, polynomial: PolyCoeff) -> Vec<Vec<Scalar>> {
@@ -332,7 +332,8 @@ mod tests {
         let expected_evaluations = naive::fk20_compute_evaluation_set(&poly, l, ext_domain);
 
         let fk20 = FK20::new(&commit_key, poly_len, l, 2 * poly_len);
-        let (got_proofs, got_evaluations) = fk20.compute_multi_opening_proofs(poly.clone());
+        let (got_proofs, got_evaluations) =
+            fk20.compute_multi_opening_proofs_poly_coeff(poly.clone());
 
         assert_eq!(got_proofs.len(), expected_proofs.len());
         assert_eq!(got_evaluations.len(), expected_evaluations.len());

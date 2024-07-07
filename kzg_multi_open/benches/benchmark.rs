@@ -84,7 +84,7 @@ pub fn bench_compute_proof(c: &mut Criterion) {
             NUMBER_OF_POINTS_PER_PROOF,
             chunked_bit_reversed_roots.len()
         ),
-        |b| b.iter(|| fk20.compute_multi_opening_proofs(polynomial_4096.clone())),
+        |b| b.iter(|| fk20.compute_multi_opening_proofs_poly_coeff(polynomial_4096.clone())),
     );
 }
 

@@ -149,7 +149,7 @@ impl ProverContext {
 
             // Compute the proofs and the evaluation sets for the polynomial.
             let (proofs, evaluation_sets) =
-                self.fk20.compute_multi_opening_proofs(poly_coeff.clone());
+                self.fk20.compute_multi_opening_proofs_poly_coeff(poly_coeff.clone());
 
             Ok(serialization::serialize_cells_and_proofs(
                 evaluation_sets,
