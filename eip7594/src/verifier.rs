@@ -14,8 +14,9 @@ use crate::{
 use bls12_381::Scalar;
 use erasure_codes::{reed_solomon::Erasures, ReedSolomon};
 use kzg_multi_open::{
-    fk20::verify::verify_multi_opening, opening_key::OpeningKey, polynomial::domain::Domain,
-    reverse_bit_order,
+    fk20::{reverse_bit_order, verify::verify_multi_opening},
+    opening_key::OpeningKey,
+    polynomial::domain::Domain,
 };
 use rayon::ThreadPool;
 

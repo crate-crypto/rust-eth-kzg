@@ -1,6 +1,34 @@
 use bls12_381::Scalar;
 use polynomial::domain::Domain;
 
+// Taken and modified from: https://github.com/filecoin-project/ec-gpu/blob/bdde768d0613ae546524c5612e2ad576a646e036/ec-gpu-gen/src/fft_cpu.rs#L10C8-L10C18
+pub fn reverse_bit_order<T>(a: &mut [T]) {
+    fn bitreverse(mut n: u32, l: u32) -> u32 {
+        let mut r = 0;
+        for _ in 0..l {
+            r = (r << 1) | (n & 1);
+            n >>= 1;
+        }
+        r
+    }
+
+    fn log2(x: u32) -> u32 {
+        assert!(x > 0 && x.is_power_of_two(), "x must be a power of two.");
+        x.trailing_zeros()
+    }
+
+    let n = a.len() as u32;
+    assert!(n.is_power_of_two(), "n must be a power of two");
+    let log_n = log2(n);
+
+    for k in 0..n {
+        let rk = bitreverse(k, log_n);
+        if k < rk {
+            a.swap(rk as usize, k as usize);
+        }
+    }
+}
+
 /// Generate all of the field elements needed to generate the cosets.
 ///
 /// - num_points denotes how many points we want to open the polynomial at.
@@ -90,9 +118,9 @@ mod tests {
     use bls12_381::Scalar;
     use polynomial::{domain::Domain, monomial::poly_eval};
 
-    use crate::{
-        fk20::{cosets::generate_cosets, take_every_nth},
-        reverse_bit_order,
+    use crate::fk20::{
+        cosets::{generate_cosets, reverse_bit_order},
+        take_every_nth,
     };
 
     #[test]

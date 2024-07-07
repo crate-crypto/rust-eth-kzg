@@ -5,9 +5,8 @@ pub use crate::errors::ProverError;
 use bls12_381::{G1Point, Scalar};
 use kzg_multi_open::{
     commit_key::{CommitKey, CommitKeyLagrange},
-    fk20::FK20,
+    fk20::{reverse_bit_order, FK20},
     polynomial::domain::Domain,
-    reverse_bit_order,
 };
 use rayon::ThreadPool;
 

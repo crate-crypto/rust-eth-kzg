@@ -1,10 +1,11 @@
 use crate::commit_key::CommitKey;
-use crate::reverse_bit_order;
 use bls12_381::group::prime::PrimeCurveAffine;
 use bls12_381::group::Curve;
 use bls12_381::{G1Point, Scalar};
 use polynomial::domain::Domain;
 use polynomial::monomial::PolyCoeff;
+
+use super::cosets::reverse_bit_order;
 
 /// This is doing \floor{f(x) / x^d}
 /// which essentially means removing the first d coefficients

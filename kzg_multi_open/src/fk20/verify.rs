@@ -1,4 +1,4 @@
-use crate::{opening_key::OpeningKey, reverse_bit_order};
+use crate::{fk20::cosets::reverse_bit_order, opening_key::OpeningKey};
 use bls12_381::{
     batch_inversion::batch_inverse, multi_pairings, G1Point, G2Point, G2Prepared, Scalar,
 };

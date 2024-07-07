@@ -45,44 +45,11 @@ pub fn create_eth_commit_opening_keys() -> (CommitKey, OpeningKey) {
     (ck, vk)
 }
 
-// Taken and modified from: https://github.com/filecoin-project/ec-gpu/blob/bdde768d0613ae546524c5612e2ad576a646e036/ec-gpu-gen/src/fft_cpu.rs#L10C8-L10C18
-// TODO: This could also be moved higher up in the stack. We only require cosets and to know their coset generator. How
-// TODO that is generated, can be abstracted away.
-// TODO: Put this into cosets module or polynomial
-pub fn reverse_bit_order<T>(a: &mut [T]) {
-    fn bitreverse(mut n: u32, l: u32) -> u32 {
-        let mut r = 0;
-        for _ in 0..l {
-            r = (r << 1) | (n & 1);
-            n >>= 1;
-        }
-        r
-    }
-
-    fn log2(x: u32) -> u32 {
-        assert!(x > 0 && x.is_power_of_two(), "x must be a power of two.");
-        x.trailing_zeros()
-    }
-
-    let n = a.len() as u32;
-    assert!(n.is_power_of_two(), "n must be a power of two");
-    let log_n = log2(n);
-
-    for k in 0..n {
-        let rk = bitreverse(k, log_n);
-        if k < rk {
-            a.swap(rk as usize, k as usize);
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
+    use crate::fk20::reverse_bit_order;
     use crate::polynomial::domain::Domain;
-    use crate::{
-        create_eth_commit_opening_keys, fk20::naive as fk20naive, naive as kzgnaive,
-        reverse_bit_order,
-    };
+    use crate::{create_eth_commit_opening_keys, fk20::naive as fk20naive, naive as kzgnaive};
     use bls12_381::Scalar;
 
     // We can move this down into the fk20 module.

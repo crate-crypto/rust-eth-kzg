@@ -11,9 +11,10 @@ use bls12_381::{
 };
 use polynomial::{domain::Domain, monomial::PolyCoeff};
 
+use crate::commit_key::CommitKey;
 use crate::fk20::{batch_toeplitz::BatchToeplitzMatrixVecMul, toeplitz::ToeplitzMatrix};
-use crate::{commit_key::CommitKey, reverse_bit_order};
 
+pub use cosets::reverse_bit_order;
 /// FK20 initializes all of the components needed to compute a KZG multi point
 /// proof using the FK20 method.
 ///
