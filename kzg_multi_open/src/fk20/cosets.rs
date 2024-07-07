@@ -1,28 +1,32 @@
 use bls12_381::Scalar;
 use polynomial::domain::Domain;
 
+pub(crate) fn reverse_bits(n: usize, bits: u32) -> usize {
+    let mut n = n;
+    let mut r = 0;
+    for _ in 0..bits {
+        r = (r << 1) | (n & 1);
+        n >>= 1;
+    }
+    r
+}
+
+/// Computes log2 of an integer.
+///
+/// Panics if the integer is not a power of two
+pub(crate) fn log2(x: u32) -> u32 {
+    assert!(x > 0 && x.is_power_of_two(), "x must be a power of two.");
+    x.trailing_zeros()
+}
+
 // Taken and modified from: https://github.com/filecoin-project/ec-gpu/blob/bdde768d0613ae546524c5612e2ad576a646e036/ec-gpu-gen/src/fft_cpu.rs#L10C8-L10C18
 pub fn reverse_bit_order<T>(a: &mut [T]) {
-    fn bitreverse(mut n: u32, l: u32) -> u32 {
-        let mut r = 0;
-        for _ in 0..l {
-            r = (r << 1) | (n & 1);
-            n >>= 1;
-        }
-        r
-    }
-
-    fn log2(x: u32) -> u32 {
-        assert!(x > 0 && x.is_power_of_two(), "x must be a power of two.");
-        x.trailing_zeros()
-    }
-
     let n = a.len() as u32;
     assert!(n.is_power_of_two(), "n must be a power of two");
     let log_n = log2(n);
 
     for k in 0..n {
-        let rk = bitreverse(k, log_n);
+        let rk = reverse_bits(k as usize, log_n) as u32;
         if k < rk {
             a.swap(rk as usize, k as usize);
         }
@@ -43,30 +47,13 @@ pub(crate) fn coset_gens(num_points: usize, num_cosets: usize, bit_reversed: boo
     let domain = Domain::new(num_points);
     let coset_gen = domain.generator;
 
-    // TODO: We have this method duplicated in a few places, we should deduplicate
-    // TODO: FFT and verifier.rs has it
-    fn reverse_bits(n: usize, bits: u32) -> usize {
-        let mut n = n;
-        let mut r = 0;
-        for _ in 0..bits {
-            r = (r << 1) | (n & 1);
-            n >>= 1;
-        }
-        r
-    }
-
-    fn log2_power_of_2(x: u64) -> u32 {
-        assert!(x.is_power_of_two(), "Input must be a power of 2");
-        x.trailing_zeros()
-    }
-
     // The coset generators are just powers
     // of the generator
     let mut coset_gens = Vec::new();
     for i in 0..num_cosets {
         let generator = if bit_reversed {
             // TODO: We could just bit-reverse the `coset_gens` method instead
-            let rev_i = reverse_bits(i, log2_power_of_2(num_cosets as u64)) as u64;
+            let rev_i = reverse_bits(i, log2(num_cosets as u32)) as u64;
             coset_gen.pow_vartime(&[rev_i])
         } else {
             coset_gen.pow_vartime(&[i as u64])
@@ -119,7 +106,7 @@ mod tests {
     use polynomial::{domain::Domain, monomial::poly_eval};
 
     use crate::fk20::{
-        cosets::{generate_cosets, reverse_bit_order},
+        cosets::{generate_cosets, log2, reverse_bit_order, reverse_bits},
         take_every_nth,
     };
 
@@ -320,5 +307,26 @@ mod tests {
         }
 
         result
+    }
+
+    #[test]
+    fn bit_reverse_fuzz() {
+        fn naive_bit_reverse(n: u32, l: u32) -> u32 {
+            assert!(l.is_power_of_two());
+            let num_bits = l.trailing_zeros();
+            if num_bits == 32 {
+                n.reverse_bits()
+            } else {
+                n.reverse_bits() >> (32 - num_bits)
+            }
+        }
+
+        for i in 0..10 {
+            for k in (1..31).map(|exponent| 2u32.pow(exponent)) {
+                let expected = naive_bit_reverse(i, k);
+                let got = reverse_bits(i as usize, log2(k)) as u32;
+                assert_eq!(expected, got)
+            }
+        }
     }
 }
