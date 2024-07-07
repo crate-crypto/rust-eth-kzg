@@ -115,8 +115,6 @@ impl VerifierContext {
             // Note: We do not check that the commitments are valid in this scenario.
             // It is possible to "misuse" the API, by passing in invalid commitments
             // with no cells, here.
-            // TODO: Perhaps return an error if the user passes in commitments with no
-            // TODO: row_indices/cells.
             if cells.is_empty() {
                 return Ok(());
             }
@@ -141,6 +139,8 @@ impl VerifierContext {
                 }
             }
 
+            // Deserialization
+            //
             let row_commitment_ = row_commitments_bytes
                 .iter()
                 .map(|row_commitment_bytes| deserialize_compressed_g1(*row_commitment_bytes))
