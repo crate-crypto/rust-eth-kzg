@@ -182,11 +182,11 @@ impl FK20 {
             .map(|(coset_index, _)| coset_index)
             .collect();
         let mut missing_coset_indices = Vec::new();
-        let cells_per_ext_blob = domain_size / coset_len;
+        let cosets_per_full_domain = domain_size / coset_len;
 
-        for i in 0..cells_per_ext_blob {
+        for i in 0..cosets_per_full_domain {
             if !coset_indices_received.contains(&(i)) {
-                let rev_i = reverse_bits(i, log2(cells_per_ext_blob as u32));
+                let rev_i = reverse_bits(i, log2(cosets_per_full_domain as u32));
                 missing_coset_indices.push(rev_i as usize);
             }
         }
