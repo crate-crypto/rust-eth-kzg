@@ -9,6 +9,7 @@ use bls12_381::{
     group::{prime::PrimeCurveAffine, Curve, Group},
     {G1Point, G1Projective, Scalar},
 };
+use cosets::{log2, reverse_bits};
 use polynomial::{domain::Domain, monomial::PolyCoeff};
 
 use crate::commit_key::{CommitKey, CommitKeyLagrange};
@@ -112,6 +113,85 @@ impl FK20 {
 
         // Commit to the bit reversed data in lagrange form using the lagrange version of the commit key
         commit_key.commit_g1(&data).into()
+    }
+
+    /// Given a group of coset evaluations, this method will return/reorder the evaluations as if
+    /// we evaluated them on the relevant extended domain. The missing coset indices in domain order
+    /// will also be returned.
+    //
+    // For evaluations that are missing, this method will fill these in with zeroes
+    //
+    // Note: The rationale for returning the coset indices in domain order, is somewhat of an abstraction leak
+    // We deem it acceptable as it means the caller does not need to worry about reverse_bit_order.
+    //
+    // TODO: We could possibly use None and have the caller convert it to zeroes
+    pub fn recover_evaluations_in_domain_order(
+        domain_size: usize,
+        coset_index_coset_evals: Vec<(usize, Vec<Scalar>)>,
+    ) -> Option<(Vec<usize>, Vec<Scalar>)> {
+        use std::collections::HashSet;
+
+        if coset_index_coset_evals.is_empty() {
+            return None;
+        }
+
+        let mut elements = vec![Scalar::from(0u64); domain_size];
+
+        // Check that each coset has the same size
+        let coset_len = coset_index_coset_evals[0].1.len();
+        let same_len = coset_index_coset_evals
+            .iter()
+            .all(|(_, coset)| coset.len() == coset_len);
+        if !same_len {
+            return None;
+        }
+
+        // Check that none of the indices are "out of bounds"
+        // This would result in the subsequent indexing operations to panic
+        //
+        // The greatest index we will be using is:
+        // `t = coset_index * coset_len`
+        // lets denote the returned vectors length as `k`
+        // We want t < k
+        // => coset_index * coset_len < k
+        // => coset_index < k / coset_len
+        let index_bound = domain_size / coset_len;
+        let all_coset_indices_within_bound = coset_index_coset_evals
+            .iter()
+            .all(|(coset_index, _)| *coset_index < index_bound);
+        if !all_coset_indices_within_bound {
+            return None;
+        }
+
+        // Iterate over each coset and place the evaluations in the correct locations
+        for (coset_index, coset_evals) in &coset_index_coset_evals {
+            let start = (*coset_index as usize) * coset_len;
+            let end = start + coset_len;
+
+            elements[start..end].copy_from_slice(coset_evals);
+        }
+
+        // Now bit reverse the result, so we get the evaluations as if we had just done
+        // and FFT on them.
+        reverse_bit_order(&mut elements);
+
+        // Find out what coset indices are missing and bit reverse their index
+        // so we get their index in domain order
+        let coset_indices_received: HashSet<_> = coset_index_coset_evals
+            .into_iter()
+            .map(|(coset_index, _)| coset_index)
+            .collect();
+        let mut missing_coset_indices = Vec::new();
+        let cells_per_ext_blob = domain_size / coset_len;
+
+        for i in 0..cells_per_ext_blob {
+            if !coset_indices_received.contains(&(i)) {
+                let rev_i = reverse_bits(i, log2(cells_per_ext_blob as u32));
+                missing_coset_indices.push(rev_i as usize);
+            }
+        }
+
+        Some((missing_coset_indices, elements))
     }
 
     /// The number of proofs that will be produced.

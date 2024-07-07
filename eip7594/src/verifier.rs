@@ -14,7 +14,7 @@ use crate::{
 use bls12_381::Scalar;
 use erasure_codes::{reed_solomon::Erasures, ReedSolomon};
 use kzg_multi_open::{
-    fk20::{reverse_bit_order, verify::verify_multi_opening},
+    fk20::{reverse_bit_order, verify::verify_multi_opening, FK20},
     opening_key::OpeningKey,
     polynomial::domain::Domain,
 };
@@ -199,8 +199,6 @@ impl VerifierContext {
         cell_ids: Vec<CellID>,
         cells: Vec<CellRef>,
     ) -> Result<Vec<Scalar>, VerifierError> {
-        // TODO: We should check that code does not assume that the CellIDs are sorted.
-
         sanity_check_cells_and_cell_ids(&cell_ids, &cells)?;
 
         // Check that we have no duplicate cell IDs
@@ -225,22 +223,7 @@ impl VerifierContext {
             });
         }
 
-        fn bit_reverse_spec_compliant(n: u32, l: u32) -> u32 {
-            let num_bits = l.trailing_zeros();
-            n.reverse_bits() >> (32 - num_bits)
-        }
-
-        // Find out what cells are missing and bit reverse their index
-        // so we can figure out what cells are missing in the "normal order"
-        let cell_ids_received: HashSet<_> = cell_ids.iter().collect();
-        let mut missing_cell_ids = Vec::new();
-        for i in 0..CELLS_PER_EXT_BLOB {
-            if !cell_ids_received.contains(&(i as u64)) {
-                missing_cell_ids
-                    .push(bit_reverse_spec_compliant(i as u32, CELLS_PER_EXT_BLOB as u32) as usize);
-            }
-        }
-
+        // Deserialize Cells into evaluations
         let coset_evaluations: Result<Vec<_>, _> = cells
             .into_iter()
             .map(AsRef::as_ref)
@@ -248,24 +231,21 @@ impl VerifierContext {
             .collect();
         let coset_evaluations = coset_evaluations.map_err(VerifierError::Serialization)?;
 
-        // Fill in the missing coset_evaluation_sets in bit-reversed order
-        // and flatten the evaluations
-        //
-        let mut coset_evaluations_flattened_rbo =
-            vec![Scalar::from(0); FIELD_ELEMENTS_PER_EXT_BLOB];
+        let coset_ids_coset_evals: Vec<(usize, Vec<Scalar>)> = cell_ids
+            .into_iter()
+            .zip(coset_evaluations)
+            .map(|(index, evals)| (index as usize, evals))
+            .collect();
 
-        for (cell_id, coset_evals) in cell_ids.into_iter().zip(coset_evaluations) {
-            let start = (cell_id as usize) * FIELD_ELEMENTS_PER_CELL;
-            let end = start + FIELD_ELEMENTS_PER_CELL;
+        let evaluations = FK20::recover_evaluations_in_domain_order(
+            FIELD_ELEMENTS_PER_EXT_BLOB,
+            coset_ids_coset_evals,
+        );
 
-            coset_evaluations_flattened_rbo[start..end].copy_from_slice(&coset_evals);
-        }
+        let (missing_cell_ids, coset_evaluations_flattened) = evaluations.unwrap();
 
-        let mut coset_evaluations_flattened = coset_evaluations_flattened_rbo;
-        reverse_bit_order(&mut coset_evaluations_flattened);
-
-        // We now have the evaluations in normal order and we know the indices/erasures that are missing
-        // in normal order.
+        // We now have the evaluations in domain order and we know the indices/erasures that are missing
+        // in domain order.
         let recovered_polynomial_coeff = self.rs.recover_polynomial_coefficient(
             coset_evaluations_flattened,
             Erasures::Cells {
