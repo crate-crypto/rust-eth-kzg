@@ -1,7 +1,7 @@
 use crate::{
     constants::{
-        BYTES_PER_BLOB, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1_POINT, CELLS_PER_EXT_BLOB,
-        FIELD_ELEMENTS_PER_CELL,
+        BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1_POINT,
+        CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_CELL,
     },
     Cell, KZGProof,
 };
@@ -77,6 +77,15 @@ pub(crate) fn serialize_g1_compressed(point: &G1Point) -> [u8; BYTES_PER_G1_POIN
     point.to_compressed()
 }
 
+pub(crate) fn deserialize_compressed_g1_points(
+    points: Vec<&[u8; BYTES_PER_G1_POINT]>,
+) -> Result<Vec<G1Point>, SerializationError> {
+    points
+        .into_iter()
+        .map(|point| deserialize_compressed_g1(point))
+        .collect()
+}
+
 pub(crate) fn serialize_scalars_to_cell(scalars: &[Scalar]) -> Vec<u8> {
     assert_eq!(
         scalars.len(),
@@ -89,6 +98,16 @@ pub(crate) fn serialize_scalars_to_cell(scalars: &[Scalar]) -> Vec<u8> {
         bytes.extend_from_slice(&scalar.to_bytes_be());
     }
     bytes
+}
+
+pub(crate) fn deserialize_cells(
+    cells: Vec<&[u8; BYTES_PER_CELL]>,
+) -> Result<Vec<Vec<Scalar>>, SerializationError> {
+    cells
+        .into_iter()
+        .map(AsRef::as_ref)
+        .map(deserialize_cell_to_scalars)
+        .collect()
 }
 
 /// Converts a a set of scalars (evaluations) to the `Cell` type

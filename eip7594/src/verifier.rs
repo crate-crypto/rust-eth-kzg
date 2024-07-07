@@ -7,7 +7,7 @@ use crate::{
         BYTES_PER_CELL, CELLS_PER_EXT_BLOB, EXTENSION_FACTOR, FIELD_ELEMENTS_PER_BLOB,
         FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB,
     },
-    serialization::{deserialize_cell_to_scalars, deserialize_compressed_g1},
+    serialization::{deserialize_cells, deserialize_compressed_g1_points},
     trusted_setup::TrustedSetup,
     Bytes48Ref, CellIndex, CellRef, RowIndex,
 };
@@ -142,20 +142,9 @@ impl VerifierContext {
 
             // Deserialization
             //
-            let row_commitment_ = row_commitments_bytes
-                .into_iter()
-                .map(|row_commitment_bytes| deserialize_compressed_g1(row_commitment_bytes))
-                .collect::<Result<Vec<_>, _>>()?;
-
-            let proofs_ = proofs_bytes
-                .into_iter()
-                .map(|proof_bytes| deserialize_compressed_g1(proof_bytes))
-                .collect::<Result<Vec<_>, _>>()?;
-
-            let coset_evals = cells
-                .into_iter()
-                .map(|cells| deserialize_cell_to_scalars(cells))
-                .collect::<Result<Vec<_>, _>>()?;
+            let row_commitment_ = deserialize_compressed_g1_points(row_commitments_bytes)?;
+            let proofs_ = deserialize_compressed_g1_points(proofs_bytes)?;
+            let coset_evals = deserialize_cells(cells)?;
 
             let ok = verify_multi_opening(
                 &self.opening_key,
@@ -232,13 +221,9 @@ impl VerifierContext {
             });
         }
 
-        // Deserialize Cells into evaluations
-        let coset_evaluations = cells
-            .into_iter()
-            .map(AsRef::as_ref)
-            .map(deserialize_cell_to_scalars)
-            .collect::<Result<Vec<_>, _>>()?;
-
+        // Deserialization
+        //
+        let coset_evaluations = deserialize_cells(cells)?;
         let cell_indices: Vec<usize> = cell_indices
             .into_iter()
             .map(|index| index as usize)

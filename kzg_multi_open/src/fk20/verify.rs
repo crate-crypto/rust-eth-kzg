@@ -8,7 +8,7 @@ fn compute_fiat_shamir_challenge(
     opening_key: &OpeningKey,
     row_commitments: &[G1Point],
     row_indices: &[u64],
-    column_indices: &[u64],
+    cell_indices: &[u64],
     coset_evals: &[Vec<Scalar>],
     proofs: &[G1Point],
 ) -> Scalar {
@@ -27,7 +27,7 @@ fn compute_fiat_shamir_challenge(
     let num_commitments = row_commitments.len() as u64;
     hash_input.extend(num_commitments.to_be_bytes());
 
-    let num_cells = column_indices.len() as u64;
+    let num_cells = cell_indices.len() as u64;
     hash_input.extend(num_cells.to_be_bytes());
 
     for commitment in row_commitments {
@@ -36,7 +36,7 @@ fn compute_fiat_shamir_challenge(
 
     for k in 0..num_cells {
         hash_input.extend(row_indices[k as usize].to_be_bytes());
-        hash_input.extend(column_indices[k as usize].to_be_bytes());
+        hash_input.extend(cell_indices[k as usize].to_be_bytes());
         for eval in &coset_evals[k as usize] {
             hash_input.extend(eval.to_bytes_be())
         }
