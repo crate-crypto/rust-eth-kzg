@@ -4,8 +4,8 @@ pub use crate::errors::VerifierError;
 
 use crate::{
     constants::{
-        BYTES_PER_CELL, CELLS_PER_EXT_BLOB, EXTENSION_FACTOR, FIELD_ELEMENTS_PER_BLOB,
-        FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB,
+        CELLS_PER_EXT_BLOB, EXTENSION_FACTOR, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL,
+        FIELD_ELEMENTS_PER_EXT_BLOB,
     },
     serialization::{deserialize_cells, deserialize_compressed_g1_points},
     trusted_setup::TrustedSetup,
@@ -98,18 +98,15 @@ impl VerifierContext {
         proofs_bytes: Vec<Bytes48Ref>,
     ) -> Result<(), VerifierError> {
         self.thread_pool.install(|| {
-            // All inputs must have the same length according to the specs.
-            let same_length = (row_indices.len() == cell_indices.len())
-                & (row_indices.len() == cells.len())
-                & (row_indices.len() == proofs_bytes.len());
-            if !same_length {
-                return Err(VerifierError::BatchVerificationInputsMustHaveSameLength {
-                    row_indices_len: row_indices.len(),
-                    cell_indices_len: cell_indices.len(),
-                    cells_len: cells.len(),
-                    proofs_len: proofs_bytes.len(),
-                });
-            }
+            // Validation
+            //
+            validation::verify_cell_kzg_proof_batch(
+                &row_commitments_bytes,
+                &row_indices,
+                &cell_indices,
+                &cells,
+                &proofs_bytes,
+            )?;
 
             // If there are no inputs, we return early with no error
             //
@@ -120,32 +117,14 @@ impl VerifierContext {
                 return Ok(());
             }
 
-            // Check that the row indices are within the correct range
-            for row_index in &row_indices {
-                if *row_index >= row_commitments_bytes.len() as u64 {
-                    return Err(VerifierError::InvalidRowIndex {
-                        row_index: *row_index,
-                        max_number_of_rows: row_commitments_bytes.len() as u64,
-                    });
-                }
-            }
-
-            // Check that column indices are in the correct range
-            for column_index in &cell_indices {
-                if *column_index >= CELLS_PER_EXT_BLOB as u64 {
-                    return Err(VerifierError::CellIndexOutOfRange {
-                        cell_index: *column_index,
-                        max_number_of_cells: CELLS_PER_EXT_BLOB as u64,
-                    });
-                }
-            }
-
             // Deserialization
             //
             let row_commitment_ = deserialize_compressed_g1_points(row_commitments_bytes)?;
             let proofs_ = deserialize_compressed_g1_points(proofs_bytes)?;
             let coset_evals = deserialize_cells(cells)?;
 
+            // Computation
+            //
             let ok = verify_multi_opening(
                 &self.opening_key,
                 &row_commitment_,
@@ -156,6 +135,7 @@ impl VerifierContext {
                 &proofs_,
             );
 
+            // Convert the boolean value into a Result
             if ok {
                 Ok(())
             } else {
@@ -169,6 +149,121 @@ impl VerifierContext {
         cell_indices: Vec<CellIndex>,
         cells: Vec<CellRef>,
     ) -> Result<Vec<Scalar>, VerifierError> {
+        // Validation
+        //
+        validation::recover_polynomial_coeff(&cell_indices, &cells)?;
+
+        // Deserialization
+        //
+        let coset_evaluations = deserialize_cells(cells)?;
+        let cell_indices: Vec<usize> = cell_indices
+            .into_iter()
+            .map(|index| index as usize)
+            .collect();
+
+        // Computation
+        //
+        // Permute the cells, so they are in the order that you would expect, if you were
+        // to compute an fft on the monomial form of the polynomial.
+        //
+        // This comment does leak the fact that the cells are not in the "correct" order,
+        // which the API tries to hide.
+        let (cell_indices_normal_order, flattened_coset_evaluations_normal_order) =
+            FK20::recover_evaluations_in_domain_order(
+                FIELD_ELEMENTS_PER_EXT_BLOB,
+                cell_indices,
+                coset_evaluations,
+            )
+            .expect("could not recover evaluations in domain order"); // TODO: We could make this an error instead of panic
+
+        // Find all of the missing cell indices. This is needed for recovery.
+        let missing_cell_indices = find_missing_cell_indices(&cell_indices_normal_order);
+
+        // Recover the polynomial in monomial form, that one can use to generate the cells.
+        let recovered_polynomial_coeff = self.rs.recover_polynomial_coefficient(
+            flattened_coset_evaluations_normal_order,
+            Erasures::Cells {
+                cell_size: FIELD_ELEMENTS_PER_CELL,
+                cells: missing_cell_indices,
+            },
+        )?;
+
+        Ok(recovered_polynomial_coeff)
+    }
+}
+
+fn find_missing_cell_indices(present_cell_indices: &[usize]) -> Vec<usize> {
+    let cell_indices: HashSet<_> = present_cell_indices.iter().cloned().collect();
+
+    let mut missing = Vec::new();
+
+    for i in 0..CELLS_PER_EXT_BLOB {
+        if !cell_indices.contains(&i) {
+            missing.push(i);
+        }
+    }
+
+    missing
+}
+
+mod validation {
+    use std::collections::HashSet;
+
+    use crate::{
+        constants::{BYTES_PER_CELL, CELLS_PER_EXT_BLOB, EXTENSION_FACTOR},
+        verifier::VerifierError,
+        Bytes48Ref, CellIndex, CellRef, RowIndex,
+    };
+
+    /// Validation logic for `verify_cell_kzg_proof_batch`
+    pub fn verify_cell_kzg_proof_batch(
+        row_commitments_bytes: &[Bytes48Ref],
+        row_indices: &[RowIndex],
+        cell_indices: &[CellIndex],
+        cells: &[CellRef],
+        proofs_bytes: &[Bytes48Ref],
+    ) -> Result<(), VerifierError> {
+        // All inputs must have the same length according to the specs.
+        let same_length = (row_indices.len() == cell_indices.len())
+            & (row_indices.len() == cells.len())
+            & (row_indices.len() == proofs_bytes.len());
+        if !same_length {
+            return Err(VerifierError::BatchVerificationInputsMustHaveSameLength {
+                row_indices_len: row_indices.len(),
+                cell_indices_len: cell_indices.len(),
+                cells_len: cells.len(),
+                proofs_len: proofs_bytes.len(),
+            });
+        }
+
+        // Check that the row indices are within the correct range
+        for row_index in row_indices {
+            if *row_index >= row_commitments_bytes.len() as u64 {
+                return Err(VerifierError::InvalidRowIndex {
+                    row_index: *row_index,
+                    max_number_of_rows: row_commitments_bytes.len() as u64,
+                });
+            }
+        }
+
+        // Check that cell indices are in the correct range
+        for cell_index in cell_indices {
+            if *cell_index >= CELLS_PER_EXT_BLOB as u64 {
+                return Err(VerifierError::CellIndexOutOfRange {
+                    cell_index: *cell_index,
+                    max_number_of_cells: CELLS_PER_EXT_BLOB as u64,
+                });
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Validation logic for `recover_polynomial_coeff`
+    pub(crate) fn recover_polynomial_coeff(
+        cell_indices: &[CellIndex],
+        cells: &[CellRef],
+    ) -> Result<(), VerifierError> {
         // Check that the number of cell indices is equal to the number of cells
         if cell_indices.len() != cells.len() {
             return Err(VerifierError::NumCellIndicesNotEqualToNumCells {
@@ -200,7 +295,7 @@ impl VerifierContext {
         }
 
         // Check that we have no duplicate cell indices
-        if !are_cell_indices_unique(&cell_indices) {
+        if !are_cell_indices_unique(cell_indices) {
             return Err(VerifierError::CellIndicesNotUnique);
         }
 
@@ -221,71 +316,31 @@ impl VerifierContext {
             });
         }
 
-        // Deserialization
-        //
-        let coset_evaluations = deserialize_cells(cells)?;
-        let cell_indices: Vec<usize> = cell_indices
-            .into_iter()
-            .map(|index| index as usize)
-            .collect();
-
-        let (cell_indices_normal_order, flattened_coset_evaluations_normal_order) =
-            FK20::recover_evaluations_in_domain_order(
-                FIELD_ELEMENTS_PER_EXT_BLOB,
-                cell_indices,
-                coset_evaluations,
-            )
-            .expect("could not recover evaluations in domain order"); // TODO: We could make this an error instead of panic
-
-        let missing_cell_indices = find_missing_cell_indices(&cell_indices_normal_order);
-
-        let recovered_polynomial_coeff = self.rs.recover_polynomial_coefficient(
-            flattened_coset_evaluations_normal_order,
-            Erasures::Cells {
-                cell_size: FIELD_ELEMENTS_PER_CELL,
-                cells: missing_cell_indices,
-            },
-        )?;
-
-        Ok(recovered_polynomial_coeff)
+        Ok(())
     }
-}
 
-fn find_missing_cell_indices(present_cell_indices: &[usize]) -> Vec<usize> {
-    let cell_indices: HashSet<_> = present_cell_indices.iter().cloned().collect();
+    /// Check if all of the cell indices are unique
+    fn are_cell_indices_unique(cell_indices: &[CellIndex]) -> bool {
+        let len_cell_indices_non_dedup = cell_indices.len();
+        let cell_indices_dedup: HashSet<_> = cell_indices.iter().collect();
+        cell_indices_dedup.len() == len_cell_indices_non_dedup
+    }
 
-    let mut missing = Vec::new();
+    #[cfg(test)]
+    mod tests {
 
-    for i in 0..CELLS_PER_EXT_BLOB {
-        if !cell_indices.contains(&i) {
-            missing.push(i);
+        use super::are_cell_indices_unique;
+
+        #[test]
+        fn test_cell_indices_unique() {
+            let cell_indices = vec![1, 2, 3];
+            assert!(are_cell_indices_unique(&cell_indices));
+            let cell_indices = vec![];
+            assert!(are_cell_indices_unique(&cell_indices));
+            let cell_indices = vec![1, 1, 2, 3];
+            assert!(!are_cell_indices_unique(&cell_indices));
+            let cell_indices = vec![0, 0, 0];
+            assert!(!are_cell_indices_unique(&cell_indices));
         }
-    }
-
-    missing
-}
-
-/// Check if all of the cell indices are unique
-fn are_cell_indices_unique(cell_indices: &[CellIndex]) -> bool {
-    let len_cell_indices_non_dedup = cell_indices.len();
-    let cell_indices_dedup: HashSet<_> = cell_indices.iter().collect();
-    cell_indices_dedup.len() == len_cell_indices_non_dedup
-}
-
-#[cfg(test)]
-mod tests {
-
-    use crate::verifier::are_cell_indices_unique;
-
-    #[test]
-    fn test_cell_indices_unique() {
-        let cell_indices = vec![1, 2, 3];
-        assert!(are_cell_indices_unique(&cell_indices));
-        let cell_indices = vec![];
-        assert!(are_cell_indices_unique(&cell_indices));
-        let cell_indices = vec![1, 1, 2, 3];
-        assert!(!are_cell_indices_unique(&cell_indices));
-        let cell_indices = vec![0, 0, 0];
-        assert!(!are_cell_indices_unique(&cell_indices));
     }
 }
