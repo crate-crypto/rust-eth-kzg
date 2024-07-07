@@ -134,14 +134,17 @@ impl ProverContext {
         cells: Vec<CellRef>,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
         self.thread_pool.install(|| {
-            // Use erasure decoding to recover the polynomial corresponding to the bit-reversed blob in monomial form
+            // Use erasure decoding to recover the polynomial corresponding to the cells
+            // that were generated from fk20.
+            //
+            // Note: The fact that this is the polynomial for the bit-reversed version of the blob
+            // is irrelevant.
             let poly_coeff = self
                 .verifier_context
                 .recover_polynomial_coeff(cell_ids, cells)
                 .map_err(ProverError::RecoveryFailure)?;
 
             // Check the degree of the polynomial.
-            // All polynomials in monomial form at this level of the API, have the same degree.
             assert_eq!(FIELD_ELEMENTS_PER_BLOB, poly_coeff.len());
 
             // Compute the proofs and the evaluation sets for the polynomial.
