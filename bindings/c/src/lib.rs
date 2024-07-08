@@ -30,14 +30,6 @@ pub struct PeerDASContext {
 }
 
 impl PeerDASContext {
-    #[deprecated(note = "Prover and Verifier context will be merged")]
-    pub fn prover_ctx(&self) -> &eip7594::prover::ProverContext {
-        self.inner.prover_ctx()
-    }
-    #[deprecated(note = "Prover and Verifier context will be merged")]
-    pub fn verifier_ctx(&self) -> &eip7594::verifier::VerifierContext {
-        &self.inner.verifier_ctx
-    }
     pub fn inner(&self) -> &eip7594::PeerDASContext {
         &self.inner
     }
