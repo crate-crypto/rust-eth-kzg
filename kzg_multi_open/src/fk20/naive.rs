@@ -68,7 +68,8 @@ pub fn fk20_open_multi_point(
     proof_domain: &Domain,
     polynomial: &PolyCoeff,
     coset_size: usize,
-) -> Vec<G1Point> {
+    ext_domain: &Domain,
+) -> (Vec<G1Point>, Vec<Vec<Scalar>>) {
     let h_polys = compute_h_poly(polynomial, coset_size);
     let commitment_h_polys = h_polys
         .iter()
@@ -84,13 +85,15 @@ pub fn fk20_open_multi_point(
     // the regular order.
     reverse_bit_order(&mut proofs_affine);
 
-    proofs_affine
+    let evaluation_sets = fk20_compute_evaluation_set(polynomial, coset_size, ext_domain);
+
+    (proofs_affine, evaluation_sets)
 }
 
-pub fn fk20_compute_evaluation_set(
+fn fk20_compute_evaluation_set(
     polynomial: &PolyCoeff,
     coset_size: usize,
-    ext_domain: Domain,
+    ext_domain: &Domain,
 ) -> Vec<Vec<Scalar>> {
     // Compute the evaluations of the polynomial at the cosets by doing an fft
     let mut evaluations = ext_domain.fft_scalars(polynomial.clone());
