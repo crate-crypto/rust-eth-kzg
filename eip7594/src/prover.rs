@@ -126,7 +126,7 @@ impl PeerDASContext {
             let (proofs, evaluation_sets) = self
                 .prover_ctx
                 .fk20
-                .compute_multi_opening_proofs_poly_coeff(poly_coeff.clone());
+                .compute_multi_opening_proofs_poly_coeff(poly_coeff);
 
             Ok(serialization::serialize_cells_and_proofs(
                 evaluation_sets,
