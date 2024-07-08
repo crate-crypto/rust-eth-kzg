@@ -20,15 +20,6 @@ use crate::{
 #[derive(Debug)]
 pub struct ProverContext {
     fk20: FK20,
-    // TODO: We don't need the commit key, since we use FK20 to compute the proofs
-    // TODO: and we use the lagrange variant to compute the commitment to the polynomial.
-    //
-    // TODO: We can remove it in a later commit, once the API has settled.
-    #[allow(dead_code)]
-    commit_key: CommitKey,
-    /// This is only used to save us from doing an IDFT when committing
-    /// to the polynomial.
-    commit_key_lagrange: CommitKeyLagrange,
 }
 
 impl Default for ProverContext {
@@ -41,6 +32,8 @@ impl Default for ProverContext {
 impl ProverContext {
     pub fn new(trusted_setup: &TrustedSetup) -> Self {
         let commit_key = CommitKey::from(trusted_setup);
+        let commit_key_lagrange = CommitKeyLagrange::from(trusted_setup);
+
         // The number of points that we will make an opening proof for,
         // ie a proof will attest to the value of a polynomial at these points.
         let point_set_size = FIELD_ELEMENTS_PER_CELL;
@@ -52,19 +45,14 @@ impl ProverContext {
         let number_of_points_to_open = FIELD_ELEMENTS_PER_EXT_BLOB;
 
         let fk20 = FK20::new(
-            &commit_key,
+            commit_key,
+            commit_key_lagrange,
             FIELD_ELEMENTS_PER_BLOB,
             point_set_size,
             number_of_points_to_open,
         );
 
-        let commit_key_lagrange = CommitKeyLagrange::from(trusted_setup);
-
-        ProverContext {
-            fk20,
-            commit_key,
-            commit_key_lagrange,
-        }
+        ProverContext { fk20 }
     }
 }
 
@@ -76,7 +64,7 @@ impl PeerDASContext {
             let scalars = serialization::deserialize_blob_to_scalars(blob)?;
 
             // Compute commitment using FK20
-            let commitment = FK20::commit_to_data(&self.prover_ctx.commit_key_lagrange, scalars);
+            let commitment = self.prover_ctx.fk20.commit_to_data(scalars);
 
             // Serialize the commitment.
             Ok(serialize_g1_compressed(&commitment))

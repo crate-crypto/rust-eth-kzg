@@ -43,6 +43,8 @@ pub fn bench_compute_proof(c: &mut Criterion) {
     const POLYNOMIAL_LEN: usize = 4096;
     let polynomial_4096 = vec![black_box(Scalar::random(&mut rand::thread_rng())); POLYNOMIAL_LEN];
     let (ck, _) = create_eth_commit_opening_keys();
+    let domain_g1 = Domain::new(ck.g1s.len());
+    let ck_lagrange = ck.clone().into_lagrange(&domain_g1);
     const NUMBER_OF_POINTS_TO_EVALUATE: usize = 2 * POLYNOMIAL_LEN;
 
     const NUMBER_OF_POINTS_PER_PROOF: usize = 64;
@@ -72,7 +74,8 @@ pub fn bench_compute_proof(c: &mut Criterion) {
     );
 
     let fk20 = FK20::new(
-        &ck,
+        ck,
+        ck_lagrange,
         POLYNOMIAL_LEN,
         NUMBER_OF_POINTS_PER_PROOF,
         NUMBER_OF_POINTS_TO_EVALUATE,

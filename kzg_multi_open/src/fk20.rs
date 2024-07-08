@@ -47,11 +47,15 @@ pub struct FK20 {
     ext_domain: Domain,
     /// Domain used for converting polynomial to monomial form.
     poly_domain: Domain,
+    /// Commitment key used for committing to the polynomial
+    /// in lagrange form.
+    commit_key_lagrange: CommitKeyLagrange,
 }
 
 impl FK20 {
     pub fn new(
-        commit_key: &CommitKey,
+        commit_key: CommitKey,
+        commit_key_lagrange: CommitKeyLagrange,
         polynomial_bound: usize,
         point_set_size: usize,
         number_of_points_to_open: usize,
@@ -60,6 +64,8 @@ impl FK20 {
         assert!(number_of_points_to_open.is_power_of_two());
         assert!(number_of_points_to_open > point_set_size);
         assert!(polynomial_bound.is_power_of_two());
+        assert!(commit_key_lagrange.g1s.len() >= polynomial_bound);
+        assert_eq!(commit_key_lagrange.g1s.len(), commit_key.g1s.len());
 
         // 1. Compute the SRS vectors that we will multiply the toeplitz matrices by.
         //
@@ -101,6 +107,7 @@ impl FK20 {
             proof_domain,
             ext_domain,
             poly_domain,
+            commit_key_lagrange,
         }
     }
 
@@ -108,14 +115,14 @@ impl FK20 {
     //
     // Note: Currently this is the only place we use the lagrange form of the commitment key.
     // We could get rid of it entirely, at the cost of an IDFT.
-    pub fn commit_to_data(commit_key: &CommitKeyLagrange, mut data: Vec<Scalar>) -> G1Point {
+    pub fn commit_to_data(&self, mut data: Vec<Scalar>) -> G1Point {
         // Reverse the order of the scalars, so that they are in bit-reversed order.
         //
         // FK20 will operate over the bit-reversed permutation of the data.
         reverse_bit_order(&mut data);
 
         // Commit to the bit reversed data in lagrange form using the lagrange version of the commit key
-        commit_key.commit_g1(&data).into()
+        self.commit_key_lagrange.commit_g1(&data).into()
     }
 
     /// Given a group of coset evaluations, this method will return/reorder the evaluations as if
@@ -310,7 +317,8 @@ mod tests {
         let poly = vec![Scalar::random(&mut rand::thread_rng()); 4096];
         let l = 64;
         let (commit_key, _) = create_eth_commit_opening_keys();
-
+        let domain_g1 = Domain::new(commit_key.g1s.len());
+        let commit_key_lagrange = commit_key.clone().into_lagrange(&domain_g1);
         let h_polynomials = naive::compute_h_poly(&poly, l);
         let mut expected_comm_h_polys = h_polynomials
             .iter()
@@ -318,7 +326,7 @@ mod tests {
             .collect::<Vec<_>>();
         // Add the identity element to h_polys to pad it to a power of two
         expected_comm_h_polys.push(bls12_381::G1Projective::identity());
-        let fk20 = FK20::new(&commit_key, 4096, l, 2 * 4096);
+        let fk20 = FK20::new(commit_key, commit_key_lagrange, 4096, l, 2 * 4096);
         let got_comm_h_polys = fk20.compute_h_poly_commitments(poly, l);
         assert_eq!(expected_comm_h_polys.len(), got_comm_h_polys.len());
         assert_eq!(expected_comm_h_polys, got_comm_h_polys);
@@ -337,7 +345,10 @@ mod tests {
         let expected_proofs = naive::fk20_open_multi_point(&commit_key, &proof_domain, &poly, l);
         let expected_evaluations = naive::fk20_compute_evaluation_set(&poly, l, ext_domain);
 
-        let fk20 = FK20::new(&commit_key, poly_len, l, 2 * poly_len);
+        let domain_g1 = Domain::new(commit_key.g1s.len());
+        let commit_key_lagrange = commit_key.clone().into_lagrange(&domain_g1);
+
+        let fk20 = FK20::new(commit_key, commit_key_lagrange, poly_len, l, 2 * poly_len);
         let (got_proofs, got_evaluations) =
             fk20.compute_multi_opening_proofs_poly_coeff(poly.clone());
 
