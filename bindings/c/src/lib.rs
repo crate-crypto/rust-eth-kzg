@@ -35,8 +35,6 @@ impl PeerDASContext {
     }
 }
 
-// TODO: Add this into eip7594 spec tests
-
 /// Create a new PeerDASContext and return a pointer to it.
 ///
 /// # Memory faults
