@@ -354,6 +354,7 @@ dependencies = [
  "hex",
  "rand",
  "rayon",
+ "sha2",
 ]
 
 [[package]]
