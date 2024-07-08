@@ -48,12 +48,14 @@ impl OpeningKey {
     pub fn commit_g2(&self, polynomial: &[Scalar]) -> G2Projective {
         assert!(self.g2s.len() >= polynomial.len());
         g2_lincomb(&self.g2s[0..polynomial.len()], polynomial)
+            .expect("number of g1 points is equal to the number of coefficients in the polynomial")
     }
 
     /// Commit to a polynomial in monomial form using the G1 group elements
     pub fn commit_g1(&self, polynomial: &[Scalar]) -> G1Projective {
         assert!(self.g1s.len() >= polynomial.len());
         g1_lincomb(&self.g1s[0..polynomial.len()], polynomial)
+            .expect("number of g1 points is equal to the number of coefficients in the polynomial")
     }
 
     // TODO: Check if there is a cost to converting G2Projective to G2Point
