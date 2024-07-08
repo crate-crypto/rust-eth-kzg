@@ -78,9 +78,10 @@ impl FK20 {
             .collect();
         let mut srs_vectors = take_every_nth(&srs_truncated, point_set_size);
 
-        // TODO: We don't need to do this padding, since `BatchToeplitzMatrixVecMul` doesn't
-        // TODO necessitate it.
-        // Pad srs vectors by the next power of two
+        // Pad srs vectors to the next power of two
+        //
+        // This is not strictly needed since our FFT implementation
+        // will pad these. However, doing it now saves work.
         for srs_vector in &mut srs_vectors {
             let pad_by = srs_vector.len().next_power_of_two();
             srs_vector.resize(pad_by, G1Projective::identity());
@@ -95,7 +96,7 @@ impl FK20 {
         let proof_domain = Domain::new(number_of_points_to_open / point_set_size);
         // The size of the extension domain corresponds to the number of points that we want to open
         let ext_domain = Domain::new(number_of_points_to_open);
-
+        // The domain needed to convert the polynomial from lagrange form to monomial form.
         let poly_domain = Domain::new(polynomial_bound);
 
         FK20 {

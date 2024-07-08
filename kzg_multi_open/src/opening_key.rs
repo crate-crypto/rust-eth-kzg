@@ -1,5 +1,7 @@
-use bls12_381::lincomb::{g1_lincomb, g2_lincomb};
-use bls12_381::{G1Projective, G2Point, G2Projective, Scalar};
+use bls12_381::{
+    lincomb::{g1_lincomb, g2_lincomb},
+    G1Projective, G2Point, G2Projective, Scalar,
+};
 
 /// Opening Key is used to verify opening proofs made about a committed polynomial.
 #[derive(Clone, Debug)]
