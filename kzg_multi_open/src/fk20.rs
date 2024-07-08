@@ -110,10 +110,7 @@ impl FK20 {
         }
     }
 
-    /// Commit to the data that we will be creating Fk20 proofs over.
-    //
-    // Note: Currently this is the only place we use the lagrange form of the commitment key.
-    // We could get rid of it entirely, at the cost of an IDFT.
+    /// Commit to the data that we will be creating FK20 proofs over.
     pub fn commit_to_data(&self, mut data: Vec<Scalar>) -> G1Point {
         // Reverse the order of the scalars, so that they are in bit-reversed order.
         //
