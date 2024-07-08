@@ -1,6 +1,6 @@
 import {
-  ProverContextJs,
-  VerifierContextJs,
+  PeerDasContextJs,
+  PeerDASContextJs,
 } from "../index.js";
 
 import { readFileSync } from "fs";
@@ -27,7 +27,7 @@ type VerifyCellKzgProofBatchTest = TestMeta<
   { row_commitments: string[]; row_indices: number[]; column_indices: number[]; cells: string[]; proofs: string[] },
   boolean
 >;
-type RecoverCellsAndKzgProofsTest = TestMeta<{cell_indices: number[]; cells: string[]}, string[][]>;
+type RecoverCellsAndKzgProofsTest = TestMeta<{ cell_indices: number[]; cells: string[] }, string[][]>;
 
 /**
  * Converts hex string to binary Uint8Array
@@ -63,7 +63,7 @@ function assertBytesEqual(a: Uint8Array | Buffer, b: Uint8Array | Buffer): void 
 }
 
 describe("ProverContext", () => {
-  const proverContext = new ProverContextJs();
+  const ctx = new PeerDasContextJs();
 
   it("reference tests for blobToKzgCommitment should pass", () => {
     const tests = globSync(BLOB_TO_KZG_COMMITMENT_TESTS);
@@ -76,7 +76,7 @@ describe("ProverContext", () => {
       const blob = bytesFromHex(test.input.blob);
 
       try {
-        commitment = proverContext.blobToKzgCommitment(blob);
+        commitment = ctx.blobToKzgCommitment(blob);
       } catch (err) {
         expect(test.output).toBeNull();
         return;
@@ -99,7 +99,7 @@ describe("ProverContext", () => {
       const blob = bytesFromHex(test.input.blob);
 
       try {
-        cells_and_proofs = proverContext.computeCellsAndKzgProofs(blob);
+        cells_and_proofs = ctx.computeCellsAndKzgProofs(blob);
       } catch (err) {
         expect(test.output).toBeNull();
         return;
@@ -135,7 +135,7 @@ describe("ProverContext", () => {
       const cells = test.input.cells.map(bytesFromHex);
 
       try {
-        recoveredCellsAndProofs = proverContext.recoverCellsAndKzgProofs(cellIndices, cells);
+        recoveredCellsAndProofs = ctx.recoverCellsAndKzgProofs(cellIndices, cells);
       } catch (err) {
         expect(test.output).toBeNull();
         return;
@@ -159,11 +159,6 @@ describe("ProverContext", () => {
     });
   });
 
-});
-
-describe("VerifierContext", () => {
-  const verifierContext = new VerifierContextJs();
-
   it("reference tests for verifyCellKzgProofBatch should pass", () => {
     const tests = globSync(VERIFY_CELL_KZG_PROOF_BATCH_TESTS);
     expect(tests.length).toBeGreaterThan(0);
@@ -179,7 +174,7 @@ describe("VerifierContext", () => {
       const proofs = test.input.proofs.map(bytesFromHex);
 
       try {
-        valid = verifierContext.verifyCellKzgProofBatch(rowCommitments, rowIndices, columnIndices, cells, proofs);
+        valid = ctx.verifyCellKzgProofBatch(rowCommitments, rowIndices, columnIndices, cells, proofs);
       } catch (err) {
         expect(test.output).toBeNull();
         return;
@@ -204,7 +199,7 @@ describe("VerifierContext", () => {
       const proof = bytesFromHex(test.input.proof);
 
       try {
-        valid = verifierContext.verifyCellKzgProof(commitment, cellId, cell, proof);
+        valid = ctx.verifyCellKzgProof(commitment, cellId, cell, proof);
       } catch (err) {
         expect(test.output).toBeNull();
         return;
@@ -213,4 +208,6 @@ describe("VerifierContext", () => {
       expect(valid).toEqual(test.output);
     });
   });
+
+
 });

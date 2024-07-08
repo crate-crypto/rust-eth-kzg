@@ -28,21 +28,21 @@ pub struct CellsAndProofs {
 }
 
 #[napi]
-pub struct ProverContextJs {
+pub struct PeerDASContextJs {
   inner: Arc<PeerDASContext>,
 }
 
-impl Default for ProverContextJs {
+impl Default for PeerDASContextJs {
   fn default() -> Self {
     Self::new()
   }
 }
 
 #[napi]
-impl ProverContextJs {
+impl PeerDASContextJs {
   #[napi(constructor)]
   pub fn new() -> Self {
-    ProverContextJs {
+    PeerDASContextJs {
       inner: Arc::new(PeerDASContext::default()),
     }
   }
@@ -50,10 +50,10 @@ impl ProverContextJs {
   #[napi]
   pub fn blob_to_kzg_commitment(&self, blob: Uint8Array) -> Result<Uint8Array> {
     let blob = blob.as_ref();
-    let prover_context = &self.inner;
+    let ctx = &self.inner;
     let blob = slice_to_array_ref(blob, "blob")?;
 
-    let commitment = prover_context.blob_to_kzg_commitment(blob).map_err(|err| {
+    let commitment = ctx.blob_to_kzg_commitment(blob).map_err(|err| {
       Error::from_reason(format!(
         "failed to compute blob_to_kzg_commitment: {:?}",
         err
@@ -70,18 +70,16 @@ impl ProverContextJs {
   #[napi]
   pub fn compute_cells_and_kzg_proofs(&self, blob: Uint8Array) -> Result<CellsAndProofs> {
     let blob = blob.as_ref();
-    let prover_context = &self.inner;
+    let ctx = &self.inner;
 
     let blob = slice_to_array_ref(blob, "blob")?;
 
-    let (cells, proofs) = prover_context
-      .compute_cells_and_kzg_proofs(blob)
-      .map_err(|err| {
-        Error::from_reason(format!(
-          "failed to compute compute_cells_and_kzg_proofs: {:?}",
-          err
-        ))
-      })?;
+    let (cells, proofs) = ctx.compute_cells_and_kzg_proofs(blob).map_err(|err| {
+      Error::from_reason(format!(
+        "failed to compute compute_cells_and_kzg_proofs: {:?}",
+        err
+      ))
+    })?;
 
     let cells_uint8array = cells
       .into_iter()
@@ -128,14 +126,14 @@ impl ProverContextJs {
     let cell_indices: Vec<_> = cell_indices.into_iter().map(bigint_to_u64).collect();
     let cells: Vec<_> = cells.iter().map(|cell| cell.as_ref()).collect();
 
-    let prover_context = &self.inner;
+    let ctx = &self.inner;
 
     let cells: Vec<_> = cells
       .iter()
       .map(|cell| slice_to_array_ref(cell, "cell"))
       .collect::<Result<_, _>>()?;
 
-    let (cells, proofs) = prover_context
+    let (cells, proofs) = ctx
       .recover_cells_and_proofs(cell_indices, cells)
       .map_err(|err| {
         Error::from_reason(format!(
@@ -167,27 +165,6 @@ impl ProverContextJs {
   ) -> Result<CellsAndProofs> {
     self.recover_cells_and_kzg_proofs(cell_indices, cells)
   }
-}
-
-#[napi]
-pub struct VerifierContextJs {
-  inner: Arc<PeerDASContext>,
-}
-
-impl Default for VerifierContextJs {
-  fn default() -> Self {
-    Self::new()
-  }
-}
-
-#[napi]
-impl VerifierContextJs {
-  #[napi(constructor)]
-  pub fn new() -> Self {
-    VerifierContextJs {
-      inner: Arc::new(PeerDASContext::default()),
-    }
-  }
 
   #[napi]
   pub fn verify_cell_kzg_proof(
@@ -202,13 +179,13 @@ impl VerifierContextJs {
     let proof = proof.as_ref();
     let cell_index_u64 = bigint_to_u64(cell_index);
 
-    let verifier_context = &self.inner;
+    let ctx = &self.inner;
 
     let cell = slice_to_array_ref(cell, "cell")?;
     let commitment = slice_to_array_ref(commitment, "commitment")?;
     let proof = slice_to_array_ref(proof, "proof")?;
 
-    let valid = verifier_context.verify_cell_kzg_proof(commitment, cell_index_u64, cell, proof);
+    let valid = ctx.verify_cell_kzg_proof(commitment, cell_index_u64, cell, proof);
     match valid {
       Ok(_) => Ok(true),
       Err(VerifierError::InvalidProof) => Ok(false),
@@ -255,15 +232,10 @@ impl VerifierContextJs {
       .map(|proof| slice_to_array_ref(proof, "proof"))
       .collect::<Result<_, _>>()?;
 
-    let verifier_context = &self.inner;
+    let ctx = &self.inner;
 
-    let valid = verifier_context.verify_cell_kzg_proof_batch(
-      commitments,
-      row_indices,
-      column_indices,
-      cells,
-      proofs,
-    );
+    let valid =
+      ctx.verify_cell_kzg_proof_batch(commitments, row_indices, column_indices, cells, proofs);
     match valid {
       Ok(_) => Ok(true),
       Err(VerifierError::InvalidProof) => Ok(false),
