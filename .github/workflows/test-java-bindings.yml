@@ -43,5 +43,5 @@ jobs:
         working-directory: bindings/java/java_code
 
       - name: Run Gradle tests
-        run: ./gradlew test --scan
+        run: ./gradlew test
         working-directory: bindings/java/java_code
