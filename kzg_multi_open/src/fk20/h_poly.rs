@@ -26,19 +26,19 @@ impl FK20 {
     pub(crate) fn compute_h_poly_commitments(
         &self,
         mut polynomial: PolyCoeff,
-        l: usize,
+        coset_size: usize,
     ) -> Vec<G1Projective> {
         assert!(
-            l.is_power_of_two(),
-            "expected l to be a power of two (its the size of the cosets), found {}",
-            l
+            coset_size.is_power_of_two(),
+            "expected coset_size to be a power of two, found {}",
+            coset_size
         );
 
-        let m = polynomial.len();
+        let num_coefficients: usize = polynomial.len();
         assert!(
-            m.is_power_of_two(),
-            "expected polynomial to have power of 2 number of evaluations. Found {}",
-            m
+            num_coefficients.is_power_of_two(),
+            "expected polynomial to have power of 2 number of coefficients. Found {}",
+            num_coefficients
         );
 
         // Reverse polynomial so highest coefficient is first.
@@ -46,7 +46,7 @@ impl FK20 {
         polynomial.reverse();
 
         // Compute the toeplitz rows for the `l` toeplitz matrices
-        let toeplitz_rows = take_every_nth(&polynomial, l);
+        let toeplitz_rows = take_every_nth(&polynomial, coset_size);
 
         // Compute the Toeplitz matrices
         let mut matrices = Vec::with_capacity(toeplitz_rows.len());
@@ -85,17 +85,25 @@ mod tests {
     fn check_consistency_of_toeplitz_h_polys() {
         use bls12_381::ff::Field;
         let poly = vec![Scalar::random(&mut rand::thread_rng()); 4096];
-        let l = 64;
+        let coset_size: usize = 64;
         let (commit_key, _) = create_eth_commit_opening_keys();
-        let h_polynomials = naive::compute_h_poly(&poly, l);
+
+        // Compute the commitment to the h_polynomials naively
+        //
+        let h_polynomials = naive::compute_h_poly(&poly, coset_size);
         let mut expected_comm_h_polys = h_polynomials
             .iter()
             .map(|h_poly| commit_key.commit_g1(h_poly))
             .collect::<Vec<_>>();
         // Add the identity element to h_polys to pad it to a power of two
+        // TODO: We could perhaps put this padding into the naive_compute_h_poly method
         expected_comm_h_polys.push(bls12_381::G1Projective::identity());
-        let fk20 = FK20::new(commit_key, 4096, l, 2 * 4096);
-        let got_comm_h_polys = fk20.compute_h_poly_commitments(poly, l);
+
+        // Compute the commitment to the h_polynomials using the method noted in the FK20 paper
+        //
+        let fk20 = FK20::new(commit_key, 4096, coset_size, 2 * 4096);
+        let got_comm_h_polys = fk20.compute_h_poly_commitments(poly, coset_size);
+
         assert_eq!(expected_comm_h_polys.len(), got_comm_h_polys.len());
         assert_eq!(expected_comm_h_polys, got_comm_h_polys);
     }
