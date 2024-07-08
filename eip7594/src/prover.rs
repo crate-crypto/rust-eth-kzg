@@ -1,12 +1,9 @@
-use std::sync::Arc;
-
 pub use crate::errors::ProverError;
 
 use kzg_multi_open::{
     commit_key::{CommitKey, CommitKeyLagrange},
     fk20::FK20,
 };
-use rayon::ThreadPool;
 
 use crate::{
     constants::{
@@ -22,8 +19,6 @@ use crate::{
 /// This includes, computing the commitments, proofs and cells.
 #[derive(Debug)]
 pub struct ProverContext {
-    thread_pool: Arc<ThreadPool>,
-
     fk20: FK20,
     // TODO: We don't need the commit key, since we use FK20 to compute the proofs
     // TODO: and we use the lagrange variant to compute the commitment to the polynomial.
@@ -45,22 +40,6 @@ impl Default for ProverContext {
 
 impl ProverContext {
     pub fn new(trusted_setup: &TrustedSetup) -> Self {
-        const DEFAULT_NUM_THREADS: usize = 16;
-        Self::with_num_threads(trusted_setup, DEFAULT_NUM_THREADS)
-    }
-
-    pub fn with_num_threads(trusted_setup: &TrustedSetup, num_threads: usize) -> Self {
-        let thread_pool = rayon::ThreadPoolBuilder::new()
-            .num_threads(num_threads)
-            .build()
-            .unwrap();
-        Self::from_threads_pool(trusted_setup, Arc::new(thread_pool))
-    }
-
-    pub(crate) fn from_threads_pool(
-        trusted_setup: &TrustedSetup,
-        thread_pool: Arc<ThreadPool>,
-    ) -> Self {
         let commit_key = CommitKey::from(trusted_setup);
         // The number of points that we will make an opening proof for,
         // ie a proof will attest to the value of a polynomial at these points.
@@ -85,7 +64,6 @@ impl ProverContext {
             fk20,
             commit_key,
             commit_key_lagrange,
-            thread_pool,
         }
     }
 }
@@ -93,7 +71,7 @@ impl ProverContext {
 impl PeerDASContext {
     /// Computes the KZG commitment to the polynomial represented by the blob.
     pub fn blob_to_kzg_commitment(&self, blob: BlobRef) -> Result<KZGCommitment, ProverError> {
-        self.prover_ctx.thread_pool.install(|| {
+        self.thread_pool.install(|| {
             // Deserialize the blob into scalars.
             let scalars = serialization::deserialize_blob_to_scalars(blob)?;
 
@@ -110,7 +88,7 @@ impl PeerDASContext {
         &self,
         blob: BlobRef,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
-        self.prover_ctx.thread_pool.install(|| {
+        self.thread_pool.install(|| {
             // Deserialization
             //
             let scalars = serialization::deserialize_blob_to_scalars(blob)?;
@@ -138,7 +116,7 @@ impl PeerDASContext {
         cell_indices: Vec<CellIndex>,
         cells: Vec<CellRef>,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
-        self.prover_ctx.thread_pool.install(|| {
+        self.thread_pool.install(|| {
             // Recover polynomial
             //
             let poly_coeff = self.recover_polynomial_coeff(cell_indices, cells)?;

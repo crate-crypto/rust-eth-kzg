@@ -1,4 +1,4 @@
-use std::{collections::HashSet, sync::Arc};
+use std::collections::HashSet;
 
 pub use crate::errors::VerifierError;
 
@@ -17,12 +17,10 @@ use kzg_multi_open::{
     fk20::{self, verify::verify_multi_opening, FK20},
     opening_key::OpeningKey,
 };
-use rayon::ThreadPool;
 
 /// The context object that is used to call functions in the verifier API.
 #[derive(Debug)]
 pub struct VerifierContext {
-    thread_pool: Arc<ThreadPool>,
     opening_key: OpeningKey,
     // TODO: This can be moved into FK20 verification procedure
     coset_shifts: Vec<Scalar>,
@@ -38,27 +36,10 @@ impl Default for VerifierContext {
 
 impl VerifierContext {
     pub fn new(trusted_setup: &TrustedSetup) -> VerifierContext {
-        const DEFAULT_NUM_THREADS: usize = 16;
-        Self::with_num_threads(trusted_setup, DEFAULT_NUM_THREADS)
-    }
-
-    pub fn with_num_threads(trusted_setup: &TrustedSetup, num_threads: usize) -> VerifierContext {
-        let thread_pool = rayon::ThreadPoolBuilder::new()
-            .num_threads(num_threads)
-            .build()
-            .unwrap();
-        Self::from_thread_pool(trusted_setup, Arc::new(thread_pool))
-    }
-
-    pub(crate) fn from_thread_pool(
-        trusted_setup: &TrustedSetup,
-        thread_pool: Arc<ThreadPool>,
-    ) -> VerifierContext {
         let opening_key = OpeningKey::from(trusted_setup);
         let coset_shifts = fk20::coset_gens(FIELD_ELEMENTS_PER_EXT_BLOB, CELLS_PER_EXT_BLOB, true);
 
         VerifierContext {
-            thread_pool,
             opening_key,
             rs: ReedSolomon::new(FIELD_ELEMENTS_PER_BLOB, EXTENSION_FACTOR),
             coset_shifts,
@@ -89,7 +70,7 @@ impl PeerDASContext {
         cell: CellRef,
         proof_bytes: Bytes48Ref,
     ) -> Result<(), VerifierError> {
-        self.verifier_ctx.thread_pool.install(|| {
+        self.thread_pool.install(|| {
             self.verify_cell_kzg_proof_batch(
                 vec![commitment_bytes],
                 vec![0],
@@ -113,7 +94,7 @@ impl PeerDASContext {
         cells: Vec<CellRef>,
         proofs_bytes: Vec<Bytes48Ref>,
     ) -> Result<(), VerifierError> {
-        self.verifier_ctx.thread_pool.install(|| {
+        self.thread_pool.install(|| {
             // Validation
             //
             validation::verify_cell_kzg_proof_batch(
