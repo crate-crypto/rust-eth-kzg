@@ -1,5 +1,4 @@
-use bls12_381::lincomb::g1_lincomb;
-use bls12_381::{G1Projective, Scalar};
+use bls12_381::{lincomb::g1_lincomb, G1Projective, Scalar};
 
 // The key that is used to commit to polynomials in monomial form
 //
