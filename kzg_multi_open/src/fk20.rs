@@ -213,6 +213,8 @@ impl FK20 {
 
         // apply reverse bit order permutation, since fft_g1 was applied using
         // the regular order, and we want the cosets to be in bit-reversed order
+        //
+        // TODO: Add note about making the cosets line up for the evaluation sets
         reverse_bit_order(&mut proofs);
 
         let mut proofs_affine = vec![G1Point::identity(); proofs.len()];
