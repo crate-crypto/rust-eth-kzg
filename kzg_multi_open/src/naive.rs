@@ -2,15 +2,6 @@ use crate::{commit_key::CommitKey, opening_key::OpeningKey};
 use bls12_381::{multi_pairings, G1Point, G1Projective, G2Point, G2Prepared, Scalar};
 use polynomial::monomial::{lagrange_interpolate, poly_eval, poly_sub, vanishing_poly, PolyCoeff};
 
-pub struct Proof {
-    /// Commitment to the `witness` or quotient polynomial
-    pub quotient_commitment: G1Point,
-    /// Evaluation of the polynomial at the input points.
-    ///
-    /// This implementation is only concerned with the case where the input points are roots of unity.
-    pub output_points: Vec<Scalar>,
-}
-
 /// This modules contains code to create and verify opening proofs in a naive way.
 /// It is also generally meaning the points we are creating opening proofs
 /// for, do not need to have any special structure.
@@ -23,6 +14,15 @@ pub struct Proof {
 ///
 /// We will use the naive scheme for testing purposes.
 
+pub(crate) struct Proof {
+    /// Commitment to the `witness` or quotient polynomial
+    pub quotient_commitment: G1Point,
+    /// Evaluation of the polynomial at the input points.
+    ///
+    /// This implementation is only concerned with the case where the input points are roots of unity.
+    pub output_points: Vec<Scalar>,
+}
+
 /// Naively computes an opening proof that attests to the evaluation of
 /// `polynomial` at `input_points`.
 //
@@ -33,7 +33,7 @@ pub struct Proof {
 // This is done intentionally since that method
 // has additional checks that require the evaluations and computing
 // the output points, the naive way is quite expensive.
-pub fn compute_multi_opening(
+pub(crate) fn compute_multi_opening(
     commit_key: &CommitKey,
     polynomial: &PolyCoeff,
     input_points: &[Scalar],
@@ -48,7 +48,7 @@ pub fn compute_multi_opening(
 }
 
 /// Naively Verifies a multi-point opening proof.
-pub fn verify_multi_opening(
+pub(crate) fn verify_multi_opening(
     proof: &Proof,
     opening_key: &OpeningKey,
     commitment: G1Point,
