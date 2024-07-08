@@ -12,16 +12,17 @@ pub fn batch_inverse<F: ff::Field>(elements: &mut [F]) {
 // Taken and modified from arkworks codebase
 fn batch_inversion<F: ff::Field>(v: &mut [F]) {
     // Divide the vector v evenly between all available cores
-    let min_elements_per_thread = 1;
-    let num_cpus_available = rayon::current_num_threads();
-    let num_elems = v.len();
-    let num_elem_per_thread =
-        std::cmp::max(num_elems / num_cpus_available, min_elements_per_thread);
+    serial_batch_inversion(v);
+    // let min_elements_per_thread = 1;
+    // let num_cpus_available = rayon::current_num_threads();
+    // let num_elems = v.len();
+    // let num_elem_per_thread =
+    //     std::cmp::max(num_elems / num_cpus_available, min_elements_per_thread);
 
-    // Batch invert in parallel, without copying the vector
-    v.par_chunks_mut(num_elem_per_thread).for_each(|chunk| {
-        serial_batch_inversion(chunk);
-    });
+    // // Batch invert in parallel, without copying the vector
+    // v.par_chunks_mut(num_elem_per_thread).for_each(|chunk| {
+    //     // serial_batch_inversion(chunk);
+    // });
 }
 
 /// Given a vector of field elements {v_i}, compute the vector {coeff * v_i^(-1)}
