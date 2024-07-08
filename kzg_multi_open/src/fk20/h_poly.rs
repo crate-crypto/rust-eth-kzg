@@ -71,7 +71,6 @@ mod tests {
         create_eth_commit_opening_keys,
         fk20::{h_poly::take_every_nth, naive, FK20},
     };
-    use bls12_381::group::Group;
 
     #[test]
     fn smoke_test_downsample() {

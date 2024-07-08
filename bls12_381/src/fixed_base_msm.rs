@@ -1,4 +1,4 @@
-use crate::{G1Projective, Scalar};
+use crate::{g1_batch_normalize, G1Projective, Scalar};
 use blstrs::{Fp, G1Affine};
 
 /// FixedBasedMSM computes a multi scalar multiplication using pre-computations.
@@ -17,10 +17,7 @@ impl FixedBaseMSM {
         let num_points = generators.len();
         let table_size = unsafe { blst::blst_p1s_mult_wbits_precompute_sizeof(wbits, num_points) };
 
-        use group::prime::PrimeCurveAffine;
-        use group::Curve;
-        let mut generators_affine = vec![G1Affine::identity(); generators.len()];
-        G1Projective::batch_normalize(&generators, &mut generators_affine);
+        let generators_affine = g1_batch_normalize(&generators);
 
         // blst expects these to be references, so we convert from Vec<T> to Vec<&T>
         let generators_affine: Vec<&G1Affine> = generators_affine.iter().collect();

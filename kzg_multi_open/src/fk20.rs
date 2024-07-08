@@ -8,10 +8,7 @@ pub(crate) mod naive;
 mod toeplitz;
 pub mod verify;
 
-use bls12_381::{
-    group::{prime::PrimeCurveAffine, Curve, Group},
-    {G1Point, G1Projective, Scalar},
-};
+use bls12_381::{g1_batch_normalize, group::Group, G1Point, G1Projective, Scalar};
 use cosets::{log2, reverse_bits};
 use h_poly::take_every_nth;
 use polynomial::{domain::Domain, monomial::PolyCoeff};
@@ -219,9 +216,7 @@ impl FK20 {
         // TODO: Add note about making the cosets line up for the evaluation sets
         reverse_bit_order(&mut proofs);
 
-        let mut proofs_affine = vec![G1Point::identity(); proofs.len()];
-        // TODO: This does not seem to be using the batch affine trick
-        bls12_381::G1Projective::batch_normalize(&proofs, &mut proofs_affine);
+        let proofs_affine = g1_batch_normalize(&proofs);
 
         let evaluation_sets = self.compute_evaluation_sets(polynomial);
 

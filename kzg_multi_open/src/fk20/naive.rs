@@ -1,7 +1,5 @@
 use crate::commit_key::CommitKey;
-use bls12_381::group::prime::PrimeCurveAffine;
-use bls12_381::group::Curve;
-use bls12_381::{G1Point, Scalar};
+use bls12_381::{g1_batch_normalize, G1Point, Scalar};
 use polynomial::domain::Domain;
 use polynomial::monomial::PolyCoeff;
 
@@ -78,11 +76,8 @@ pub fn fk20_open_multi_point(
         .map(|h_poly| commit_key.commit_g1(h_poly))
         .collect::<Vec<_>>();
 
-    let proofs = proof_domain.fft_g1(commitment_h_polys.clone());
-
-    let mut proofs_affine = vec![G1Point::identity(); proofs.len()];
-    // TODO: This does not seem to be using the batch affine trick
-    bls12_381::G1Projective::batch_normalize(&proofs, &mut proofs_affine);
+    let proofs = proof_domain.fft_g1(commitment_h_polys);
+    let mut proofs_affine = g1_batch_normalize(&proofs);
 
     // reverse the order of the proofs, since fft_g1 was applied using
     // the regular order.
