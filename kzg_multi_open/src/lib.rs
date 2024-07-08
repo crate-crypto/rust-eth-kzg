@@ -5,9 +5,8 @@ pub mod commit_key;
 pub mod fk20;
 pub mod opening_key;
 
-// TODO: put this under a feature flag, so we can use it within benchmarks
-// TODO: alternatively, put it under a test flag and never benchmark the naive implementations
-pub mod naive;
+#[cfg(test)]
+pub(crate) mod naive;
 
 // Re-export the polynomial crate
 pub use polynomial;
