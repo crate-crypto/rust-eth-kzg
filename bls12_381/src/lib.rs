@@ -25,3 +25,14 @@ pub fn multi_pairings(pairs: &[(&G1Point, &blstrs::G2Prepared)]) -> bool {
     let pairing_ = blstrs::Bls12::multi_miller_loop(pairs).final_exponentiation();
     pairing_.is_identity().into()
 }
+
+// TODO: Use batch_inversion trick to speed this up
+pub fn g1_batch_normalize(projective_points: &[G1Projective]) -> Vec<G1Point> {
+    use group::prime::PrimeCurveAffine;
+    use group::Curve;
+
+    let mut affine_points = vec![G1Point::identity(); projective_points.len()];
+    G1Projective::batch_normalize(&projective_points, &mut affine_points);
+
+    affine_points
+}
