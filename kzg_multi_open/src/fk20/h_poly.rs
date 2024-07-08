@@ -91,13 +91,10 @@ mod tests {
         // Compute the commitment to the h_polynomials naively
         //
         let h_polynomials = naive::compute_h_poly(&poly, coset_size);
-        let mut expected_comm_h_polys = h_polynomials
+        let expected_comm_h_polys = h_polynomials
             .iter()
             .map(|h_poly| commit_key.commit_g1(h_poly))
             .collect::<Vec<_>>();
-        // Add the identity element to h_polys to pad it to a power of two
-        // TODO: We could perhaps put this padding into the naive_compute_h_poly method
-        expected_comm_h_polys.push(bls12_381::G1Projective::identity());
 
         // Compute the commitment to the h_polynomials using the method noted in the FK20 paper
         //

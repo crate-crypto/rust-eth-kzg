@@ -15,13 +15,16 @@ use super::cosets::reverse_bit_order;
 /// naming a method with different functionality that name.
 pub fn divide_by_monomial_floor(poly: &PolyCoeff, degree: usize) -> &[Scalar] {
     let n = poly.len();
-    // If the degree of the monomial is greater than or equal to the number of coefficients,
-    // the division results in the zero polynomial
-    assert!(
-        degree < n,
-        "degree should be less than the number of coefficients"
-    );
-    &poly[degree..]
+    if degree >= n {
+        // Return an empty slice if the degree is greater than or equal to
+        // the number of coefficients
+        //
+        // This is the same behavior you get when you right-shift
+        // a number by more tha the amount of bits needed to represent that number.
+        &[]
+    } else {
+        &poly[degree..]
+    }
 }
 
 /// Naively compute the `h`` polynomials for the FK20 proofs.
@@ -29,34 +32,33 @@ pub fn divide_by_monomial_floor(poly: &PolyCoeff, degree: usize) -> &[Scalar] {
 /// See section 3.1.1 of the FK20 paper for more details.
 ///
 /// FK20 computes the commitments to these polynomials in 3.1.1.
-pub fn compute_h_poly(polynomial: &PolyCoeff, l: usize) -> Vec<&[Scalar]> {
+pub fn compute_h_poly(polynomial: &PolyCoeff, coset_size: usize) -> Vec<&[Scalar]> {
     assert!(
-        l.is_power_of_two(),
-        "expected l to be a power of two (its the size of the cosets), found {}",
-        l
+        coset_size.is_power_of_two(),
+        "expected coset_size to be a power of two, found {}",
+        coset_size
     );
 
-    let m = polynomial.len();
+    let num_coefficients = polynomial.len();
     assert!(
-        m.is_power_of_two(),
-        "expected polynomial to have power of 2 number of evaluations. Found {}",
-        m
+        num_coefficients.is_power_of_two(),
+        "expected polynomial to have power of 2 number of coefficients. Found {}",
+        num_coefficients
     );
-    let k: usize = m / l;
+
+    let k: usize = num_coefficients / coset_size;
     assert!(
         k.is_power_of_two(),
         "expected k to be a power of two, found {}",
         k
     );
 
-    let mut h_polys = Vec::with_capacity(k - 1);
-    for index in 1..k {
-        let degree = index * l;
+    let mut h_polys = Vec::with_capacity(k);
+    for index in 1..=k {
+        let degree = index * coset_size;
         let h_poly_i = divide_by_monomial_floor(polynomial, degree);
         h_polys.push(h_poly_i);
     }
-
-    assert!(h_polys.len() == k - 1);
 
     h_polys
 }
@@ -75,6 +77,7 @@ pub fn fk20_open_multi_point(
         .iter()
         .map(|h_poly| commit_key.commit_g1(h_poly))
         .collect::<Vec<_>>();
+
     let proofs = proof_domain.fft_g1(commitment_h_polys.clone());
 
     let mut proofs_affine = vec![G1Point::identity(); proofs.len()];
