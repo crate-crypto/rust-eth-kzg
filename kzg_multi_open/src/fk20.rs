@@ -2,7 +2,8 @@ mod batch_toeplitz;
 pub(crate) mod cosets;
 mod h_poly;
 
-pub mod naive;
+#[cfg(test)]
+pub(crate) mod naive;
 
 mod toeplitz;
 pub mod verify;
