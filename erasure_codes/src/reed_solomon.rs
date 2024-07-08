@@ -129,6 +129,8 @@ fn recover_polynomial_coefficient(
 
     let mut coset_z_x_eval = domain_extended.coset_fft_scalars(z_x);
     let coset_dz_eval = domain_extended.coset_fft_scalars(dz_poly);
+    // We know that none of the values will be zero since we are evaluating z_x
+    // over a coset, that we know it has no roots in.
     batch_inverse(&mut coset_z_x_eval);
     let coset_quotient_eval: Vec<_> = coset_dz_eval
         .iter()

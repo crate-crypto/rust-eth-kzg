@@ -50,6 +50,7 @@ impl CommitKey {
         // identity element.
         // We use g1_lincomb because it is safer and the performance difference is negligible
         g1_lincomb(&self.g1s[0..poly_coeff.len()], poly_coeff)
+            .expect("number of g1 points is equal to the number of coefficients in the polynomial")
     }
 }
 
@@ -62,5 +63,6 @@ impl CommitKeyLagrange {
     pub fn commit_g1(&self, polynomial: &[Scalar]) -> G1Projective {
         assert!(self.g1s.len() >= polynomial.len());
         g1_lincomb(&self.g1s[0..polynomial.len()], polynomial)
+            .expect("number of g1 points is equal to the number of evaluations in the polynomial")
     }
 }

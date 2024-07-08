@@ -125,7 +125,8 @@ pub fn verify_multi_opening(
     let num_unique_commitments = row_commitments.len();
 
     // First compute a random linear combination of the proofs
-    let random_sum_proofs = bls12_381::lincomb::g1_lincomb(&proofs, &r_powers);
+    let random_sum_proofs = bls12_381::lincomb::g1_lincomb(&proofs, &r_powers)
+        .expect("number of proofs and number of r_powers should be the same");
 
     // Now compute a random linear combination of the commitments
     //
@@ -143,7 +144,8 @@ pub fn verify_multi_opening(
         // We then add the contribution of `r` as a part of that commitments weight.
         weights[commitment_index as usize] += r_powers[k];
     }
-    let random_sum_commitments = bls12_381::lincomb::g1_lincomb(&row_commitments, &weights);
+    let random_sum_commitments = bls12_381::lincomb::g1_lincomb(&row_commitments, &weights)
+        .expect("number of row_commitments and number of weights should be the same");
 
     let domain = polynomial::domain::Domain::new(opening_key.multi_opening_size);
 
@@ -157,7 +159,7 @@ pub fn verify_multi_opening(
         let ifft_scalars = domain.ifft_scalars(coset_evals_clone);
         let h_k = coset_shifts[cell_indices[k] as usize];
         let mut inv_h_k_powers = compute_powers(h_k, ifft_scalars.len());
-        batch_inverse(&mut inv_h_k_powers);
+        batch_inverse(&mut inv_h_k_powers); // The coset generators are all roots of unity, so none of them will be zero
         let ifft_scalars: Vec<_> = ifft_scalars
             .into_iter()
             .zip(inv_h_k_powers)
@@ -185,7 +187,8 @@ pub fn verify_multi_opening(
         let wrp = r_powers[k] * h_k_pow;
         weighted_r_powers.push(wrp);
     }
-    let random_weighted_sum_proofs = bls12_381::lincomb::g1_lincomb(&proofs, &weighted_r_powers);
+    let random_weighted_sum_proofs = bls12_381::lincomb::g1_lincomb(&proofs, &weighted_r_powers)
+        .expect("number of proofs and number of weighted_r_powers should be the same");
 
     // TODO: Find a better name for this
     let rl = (random_sum_commitments - random_sum_interpolation) + random_weighted_sum_proofs;

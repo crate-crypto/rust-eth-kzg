@@ -15,20 +15,6 @@ pub fn batch_inversion(c: &mut Criterion) {
             })
         },
     );
-
-    c.bench_function(
-        &format!(
-            "bls12_381 batch_inversion_zero_check size: {}",
-            NUM_ELEMENTS
-        ),
-        |b| {
-            b.iter(|| {
-                let mut elements =
-                    vec![black_box(Scalar::random(&mut rand::thread_rng())); NUM_ELEMENTS];
-                batch_inversion::batch_inverse_check_for_zero(&mut elements);
-            })
-        },
-    );
 }
 
 criterion_group!(benches, batch_inversion);
