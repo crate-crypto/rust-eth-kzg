@@ -3,7 +3,6 @@ use bls12_381::{ff::Field, group::Group, G1Projective};
 use bls12_381::{G2Projective, Scalar};
 use crate_crypto_kzg_multi_open_fk20::create_eth_commit_opening_keys;
 use crate_crypto_kzg_multi_open_fk20::fk20::{reverse_bit_order, FK20};
-use crate_crypto_kzg_multi_open_fk20::naive::compute_multi_opening;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use polynomial::domain::Domain;
 
@@ -43,8 +42,6 @@ pub fn bench_compute_proof(c: &mut Criterion) {
     const POLYNOMIAL_LEN: usize = 4096;
     let polynomial_4096 = vec![black_box(Scalar::random(&mut rand::thread_rng())); POLYNOMIAL_LEN];
     let (ck, _) = create_eth_commit_opening_keys();
-    let domain_g1 = Domain::new(ck.g1s.len());
-    let ck_lagrange = ck.clone().into_lagrange(&domain_g1);
     const NUMBER_OF_POINTS_TO_EVALUATE: usize = 2 * POLYNOMIAL_LEN;
 
     const NUMBER_OF_POINTS_PER_PROOF: usize = 64;
@@ -52,40 +49,17 @@ pub fn bench_compute_proof(c: &mut Criterion) {
     let mut domain_extended_roots = domain_extended.roots.clone();
     reverse_bit_order(&mut domain_extended_roots);
 
-    let chunked_bit_reversed_roots: Vec<_> = domain_extended_roots
-        .chunks(NUMBER_OF_POINTS_PER_PROOF)
-        .collect();
-
-    // The results for the naive version are linear, so you can multiply the time taken
-    // to compute 1 proof by the number of proofs, you are interested in.
-    let num_proofs = 1;
-    c.bench_function(
-        &format!(
-            "computing proofs w/ fk20. POLY_SIZE {}, NUM_INPUT_POINTS {}, NUM_PROOFS {}",
-            POLYNOMIAL_LEN, NUMBER_OF_POINTS_PER_PROOF, num_proofs
-        ),
-        |b| {
-            b.iter(|| {
-                for input_points in &chunked_bit_reversed_roots[0..num_proofs] {
-                    compute_multi_opening(&ck, &polynomial_4096, input_points);
-                }
-            })
-        },
-    );
-
     let fk20 = FK20::new(
         ck,
-        ck_lagrange,
         POLYNOMIAL_LEN,
         NUMBER_OF_POINTS_PER_PROOF,
         NUMBER_OF_POINTS_TO_EVALUATE,
     );
+    let num_proofs = fk20.num_proofs();
     c.bench_function(
         &format!(
             "computing proofs with fk20. POLY_SIZE {}, NUM_INPUT_POINTS {}, NUM_PROOFS {}",
-            POLYNOMIAL_LEN,
-            NUMBER_OF_POINTS_PER_PROOF,
-            chunked_bit_reversed_roots.len()
+            POLYNOMIAL_LEN, NUMBER_OF_POINTS_PER_PROOF, num_proofs
         ),
         |b| b.iter(|| fk20.compute_multi_opening_proofs_poly_coeff(polynomial_4096.clone())),
     );
