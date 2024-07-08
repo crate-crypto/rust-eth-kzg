@@ -11,7 +11,7 @@ mod verify_cells_and_kzg_proofs_batch;
 use verify_cells_and_kzg_proofs_batch::_verify_cell_kzg_proof_batch;
 
 mod recover_cells_and_kzg_proofs;
-use recover_cells_and_kzg_proofs::_recover_all_cells_and_proofs;
+use recover_cells_and_kzg_proofs::_recover_cells_and_proofs;
 
 pub(crate) mod pointer_utils;
 
@@ -308,7 +308,7 @@ pub extern "C" fn verify_cell_kzg_proof_batch(
     }
 }
 
-/// Recovers all cells and their KZG proofs from the given cell ids and cells
+/// Recovers all cells and their KZG proofs from the given cell indices and cells
 ///
 /// # Safety
 ///
@@ -319,7 +319,7 @@ pub extern "C" fn verify_cell_kzg_proof_batch(
 /// - The caller must ensure that the pointers are valid.
 /// - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` cells
 ///   and that each cell is at least `BYTES_PER_CELL` bytes.
-/// - The caller must ensure that `cell_ids` points to a region of memory that is at least `cell_ids_length` cell ids
+/// - The caller must ensure that `cell_indices` points to a region of memory that is at least `cell_indices_length` cell indices
 ///   and that each cell id is 8 bytes.
 /// - The caller must ensure that `out_cells` points to a region of memory that is at least `CELLS_PER_EXT_BLOB` cells
 ///   and that each cell is at least `BYTES_PER_CELL` bytes.
@@ -338,18 +338,18 @@ pub extern "C" fn recover_cells_and_proofs(
     cells_length: u64,
     cells: *const *const u8,
 
-    cell_ids_length: u64,
-    cell_ids: *const u64,
+    cell_indices_length: u64,
+    cell_indices: *const u64,
 
     out_cells: *mut *mut u8,
     out_proofs: *mut *mut u8,
 ) -> CResult {
-    match _recover_all_cells_and_proofs(
+    match _recover_cells_and_proofs(
         ctx,
         cells_length,
         cells,
-        cell_ids_length,
-        cell_ids,
+        cell_indices_length,
+        cell_indices,
         out_cells,
         out_proofs,
     ) {

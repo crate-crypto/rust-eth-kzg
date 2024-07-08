@@ -12,11 +12,37 @@ pub struct OpeningKey {
     ///
     /// ie group elements of the form `{ \tau^i G }`
     pub g2s: Vec<G2Projective>,
+    // TODO: We could possibly remove these fields below and
+    // TODO: create a new structure called ProtocolDescription.
+    /// This is the number of points that will be a
+    /// opened at any one time. Another way to think
+    /// of this, is that its the number of points a
+    /// proof will attest to.
+    ///
+    /// In most cases, this is the number of G1 elements,
+    /// however, we have this explicit parameter to
+    /// avoid foot guns.
+    pub multi_opening_size: usize,
+    // This the number of coefficients in the polynomial that we want to
+    // verify claims about.
+    //
+    // Note: We could also use the max degree bound here. (This is a matter of preference)
+    pub num_coefficients_in_polynomial: usize,
 }
 
 impl OpeningKey {
-    pub fn new(g1s: Vec<G1Projective>, g2s: Vec<G2Projective>) -> Self {
-        Self { g1s, g2s }
+    pub fn new(
+        g1s: Vec<G1Projective>,
+        g2s: Vec<G2Projective>,
+        multi_opening_size: usize,
+        num_coefficients_in_polynomial: usize,
+    ) -> Self {
+        Self {
+            g1s,
+            g2s,
+            multi_opening_size,
+            num_coefficients_in_polynomial,
+        }
     }
     /// Commit to a polynomial in monomial form using the G2 group elements
     pub fn commit_g2(&self, polynomial: &[Scalar]) -> G2Projective {

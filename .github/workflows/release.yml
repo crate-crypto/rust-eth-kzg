@@ -10,6 +10,10 @@ on:
     branches:
       - master
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   release-please:
     name: Create Release
@@ -50,7 +54,7 @@ jobs:
                 with:
                     workflow: release-node-bindings.yml
                     ref: master
-                    inputs: '{ "ref": "${{ needs.release-please.outputs.tag-name }}" }'
+                    inputs: '{ "ref": "${{ needs.release-please.outputs.tag-name }}", "release-type": "release" }'
                     token: ${{ secrets.RELEASE_TOKEN }}
 
   publish-java-bindings:

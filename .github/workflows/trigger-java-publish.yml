@@ -3,6 +3,10 @@ name: Test Publish Dummy Package to Maven Central
 on:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   publish-dummy:
     runs-on: ubuntu-latest

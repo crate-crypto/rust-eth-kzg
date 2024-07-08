@@ -2,12 +2,9 @@ use std::sync::Arc;
 
 pub use crate::errors::ProverError;
 
-use bls12_381::{G1Point, Scalar};
 use kzg_multi_open::{
     commit_key::{CommitKey, CommitKeyLagrange},
     fk20::FK20,
-    polynomial::domain::Domain,
-    reverse_bit_order,
 };
 use rayon::ThreadPool;
 
@@ -19,7 +16,7 @@ use crate::{
     serialization::{self, serialize_g1_compressed},
     trusted_setup::TrustedSetup,
     verifier::VerifierContext,
-    BlobRef, Bytes48Ref, Cell, CellID, CellRef, KZGCommitment, KZGProof,
+    BlobRef, Cell, CellIndex, CellRef, KZGCommitment, KZGProof,
 };
 
 /// Context object that is used to call functions in the prover API.
@@ -39,8 +36,6 @@ pub struct ProverContext {
     /// to the polynomial.
     commit_key_lagrange: CommitKeyLagrange,
 
-    /// Domain used for converting the polynomial to the monomial form.
-    poly_domain: Domain,
     // Verifier context
     //
     // The prover needs the verifier context to recover the cells and then compute the proofs
@@ -74,7 +69,7 @@ impl ProverContext {
     ) -> Self {
         let commit_key = CommitKey::from(trusted_setup);
         // The number of points that we will make an opening proof for,
-        // ie a proof will attest to the value of the polynomial at these points.
+        // ie a proof will attest to the value of a polynomial at these points.
         let point_set_size = FIELD_ELEMENTS_PER_CELL;
 
         // The number of points that we will be making proofs for.
@@ -83,17 +78,18 @@ impl ProverContext {
         // by doing number_of_points_to_open / point_set_size.
         let number_of_points_to_open = FIELD_ELEMENTS_PER_EXT_BLOB;
 
-        let fk20 = FK20::new(&commit_key, point_set_size, number_of_points_to_open);
+        let fk20 = FK20::new(
+            &commit_key,
+            FIELD_ELEMENTS_PER_BLOB,
+            point_set_size,
+            number_of_points_to_open,
+        );
 
-        let poly_domain = Domain::new(FIELD_ELEMENTS_PER_BLOB);
-
-        // TODO: We can just deserialize these instead of doing this ifft
-        let commit_key_lagrange = commit_key.clone().into_lagrange(&poly_domain);
+        let commit_key_lagrange = CommitKeyLagrange::from(trusted_setup);
 
         ProverContext {
             fk20,
             commit_key,
-            poly_domain,
             commit_key_lagrange,
             verifier_context: VerifierContext::from_thread_pool(trusted_setup, thread_pool.clone()),
             thread_pool,
@@ -103,16 +99,11 @@ impl ProverContext {
     /// Computes the KZG commitment to the polynomial represented by the blob.
     pub fn blob_to_kzg_commitment(&self, blob: BlobRef) -> Result<KZGCommitment, ProverError> {
         self.thread_pool.install(|| {
-            // Deserialize the blob into scalars. The blob is in lagrange form.
-            let mut scalars = serialization::deserialize_blob_to_scalars(blob)
-                .map_err(ProverError::Serialization)?;
+            // Deserialize the blob into scalars.
+            let scalars = serialization::deserialize_blob_to_scalars(blob)?;
 
-            // Reverse the order of the scalars, so that they are in normal order.
-            // ie not in bit-reversed order.
-            reverse_bit_order(&mut scalars);
-
-            // Commit to the polynomial.
-            let commitment: G1Point = self.commit_key_lagrange.commit_g1(&scalars).into();
+            // Compute commitment using FK20
+            let commitment = FK20::commit_to_data(&self.commit_key_lagrange, scalars);
 
             // Serialize the commitment.
             Ok(serialize_g1_compressed(&commitment))
@@ -125,93 +116,47 @@ impl ProverContext {
         blob: BlobRef,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
         self.thread_pool.install(|| {
-            // Deserialize the blob into scalars. The blob is in lagrange form.
-            let mut scalars = serialization::deserialize_blob_to_scalars(blob)
-                .map_err(ProverError::Serialization)?;
+            // Deserialization
+            //
+            let scalars = serialization::deserialize_blob_to_scalars(blob)?;
 
-            // Reverse the order of the scalars, so that they are in normal order.
-            // ie not in bit-reversed order.
-            reverse_bit_order(&mut scalars);
+            // Computation
+            //
+            let (proofs, cells) = self.fk20.compute_multi_opening_proofs_on_data(scalars);
 
-            // Convert the polynomial from lagrange to monomial form.
-            let poly_coeff = self.poly_domain.ifft_scalars(scalars);
-
-            self.compute_cells_and_kzg_proofs_from_poly_coeff(poly_coeff)
-        })
-    }
-
-    fn compute_cells_and_kzg_proofs_from_poly_coeff(
-        &self,
-        poly_coeff: Vec<Scalar>,
-    ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
-        // Compute the proofs and the evaluations for the polynomial.
-        let (proofs, evaluation_sets) = self.fk20.compute_multi_opening_proofs(poly_coeff);
-
-        // Serialize the evaluation sets into `Cell`s.
-        let cells = evaluation_sets_to_cells(evaluation_sets.into_iter());
-
-        // Serialize the proofs into `KZGProof`s.
-        let proofs: Vec<_> = proofs.iter().map(serialize_g1_compressed).collect();
-        let proofs: [KZGProof; CELLS_PER_EXT_BLOB] = proofs
-            .try_into()
-            .unwrap_or_else(|_| panic!("expected {} number of proofs", CELLS_PER_EXT_BLOB));
-
-        Ok((cells, proofs))
-    }
-
-    #[deprecated(note = "This function is deprecated, use `compute_cells_and_kzg_proofs` instead")]
-    #[allow(deprecated)]
-    pub fn compute_cells(&self, blob: BlobRef) -> Result<[Cell; CELLS_PER_EXT_BLOB], ProverError> {
-        self.thread_pool.install(|| {
-            self.compute_cells_and_kzg_proofs(blob)
-                .map(|(cells, _)| cells)
+            Ok(serialization::serialize_cells_and_proofs(cells, proofs))
         })
     }
 
     /// Recovers the cells and computes the KZG proofs, given a subset of cells.
-    #[allow(deprecated)]
+    ///
+    /// Use erasure decoding to recover the polynomial corresponding to the cells
+    /// that were generated from fk20.
+    ///
+    // Note: The fact that we recover the polynomial for the bit-reversed version of the blob
+    // is irrelevant.
     pub fn recover_cells_and_proofs(
         &self,
-        cell_ids: Vec<CellID>,
+        cell_indices: Vec<CellIndex>,
         cells: Vec<CellRef>,
-        _proofs: Vec<Bytes48Ref>,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
         self.thread_pool.install(|| {
-            // if _proofs.len() != cells.len() {
-            //     return Err(ProverError::NumProofsDoesNotEqualNumCells)
-            // }
-            // // TODO: Eventually this will be removed in consensus-specs
-            // // Check proofs are valid so when test vectors are added
-            // // this passes, even though we so not use them.
-            // for proof in _proofs {
-            //     let _ = serialization::deserialize_compressed_g1(proof)
-            //         .map_err(ProverError::Serialization)?;
-            // }
-
-            // Use erasure decoding to recover the polynomial corresponding to the blob in monomial form
+            // Recover polynomial
+            //
             let poly_coeff = self
                 .verifier_context
-                .recover_polynomial_coeff(cell_ids, cells)
-                .map_err(ProverError::RecoveryFailure)?;
-            self.compute_cells_and_kzg_proofs_from_poly_coeff(poly_coeff)
+                .recover_polynomial_coeff(cell_indices, cells)?;
+
+            // Compute proofs and evaluation sets
+            //
+            let (proofs, evaluation_sets) = self
+                .fk20
+                .compute_multi_opening_proofs_poly_coeff(poly_coeff.clone());
+
+            Ok(serialization::serialize_cells_and_proofs(
+                evaluation_sets,
+                proofs,
+            ))
         })
     }
-}
-
-/// Converts a a set of scalars (evaluations) to the `Cell` type
-pub(crate) fn evaluation_sets_to_cells<T: AsRef<[Scalar]>>(
-    evaluations: impl Iterator<Item = T>,
-) -> [Cell; CELLS_PER_EXT_BLOB] {
-    let cells: Vec<Cell> = evaluations
-        .map(|eval| serialization::serialize_scalars_to_cell(eval.as_ref()))
-        .map(|cell| {
-            cell.into_boxed_slice()
-                .try_into()
-                .expect("infallible: Vec<u8> should have length equal to BYTES_PER_CELL")
-        })
-        .collect();
-
-    cells
-        .try_into()
-        .unwrap_or_else(|_| panic!("expected {} number of cells", CELLS_PER_EXT_BLOB))
 }

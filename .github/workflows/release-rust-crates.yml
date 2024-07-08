@@ -9,6 +9,10 @@ on:
         description: The reference (branch/tag/commit) to checkout
         required: true
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   publish:
     name: Publish in order

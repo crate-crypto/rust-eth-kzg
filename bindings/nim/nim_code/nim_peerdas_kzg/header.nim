@@ -141,7 +141,7 @@ proc verify_cell_kzg_proof_batch*(ctx: ptr PeerDASContext,
                                   proofs: ptr pointer,
                                   verified: pointer): CResult {.importc: "verify_cell_kzg_proof_batch".}
 
-## Recovers all cells and their KZG proofs from the given cell ids and cells
+## Recovers all cells and their KZG proofs from the given cell indices and cells
 #
 # # Safety
 #
@@ -152,7 +152,7 @@ proc verify_cell_kzg_proof_batch*(ctx: ptr PeerDASContext,
 # - The caller must ensure that the pointers are valid.
 # - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` cells
 #   and that each cell is at least `BYTES_PER_CELL` bytes.
-# - The caller must ensure that `cell_ids` points to a region of memory that is at least `cell_ids_length` cell ids
+# - The caller must ensure that `cell_indices` points to a region of memory that is at least `cell_indices_length` cell indices
 #   and that each cell id is 8 bytes.
 # - The caller must ensure that `out_cells` points to a region of memory that is at least `CELLS_PER_EXT_BLOB` cells
 #   and that each cell is at least `BYTES_PER_CELL` bytes.
@@ -166,8 +166,8 @@ proc verify_cell_kzg_proof_batch*(ctx: ptr PeerDASContext,
 proc recover_cells_and_proofs*(ctx: ptr PeerDASContext,
                                cells_length: uint64,
                                cells: ptr pointer,
-                               cell_ids_length: uint64,
-                               cell_ids: pointer,
+                               cell_indices_length: uint64,
+                               cell_indices: pointer,
                                out_cells: ptr pointer,
                                out_proofs: ptr pointer): CResult {.importc: "recover_cells_and_proofs".}
 

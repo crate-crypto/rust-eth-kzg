@@ -11,7 +11,11 @@ when defined(windows):
 else:
   const libName = "libc_peerdas_kzg.a"
 
-const libpath = getInstallDir() / libName
+# Path to the top level directory of the nim project
+# so we can reference the build directory
+const projectDir = currentSourcePath().parentDir().parentDir()
+const libpath = projectDir / getInstallDir() / libName
+
 
 {.passL: libpath.}
 

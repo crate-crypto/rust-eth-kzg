@@ -121,6 +121,56 @@ impl ProverContextJs {
   pub async fn async_compute_cells(&self, blob: Uint8Array) -> Result<Vec<Uint8Array>> {
     self.compute_cells(blob)
   }
+
+  #[allow(deprecated)]
+  #[napi]
+  pub fn recover_cells_and_kzg_proofs(
+    &self,
+    cell_indices: Vec<BigInt>,
+    cells: Vec<Uint8Array>,
+  ) -> Result<CellsAndProofs> {
+    let cell_indices: Vec<_> = cell_indices.into_iter().map(bigint_to_u64).collect();
+    let cells: Vec<_> = cells.iter().map(|cell| cell.as_ref()).collect();
+
+    let prover_context = &self.inner;
+
+    let cells: Vec<_> = cells
+      .iter()
+      .map(|cell| slice_to_array_ref(cell, "cell"))
+      .collect::<Result<_, _>>()?;
+
+    let (cells, proofs) = prover_context
+      .recover_cells_and_proofs(cell_indices, cells)
+      .map_err(|err| {
+        Error::from_reason(format!(
+          "failed to compute recover_cells_and_kzg_proofs: {:?}",
+          err
+        ))
+      })?;
+
+    let cells_uint8array = cells
+      .into_iter()
+      .map(|cell| Uint8Array::from(cell.to_vec()))
+      .collect::<Vec<Uint8Array>>();
+    let proofs_uint8array = proofs
+      .into_iter()
+      .map(Uint8Array::from)
+      .collect::<Vec<Uint8Array>>();
+
+    Ok(CellsAndProofs {
+      cells: cells_uint8array,
+      proofs: proofs_uint8array,
+    })
+  }
+
+  #[napi]
+  pub async fn async_recover_cells_and_kzg_proofs(
+    &self,
+    cell_indices: Vec<BigInt>,
+    cells: Vec<Uint8Array>,
+  ) -> Result<CellsAndProofs> {
+    self.recover_cells_and_kzg_proofs(cell_indices, cells)
+  }
 }
 
 #[napi]
@@ -147,14 +197,14 @@ impl VerifierContextJs {
   pub fn verify_cell_kzg_proof(
     &self,
     commitment: Uint8Array,
-    cell_id: BigInt,
+    cell_index: BigInt,
     cell: Uint8Array,
     proof: Uint8Array,
   ) -> Result<bool> {
     let commitment = commitment.as_ref();
     let cell = cell.as_ref();
     let proof = proof.as_ref();
-    let cell_id_u64 = bigint_to_u64(cell_id);
+    let cell_index_u64 = bigint_to_u64(cell_index);
 
     let verifier_context = &self.inner;
 
@@ -162,7 +212,7 @@ impl VerifierContextJs {
     let commitment = slice_to_array_ref(commitment, "commitment")?;
     let proof = slice_to_array_ref(proof, "proof")?;
 
-    let valid = verifier_context.verify_cell_kzg_proof(commitment, cell_id_u64, cell, proof);
+    let valid = verifier_context.verify_cell_kzg_proof(commitment, cell_index_u64, cell, proof);
     match valid {
       Ok(_) => Ok(true),
       Err(VerifierError::InvalidProof) => Ok(false),
@@ -177,11 +227,11 @@ impl VerifierContextJs {
   pub async fn async_verify_cell_kzg_proof(
     &self,
     commitment: Uint8Array,
-    cell_id: BigInt,
+    cell_index: BigInt,
     cell: Uint8Array,
     proof: Uint8Array,
   ) -> Result<bool> {
-    self.verify_cell_kzg_proof(commitment, cell_id, cell, proof)
+    self.verify_cell_kzg_proof(commitment, cell_index, cell, proof)
   }
 
   #[napi]
@@ -238,44 +288,6 @@ impl VerifierContextJs {
     proofs: Vec<Uint8Array>,
   ) -> Result<bool> {
     self.verify_cell_kzg_proof_batch(commitments, row_indices, column_indices, cells, proofs)
-  }
-
-  #[allow(deprecated)]
-  #[napi]
-  pub fn recover_all_cells(
-    &self,
-    cell_ids: Vec<BigInt>,
-    cells: Vec<Uint8Array>,
-  ) -> Result<Vec<Uint8Array>> {
-    let cell_ids: Vec<_> = cell_ids.into_iter().map(bigint_to_u64).collect();
-    let cells: Vec<_> = cells.iter().map(|cell| cell.as_ref()).collect();
-
-    let verifier_context = &self.inner;
-
-    let cells: Vec<_> = cells
-      .iter()
-      .map(|cell| slice_to_array_ref(cell, "cell"))
-      .collect::<Result<_, _>>()?;
-
-    let cells = verifier_context
-      .recover_all_cells(cell_ids, cells)
-      .map_err(|err| Error::from_reason(format!("failed to compute compute_cells: {:?}", err)))?;
-
-    let cells_uint8array = cells
-      .into_iter()
-      .map(|cell| Uint8Array::from(cell.to_vec()))
-      .collect::<Vec<Uint8Array>>();
-
-    Ok(cells_uint8array)
-  }
-
-  #[napi]
-  pub async fn async_recover_all_cells(
-    &self,
-    cell_ids: Vec<BigInt>,
-    cells: Vec<Uint8Array>,
-  ) -> Result<Vec<Uint8Array>> {
-    self.recover_all_cells(cell_ids, cells)
   }
 }
 

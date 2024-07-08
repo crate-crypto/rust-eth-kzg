@@ -1,9 +1,9 @@
 use bls12_381::lincomb::{g1_lincomb, g1_lincomb_unsafe, g2_lincomb, g2_lincomb_unsafe};
 use bls12_381::{ff::Field, group::Group, G1Projective};
 use bls12_381::{G2Projective, Scalar};
-use crate_crypto_kzg_multi_open_fk20::fk20::FK20;
-use crate_crypto_kzg_multi_open_fk20::proof::compute_multi_opening_naive;
-use crate_crypto_kzg_multi_open_fk20::{create_eth_commit_opening_keys, reverse_bit_order};
+use crate_crypto_kzg_multi_open_fk20::create_eth_commit_opening_keys;
+use crate_crypto_kzg_multi_open_fk20::fk20::{reverse_bit_order, FK20};
+use crate_crypto_kzg_multi_open_fk20::naive::compute_multi_opening;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use polynomial::domain::Domain;
 
@@ -65,7 +65,7 @@ pub fn bench_compute_proof(c: &mut Criterion) {
         |b| {
             b.iter(|| {
                 for input_points in &chunked_bit_reversed_roots[0..num_proofs] {
-                    compute_multi_opening_naive(&ck, &polynomial_4096, input_points);
+                    compute_multi_opening(&ck, &polynomial_4096, input_points);
                 }
             })
         },
@@ -73,6 +73,7 @@ pub fn bench_compute_proof(c: &mut Criterion) {
 
     let fk20 = FK20::new(
         &ck,
+        POLYNOMIAL_LEN,
         NUMBER_OF_POINTS_PER_PROOF,
         NUMBER_OF_POINTS_TO_EVALUATE,
     );
@@ -83,7 +84,7 @@ pub fn bench_compute_proof(c: &mut Criterion) {
             NUMBER_OF_POINTS_PER_PROOF,
             chunked_bit_reversed_roots.len()
         ),
-        |b| b.iter(|| fk20.compute_multi_opening_proofs(polynomial_4096.clone())),
+        |b| b.iter(|| fk20.compute_multi_opening_proofs_poly_coeff(polynomial_4096.clone())),
     );
 }
 

@@ -78,12 +78,6 @@ public class LibPeerDASKZG implements AutoCloseable{
         return cellsAndProofs;
     }
 
-    public byte[][] computeCells(byte[] blob) {
-        checkContextHasNotBeenFreed();
-        CellsAndProofs cellsAndProofs = computeCellsAndKZGProofs(blob);
-        return cellsAndProofs.cells;
-    }
-
     public boolean verifyCellKZGProof(byte[] commitment, long cellID, byte[] cell, byte[] proof) {
         checkContextHasNotBeenFreed();
         return verifyCellKZGProof(contextPtr, commitment, cellID, cell, proof);
@@ -93,11 +87,6 @@ public class LibPeerDASKZG implements AutoCloseable{
             byte[][] proofsArr) {
                 checkContextHasNotBeenFreed();
         return verifyCellKZGProofBatch(contextPtr, commitmentsArr, rowIndices, columnIndices, cellsArr, proofsArr);
-    }
-    
-    public byte[][] recoverAllCells(long[] cellIDs, byte[][] cellsArr) {
-        checkContextHasNotBeenFreed();
-        return recoverCellsAndProofs(cellIDs, cellsArr).cells;
     }
     
     public CellsAndProofs recoverCellsAndProofs(long[] cellIDs, byte[][] cellsArr) {

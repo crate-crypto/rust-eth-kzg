@@ -1,10 +1,11 @@
 use crate::commit_key::CommitKey;
-use crate::reverse_bit_order;
 use bls12_381::group::prime::PrimeCurveAffine;
 use bls12_381::group::Curve;
 use bls12_381::{G1Point, Scalar};
 use polynomial::domain::Domain;
 use polynomial::monomial::PolyCoeff;
+
+use super::cosets::reverse_bit_order;
 
 /// This is doing \floor{f(x) / x^d}
 /// which essentially means removing the first d coefficients
@@ -65,11 +66,10 @@ pub fn compute_h_poly(polynomial: &PolyCoeff, l: usize) -> Vec<&[Scalar]> {
 pub fn fk20_open_multi_point(
     commit_key: &CommitKey,
     proof_domain: &Domain,
-    ext_domain: &Domain,
     polynomial: &PolyCoeff,
-    l: usize,
-) -> (Vec<G1Point>, Vec<Vec<Scalar>>) {
-    let h_polys = compute_h_poly(polynomial, l);
+    coset_size: usize,
+) -> Vec<G1Point> {
+    let h_polys = compute_h_poly(polynomial, coset_size);
     let commitment_h_polys = h_polys
         .iter()
         .map(|h_poly| commit_key.commit_g1(h_poly))
@@ -80,19 +80,26 @@ pub fn fk20_open_multi_point(
     // TODO: This does not seem to be using the batch affine trick
     bls12_381::G1Projective::batch_normalize(&proofs, &mut proofs_affine);
 
-    // Compute the evaluations of the polynomial at the cosets by doing an fft
-    let mut evaluations = ext_domain.fft_scalars(polynomial.clone());
-    reverse_bit_order(&mut evaluations);
-    let set_of_output_points: Vec<_> = evaluations
-        .chunks_exact(l)
-        .map(|slice| slice.to_vec())
-        .collect();
-
     // reverse the order of the proofs, since fft_g1 was applied using
     // the regular order.
     reverse_bit_order(&mut proofs_affine);
 
-    (proofs_affine, set_of_output_points)
+    proofs_affine
+}
+
+pub fn fk20_compute_evaluation_set(
+    polynomial: &PolyCoeff,
+    coset_size: usize,
+    ext_domain: Domain,
+) -> Vec<Vec<Scalar>> {
+    // Compute the evaluations of the polynomial at the cosets by doing an fft
+    let mut evaluations = ext_domain.fft_scalars(polynomial.clone());
+    reverse_bit_order(&mut evaluations);
+
+    evaluations
+        .chunks_exact(coset_size)
+        .map(|slice| slice.to_vec())
+        .collect()
 }
 
 #[cfg(test)]

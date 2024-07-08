@@ -11,20 +11,17 @@ mod serde_ {
 
     #[derive(Deserialize)]
     struct YamlInput {
-        cell_ids: Vec<u64>,
+        cell_indices: Vec<u64>,
         cells: Vec<String>,
-        proofs: Option<Vec<String>>,
     }
 
     type YamlOutput = (Vec<String>, Vec<String>);
-
 
     #[derive(Debug, Clone)]
     pub struct KZGProofsAndCells {
         pub proofs: Vec<UnsafeBytes>,
         pub cells: Vec<UnsafeBytes>,
     }
-
 
     #[derive(Deserialize)]
     struct YamlTestVector {
@@ -33,9 +30,8 @@ mod serde_ {
     }
 
     pub struct TestVector {
-        pub input_cell_ids: Vec<u64>,
+        pub input_cell_indices: Vec<u64>,
         pub input_cells: Vec<UnsafeBytes>,
-        pub proofs: Option<Vec<UnsafeBytes>>,
         pub proofs_and_cells: Option<KZGProofsAndCells>,
     }
 
@@ -48,7 +44,7 @@ mod serde_ {
 
     impl From<YamlTestVector> for TestVector {
         fn from(yaml_test_vector: YamlTestVector) -> Self {
-            let cell_ids = yaml_test_vector.input.cell_ids;
+            let cell_indices = yaml_test_vector.input.cell_indices;
 
             let input_cells: Vec<_> = yaml_test_vector
                 .input
@@ -56,16 +52,6 @@ mod serde_ {
                 .iter()
                 .map(|cell| bytes_from_hex(cell))
                 .collect();
-            let proofs = match yaml_test_vector.input.proofs {
-                Some(proofs) => {
-                    let proofs: Vec<_> = proofs
-                    .into_iter()
-                    .map(|proof| bytes_from_hex(&proof))
-                    .collect();
-                Some(proofs)
-                },
-                None => None,
-            };
             let output = match yaml_test_vector.output {
                 Some((cells, kzg_proofs)) => {
                     let kzg_proofs: Vec<_> = kzg_proofs
@@ -79,9 +65,8 @@ mod serde_ {
             };
 
             TestVector {
-                input_cell_ids: cell_ids,
+                input_cell_indices: cell_indices,
                 input_cells: input_cells,
-                proofs: proofs,
                 proofs_and_cells: output.map(|out| KZGProofsAndCells {
                     proofs: out.0,
                     cells: out.1,
@@ -117,26 +102,7 @@ fn test_recover_cells_and_proofs() {
             }
         };
 
-        let proofs = match test.proofs {
-            Some(proofs) => {
-                let mut proof_vec : Vec<[u8;48]> = Vec::new();
-                for proof in proofs {
-                    let proof = match (proof).try_into() {
-                        Ok(proof) => proof,
-                        Err(_) => {
-                            assert!(test.proofs_and_cells.is_none());
-                            continue;
-                        }
-                    };
-                    proof_vec.push(proof);
-                }
-                proof_vec
-            },
-            None => Vec::new(),
-        };
-        
-
-        match ctx.recover_cells_and_proofs(test.input_cell_ids, input_cells, proofs.iter().collect()) {
+        match ctx.recover_cells_and_proofs(test.input_cell_indices, input_cells) {
             Ok((cells, proofs)) => {
                 let expected_proofs_and_cells = test.proofs_and_cells.unwrap();
 

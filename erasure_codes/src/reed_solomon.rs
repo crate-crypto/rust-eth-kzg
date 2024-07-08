@@ -1,6 +1,7 @@
+use bls12_381::ff::Field;
 use bls12_381::{batch_inversion::batch_inverse, Scalar};
 
-use bls12_381::ff::Field;
+use crate::errors::DecodeError;
 use polynomial::{domain::Domain, monomial::vanishing_poly};
 
 // The erasures can be either indices of the polynomial
@@ -8,6 +9,7 @@ use polynomial::{domain::Domain, monomial::vanishing_poly};
 #[derive(Debug, Clone)]
 pub enum Erasures {
     Indices(Vec<usize>),
+    // TODO: instead of Cells, use Cosets
     Cells { cell_size: usize, cells: Vec<usize> },
 }
 
@@ -61,19 +63,35 @@ impl ReedSolomon {
         recover_polynomial_evaluations(&self.domain_extended, codeword_with_errors, missing_indices)
     }
 
-    #[deprecated(
-        note = "This method is exposed to allow the caller to convert a polynomial coeff into a codeword. When recover_all_cells is removed, we can remove this too"
-    )]
-    pub fn domain_extended(&self) -> &Domain {
-        &self.domain_extended
-    }
-
     pub fn recover_polynomial_coefficient(
         &self,
         codeword_with_errors: Vec<Scalar>,
         missing_indices: Erasures,
-    ) -> Vec<Scalar> {
-        recover_polynomial_coefficient(&self.domain_extended, codeword_with_errors, missing_indices)
+    ) -> Result<Vec<Scalar>, DecodeError> {
+        let coefficients = recover_polynomial_coefficient(
+            &self.domain_extended,
+            codeword_with_errors,
+            missing_indices,
+        );
+
+        // Check that the polynomial being returned has the correct degree
+        //
+        // This is the polynomial in coefficient form that corresponds to the
+        // data in lagrange form being returned. This means this polynomial will
+        // have the same number of coefficients as the original data.
+        //
+        // All of the coefficients after the original data should be zero.
+        for (i, coefficient) in coefficients.iter().enumerate().skip(self.poly_len) {
+            if *coefficient != Scalar::ZERO {
+                return Err(DecodeError::PolynomialHasInvalidLength {
+                    num_coefficients: i,
+                    expected_num_coefficients: self.poly_len,
+                });
+            }
+        }
+
+        // Return the truncated polynomial
+        Ok(coefficients[0..self.poly_len].to_vec())
     }
 }
 

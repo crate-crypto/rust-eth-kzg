@@ -310,14 +310,14 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { BYTES_PER_CELL, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL, BYTES_PER_BLOB, CellsAndProofs, ProverContextJs, VerifierContextJs } = nativeBinding
+const { BYTES_PER_COMMITMENT, BYTES_PER_PROOF, BYTES_PER_FIELD_ELEMENT, BYTES_PER_BLOB, MAX_NUM_COLUMNS, BYTES_PER_CELL, CellsAndProofs, ProverContextJs, VerifierContextJs } = nativeBinding
 
-module.exports.BYTES_PER_CELL = BYTES_PER_CELL
 module.exports.BYTES_PER_COMMITMENT = BYTES_PER_COMMITMENT
+module.exports.BYTES_PER_PROOF = BYTES_PER_PROOF
 module.exports.BYTES_PER_FIELD_ELEMENT = BYTES_PER_FIELD_ELEMENT
-module.exports.FIELD_ELEMENTS_PER_BLOB = FIELD_ELEMENTS_PER_BLOB
-module.exports.FIELD_ELEMENTS_PER_CELL = FIELD_ELEMENTS_PER_CELL
 module.exports.BYTES_PER_BLOB = BYTES_PER_BLOB
+module.exports.MAX_NUM_COLUMNS = MAX_NUM_COLUMNS
+module.exports.BYTES_PER_CELL = BYTES_PER_CELL
 module.exports.CellsAndProofs = CellsAndProofs
 module.exports.ProverContextJs = ProverContextJs
 module.exports.VerifierContextJs = VerifierContextJs
