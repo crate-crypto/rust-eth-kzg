@@ -1,9 +1,6 @@
 pub use crate::errors::ProverError;
 
-use kzg_multi_open::{
-    commit_key::{CommitKey, CommitKeyLagrange},
-    fk20::FK20,
-};
+use kzg_multi_open::{commit_key::CommitKey, fk20::FK20};
 
 use crate::{
     constants::{
@@ -32,7 +29,6 @@ impl Default for ProverContext {
 impl ProverContext {
     pub fn new(trusted_setup: &TrustedSetup) -> Self {
         let commit_key = CommitKey::from(trusted_setup);
-        let commit_key_lagrange = CommitKeyLagrange::from(trusted_setup);
 
         // The number of points that we will make an opening proof for,
         // ie a proof will attest to the value of a polynomial at these points.
@@ -46,7 +42,6 @@ impl ProverContext {
 
         let fk20 = FK20::new(
             commit_key,
-            commit_key_lagrange,
             FIELD_ELEMENTS_PER_BLOB,
             point_set_size,
             number_of_points_to_open,

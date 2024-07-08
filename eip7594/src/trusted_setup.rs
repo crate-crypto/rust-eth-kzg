@@ -1,8 +1,5 @@
 use bls12_381::{G1Projective, G2Projective};
-use kzg_multi_open::{
-    commit_key::{CommitKey, CommitKeyLagrange},
-    opening_key::OpeningKey,
-};
+use kzg_multi_open::{commit_key::CommitKey, opening_key::OpeningKey};
 use rust_embed::Embed;
 use serde::Deserialize;
 
@@ -37,11 +34,7 @@ impl From<&TrustedSetup> for CommitKey {
         setup.to_commit_key(SubgroupCheck::NoCheck)
     }
 }
-impl From<&TrustedSetup> for CommitKeyLagrange {
-    fn from(setup: &TrustedSetup) -> Self {
-        setup.to_commit_key_lagrange(SubgroupCheck::NoCheck)
-    }
-}
+
 impl From<&TrustedSetup> for OpeningKey {
     fn from(setup: &TrustedSetup) -> Self {
         setup.to_opening_key(SubgroupCheck::NoCheck)
@@ -91,7 +84,6 @@ impl TrustedSetup {
     /// Panics if any of the points are not in the correct subgroup
     fn validate_trusted_setup(&self) {
         self.to_commit_key(SubgroupCheck::Check);
-        self.to_commit_key_lagrange(SubgroupCheck::Check);
         self.to_opening_key(SubgroupCheck::Check);
     }
 
@@ -99,10 +91,7 @@ impl TrustedSetup {
         let points = deserialize_g1(&self.g1_monomial, subgroup_check);
         CommitKey::new(points)
     }
-    fn to_commit_key_lagrange(&self, subgroup_check: SubgroupCheck) -> CommitKeyLagrange {
-        let points = deserialize_g1(&self.g1_lagrange, subgroup_check);
-        CommitKeyLagrange::new(points)
-    }
+
     fn to_opening_key(&self, subgroup_check: SubgroupCheck) -> OpeningKey {
         let g2_points = deserialize_g2(&self.g2_monomial, subgroup_check);
         let num_g2_points = g2_points.len();
