@@ -185,13 +185,12 @@ impl FK20 {
         // The order of the coset indices in the returned vector will be different.
         // The new indices of the cosets can be figured out by reverse bit ordering
         // the existing indices.
-
         let cosets_per_full_domain = domain_size / coset_len;
+        let num_bits_coset_per_full_domain = log2(cosets_per_full_domain as u32);
+
         let new_coset_indices: Vec<_> = coset_indices
             .into_iter()
-            .map(|rbo_coset_index| {
-                reverse_bits(rbo_coset_index, log2(cosets_per_full_domain as u32))
-            })
+            .map(|rbo_coset_index| reverse_bits(rbo_coset_index, num_bits_coset_per_full_domain))
             .collect();
 
         Some((new_coset_indices, elements))
