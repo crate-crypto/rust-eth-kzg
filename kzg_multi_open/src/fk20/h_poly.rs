@@ -18,6 +18,11 @@ pub(crate) fn take_every_nth<T: Clone + Copy>(list: &[T], n: usize) -> Vec<Vec<T
 
 impl FK20 {
     // TODO: Explain what h_poly refers to
+    /// Computes the `h` polynomials for the FK20 proofs.
+    ///
+    /// See section 3.1.1 of the FK20 paper for more details.
+    ///
+    /// FK20 computes the commitments to these polynomials in 3.1.1.
     pub(crate) fn compute_h_poly_commitments(
         &self,
         mut polynomial: PolyCoeff,

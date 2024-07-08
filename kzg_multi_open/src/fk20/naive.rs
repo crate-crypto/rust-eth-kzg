@@ -24,7 +24,7 @@ pub fn divide_by_monomial_floor(poly: &PolyCoeff, degree: usize) -> &[Scalar] {
     &poly[degree..]
 }
 
-/// Naively compute the `h`` polynomials for the FK20 proof.
+/// Naively compute the `h`` polynomials for the FK20 proofs.
 ///
 /// See section 3.1.1 of the FK20 paper for more details.
 ///
