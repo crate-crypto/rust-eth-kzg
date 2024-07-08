@@ -107,7 +107,7 @@ mod tests {
 
     use crate::fk20::{
         cosets::{generate_cosets, log2, reverse_bit_order, reverse_bits},
-        take_every_nth,
+        h_poly::take_every_nth,
     };
 
     #[test]
