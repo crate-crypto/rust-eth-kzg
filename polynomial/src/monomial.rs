@@ -1,10 +1,7 @@
 use bls12_381::ff::Field;
 use bls12_381::Scalar;
 
-/// This file will hold the implementation of a polynomial in monomial form
-
-// TODO: These methods are taking ownership which should Ideally be changed.
-// TODO: We can also possibly remove the type alias and use a new type
+// This file contains methods on a polynomial in coefficient form.
 
 /// A polynomial in monomial form where the lowest degree term is first
 /// Layout: x^0 * a_0 + x^1 * a_1 + ... + x^(n-1) * a_(n-1)
@@ -54,7 +51,7 @@ pub fn poly_eval(poly: &PolyCoeff, value: &Scalar) -> Scalar {
 
 /// For two polynomials, `f(x)` and `g(x)`, this method computes
 /// the result of `f(x) * g(x)` and returns the result.
-pub fn poly_mul(a: &PolyCoeff, b: &PolyCoeff) -> PolyCoeff {
+pub fn poly_mul(a: PolyCoeff, b: PolyCoeff) -> PolyCoeff {
     let mut result = vec![Scalar::ZERO; a.len() + b.len() - 1];
 
     for (i, a_coeff) in a.iter().enumerate() {
@@ -73,7 +70,7 @@ pub fn poly_mul(a: &PolyCoeff, b: &PolyCoeff) -> PolyCoeff {
 pub fn vanishing_poly(roots: &[Scalar]) -> Vec<Scalar> {
     let mut poly = vec![Scalar::from(1u64)];
     for root in roots {
-        poly = poly_mul(&poly, &vec![-root, Scalar::from(1u64)]);
+        poly = poly_mul(poly, vec![-root, Scalar::from(1u64)]);
     }
     poly
 }
@@ -85,7 +82,8 @@ pub fn vanishing_poly(roots: &[Scalar]) -> Vec<Scalar> {
 ///
 ///
 // A simple O(n^2) algorithm (lagrange interpolation)
-// TODO: We could speed this up using derivative method.
+//
+// Note: This method is only used for testing.
 pub fn lagrange_interpolate(points: &[(Scalar, Scalar)]) -> Option<Vec<Scalar>> {
     let max_degree_plus_one = points.len();
     assert!(
@@ -224,7 +222,7 @@ mod tests {
             Scalar::from(22),
             Scalar::from(15),
         ];
-        assert_eq!(poly_mul(&a, &b), expected);
+        assert_eq!(poly_mul(a, b), expected);
     }
 
     #[test]
