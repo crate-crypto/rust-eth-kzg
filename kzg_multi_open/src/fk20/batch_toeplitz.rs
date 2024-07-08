@@ -103,11 +103,10 @@ impl BatchToeplitzMatrixVecMul {
             .zip(msm_scalars)
             .map(|(points, scalars)| points.msm(scalars))
             .collect();
-        let circulant_sum = self.circulant_domain.ifft_g1(result);
 
         // Once the Circulant matrix-vector multiplication is done, we need to take the first half
         // of the result, as this is the result of the Toeplitz matrix multiplication
-        circulant_sum[0..self.n].to_vec()
+        self.circulant_domain.ifft_g1_take_n(result, Some(self.n))
     }
 }
 
