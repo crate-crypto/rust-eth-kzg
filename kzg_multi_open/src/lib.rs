@@ -80,11 +80,13 @@ mod tests {
         let poly_coeff = poly_domain.ifft_scalars(polynomial_lagrange);
 
         // Compute FK20 the naive way
-        let got_proofs =
-            fk20naive::fk20_open_multi_point(&ck, &proof_domain, &poly_coeff, COSET_SIZE);
-        let got_set_of_output_points =
-            fk20naive::fk20_compute_evaluation_set(&poly_coeff, COSET_SIZE, domain_extended);
-
+        let (got_proofs, got_set_of_output_points) = fk20naive::fk20_open_multi_point(
+            &ck,
+            &proof_domain,
+            &poly_coeff,
+            COSET_SIZE,
+            &domain_extended,
+        );
         for k in 0..got_proofs.len() {
             let input_points = chunked_bit_reversed_roots[k];
             // Compute the opening proofs the naive way (without fk20)

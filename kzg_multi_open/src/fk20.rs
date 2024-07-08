@@ -256,12 +256,12 @@ mod tests {
         create_eth_commit_opening_keys,
         fk20::{naive, FK20},
     };
+    use bls12_381::ff::Field;
     use bls12_381::Scalar;
     use polynomial::domain::Domain;
 
     #[test]
     fn check_consistency_of_proofs_against_naive() {
-        use bls12_381::ff::Field;
         let poly_len = 4096;
         let poly = vec![Scalar::random(&mut rand::thread_rng()); poly_len];
         let l = 64;
@@ -269,8 +269,8 @@ mod tests {
         let proof_domain = Domain::new(2 * poly_len / l);
         let ext_domain = Domain::new(2 * poly_len);
 
-        let expected_proofs = naive::fk20_open_multi_point(&commit_key, &proof_domain, &poly, l);
-        let expected_evaluations = naive::fk20_compute_evaluation_set(&poly, l, ext_domain);
+        let (expected_proofs, expected_evaluations) =
+            naive::fk20_open_multi_point(&commit_key, &proof_domain, &poly, l, &ext_domain);
 
         let fk20 = FK20::new(commit_key, poly_len, l, 2 * poly_len);
         let (got_proofs, got_evaluations) =
