@@ -17,7 +17,7 @@ pub(crate) fn _verify_cell_kzg_proof(
 
     // Dereference the input pointers
     //
-    let ctx = deref_const(ctx).verifier_ctx();
+    let ctx = deref_const(ctx).inner();
     let cell = create_array_ref::<BYTES_PER_CELL, _>(cell);
     let commitment = create_array_ref::<BYTES_PER_COMMITMENT, _>(commitment);
     let proof = create_array_ref::<BYTES_PER_COMMITMENT, _>(proof);

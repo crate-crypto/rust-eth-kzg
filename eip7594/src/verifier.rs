@@ -1,4 +1,4 @@
-use std::{collections::HashSet, sync::Arc};
+use std::collections::HashSet;
 
 pub use crate::errors::VerifierError;
 
@@ -9,7 +9,7 @@ use crate::{
     },
     serialization::{deserialize_cells, deserialize_compressed_g1_points},
     trusted_setup::TrustedSetup,
-    Bytes48Ref, CellIndex, CellRef, RowIndex,
+    Bytes48Ref, CellIndex, CellRef, PeerDASContext, RowIndex,
 };
 use bls12_381::Scalar;
 use erasure_codes::{reed_solomon::Erasures, ReedSolomon};
@@ -17,12 +17,10 @@ use kzg_multi_open::{
     fk20::{self, verify::verify_multi_opening, FK20},
     opening_key::OpeningKey,
 };
-use rayon::ThreadPool;
 
 /// The context object that is used to call functions in the verifier API.
 #[derive(Debug)]
 pub struct VerifierContext {
-    thread_pool: Arc<ThreadPool>,
     opening_key: OpeningKey,
     // TODO: This can be moved into FK20 verification procedure
     coset_shifts: Vec<Scalar>,
@@ -38,33 +36,32 @@ impl Default for VerifierContext {
 
 impl VerifierContext {
     pub fn new(trusted_setup: &TrustedSetup) -> VerifierContext {
-        const DEFAULT_NUM_THREADS: usize = 16;
-        Self::with_num_threads(trusted_setup, DEFAULT_NUM_THREADS)
-    }
-
-    pub fn with_num_threads(trusted_setup: &TrustedSetup, num_threads: usize) -> VerifierContext {
-        let thread_pool = rayon::ThreadPoolBuilder::new()
-            .num_threads(num_threads)
-            .build()
-            .unwrap();
-        Self::from_thread_pool(trusted_setup, Arc::new(thread_pool))
-    }
-
-    pub(crate) fn from_thread_pool(
-        trusted_setup: &TrustedSetup,
-        thread_pool: Arc<ThreadPool>,
-    ) -> VerifierContext {
         let opening_key = OpeningKey::from(trusted_setup);
         let coset_shifts = fk20::coset_gens(FIELD_ELEMENTS_PER_EXT_BLOB, CELLS_PER_EXT_BLOB, true);
 
         VerifierContext {
-            thread_pool,
             opening_key,
             rs: ReedSolomon::new(FIELD_ELEMENTS_PER_BLOB, EXTENSION_FACTOR),
             coset_shifts,
         }
     }
+}
 
+fn find_missing_cell_indices(present_cell_indices: &[usize]) -> Vec<usize> {
+    let cell_indices: HashSet<_> = present_cell_indices.iter().cloned().collect();
+
+    let mut missing = Vec::new();
+
+    for i in 0..CELLS_PER_EXT_BLOB {
+        if !cell_indices.contains(&i) {
+            missing.push(i);
+        }
+    }
+
+    missing
+}
+
+impl PeerDASContext {
     /// Verify that a cell is consistent with a commitment using a KZG proof.
     pub fn verify_cell_kzg_proof(
         &self,
@@ -126,11 +123,11 @@ impl VerifierContext {
             // Computation
             //
             let ok = verify_multi_opening(
-                &self.opening_key,
+                &self.verifier_ctx.opening_key,
                 &row_commitment_,
                 &row_indices,
                 &cell_indices,
-                &self.coset_shifts,
+                &self.verifier_ctx.coset_shifts,
                 &coset_evals,
                 &proofs_,
             );
@@ -180,7 +177,7 @@ impl VerifierContext {
         let missing_cell_indices = find_missing_cell_indices(&cell_indices_normal_order);
 
         // Recover the polynomial in monomial form, that one can use to generate the cells.
-        let recovered_polynomial_coeff = self.rs.recover_polynomial_coefficient(
+        let recovered_polynomial_coeff = self.verifier_ctx.rs.recover_polynomial_coefficient(
             flattened_coset_evaluations_normal_order,
             Erasures::Cells {
                 cell_size: FIELD_ELEMENTS_PER_CELL,
@@ -190,20 +187,6 @@ impl VerifierContext {
 
         Ok(recovered_polynomial_coeff)
     }
-}
-
-fn find_missing_cell_indices(present_cell_indices: &[usize]) -> Vec<usize> {
-    let cell_indices: HashSet<_> = present_cell_indices.iter().cloned().collect();
-
-    let mut missing = Vec::new();
-
-    for i in 0..CELLS_PER_EXT_BLOB {
-        if !cell_indices.contains(&i) {
-            missing.push(i);
-        }
-    }
-
-    missing
 }
 
 mod validation {

@@ -1,5 +1,8 @@
+use std::sync::Arc;
+
 use constants::{BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT};
 pub use prover::ProverContext;
+use rayon::ThreadPool;
 pub use trusted_setup::TrustedSetup;
 pub use verifier::VerifierContext;
 
@@ -27,6 +30,7 @@ mod errors;
 /// The context that will be used to create and verify proofs.
 #[derive(Debug)]
 pub struct PeerDASContext {
+    thread_pool: Arc<ThreadPool>,
     pub prover_ctx: ProverContext,
     pub verifier_ctx: VerifierContext,
 }
@@ -34,10 +38,8 @@ pub struct PeerDASContext {
 impl Default for PeerDASContext {
     fn default() -> Self {
         let trusted_setup = TrustedSetup::default();
-        PeerDASContext {
-            prover_ctx: ProverContext::new(&trusted_setup),
-            verifier_ctx: VerifierContext::new(&trusted_setup),
-        }
+        const DEFAULT_NUM_THREADS: usize = 1;
+        PeerDASContext::with_threads(&trusted_setup, DEFAULT_NUM_THREADS)
     }
 }
 
@@ -49,9 +51,11 @@ impl PeerDASContext {
                 .build()
                 .unwrap(),
         );
+
         PeerDASContext {
-            prover_ctx: ProverContext::from_threads_pool(trusted_setup, thread_pool.clone()),
-            verifier_ctx: VerifierContext::from_thread_pool(trusted_setup, thread_pool),
+            thread_pool,
+            prover_ctx: ProverContext::new(trusted_setup),
+            verifier_ctx: VerifierContext::new(trusted_setup),
         }
     }
 

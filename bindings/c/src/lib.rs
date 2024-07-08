@@ -30,16 +30,10 @@ pub struct PeerDASContext {
 }
 
 impl PeerDASContext {
-    pub fn prover_ctx(&self) -> &eip7594::prover::ProverContext {
-        self.inner.prover_ctx()
-    }
-
-    pub fn verifier_ctx(&self) -> &eip7594::verifier::VerifierContext {
-        &self.inner.verifier_ctx
+    pub fn inner(&self) -> &eip7594::PeerDASContext {
+        &self.inner
     }
 }
-
-// TODO: Add this into eip7594 spec tests
 
 /// Create a new PeerDASContext and return a pointer to it.
 ///

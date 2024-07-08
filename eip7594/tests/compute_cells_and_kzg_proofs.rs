@@ -76,7 +76,7 @@ const TEST_DIR: &str = "../consensus_test_vectors/compute_cells_and_kzg_proofs";
 fn test_compute_cells_and_kzg_proofs() {
     let test_files = collect_test_files(TEST_DIR).unwrap();
 
-    let prover_context = eip7594::prover::ProverContext::default();
+    let ctx = eip7594::PeerDASContext::default();
 
     for test_file in test_files {
         let yaml_data = fs::read_to_string(test_file).unwrap();
@@ -90,7 +90,7 @@ fn test_compute_cells_and_kzg_proofs() {
             }
         };
 
-        match prover_context.compute_cells_and_kzg_proofs(&blob) {
+        match ctx.compute_cells_and_kzg_proofs(&blob) {
             Ok((cells, proofs)) => {
                 let expected_proofs_and_cells = test.proofs_and_cells.unwrap();
 

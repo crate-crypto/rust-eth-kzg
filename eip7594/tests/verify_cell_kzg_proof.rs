@@ -66,7 +66,7 @@ const TEST_DIR: &str = "../consensus_test_vectors/verify_cell_kzg_proof";
 fn test_verify_cell_kzg_proof() {
     let test_files = collect_test_files(TEST_DIR).unwrap();
 
-    let verifier_context = eip7594::verifier::VerifierContext::default();
+    let ctx = eip7594::PeerDASContext::default();
 
     for test_file in test_files {
         let yaml_data = fs::read_to_string(&test_file).unwrap();
@@ -94,7 +94,7 @@ fn test_verify_cell_kzg_proof() {
             }
         };
 
-        match verifier_context.verify_cell_kzg_proof(&commitment, test.cell_id, &cell, &proof) {
+        match ctx.verify_cell_kzg_proof(&commitment, test.cell_id, &cell, &proof) {
             Ok(_) => {
                 // We arrive at this point if the proof verified as true
                 assert!(test.output.unwrap())

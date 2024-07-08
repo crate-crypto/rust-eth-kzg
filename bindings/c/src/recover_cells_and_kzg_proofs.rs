@@ -17,7 +17,7 @@ pub(crate) fn _recover_cells_and_proofs(
 
     // Dereference the input pointers
     //
-    let ctx = deref_const(ctx).prover_ctx();
+    let ctx = deref_const(ctx).inner();
     let cells = ptr_ptr_to_vec_slice_const::<BYTES_PER_CELL>(cells, cells_length as usize);
     let cell_indices = create_slice_view(cell_indices, cell_indices_length as usize);
 
