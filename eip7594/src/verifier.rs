@@ -9,7 +9,7 @@ use crate::{
     },
     serialization::{deserialize_cells, deserialize_compressed_g1_points},
     trusted_setup::TrustedSetup,
-    Bytes48Ref, CellIndex, CellRef, RowIndex,
+    Bytes48Ref, CellIndex, CellRef, PeerDASContext, RowIndex,
 };
 use bls12_381::Scalar;
 use erasure_codes::{reed_solomon::Erasures, ReedSolomon};
@@ -64,7 +64,23 @@ impl VerifierContext {
             coset_shifts,
         }
     }
+}
 
+fn find_missing_cell_indices(present_cell_indices: &[usize]) -> Vec<usize> {
+    let cell_indices: HashSet<_> = present_cell_indices.iter().cloned().collect();
+
+    let mut missing = Vec::new();
+
+    for i in 0..CELLS_PER_EXT_BLOB {
+        if !cell_indices.contains(&i) {
+            missing.push(i);
+        }
+    }
+
+    missing
+}
+
+impl PeerDASContext {
     /// Verify that a cell is consistent with a commitment using a KZG proof.
     pub fn verify_cell_kzg_proof(
         &self,
@@ -73,7 +89,7 @@ impl VerifierContext {
         cell: CellRef,
         proof_bytes: Bytes48Ref,
     ) -> Result<(), VerifierError> {
-        self.thread_pool.install(|| {
+        self.verifier_ctx.thread_pool.install(|| {
             self.verify_cell_kzg_proof_batch(
                 vec![commitment_bytes],
                 vec![0],
@@ -97,7 +113,7 @@ impl VerifierContext {
         cells: Vec<CellRef>,
         proofs_bytes: Vec<Bytes48Ref>,
     ) -> Result<(), VerifierError> {
-        self.thread_pool.install(|| {
+        self.verifier_ctx.thread_pool.install(|| {
             // Validation
             //
             validation::verify_cell_kzg_proof_batch(
@@ -126,11 +142,11 @@ impl VerifierContext {
             // Computation
             //
             let ok = verify_multi_opening(
-                &self.opening_key,
+                &self.verifier_ctx.opening_key,
                 &row_commitment_,
                 &row_indices,
                 &cell_indices,
-                &self.coset_shifts,
+                &self.verifier_ctx.coset_shifts,
                 &coset_evals,
                 &proofs_,
             );
@@ -180,7 +196,7 @@ impl VerifierContext {
         let missing_cell_indices = find_missing_cell_indices(&cell_indices_normal_order);
 
         // Recover the polynomial in monomial form, that one can use to generate the cells.
-        let recovered_polynomial_coeff = self.rs.recover_polynomial_coefficient(
+        let recovered_polynomial_coeff = self.verifier_ctx.rs.recover_polynomial_coefficient(
             flattened_coset_evaluations_normal_order,
             Erasures::Cells {
                 cell_size: FIELD_ELEMENTS_PER_CELL,
@@ -190,20 +206,6 @@ impl VerifierContext {
 
         Ok(recovered_polynomial_coeff)
     }
-}
-
-fn find_missing_cell_indices(present_cell_indices: &[usize]) -> Vec<usize> {
-    let cell_indices: HashSet<_> = present_cell_indices.iter().cloned().collect();
-
-    let mut missing = Vec::new();
-
-    for i in 0..CELLS_PER_EXT_BLOB {
-        if !cell_indices.contains(&i) {
-            missing.push(i);
-        }
-    }
-
-    missing
 }
 
 mod validation {

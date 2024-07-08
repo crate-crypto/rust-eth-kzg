@@ -6,11 +6,7 @@ use napi::{
 };
 use napi_derive::napi;
 
-use eip7594::{
-  constants,
-  verifier::{VerifierContext, VerifierError},
-  PeerDASContext,
-};
+use eip7594::{constants, verifier::VerifierError, PeerDASContext};
 
 #[napi]
 pub const BYTES_PER_COMMITMENT: u32 = constants::BYTES_PER_COMMITMENT as u32;
@@ -175,7 +171,7 @@ impl ProverContextJs {
 
 #[napi]
 pub struct VerifierContextJs {
-  inner: Arc<VerifierContext>,
+  inner: Arc<PeerDASContext>,
 }
 
 impl Default for VerifierContextJs {
@@ -189,7 +185,7 @@ impl VerifierContextJs {
   #[napi(constructor)]
   pub fn new() -> Self {
     VerifierContextJs {
-      inner: Arc::new(VerifierContext::default()),
+      inner: Arc::new(PeerDASContext::default()),
     }
   }
 

@@ -85,7 +85,7 @@ const TEST_DIR: &str = "../consensus_test_vectors/verify_cell_kzg_proof_batch";
 fn test_verify_cell_kzg_proof_batch() {
     let test_files = collect_test_files(TEST_DIR).unwrap();
 
-    let verifier_context = eip7594::verifier::VerifierContext::default();
+    let ctx = eip7594::PeerDASContext::default();
 
     for test_file in test_files {
         let yaml_data = fs::read_to_string(&test_file).unwrap();
@@ -136,7 +136,7 @@ fn test_verify_cell_kzg_proof_batch() {
             }
         };
 
-        match verifier_context.verify_cell_kzg_proof_batch(
+        match ctx.verify_cell_kzg_proof_batch(
             commitments,
             test.row_indices,
             test.column_indices,

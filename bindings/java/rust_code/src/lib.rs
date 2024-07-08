@@ -124,7 +124,7 @@ fn verify_cell_kzg_proof(
     let proof = slice_to_array_ref(&proof, "proof")?;
 
     match ctx
-        .verifier_ctx()
+        .inner()
         .verify_cell_kzg_proof(commitment, cell_id, cell, proof)
     {
         Ok(_) => Ok(jboolean::from(true)),
@@ -190,7 +190,7 @@ fn verify_cell_kzg_proof_batch<'local>(
         .map(|proof| slice_to_array_ref(proof, "proof"))
         .collect::<Result<_, _>>()?;
 
-    match ctx.verifier_ctx().verify_cell_kzg_proof_batch(
+    match ctx.inner().verify_cell_kzg_proof_batch(
         commitments,
         row_indices,
         column_indices,

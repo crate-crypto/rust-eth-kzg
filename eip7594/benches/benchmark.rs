@@ -2,7 +2,7 @@ use bls12_381::Scalar;
 use criterion::{criterion_group, criterion_main, Criterion};
 use eip7594::{
     constants::{BYTES_PER_BLOB, CELLS_PER_EXT_BLOB},
-    trusted_setup, Cell, KZGCommitment, KZGProof, PeerDASContext, VerifierContext,
+    trusted_setup, Cell, KZGCommitment, KZGProof, PeerDASContext,
 };
 
 const POLYNOMIAL_LEN: usize = 4096;
@@ -84,14 +84,10 @@ pub fn bench_verify_cell_kzg_proofs(c: &mut Criterion) {
     let (commitment, (cells, proofs)) = dummy_commitment_cells_and_proofs();
 
     for num_threads in THREAD_COUNTS {
-        let verifier_context = VerifierContext::with_num_threads(&trusted_setup, num_threads);
+        let ctx = PeerDASContext::with_threads(&trusted_setup, num_threads);
         c.bench_function(
             &format!("verify_cell_kzg_proof - NUM_THREADS: {}", num_threads),
-            |b| {
-                b.iter(|| {
-                    verifier_context.verify_cell_kzg_proof(&commitment, 0, &cells[0], &proofs[0])
-                })
-            },
+            |b| b.iter(|| ctx.verify_cell_kzg_proof(&commitment, 0, &cells[0], &proofs[0])),
         );
     }
 }

@@ -141,9 +141,7 @@ impl PeerDASContext {
         self.prover_ctx.thread_pool.install(|| {
             // Recover polynomial
             //
-            let poly_coeff = self
-                .verifier_ctx
-                .recover_polynomial_coeff(cell_indices, cells)?;
+            let poly_coeff = self.recover_polynomial_coeff(cell_indices, cells)?;
 
             // Compute proofs and evaluation sets
             //
