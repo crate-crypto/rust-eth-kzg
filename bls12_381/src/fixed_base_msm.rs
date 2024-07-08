@@ -1,8 +1,9 @@
 use crate::{G1Projective, Scalar};
 use blstrs::{Fp, G1Affine};
 
-/// FixedBasedMSM computes a multi scalar multiplication by precomputing a table of points.
-/// It uses batch addition to amortize the cost of adding these points together.
+/// FixedBasedMSM computes a multi scalar multiplication using pre-computations.
+///
+/// It uses batch addition to amortize the cost of adding multiple points together.
 #[derive(Debug)]
 pub struct FixedBaseMSM {
     table: Vec<blst::blst_p1_affine>,
@@ -14,7 +15,7 @@ pub struct FixedBaseMSM {
 impl FixedBaseMSM {
     pub fn new(generators: Vec<G1Projective>, wbits: usize) -> Self {
         let num_points = generators.len();
-        let table_size = unsafe { blst::blst_p1s_mult_wbits_precompute_sizeof(8, num_points) };
+        let table_size = unsafe { blst::blst_p1s_mult_wbits_precompute_sizeof(wbits, num_points) };
 
         use group::prime::PrimeCurveAffine;
         use group::Curve;
@@ -95,7 +96,8 @@ mod tests {
             .map(|_| Scalar::random(&mut thread_rng()))
             .collect();
 
-        let res = g1_lincomb(&generators, &scalars);
+        let res = g1_lincomb(&generators, &scalars)
+            .expect("number of generators and number of scalars is equal");
         let fbm = FixedBaseMSM::new(generators, 8);
 
         let result = fbm.msm(scalars);

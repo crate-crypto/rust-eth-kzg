@@ -1,38 +1,16 @@
-use crate::Scalar;
-use ff::Field;
+use rayon::prelude::*;
 
-/// Batch inversion of multiple elements
-/// This method will panic if one of the elements is zero
+/// Given a vector of field elements {v_i}, compute the vector {v_i^(-1)}
+//
+/// Panics: If any of the elements are zero
 pub fn batch_inverse<F: ff::Field>(elements: &mut [F]) {
     batch_inversion(elements)
 }
 
-/// Batch inversion of multiple elements.
-/// This method will set the inverse of zero elements to zero.
-pub fn batch_inverse_check_for_zero(elements: &mut [Scalar]) {
-    let mut zeroes = Vec::new();
-    let mut non_zero_vec = Vec::with_capacity(elements.len());
-    for (i, element) in elements.iter().enumerate() {
-        if element.is_zero_vartime() {
-            zeroes.push(i);
-        } else {
-            non_zero_vec.push(*element);
-        }
-    }
-    batch_inverse(&mut non_zero_vec);
-
-    // Now we put back in the zeroes
-    for (i, element) in elements.iter_mut().enumerate() {
-        if !zeroes.contains(&i) {
-            *element = non_zero_vec.remove(0);
-        }
-    }
-}
-
-// Taken from arkworks codebase
-// Given a vector of field elements {v_i}, compute the vector {coeff * v_i^(-1)}
-#[cfg(feature = "rayon")]
-fn batch_inversion(v: &mut [Scalar]) {
+/// Given a vector of field elements {v_i}, compute the vector {v_i^(-1)}
+///
+// Taken and modified from arkworks codebase
+fn batch_inversion<F: ff::Field>(v: &mut [F]) {
     // Divide the vector v evenly between all available cores
     let min_elements_per_thread = 1;
     let num_cpus_available = rayon::current_num_threads();
@@ -41,14 +19,9 @@ fn batch_inversion(v: &mut [Scalar]) {
         std::cmp::max(num_elems / num_cpus_available, min_elements_per_thread);
 
     // Batch invert in parallel, without copying the vector
-    v.par_chunks_mut(num_elem_per_thread).for_each(|mut chunk| {
-        serial_batch_inversion(&mut chunk);
+    v.par_chunks_mut(num_elem_per_thread).for_each(|chunk| {
+        serial_batch_inversion(chunk);
     });
-}
-
-#[cfg(not(feature = "rayon"))]
-fn batch_inversion<F: ff::Field>(v: &mut [F]) {
-    serial_batch_inversion(v);
 }
 
 /// Given a vector of field elements {v_i}, compute the vector {coeff * v_i^(-1)}
@@ -70,7 +43,9 @@ fn serial_batch_inversion<F: ff::Field>(v: &mut [F]) {
     assert_eq!(prod.len(), v.len(), "inversion by zero is not allowed");
 
     // Invert `tmp`.
-    tmp = tmp.invert().unwrap(); // Guaranteed to be nonzero.
+    tmp = tmp
+        .invert()
+        .expect("guaranteed to be non-zero since we filtered out zero field elements");
 
     // Second pass: iterate backwards to compute inverses
     for (f, s) in v
@@ -91,7 +66,7 @@ fn serial_batch_inversion<F: ff::Field>(v: &mut [F]) {
 
 #[cfg(test)]
 mod tests {
-    use super::{batch_inverse, batch_inverse_check_for_zero};
+    use super::batch_inverse;
     use crate::Scalar;
     use ff::Field;
 
@@ -119,19 +94,10 @@ mod tests {
         assert_eq!(random_non_zero_elements, got_inversion);
     }
 
-    #[test]
-    fn batch_inverse_zero_check() {
-        let mut zero_elements = vec![Scalar::ZERO; 1000];
-        batch_inverse_check_for_zero(&mut zero_elements);
-
-        assert_eq!(zero_elements, vec![Scalar::ZERO; 1000]);
-    }
-
     #[should_panic]
     #[test]
     fn batch_inverse_panic_check() {
         // Calling batch_inverse on a vector with a zero element should panic
-        // One should call `batch_inverse_check_for_zero`
         let mut zero_elements = vec![Scalar::ZERO; 1000];
         batch_inverse(&mut zero_elements);
     }

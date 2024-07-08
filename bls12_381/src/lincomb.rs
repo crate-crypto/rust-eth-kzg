@@ -1,54 +1,79 @@
 use crate::group::Group;
 use crate::{G1Projective, G2Projective, Scalar};
 
-// A multi-scalar multiplication algorithm over G1 elements
-pub fn g1_lincomb_unsafe(points: &[G1Projective], scalars: &[Scalar]) -> G1Projective {
-    // TODO: Spec says we should panic, but as a lib its better to return result
-    assert_eq!(points.len(), scalars.len());
-
-    // blst does not use multiple threads
-    // This method as a whole seems to be non-optimal.
-    // TODO: We should implement the naive bucket method and see if it is faster
-    G1Projective::multi_exp(points, scalars)
-}
-
-// A multi-scalar multiplication algorithm over G2 elements
-pub fn g2_lincomb_unsafe(points: &[G2Projective], scalars: &[Scalar]) -> G2Projective {
-    assert_eq!(points.len(), scalars.len());
-    G2Projective::multi_exp(points, scalars)
-}
-
-/// This method is a safe wrapper around `g1_lincomb_unsafe`
-/// It filters out any points that are the identity, since blst does not handle them correctly
-pub fn g1_lincomb(points: &[G1Projective], scalars: &[Scalar]) -> G1Projective {
-    let mut points_filtered = Vec::with_capacity(points.len());
-    let mut scalars_filtered = Vec::with_capacity(scalars.len());
-    for (point, scalar) in points.iter().zip(scalars) {
-        let is_identity: bool = point.is_identity().into();
-        if !is_identity {
-            points_filtered.push(*point);
-            scalars_filtered.push(*scalar);
-        }
+/// A multi-scalar multiplication algorithm over G1 elements
+///
+/// Note: unsafe refers to the fact that blst will return the identity
+/// element, if any of the points are the identity element.
+///
+/// Calling this method means that the caller is aware that there are no
+/// identity elements amongst their points.
+///
+/// See test below named `blst_footgun` for the edge case.
+pub fn g1_lincomb_unsafe(points: &[G1Projective], scalars: &[Scalar]) -> Option<G1Projective> {
+    if points.len() != scalars.len() {
+        return None;
     }
+    Some(G1Projective::multi_exp(points, scalars))
+}
+
+/// A multi-scalar multiplication algorithm over G2 elements
+///
+/// Returns None if the points and the scalars are not the
+/// same length.
+///
+/// Note: unsafe refers to the fact that blst will return the identity
+/// element, if any of the points are the identity element.
+///
+/// Calling this method means that the caller is aware that there are no
+/// identity elements amongst their points.
+///
+/// See test below named `blst_footgun` for the edge case.
+pub fn g2_lincomb_unsafe(points: &[G2Projective], scalars: &[Scalar]) -> Option<G2Projective> {
+    if points.len() != scalars.len() {
+        return None;
+    }
+    Some(G2Projective::multi_exp(points, scalars))
+}
+
+/// A multi-scalar multiplication algorithm over G1 elements
+///
+/// Returns None if the points and the scalars are not the
+/// same length.
+///
+/// This method is a safe wrapper around `g1_lincomb_unsafe`.
+///
+/// It filters out any points that are the identity.
+pub fn g1_lincomb(points: &[G1Projective], scalars: &[Scalar]) -> Option<G1Projective> {
+    let (points_filtered, scalars_filtered): (Vec<_>, Vec<_>) = points
+        .iter()
+        .zip(scalars)
+        .filter(|(point, _)| !(bool::from(point.is_identity())))
+        .map(|(point, scalar)| (*point, *scalar))
+        .unzip();
     if points_filtered.is_empty() {
-        return G1Projective::identity();
+        return Some(G1Projective::identity());
     }
     g1_lincomb_unsafe(&points_filtered, &scalars_filtered)
 }
-/// This method is a safe wrapper around `g2_lincomb_unsafe`
-/// It filters out any points that are the identity, since blst does not handle them correctly
-pub fn g2_lincomb(points: &[G2Projective], scalars: &[Scalar]) -> G2Projective {
-    let mut points_filtered = Vec::with_capacity(points.len());
-    let mut scalars_filtered = Vec::with_capacity(scalars.len());
-    for (point, scalar) in points.iter().zip(scalars) {
-        let is_identity: bool = point.is_identity().into();
-        if !is_identity {
-            points_filtered.push(*point);
-            scalars_filtered.push(*scalar);
-        }
-    }
+
+/// A multi-scalar multiplication algorithm over G2 elements
+///
+/// Returns None if the points and the scalars are not the
+/// same length.
+///
+/// This method is a safe wrapper around `g2_lincomb_unsafe`.
+///
+/// It filters out any points that are the identity.
+pub fn g2_lincomb(points: &[G2Projective], scalars: &[Scalar]) -> Option<G2Projective> {
+    let (points_filtered, scalars_filtered): (Vec<_>, Vec<_>) = points
+        .iter()
+        .zip(scalars)
+        .filter(|(point, _)| !(bool::from(point.is_identity())))
+        .map(|(point, scalar)| (*point, *scalar))
+        .unzip();
     if points_filtered.is_empty() {
-        return G2Projective::identity();
+        return Some(G2Projective::identity());
     }
     g2_lincomb_unsafe(&points_filtered, &scalars_filtered)
 }
@@ -70,11 +95,13 @@ mod tests {
         // 1 * G + 1 * 0 = G
         // However, since one of the points is the identity, the answer is 0 for blst
 
-        let result = g1_lincomb_unsafe(&points, &scalars);
+        let result = g1_lincomb_unsafe(&points, &scalars)
+            .expect("number of points and number of scalars should be equal");
         assert_eq!(result, G1Projective::identity());
 
         // Doing it with the g1_lincomb method will give the correct result
-        let result = g1_lincomb(&points, &scalars);
+        let result = g1_lincomb(&points, &scalars)
+            .expect("number of points and number of scalars should be equal");
         assert_eq!(result, G1Projective::generator());
     }
 }
