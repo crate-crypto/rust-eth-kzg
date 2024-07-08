@@ -7,25 +7,25 @@ use bls12_381::{
 
 /// A struct representing a set of points that are roots of unity,
 /// which allows us to efficiently evaluate and interpolate polynomial
-/// over these points.
+/// over these points using FFT.
 #[derive(Debug, Clone)]
 pub struct Domain {
-    // roots of unity
+    /// roots of unity
     pub roots: Vec<Scalar>,
-    // Domain size as a scalar
+    /// size of the domain as a scalar
     pub domain_size: Scalar,
-    // Inverse of the domain size as a scalar
+    /// Inverse of the domain size as a scalar
     pub domain_size_inv: Scalar,
-    // Generator for this domain
+    /// Generator for this domain
     // Element has order `domain_size`
     pub generator: Scalar,
-    // Inverse of the generator
-    // This is cached for IFFT
+    /// Inverse of the generator for the domain
+    /// This is cached for IFFT
     pub generator_inv: Scalar,
-    // Element used to generate a coset
-    // of the domain
+    /// Element used to generate a coset
+    /// of the domain
     coset_generator: Scalar,
-    // Inverse of the coset generator
+    /// Inverse of the coset generator
     coset_generator_inv: Scalar,
 }
 
@@ -71,8 +71,6 @@ impl Domain {
     }
 
     /// Computes an n'th root of unity for a given `n`
-    ///
-    /// TODO: If this shows to be too slow, we can use a lookup table
     fn compute_generator_for_size(size: usize) -> Scalar {
         assert!(size.is_power_of_two());
 
@@ -98,21 +96,26 @@ impl Domain {
     }
 
     /// The size of the domain
+    ///
+    /// Note: This is always a power of two
     pub(crate) fn size(&self) -> usize {
         self.roots.len()
     }
 
-    /// Evaluates a polynomial at the domain points.
-    pub fn fft_scalars(&self, mut points: PolyCoeff) -> Vec<Scalar> {
-        // pad the points with zeroes
-        points.resize(self.size(), Scalar::ZERO);
-        fft_scalar(self.generator, &points)
+    /// Evaluates a polynomial at the points in the domain
+    pub fn fft_scalars(&self, mut polynomial: PolyCoeff) -> Vec<Scalar> {
+        // Pad the polynomial with zeroes, so that it is the same size as the
+        // domain.
+        polynomial.resize(self.size(), Scalar::ZERO);
+
+        fft_scalar(self.generator, &polynomial)
     }
 
     /// Evaluates a polynomial at the points in the domain multiplied by a coset
     /// generator `g`.
     pub fn coset_fft_scalars(&self, mut points: PolyCoeff) -> Vec<Scalar> {
-        // pad the points with zeroes
+        // Pad the polynomial with zeroes, so that it is the same size as the
+        // domain.
         points.resize(self.size(), Scalar::ZERO);
 
         let mut coset_scale = Scalar::ONE;
@@ -123,19 +126,48 @@ impl Domain {
         fft_scalar(self.generator, &points)
     }
 
-    /// Computes a DFT for the group elements(points) using the domain roots.
+    /// Computes a DFT for the group elements(elliptic curve points) using the roots in the domain.
+    ///
+    /// Note: Thinking about an FFT as multiple inner products between powers of the elements
+    /// in the domain and the input polynomial makes this easier to visualize.
     pub fn fft_g1(&self, mut points: Vec<G1Projective>) -> Vec<G1Projective> {
-        // pad the points with zeroes
+        // Pad the vector of points with zeroes, so that it is the same size as the
+        // domain.
         points.resize(self.size(), G1Projective::identity());
         fft_g1(self.generator, &points)
     }
 
-    /// Computes an IDFT for the group elements(points) using the domain roots.
-    pub fn ifft_g1(&self, mut points: Vec<G1Projective>) -> Vec<G1Projective> {
-        // pad the points with zeroes
+    /// Computes an IDFT for the group elements(elliptic curve points) using the roots in the domain.
+    pub fn ifft_g1(&self, points: Vec<G1Projective>) -> Vec<G1Projective> {
+        self.ifft_g1_take_n(points, None)
+    }
+
+    /// Computes an IDFT for the group elements(elliptic curve points) using the roots in the domain.
+    ///
+    /// `n`:  indicates how many points we would like to return. Passing `None` will return be equivalent
+    /// to compute an ifft_g1 and returning as many elements as there are in the domain.
+    ///
+    /// This is useful for saving computation on the final scalar multiplication that happens after the
+    /// initial FFT is done.
+    pub fn ifft_g1_take_n(
+        &self,
+        mut points: Vec<G1Projective>,
+        n: Option<usize>,
+    ) -> Vec<G1Projective> {
+        // Pad the vector with zeroes, so that it is the same size as the
+        // domain.
         points.resize(self.size(), G1Projective::identity());
 
-        let mut ifft_g1 = fft_g1(self.generator_inv, &points);
+        let ifft_g1 = fft_g1(self.generator_inv, &points);
+
+        // Truncate the result if a value of `n` was supplied.
+        let mut ifft_g1 = match n {
+            Some(num_to_take) => {
+                assert!(num_to_take < ifft_g1.len());
+                ifft_g1[0..num_to_take].to_vec()
+            }
+            None => ifft_g1,
+        };
 
         for element in ifft_g1.iter_mut() {
             *element *= self.domain_size_inv
@@ -147,15 +179,8 @@ impl Domain {
     /// Interpolates the points over the domain to get a polynomial
     /// in monomial form.
     pub fn ifft_scalars(&self, mut points: Vec<Scalar>) -> Vec<Scalar> {
-        if points.len() != self.size() {
-            panic!(
-                "number of points {}, must equal the domain size {}",
-                points.len(),
-                self.size()
-            )
-        }
-
-        // pad the points with zeroes
+        // Pad the vector with zeroes, so that it is the same size as the
+        // domain.
         points.resize(self.size(), Scalar::ZERO);
 
         let mut ifft_scalar = fft_scalar(self.generator_inv, &points);
@@ -166,6 +191,7 @@ impl Domain {
 
         ifft_scalar
     }
+
     /// Interpolates a polynomial over the coset of a domain
     pub fn coset_ifft_scalars(&self, points: Vec<Scalar>) -> Vec<Scalar> {
         let mut coset_coeffs = self.ifft_scalars(points);
@@ -211,9 +237,6 @@ fn fft_scalar(nth_root_of_unity: Scalar, points: &[Scalar]) -> Vec<Scalar> {
 /// Computes a DFT of the group elements(points) using powers of the roots of unity.
 ///
 /// Note: This is essentially multiple multi-scalar multiplications.
-///
-/// TODO: Optimize this, currently very slow -- using split-radix or radix-4 might reduce
-/// TODO: the number of multiplications.
 fn fft_g1(nth_root_of_unity: Scalar, points: &[G1Projective]) -> Vec<G1Projective> {
     let n = points.len();
     if n == 1 {
@@ -313,7 +336,7 @@ mod tests {
 
     #[test]
     fn test_polynomial_coset_fft() {
-        let polynomial = vec![Scalar::random(&mut rand::thread_rng()); 32];
+        let polynomial: Vec<_> = (0..32).map(|i| -Scalar::from(i)).collect();
 
         let domain = Domain::new(32);
 
@@ -343,7 +366,9 @@ mod tests {
 
         let n = 4;
         let domain = Domain::new(n);
-        let points = vec![G1Projective::random(&mut rand::thread_rng()); n];
+        let points: Vec<_> = (0..n)
+            .map(|_| G1Projective::random(&mut rand::thread_rng()))
+            .collect();
 
         let dft_points = domain.fft_g1(points.clone());
         for (i, root) in domain.roots.iter().enumerate() {
