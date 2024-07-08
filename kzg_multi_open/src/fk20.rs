@@ -1,5 +1,5 @@
 mod batch_toeplitz;
-mod cosets;
+pub(crate) mod cosets;
 mod h_poly;
 
 pub mod naive;
@@ -18,8 +18,7 @@ use polynomial::{domain::Domain, monomial::PolyCoeff};
 use crate::commit_key::CommitKey;
 use crate::fk20::batch_toeplitz::BatchToeplitzMatrixVecMul;
 
-// TODO: Remove this export
-pub use cosets::reverse_bit_order;
+use cosets::reverse_bit_order;
 
 pub use cosets::coset_gens;
 /// FK20 initializes all of the components needed to compute a KZG multi point

@@ -46,7 +46,7 @@ pub fn create_eth_commit_opening_keys() -> (CommitKey, OpeningKey) {
 
 #[cfg(test)]
 mod tests {
-    use crate::fk20::reverse_bit_order;
+    use crate::fk20::cosets::reverse_bit_order;
     use crate::polynomial::domain::Domain;
     use crate::{create_eth_commit_opening_keys, fk20::naive as fk20naive, naive as kzgnaive};
     use bls12_381::Scalar;
