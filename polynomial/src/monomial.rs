@@ -83,7 +83,8 @@ pub fn vanishing_poly(roots: &[Scalar]) -> Vec<Scalar> {
 ///
 // A simple O(n^2) algorithm (lagrange interpolation)
 //
-// Note: This method is only used for testing.
+// Note: This method is only used for testing. Our domain will always be the roots
+// of unity, so we use IFFT to interpolate.
 pub fn lagrange_interpolate(points: &[(Scalar, Scalar)]) -> Option<Vec<Scalar>> {
     let max_degree_plus_one = points.len();
     assert!(
@@ -141,7 +142,9 @@ pub fn lagrange_interpolate(points: &[(Scalar, Scalar)]) -> Option<Vec<Scalar>> 
             }
         }
 
-        denominator = denominator.invert().unwrap();
+        denominator = denominator
+            .invert()
+            .expect("unexpected zero in denominator");
         for (i, this_contribution) in contribution.into_iter().enumerate() {
             let c = coeffs.get_mut(i).expect("should have enough coefficients");
             let mut tmp = this_contribution;
@@ -253,7 +256,8 @@ mod tests {
             (Scalar::from(1u64), Scalar::from(6u64)),
             (Scalar::from(2u64), Scalar::from(17u64)),
         ];
-        let poly = lagrange_interpolate(&points).unwrap();
+        let poly =
+            lagrange_interpolate(&points).expect("enough values were provided for interpolation");
         let expected = vec![Scalar::from(1u64), Scalar::from(2u64), Scalar::from(3u64)];
         assert_eq!(poly, expected);
     }
