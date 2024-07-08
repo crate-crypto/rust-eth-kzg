@@ -179,7 +179,7 @@ impl FK20 {
         }
 
         // Now bit reverse the result, so we get the evaluations as if we had just done
-        // and FFT on them.
+        // and FFT on them. ie we computed the evaluation set and did not do a reverse bit order.
         reverse_bit_order(&mut elements);
 
         // The order of the coset indices in the returned vector will be different.
