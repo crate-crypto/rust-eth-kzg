@@ -110,6 +110,9 @@ impl PeerDASContext {
             // Note: We do not check that the commitments are valid in this scenario.
             // It is possible to "misuse" the API, by passing in invalid commitments
             // with no cells, here.
+            //
+            // TODO: This is only true while we have the `row_indices` API
+            // TODO: which will be getting removed soon.
             if cells.is_empty() {
                 return Ok(());
             }
