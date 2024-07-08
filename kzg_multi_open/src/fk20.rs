@@ -234,7 +234,9 @@ impl FK20 {
         self.compute_multi_opening_proofs_poly_coeff(poly_coeff)
     }
 
-    pub fn compute_evaluation_sets(&self, polynomial: PolyCoeff) -> Vec<Vec<Scalar>> {
+    // TODO: evaluation_sets might not be the best name here.
+    // TODO: It is a Vector/list of coset evaluations
+    fn compute_evaluation_sets(&self, polynomial: PolyCoeff) -> Vec<Vec<Scalar>> {
         // Compute the evaluations of the polynomial on the cosets by doing an fft
         let mut evaluations = self.ext_domain.fft_scalars(polynomial);
         reverse_bit_order(&mut evaluations);
@@ -244,6 +246,7 @@ impl FK20 {
             .collect()
     }
 
+    // TODO: Explain what h_poly refers to
     fn compute_h_poly_commitments(&self, mut polynomial: PolyCoeff, l: usize) -> Vec<G1Projective> {
         assert!(
             l.is_power_of_two(),
