@@ -200,10 +200,8 @@ impl FK20 {
             self.compute_h_poly_commitments(polynomial.clone(), self.coset_size);
         let mut proofs = self.proof_domain.fft_g1(h_poly_commitments);
 
-        // apply reverse bit order permutation, since fft_g1 was applied using
-        // the regular order, and we want the cosets to be in bit-reversed order
-        //
-        // TODO: Add note about making the cosets line up for the evaluation sets
+        // Reverse bit order the set of proofs, so that the proofs line up with the
+        // coset evaluations.
         reverse_bit_order(&mut proofs);
 
         let proofs_affine = g1_batch_normalize(&proofs);
