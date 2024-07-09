@@ -1,10 +1,7 @@
-use bls12_381::fixed_base_msm::FixedBaseMSM;
-use bls12_381::G1Projective;
+use crate::fk20::toeplitz::{CirculantMatrix, ToeplitzMatrix};
+use bls12_381::{fixed_base_msm::FixedBaseMSM, G1Projective};
 use polynomial::domain::Domain;
 use rayon::prelude::*;
-
-use super::toeplitz::ToeplitzMatrix;
-use crate::fk20::toeplitz::CirculantMatrix;
 
 /// BatchToeplitz is a structure that optimizes for the usecase where:
 /// - You need to do multiple matrix-vector multiplications and sum them together
