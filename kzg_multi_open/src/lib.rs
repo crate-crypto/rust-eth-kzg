@@ -90,9 +90,8 @@ mod tests {
         for k in 0..got_proofs.len() {
             let input_points = chunked_bit_reversed_roots[k];
             // Compute the opening proofs the naive way (without fk20)
-            let expected_proof = kzgnaive::compute_multi_opening(&ck, &poly_coeff, input_points);
-            let expected_quotient_comm = expected_proof.quotient_commitment;
-            let expected_output_points = expected_proof.output_points;
+            let (expected_quotient_comm, expected_output_points) =
+                kzgnaive::compute_multi_opening(&ck, &poly_coeff, input_points);
 
             assert_eq!(expected_output_points, got_set_of_output_points[k]);
             assert_eq!(expected_quotient_comm, got_proofs[k]);
