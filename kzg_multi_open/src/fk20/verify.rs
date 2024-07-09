@@ -8,7 +8,7 @@ fn compute_fiat_shamir_challenge(
     opening_key: &OpeningKey,
     row_commitments: &[G1Point],
     row_indices: &[u64],
-    cell_indices: &[u64],
+    coset_indices: &[u64],
     coset_evals: &[Vec<Scalar>],
     proofs: &[G1Point],
 ) -> Scalar {
@@ -21,22 +21,22 @@ fn compute_fiat_shamir_challenge(
     // polynomial bound
     hash_input.extend((opening_key.num_coefficients_in_polynomial as u64).to_be_bytes());
 
-    // field elements per cell
+    // field elements per coset
     hash_input.extend((opening_key.multi_opening_size as u64).to_be_bytes());
 
     let num_commitments = row_commitments.len() as u64;
     hash_input.extend(num_commitments.to_be_bytes());
 
-    let num_cells = cell_indices.len() as u64;
-    hash_input.extend(num_cells.to_be_bytes());
+    let num_cosets = coset_indices.len() as u64;
+    hash_input.extend(num_cosets.to_be_bytes());
 
     for commitment in row_commitments {
         hash_input.extend(commitment.to_compressed())
     }
 
-    for k in 0..num_cells {
+    for k in 0..num_cosets {
         hash_input.extend(row_indices[k as usize].to_be_bytes());
-        hash_input.extend(cell_indices[k as usize].to_be_bytes());
+        hash_input.extend(coset_indices[k as usize].to_be_bytes());
         for eval in &coset_evals[k as usize] {
             hash_input.extend(eval.to_bytes_be())
         }
@@ -85,7 +85,7 @@ pub fn verify_multi_opening(
     opening_key: &OpeningKey,
     row_commitments: &[G1Point],
     commitment_indices: &[u64],
-    cell_indices: &[u64],
+    coset_indices: &[u64],
     coset_shifts: &[Scalar],
     coset_evals: &[Vec<Scalar>],
     proofs: &[G1Point],
@@ -103,7 +103,7 @@ pub fn verify_multi_opening(
         opening_key,
         row_commitments,
         commitment_indices,
-        cell_indices,
+        coset_indices,
         coset_evals,
         proofs,
     );
@@ -120,7 +120,7 @@ pub fn verify_multi_opening(
         .map(bls12_381::G1Projective::from)
         .collect::<Vec<_>>();
 
-    let num_cells = cell_indices.len();
+    let num_cosets = coset_indices.len();
     let n = opening_key.multi_opening_size;
     let num_unique_commitments = row_commitments.len();
 
@@ -137,7 +137,7 @@ pub fn verify_multi_opening(
     // This would be equivalent to doing (r_1 + r_2) * G_1
     // The (r_1 + r_2) is what is being referred to as the `weight`
     let mut weights = vec![Scalar::from(0); num_unique_commitments];
-    for k in 0..num_cells {
+    for k in 0..num_cosets {
         // For each row index, we get its commitment index `i`.
         // ie, `i` just means we are looking at G_i
         let commitment_index = commitment_indices[k];
@@ -151,13 +151,13 @@ pub fn verify_multi_opening(
 
     // Compute a random linear combination of the interpolation polynomials
     let mut sum_interpolation_poly = Vec::new();
-    for k in 0..num_cells {
+    for k in 0..num_cosets {
         let mut coset_evals_clone = coset_evals[k].clone();
         reverse_bit_order(&mut coset_evals_clone);
 
         // Compute the interpolation polynomial
         let ifft_scalars = domain.ifft_scalars(coset_evals_clone);
-        let h_k = coset_shifts[cell_indices[k] as usize];
+        let h_k = coset_shifts[coset_indices[k] as usize];
         let mut inv_h_k_powers = compute_powers(h_k, ifft_scalars.len());
         batch_inverse(&mut inv_h_k_powers); // The coset generators are all roots of unity, so none of them will be zero
         let ifft_scalars: Vec<_> = ifft_scalars
@@ -179,10 +179,10 @@ pub fn verify_multi_opening(
     // [s^n]
     let s_pow_n = opening_key.g2s[n];
 
-    let mut weighted_r_powers = Vec::with_capacity(num_cells);
-    for k in 0..num_cells {
+    let mut weighted_r_powers = Vec::with_capacity(num_cosets);
+    for k in 0..num_cosets {
         // This is expensive and does not need to be done all the time.
-        let h_k = coset_shifts[cell_indices[k] as usize];
+        let h_k = coset_shifts[coset_indices[k] as usize];
         let h_k_pow = h_k.pow_vartime([n as u64]);
         let wrp = r_powers[k] * h_k_pow;
         weighted_r_powers.push(wrp);
