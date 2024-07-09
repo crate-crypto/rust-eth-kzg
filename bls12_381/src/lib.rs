@@ -32,7 +32,7 @@ pub fn g1_batch_normalize(projective_points: &[G1Projective]) -> Vec<G1Point> {
     use group::Curve;
 
     let mut affine_points = vec![G1Point::identity(); projective_points.len()];
-    G1Projective::batch_normalize(&projective_points, &mut affine_points);
+    G1Projective::batch_normalize(projective_points, &mut affine_points);
 
     affine_points
 }
