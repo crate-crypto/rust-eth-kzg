@@ -1,5 +1,4 @@
-use bls12_381::fixed_base_msm::FixedBaseMSM;
-use bls12_381::G1Projective;
+use bls12_381::{fixed_base_msm::FixedBaseMSM, G1Projective};
 use polynomial::domain::Domain;
 use rayon::prelude::*;
 
