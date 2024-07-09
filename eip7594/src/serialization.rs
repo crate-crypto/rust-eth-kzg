@@ -111,7 +111,7 @@ pub(crate) fn deserialize_cells(
 }
 
 /// Converts a a set of scalars (evaluations) to the `Cell` type
-pub(crate) fn evaluation_sets_to_cells<T: AsRef<[Scalar]>>(
+pub(crate) fn coset_evaluations_to_cells<T: AsRef<[Scalar]>>(
     evaluations: impl Iterator<Item = T>,
 ) -> [Cell; CELLS_PER_EXT_BLOB] {
     let cells: Vec<Cell> = evaluations
@@ -129,11 +129,11 @@ pub(crate) fn evaluation_sets_to_cells<T: AsRef<[Scalar]>>(
 }
 
 pub(crate) fn serialize_cells_and_proofs(
-    evaluation_sets: Vec<Vec<Scalar>>,
+    coset_evaluations: Vec<Vec<Scalar>>,
     proofs: Vec<G1Point>,
 ) -> ([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]) {
     // Serialize the evaluation sets into `Cell`s.
-    let cells = evaluation_sets_to_cells(evaluation_sets.into_iter());
+    let cells = coset_evaluations_to_cells(coset_evaluations.into_iter());
 
     // Serialize the proofs into `KZGProof` objects.
     let proofs: Vec<_> = proofs.iter().map(serialize_g1_compressed).collect();

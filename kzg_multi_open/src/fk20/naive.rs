@@ -91,12 +91,12 @@ pub fn fk20_open_multi_point(
     // the regular order.
     reverse_bit_order(&mut proofs_affine);
 
-    let evaluation_sets = fk20_compute_evaluation_set(polynomial, coset_size, &ext_domain);
+    let coset_evaluations = fk20_compute_coset_evaluations(polynomial, coset_size, &ext_domain);
 
-    (proofs_affine, evaluation_sets)
+    (proofs_affine, coset_evaluations)
 }
 
-fn fk20_compute_evaluation_set(
+fn fk20_compute_coset_evaluations(
     polynomial: &PolyCoeff,
     coset_size: usize,
     ext_domain: &Domain,

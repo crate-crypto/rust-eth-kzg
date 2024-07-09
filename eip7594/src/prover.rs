@@ -106,13 +106,13 @@ impl PeerDASContext {
 
             // Compute proofs and evaluation sets
             //
-            let (proofs, evaluation_sets) = self
+            let (proofs, coset_evaluations) = self
                 .prover_ctx
                 .fk20
                 .compute_multi_opening_proofs_poly_coeff(poly_coeff);
 
             Ok(serialization::serialize_cells_and_proofs(
-                evaluation_sets,
+                coset_evaluations,
                 proofs,
             ))
         })

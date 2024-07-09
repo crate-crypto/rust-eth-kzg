@@ -30,20 +30,26 @@ pub use cosets::coset_gens;
 #[derive(Debug)]
 pub struct FK20 {
     batch_toeplitz: BatchToeplitzMatrixVecMul,
-    /// FK20 allows you to create a proof of an opening for multiple points.
+    /// The amount of points that a single proof will attest to the opening of.
+    ///
+    /// Note: FK20 allows you to create a proof of an opening for multiple points.
     /// Each proof will attest to the opening of `l` points.
     /// In the FK20 paper, this is also referred to as `l` (ELL).
     ///
     /// TODO(Note): This has ramifications for the number of G2 points, but it is not checked
     /// TODO: in the constructor here.
-    point_set_size: usize,
+    coset_size: usize,
     /// The total number of points that we want to open a polynomial at.
     ///
     /// Note: A proof will attest to `point_set_size` of these points at a
     /// time.
     number_of_points_to_open: usize,
+
     /// Domain used in FK20 to create the opening proofs
     proof_domain: Domain,
+    /// Domain used to evaluate the polynomial at the points we want to open at.
+    ///
+    // Note: This can be thought of as the "evaluation domain"
     ext_domain: Domain,
     /// Domain used for converting polynomial to monomial form.
     poly_domain: Domain,
@@ -53,47 +59,59 @@ pub struct FK20 {
 }
 
 impl FK20 {
+    /// Initialize a FK20 struct with the given parameters.
+    ///
+    /// commit_key: The commitment key used to commit to polynomials.
+    /// polynomial_bound: The number of coefficients in the polynomial.
+    /// points_per_proof: The number of points that a single proof will attest to.
+    /// number_of_points_to_open: The total number of points that we want to open a polynomial at.
     pub fn new(
         commit_key: CommitKey,
         polynomial_bound: usize,
-        point_set_size: usize,
+        points_per_proof: usize,
         number_of_points_to_open: usize,
     ) -> FK20 {
-        assert!(point_set_size.is_power_of_two());
+        assert!(points_per_proof.is_power_of_two());
         assert!(number_of_points_to_open.is_power_of_two());
-        assert!(number_of_points_to_open > point_set_size);
+        assert!(number_of_points_to_open > points_per_proof);
         assert!(polynomial_bound.is_power_of_two());
         assert!(commit_key.g1s.len() >= polynomial_bound);
+        assert!(commit_key.g1s.len() > points_per_proof);
 
         // 1. Compute the SRS vectors that we will multiply the toeplitz matrices by.
         //
-        // Skip the last `l` points in the srs
-        assert!(commit_key.g1s.len() > point_set_size);
+        // Skip the last `coset_size` points in the srs
+        //
+        // To intuitively understand why this normal, note that the conventional
+        // KZG polynomial commitment scheme for opening a polynomial at a single point
+        // does not require all of the coefficients of the polynomial to compute
+        // the quotient polynomial.
         let srs_truncated: Vec<_> = commit_key
             .g1s
             .clone()
             .into_iter()
             .rev()
-            .skip(point_set_size)
+            .skip(points_per_proof)
             .collect();
-        let mut srs_vectors = take_every_nth(&srs_truncated, point_set_size);
+        let mut srs_vectors = take_every_nth(&srs_truncated, points_per_proof);
 
         // Pad srs vectors to the next power of two
         //
         // This is not strictly needed since our FFT implementation
-        // will pad these. However, doing it now saves work.
+        // will pad these.
         for srs_vector in &mut srs_vectors {
             let pad_by = srs_vector.len().next_power_of_two();
             srs_vector.resize(pad_by, G1Projective::identity());
         }
 
-        // Compute `l` toeplitz matrix-vector multiplications and sum them together
+        // Initialize structure that will allow us to do efficient sum of multiple toeplitz matrix
+        // vector multiplication, where the vector is fixed.
         let batch_toeplitz = BatchToeplitzMatrixVecMul::new(srs_vectors);
 
         // 2. Compute the domains needed to produce the proofs and the evaluations
         //
         // The size of the proof domain corresponds to the number of proofs that will be returned.
-        let proof_domain = Domain::new(number_of_points_to_open / point_set_size);
+        let proof_domain = Domain::new(number_of_points_to_open / points_per_proof);
         // The size of the extension domain corresponds to the number of points that we want to open
         let ext_domain = Domain::new(number_of_points_to_open);
         // The domain needed to convert the polynomial from lagrange form to monomial form.
@@ -101,7 +119,7 @@ impl FK20 {
 
         FK20 {
             batch_toeplitz,
-            point_set_size,
+            coset_size: points_per_proof,
             number_of_points_to_open,
             proof_domain,
             ext_domain,
@@ -117,17 +135,19 @@ impl FK20 {
         // FK20 will operate over the bit-reversed permutation of the data.
         reverse_bit_order(&mut data);
 
+        // Interpolate the data, to get a polynomial in monomial form that corresponds
+        // to the bit reversed data.
         let poly_coeff = self.poly_domain.ifft_scalars(data);
 
-        // Commit to the bit reversed data in lagrange form using the lagrange version of the commit key
+        // Commit to the interpolated polynomial.
         self.commit_key.commit_g1(&poly_coeff).into()
     }
 
     /// Given a group of coset evaluations, this method will return/reorder the evaluations as if
-    /// we evaluated them on the relevant extended domain. The coset indices in domain order
-    /// will also be returned.
+    /// we evaluated them on the relevant extended domain.
+    /// The coset indices are returned in domain order.
     //
-    // For evaluations that are missing, this method will fill these in with zeroes.
+    // Note: For evaluations that are missing, this method will fill these in with zeroes.
     //
     // Note: It is the callers responsibility to ensure that there are no duplicate
     // coset indices.
@@ -198,7 +218,7 @@ impl FK20 {
 
     /// The number of proofs that will be produced.
     pub fn num_proofs(&self) -> usize {
-        self.number_of_points_to_open / self.point_set_size
+        self.number_of_points_to_open / self.coset_size
     }
 
     pub fn compute_multi_opening_proofs_poly_coeff(
@@ -207,7 +227,7 @@ impl FK20 {
     ) -> (Vec<G1Point>, Vec<Vec<Scalar>>) {
         // Compute proofs for the polynomial
         let h_poly_commitments =
-            self.compute_h_poly_commitments(polynomial.clone(), self.point_set_size);
+            self.compute_h_poly_commitments(polynomial.clone(), self.coset_size);
         let mut proofs = self.proof_domain.fft_g1(h_poly_commitments);
 
         // apply reverse bit order permutation, since fft_g1 was applied using
@@ -218,9 +238,9 @@ impl FK20 {
 
         let proofs_affine = g1_batch_normalize(&proofs);
 
-        let evaluation_sets = self.compute_evaluation_sets(polynomial);
+        let coset_evaluations = self.compute_coset_evaluations(polynomial);
 
-        (proofs_affine, evaluation_sets)
+        (proofs_affine, coset_evaluations)
     }
 
     pub fn compute_multi_opening_proofs_on_data(
@@ -233,14 +253,12 @@ impl FK20 {
         self.compute_multi_opening_proofs_poly_coeff(poly_coeff)
     }
 
-    // TODO: evaluation_sets might not be the best name here.
-    // TODO: It is a Vector/list of coset evaluations
-    fn compute_evaluation_sets(&self, polynomial: PolyCoeff) -> Vec<Vec<Scalar>> {
+    fn compute_coset_evaluations(&self, polynomial: PolyCoeff) -> Vec<Vec<Scalar>> {
         // Compute the evaluations of the polynomial on the cosets by doing an fft
         let mut evaluations = self.ext_domain.fft_scalars(polynomial);
         reverse_bit_order(&mut evaluations);
         evaluations
-            .chunks_exact(self.point_set_size)
+            .chunks_exact(self.coset_size)
             .map(|slice| slice.to_vec())
             .collect()
     }
