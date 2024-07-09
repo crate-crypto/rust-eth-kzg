@@ -14,8 +14,12 @@ pub(crate) fn take_every_nth<T: Clone + Copy>(list: &[T], n: usize) -> Vec<Vec<T
 }
 
 impl FK20 {
-    // TODO: Explain what h_poly refers to
     /// Computes the `h` polynomials for the FK20 proofs.
+    ///
+    /// The `h` polynomial refer to the polynomial that are shared across the computation
+    /// of different proofs. The main trick behind FK20 is to compute these polynomials
+    /// once and then use an FFT to compute all of the proofs from commitment to these
+    /// polynomial.
     ///
     /// See section 3.1.1 of the FK20 paper for more details.
     ///
