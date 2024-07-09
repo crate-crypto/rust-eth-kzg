@@ -8,10 +8,9 @@ use super::cosets::reverse_bit_order;
 /// This is doing \floor{f(x) / x^d}
 /// which essentially means removing the first d coefficients
 ///
-/// Note: This is just doing a shifting of the polynomial coefficients. However,
-/// we refrain from calling this method `shift_polynomial` due to the specs
-/// naming a method with different functionality that name.
-pub fn divide_by_monomial_floor(poly: &PolyCoeff, degree: usize) -> &[Scalar] {
+/// Another way to view this, is that this function is performing a right shift
+/// on the polynomial by `degree` amount.
+pub fn shift_polynomial(poly: &PolyCoeff, degree: usize) -> &[Scalar] {
     let n = poly.len();
     if degree >= n {
         // Return an empty slice if the degree is greater than or equal to
@@ -54,7 +53,7 @@ pub fn compute_h_poly(polynomial: &PolyCoeff, coset_size: usize) -> Vec<&[Scalar
     let mut h_polys = Vec::with_capacity(k);
     for index in 1..=k {
         let degree = index * coset_size;
-        let h_poly_i = divide_by_monomial_floor(polynomial, degree);
+        let h_poly_i = shift_polynomial(polynomial, degree);
         h_polys.push(h_poly_i);
     }
 
@@ -116,7 +115,7 @@ fn fk20_compute_coset_evaluations(
 mod tests {
     use bls12_381::Scalar;
 
-    use crate::fk20::naive::divide_by_monomial_floor;
+    use crate::fk20::naive::shift_polynomial;
 
     use crate::{
         create_insecure_commit_opening_keys,
@@ -149,7 +148,7 @@ mod tests {
     fn check_divide_by_monomial_floor() {
         // \floor(x^2 + x + 10 / x) = x + 1
         let poly = vec![Scalar::from(10u64), Scalar::from(1u64), Scalar::from(1u64)];
-        let result = divide_by_monomial_floor(&poly, 1);
+        let result = shift_polynomial(&poly, 1);
         assert_eq!(result, vec![Scalar::from(1u64), Scalar::from(1u64)]);
     }
 }
