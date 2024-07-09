@@ -1,9 +1,7 @@
+use crate::fk20::toeplitz::{CirculantMatrix, ToeplitzMatrix};
 use bls12_381::{fixed_base_msm::FixedBaseMSM, G1Projective};
 use polynomial::domain::Domain;
 use rayon::prelude::*;
-
-use super::toeplitz::ToeplitzMatrix;
-use crate::fk20::toeplitz::CirculantMatrix;
 
 /// BatchToeplitz is a structure that optimizes for the usecase where:
 /// - You need to do multiple matrix-vector multiplications and sum them together
@@ -11,13 +9,9 @@ use crate::fk20::toeplitz::CirculantMatrix;
 /// - For now, the vector is a group element. We don't have any other usecases in the codebase.
 #[derive(Debug)]
 pub struct BatchToeplitzMatrixVecMul {
-    /// fft_vectors represents the group elements in the FFT domain.
-    /// This means when we are computing the matrix-vector multiplication by embedding it
-    /// into a circulant matrix, we will not need to do an FFT on the vector.
-    /// TODO: remove
-    fft_vectors: Vec<Vec<G1Projective>>,
-    /// Multiples of the fft_vectors that are precomputed for the fixed base msm
-    /// calculation.
+    /// This contains the number of matrix-vector multiplications that
+    /// we can do in a batch.
+    batch_size: usize,
     precomputed_fft_vectors: Vec<FixedBaseMSM>,
     // This is the length of the vector that we are multiplying the matrix with.
     // and subsequently will be the length of the final result of the matrix-vector multiplication.
@@ -43,10 +37,9 @@ impl BatchToeplitzMatrixVecMul {
             .into_par_iter()
             .map(|vector| circulant_domain.fft_g1(vector))
             .collect();
+        let batch_size = vectors.len();
 
-        // TODO: possibly add a transpose method since this is done also again below
-        // TODO: remove the clone once we remove `fft_vectors`
-        let transposed_msm_vectors = transpose(vectors.clone());
+        let transposed_msm_vectors = transpose(vectors);
 
         let table_bits = 8;
         let precomputed_table: Vec<_> = transposed_msm_vectors
@@ -56,9 +49,9 @@ impl BatchToeplitzMatrixVecMul {
 
         BatchToeplitzMatrixVecMul {
             n,
-            fft_vectors: vectors,
             circulant_domain,
             precomputed_fft_vectors: precomputed_table,
+            batch_size,
         }
     }
 
@@ -72,7 +65,7 @@ impl BatchToeplitzMatrixVecMul {
     pub fn sum_matrix_vector_mul(&self, matrices: Vec<ToeplitzMatrix>) -> Vec<G1Projective> {
         assert_eq!(
             matrices.len(),
-            self.fft_vectors.len(),
+            self.batch_size,
             "expected the number of matrices to be the same as the number of vectors"
         );
 
