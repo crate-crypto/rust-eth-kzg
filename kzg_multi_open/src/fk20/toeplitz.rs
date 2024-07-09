@@ -29,20 +29,19 @@ use bls12_381::Scalar;
 ///
 /// # Examples
 ///
-/// ```
-/// use crate_crypto_kzg_multi_open_fk20::fk20::toeplitz::ToeplitzMatrix;
+/// ```text
 ///
-/// let row = vec![1, 2, 3, 4];
-/// let col = vec![5, 6, 7];
-/// let matrix = ToeplitzMatrix { row, col };
-/// ```
+/// row = [1, 2, 3, 4];
+/// col = [1, 5, 6, 7];
+///
 ///  This efficiently represents the following 4x4 Toeplitz matrix:
 ///  [1 2 3 4]
 ///  [5 1 2 3]
 ///  [6 5 1 2]
 ///  [7 6 5 1]
+/// ```
 ///
-/// In this example, we only store 7 elements (4 in `row` and 3 in `col`) to represent
+/// In this example, we only store 8 elements (4 in `row` and 4 in `col`) to represent
 /// a 4x4 matrix that would normally require 16 elements.
 #[derive(Debug, Clone)]
 pub struct ToeplitzMatrix {
@@ -77,19 +76,17 @@ pub struct ToeplitzMatrix {
 ///
 /// # Examples
 ///
-/// ```
-/// // TODO: Can we get a better import path here?
-/// // TODO: doc tests view everything from perspective of external API so can't have these
+/// ```text
 /// use crate_crypto_kzg_multi_open_fk20::fk20::toeplitz::CirculantMatrix;
 ///
-/// let row = vec![1, 2, 3, 4];
-/// let matrix = CirculantMatrix { row };
-/// ```
+/// row = [1, 2, 3, 4]
+///
 /// This efficiently represents the following 4x4 circulant matrix:
 ///  [1 2 3 4]
 ///  [4 1 2 3]
 ///  [3 4 1 2]
 ///  [2 3 4 1]
+/// ```
 ///
 /// In this example, we only store 4 elements to represent a 4x4 matrix that would
 /// normally require 16 elements.
@@ -265,11 +262,9 @@ impl DenseMatrix {
 
 #[cfg(test)]
 mod tests {
-    use bls12_381::Scalar;
-
-    use crate::fk20::toeplitz::ToeplitzMatrix;
-
     use super::DenseMatrix;
+    use crate::fk20::toeplitz::ToeplitzMatrix;
+    use bls12_381::Scalar;
 
     fn is_toeplitz(dense_matrix: &DenseMatrix) -> bool {
         let num_rows = dense_matrix.inner.len();
