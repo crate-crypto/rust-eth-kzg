@@ -19,6 +19,17 @@ use crate::fk20::batch_toeplitz::BatchToeplitzMatrixVecMul;
 use cosets::reverse_bit_order;
 
 pub use cosets::coset_gens;
+
+/// Input contains the various structures that we can make FK20 proofs over.
+pub enum Input {
+    /// This is akin to creating proofs over a polynomial in monomial basis.
+    PolyCoeff(Vec<Scalar>),
+    /// Data: This is akin to creating proofs over a polynomial in lagrange basis.
+    /// This variant has the useful property that the output evaluations will
+    /// contain the data in the order that it was passed in.
+    Data(Vec<Scalar>),
+}
+
 /// FK20 initializes all of the components needed to compute a KZG multi point
 /// proof using the FK20 method.
 ///
@@ -129,18 +140,77 @@ impl FK20 {
     }
 
     /// Commit to the data that we will be creating FK20 proofs over.
-    pub fn commit_to_data(&self, mut data: Vec<Scalar>) -> G1Point {
-        // Reverse the order of the scalars, so that they are in bit-reversed order.
-        //
-        // FK20 will operate over the bit-reversed permutation of the data.
-        reverse_bit_order(&mut data);
+    pub fn commit(&self, input: Input) -> G1Point {
+        let poly_coeff = match input {
+            Input::PolyCoeff(poly_coeff) => poly_coeff,
+            Input::Data(mut data) => {
+                // Reverse the order of the scalars, so that they are in bit-reversed order.
+                //
+                // FK20 will operate over the bit-reversed permutation of the data.
+                reverse_bit_order(&mut data);
 
-        // Interpolate the data, to get a polynomial in monomial form that corresponds
-        // to the bit reversed data.
-        let poly_coeff = self.poly_domain.ifft_scalars(data);
+                // Interpolate the data, to get a polynomial in monomial form that corresponds
+                // to the bit reversed data.
+                self.poly_domain.ifft_scalars(data)
+            }
+        };
 
         // Commit to the interpolated polynomial.
         self.commit_key.commit_g1(&poly_coeff).into()
+    }
+
+    /// The number of proofs that will be produced.
+    pub fn num_proofs(&self) -> usize {
+        self.number_of_points_to_open / self.coset_size
+    }
+
+    /// Evaluates the polynomial at all of the relevant cosets.
+    ///
+    /// Since we use reverse_bit_order, this is equivalent to evaluating the polynomial
+    /// on the extended domain, reverse bit ordering the evaluations and taking the
+    /// coset chunks of the evaluations.
+    fn compute_coset_evaluations(&self, polynomial: PolyCoeff) -> Vec<Vec<Scalar>> {
+        let mut evaluations = self.ext_domain.fft_scalars(polynomial);
+        reverse_bit_order(&mut evaluations);
+        evaluations
+            .chunks_exact(self.coset_size)
+            .map(|slice| slice.to_vec())
+            .collect()
+    }
+
+    pub fn compute_multi_opening_proofs(&self, input: Input) -> (Vec<G1Point>, Vec<Vec<Scalar>>) {
+        // Convert data to polynomial coefficients
+        let poly_coeff = match input {
+            Input::PolyCoeff(polynomial) => polynomial,
+            Input::Data(mut data) => {
+                reverse_bit_order(&mut data);
+                self.poly_domain.ifft_scalars(data)
+            }
+        };
+
+        self.compute_multi_opening_proofs_poly_coeff(poly_coeff)
+    }
+
+    fn compute_multi_opening_proofs_poly_coeff(
+        &self,
+        polynomial: PolyCoeff,
+    ) -> (Vec<G1Point>, Vec<Vec<Scalar>>) {
+        // Compute proofs for the polynomial
+        let h_poly_commitments =
+            self.compute_h_poly_commitments(polynomial.clone(), self.coset_size);
+        let mut proofs = self.proof_domain.fft_g1(h_poly_commitments);
+
+        // apply reverse bit order permutation, since fft_g1 was applied using
+        // the regular order, and we want the cosets to be in bit-reversed order
+        //
+        // TODO: Add note about making the cosets line up for the evaluation sets
+        reverse_bit_order(&mut proofs);
+
+        let proofs_affine = g1_batch_normalize(&proofs);
+
+        let coset_evaluations = self.compute_coset_evaluations(polynomial);
+
+        (proofs_affine, coset_evaluations)
     }
 
     /// Given a group of coset evaluations, this method will return/reorder the evaluations as if
@@ -215,51 +285,62 @@ impl FK20 {
 
         Some((new_coset_indices, elements))
     }
+}
 
-    /// The number of proofs that will be produced.
-    pub fn num_proofs(&self) -> usize {
-        self.number_of_points_to_open / self.coset_size
+#[cfg(test)]
+mod tests {
+    use super::{coset_gens, verify::verify_multi_opening, Input, FK20};
+    use crate::create_insecure_commit_opening_keys;
+    use bls12_381::Scalar;
+
+    #[test]
+    fn data_is_contained_in_the_first_section_of_cells() {
+        // This tests that if we create proofs over Input::Data
+        // then the first set of cells will contain the data.
+
+        let (commit_key, _) = create_insecure_commit_opening_keys();
+
+        let poly_len = 4096;
+        let num_points_to_open = 2 * poly_len;
+        let coset_size = 64;
+
+        let fk20 = FK20::new(commit_key, poly_len, coset_size, num_points_to_open);
+
+        let data: Vec<_> = (0..poly_len).map(|i| Scalar::from(i as u64)).collect();
+        let (_, cells) = fk20.compute_multi_opening_proofs(Input::Data(data.clone()));
+
+        // Now check that the first set of cells contains the data
+        let cells_flattened = cells.into_iter().flatten().collect::<Vec<_>>();
+        assert_eq!(&data, &cells_flattened[..poly_len]);
     }
 
-    pub fn compute_multi_opening_proofs_poly_coeff(
-        &self,
-        polynomial: PolyCoeff,
-    ) -> (Vec<G1Point>, Vec<Vec<Scalar>>) {
-        // Compute proofs for the polynomial
-        let h_poly_commitments =
-            self.compute_h_poly_commitments(polynomial.clone(), self.coset_size);
-        let mut proofs = self.proof_domain.fft_g1(h_poly_commitments);
+    #[test]
+    fn smoke_test_prove_verify() {
+        let (commit_key, opening_key) = create_insecure_commit_opening_keys();
 
-        // apply reverse bit order permutation, since fft_g1 was applied using
-        // the regular order, and we want the cosets to be in bit-reversed order
-        //
-        // TODO: Add note about making the cosets line up for the evaluation sets
-        reverse_bit_order(&mut proofs);
+        let poly_len = 4096;
+        let num_points_to_open = 2 * poly_len;
+        let coset_size = 64;
 
-        let proofs_affine = g1_batch_normalize(&proofs);
+        let fk20 = FK20::new(commit_key, poly_len, coset_size, num_points_to_open);
 
-        let coset_evaluations = self.compute_coset_evaluations(polynomial);
+        let data: Vec<_> = (0..poly_len).map(|i| Scalar::from(i as u64)).collect();
+        let (proofs, cells) = fk20.compute_multi_opening_proofs(Input::Data(data.clone()));
 
-        (proofs_affine, coset_evaluations)
-    }
+        let commitment = fk20.commit(Input::Data(data));
 
-    pub fn compute_multi_opening_proofs_on_data(
-        &self,
-        mut data: Vec<Scalar>,
-    ) -> (Vec<G1Point>, Vec<Vec<Scalar>>) {
-        reverse_bit_order(&mut data);
-        let poly_coeff = self.poly_domain.ifft_scalars(data);
+        let coset_indices: Vec<u64> = (0..fk20.num_proofs() as u64).collect();
+        let coset_shifts = coset_gens(num_points_to_open, fk20.num_proofs(), true);
 
-        self.compute_multi_opening_proofs_poly_coeff(poly_coeff)
-    }
-
-    fn compute_coset_evaluations(&self, polynomial: PolyCoeff) -> Vec<Vec<Scalar>> {
-        // Compute the evaluations of the polynomial on the cosets by doing an fft
-        let mut evaluations = self.ext_domain.fft_scalars(polynomial);
-        reverse_bit_order(&mut evaluations);
-        evaluations
-            .chunks_exact(self.coset_size)
-            .map(|slice| slice.to_vec())
-            .collect()
+        let is_valid = verify_multi_opening(
+            &opening_key,
+            &vec![commitment],
+            &vec![0u64; cells.len()],
+            &coset_indices,
+            &coset_shifts,
+            &cells,
+            &proofs,
+        );
+        assert!(is_valid);
     }
 }
