@@ -1,9 +1,6 @@
+use crate::fk20::{toeplitz::ToeplitzMatrix, FK20};
 use bls12_381::{G1Projective, Scalar};
 use polynomial::monomial::PolyCoeff;
-
-use crate::fk20::toeplitz::ToeplitzMatrix;
-
-use super::FK20;
 
 /// Given a vector `k` and an integer `l`
 /// Where `l` is less than |k|. We return `l-downsampled` groups.
@@ -65,12 +62,11 @@ impl FK20 {
 
 #[cfg(test)]
 mod tests {
-    use bls12_381::Scalar;
-
     use crate::{
         create_insecure_commit_opening_keys,
         fk20::{h_poly::take_every_nth, naive, FK20},
     };
+    use bls12_381::Scalar;
 
     #[test]
     fn smoke_test_downsample() {
@@ -82,8 +78,7 @@ mod tests {
 
     #[test]
     fn check_consistency_of_toeplitz_h_polys() {
-        use bls12_381::ff::Field;
-        let poly = vec![Scalar::random(&mut rand::thread_rng()); 4096];
+        let poly: Vec<_> = (0..4096).map(|i| -Scalar::from(i)).collect();
         let coset_size: usize = 64;
         let (commit_key, _) = create_insecure_commit_opening_keys();
 
