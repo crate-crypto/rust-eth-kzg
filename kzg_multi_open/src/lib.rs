@@ -80,8 +80,6 @@ mod tests {
         reverse_bit_order(&mut domain_extended_roots);
         let chunked_bit_reversed_roots: Vec<_> = domain_extended_roots.chunks(COSET_SIZE).collect();
 
-        const NUMBER_OF_PROOFS: usize = NUMBER_OF_POINTS_TO_EVALUATE / COSET_SIZE;
-        let proof_domain = Domain::new(NUMBER_OF_PROOFS);
         let polynomial_lagrange: Vec<_> = (0..POLYNOMIAL_LEN)
             .map(|i| -Scalar::from(i as u64))
             .collect();
@@ -91,11 +89,11 @@ mod tests {
         // Compute FK20 the naive way
         let (got_proofs, got_set_of_output_points) = fk20naive::fk20_open_multi_point(
             &ck,
-            &proof_domain,
             &poly_coeff,
             COSET_SIZE,
-            &domain_extended,
+            NUMBER_OF_POINTS_TO_EVALUATE,
         );
+
         for k in 0..got_proofs.len() {
             let input_points = chunked_bit_reversed_roots[k];
             // Compute the opening proofs the naive way (without fk20)

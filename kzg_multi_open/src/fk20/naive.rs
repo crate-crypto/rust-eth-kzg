@@ -65,11 +65,19 @@ pub fn compute_h_poly(polynomial: &PolyCoeff, coset_size: usize) -> Vec<&[Scalar
 /// of the `h` polynomials and MSMs for computing the proofs using a naive approach.
 pub fn fk20_open_multi_point(
     commit_key: &CommitKey,
-    proof_domain: &Domain,
     polynomial: &PolyCoeff,
     coset_size: usize,
-    ext_domain: &Domain,
+    number_of_points_to_open: usize,
 ) -> (Vec<G1Point>, Vec<Vec<Scalar>>) {
+    assert!(coset_size.is_power_of_two());
+    assert!(number_of_points_to_open.is_power_of_two());
+    assert!(number_of_points_to_open > coset_size);
+    assert!(polynomial.len().is_power_of_two());
+    assert!(commit_key.g1s.len() >= polynomial.len());
+
+    let proof_domain = Domain::new(number_of_points_to_open / coset_size);
+    let ext_domain = Domain::new(number_of_points_to_open);
+
     let h_polys = compute_h_poly(polynomial, coset_size);
     let commitment_h_polys = h_polys
         .iter()
@@ -83,7 +91,7 @@ pub fn fk20_open_multi_point(
     // the regular order.
     reverse_bit_order(&mut proofs_affine);
 
-    let evaluation_sets = fk20_compute_evaluation_set(polynomial, coset_size, ext_domain);
+    let evaluation_sets = fk20_compute_evaluation_set(polynomial, coset_size, &ext_domain);
 
     (proofs_affine, evaluation_sets)
 }
@@ -108,6 +116,33 @@ mod tests {
     use bls12_381::Scalar;
 
     use crate::fk20::naive::divide_by_monomial_floor;
+
+    use crate::{
+        create_insecure_commit_opening_keys,
+        fk20::{naive, FK20},
+    };
+    use bls12_381::ff::Field;
+
+    #[test]
+    fn check_consistency_of_proofs_against_naive() {
+        let poly_len = 4096;
+        let poly = vec![Scalar::random(&mut rand::thread_rng()); poly_len];
+        let coset_size = 64;
+        let (commit_key, _) = create_insecure_commit_opening_keys();
+
+        let (expected_proofs, expected_evaluations) =
+            naive::fk20_open_multi_point(&commit_key, &poly, coset_size, 2 * poly_len);
+
+        let fk20 = FK20::new(commit_key, poly_len, coset_size, 2 * poly_len);
+        let (got_proofs, got_evaluations) =
+            fk20.compute_multi_opening_proofs_poly_coeff(poly.clone());
+
+        assert_eq!(got_proofs.len(), expected_proofs.len());
+        assert_eq!(got_evaluations.len(), expected_evaluations.len());
+
+        assert_eq!(got_evaluations, expected_evaluations);
+        assert_eq!(got_proofs, expected_proofs);
+    }
 
     #[test]
     fn check_divide_by_monomial_floor() {

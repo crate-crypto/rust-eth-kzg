@@ -245,37 +245,3 @@ impl FK20 {
             .collect()
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use crate::{
-        create_insecure_commit_opening_keys,
-        fk20::{naive, FK20},
-    };
-    use bls12_381::ff::Field;
-    use bls12_381::Scalar;
-    use polynomial::domain::Domain;
-
-    #[test]
-    fn check_consistency_of_proofs_against_naive() {
-        let poly_len = 4096;
-        let poly = vec![Scalar::random(&mut rand::thread_rng()); poly_len];
-        let l = 64;
-        let (commit_key, _) = create_insecure_commit_opening_keys();
-        let proof_domain = Domain::new(2 * poly_len / l);
-        let ext_domain = Domain::new(2 * poly_len);
-
-        let (expected_proofs, expected_evaluations) =
-            naive::fk20_open_multi_point(&commit_key, &proof_domain, &poly, l, &ext_domain);
-
-        let fk20 = FK20::new(commit_key, poly_len, l, 2 * poly_len);
-        let (got_proofs, got_evaluations) =
-            fk20.compute_multi_opening_proofs_poly_coeff(poly.clone());
-
-        assert_eq!(got_proofs.len(), expected_proofs.len());
-        assert_eq!(got_evaluations.len(), expected_evaluations.len());
-
-        assert_eq!(got_evaluations, expected_evaluations);
-        assert_eq!(got_proofs, expected_proofs);
-    }
-}
