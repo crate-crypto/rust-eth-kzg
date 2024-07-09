@@ -139,12 +139,12 @@ impl FK20 {
         }
     }
 
-    /// Commit to the data that we will be creating FK20 proofs over.
+    /// Commit to the `Input` that we will be creating FK20 proofs over.
     pub fn commit(&self, input: Input) -> G1Point {
         let poly_coeff = match input {
             Input::PolyCoeff(poly_coeff) => poly_coeff,
             Input::Data(mut data) => {
-                // Reverse the order of the scalars, so that they are in bit-reversed order.
+                // Reverse the order of the data, so that they are in bit-reversed order.
                 //
                 // FK20 will operate over the bit-reversed permutation of the data.
                 reverse_bit_order(&mut data);
@@ -166,9 +166,9 @@ impl FK20 {
 
     /// Evaluates the polynomial at all of the relevant cosets.
     ///
-    /// Since we use reverse_bit_order, this is equivalent to evaluating the polynomial
-    /// on the extended domain, reverse bit ordering the evaluations and taking the
-    /// coset chunks of the evaluations.
+    /// Instead of evaluating each coset individually, we can evaluate the polynomial
+    /// at all of the points we want to open at, and then use reverse bit ordering
+    /// to group the evaluations into the relevant cosets.
     fn compute_coset_evaluations(&self, polynomial: PolyCoeff) -> Vec<Vec<Scalar>> {
         let mut evaluations = self.ext_domain.fft_scalars(polynomial);
         reverse_bit_order(&mut evaluations);
@@ -178,6 +178,9 @@ impl FK20 {
             .collect()
     }
 
+    /// Computes multi-opening proofs over the given `Input`.
+    ///
+    /// Returning the opening proofs and the corresponding coset evaluations.
     pub fn compute_multi_opening_proofs(&self, input: Input) -> (Vec<G1Point>, Vec<Vec<Scalar>>) {
         // Convert data to polynomial coefficients
         let poly_coeff = match input {
@@ -191,11 +194,16 @@ impl FK20 {
         self.compute_multi_opening_proofs_poly_coeff(poly_coeff)
     }
 
+    /// Computes multi-opening proofs over a given polynomial in coefficient form.
+    ///
+    // Note: one can view this implementation of FK20 as only working over polynomials in coefficient form.
+    // ie the core algorithms never consider polynomials in lagrange form.
     fn compute_multi_opening_proofs_poly_coeff(
         &self,
         polynomial: PolyCoeff,
     ) -> (Vec<G1Point>, Vec<Vec<Scalar>>) {
-        // Compute proofs for the polynomial
+        // Compute opening proofs for the polynomial
+        //
         let h_poly_commitments =
             self.compute_h_poly_commitments(polynomial.clone(), self.coset_size);
         let mut proofs = self.proof_domain.fft_g1(h_poly_commitments);
@@ -204,11 +212,10 @@ impl FK20 {
         // coset evaluations.
         reverse_bit_order(&mut proofs);
 
-        let proofs_affine = g1_batch_normalize(&proofs);
-
-        let coset_evaluations = self.compute_coset_evaluations(polynomial);
-
-        (proofs_affine, coset_evaluations)
+        (
+            g1_batch_normalize(&proofs),
+            self.compute_coset_evaluations(polynomial),
+        )
     }
 
     /// Given a group of coset evaluations, this method will return/reorder the evaluations as if
