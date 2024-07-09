@@ -51,7 +51,7 @@ impl BatchToeplitzMatrixVecMul {
             }
         }
 
-        let table_bits = 9;
+        let table_bits = 8;
         let precomputed_table: Vec<_> = transposed_msm_vectors
             .into_par_iter()
             .map(|v| FixedBaseMSM::new(v, table_bits))
