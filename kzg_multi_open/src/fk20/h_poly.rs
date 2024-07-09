@@ -50,6 +50,10 @@ impl FK20 {
         let toeplitz_rows = take_every_nth(&polynomial, coset_size);
 
         // Compute the Toeplitz matrices
+        //
+        // See 3.1.1 where we know that the columns of the Toeplitz matrix
+        // are zeroes except for the first element, which must equal the first
+        // element of the row.
         let mut matrices = Vec::with_capacity(toeplitz_rows.len());
         // We want to do `l` toeplitz matrix multiplications
         for row in toeplitz_rows.into_iter() {
