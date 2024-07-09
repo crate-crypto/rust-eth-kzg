@@ -290,8 +290,14 @@ impl FK20 {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use super::{coset_gens, verify::verify_multi_opening, Input, FK20};
-    use crate::create_insecure_commit_opening_keys;
+    use crate::{
+        create_insecure_commit_opening_keys,
+        fk20::{cosets::generate_cosets, naive as fk20naive},
+        naive as kzgnaive,
+    };
     use bls12_381::Scalar;
 
     #[test]
@@ -343,5 +349,77 @@ mod tests {
             &proofs,
         );
         assert!(is_valid);
+    }
+
+    #[test]
+    fn check_consistency_of_proofs_against_naive_fk20_implementation() {
+        let poly_len = 4096;
+        let poly: Vec<_> = (0..poly_len).map(|i| -Scalar::from(i as u64)).collect();
+        let coset_size = 64;
+        let (commit_key, _) = create_insecure_commit_opening_keys();
+
+        // Compute the proofs and evaluations using naive fk20
+        let (expected_proofs, expected_evaluations) =
+            fk20naive::open_multi_point(&commit_key, &poly, coset_size, 2 * poly_len);
+
+        // Compute proofs using optimized FK20 implementation
+        let fk20 = FK20::new(commit_key, poly_len, coset_size, 2 * poly_len);
+        let (got_proofs, got_evaluations) =
+            fk20.compute_multi_opening_proofs_poly_coeff(poly.clone());
+
+        assert_eq!(got_proofs.len(), expected_proofs.len());
+        assert_eq!(got_evaluations.len(), expected_evaluations.len());
+
+        assert_eq!(got_evaluations, expected_evaluations);
+        assert_eq!(got_proofs, expected_proofs);
+    }
+
+    #[test]
+    fn test_consistency_between_naive_kzg_naive_fk20() {
+        // Setup
+        //
+        let (ck, _) = create_insecure_commit_opening_keys();
+
+        const POLYNOMIAL_LEN: usize = 4096;
+        const NUMBER_OF_POINTS_TO_EVALUATE: usize = 2 * POLYNOMIAL_LEN;
+        const COSET_SIZE: usize = 64;
+
+        let cosets = generate_cosets(NUMBER_OF_POINTS_TO_EVALUATE, COSET_SIZE, true);
+
+        let polynomial: Vec<_> = (0..POLYNOMIAL_LEN)
+            .map(|i| -Scalar::from(i as u64))
+            .collect();
+
+        // Compute FK20 the naive way
+        let (got_proofs, got_set_of_output_points) =
+            fk20naive::open_multi_point(&ck, &polynomial, COSET_SIZE, NUMBER_OF_POINTS_TO_EVALUATE);
+
+        for k in 0..got_proofs.len() {
+            let input_points = &cosets[k];
+            // Compute the opening proofs the naive way (without fk20)
+            let (expected_quotient_comm, expected_output_points) =
+                kzgnaive::compute_multi_opening(&ck, &polynomial, input_points);
+
+            // Output points will be the same set, but they won't be in the same order
+            // since generate_cosets does not use the bit_reverse_order method.
+            //
+            // We compare them as multi-sets in this case.
+            assert!(set_equality_scalar(
+                &expected_output_points,
+                &got_set_of_output_points[k]
+            ));
+            assert_eq!(expected_quotient_comm, got_proofs[k]);
+        }
+    }
+
+    fn set_equality_scalar(lhs: &[Scalar], rhs: &[Scalar]) -> bool {
+        if lhs.len() != rhs.len() {
+            return false;
+        }
+
+        let lhs_set: HashSet<_> = lhs.iter().map(|s| s.to_bytes_be()).collect();
+        let rhs_set: HashSet<_> = rhs.iter().map(|s| s.to_bytes_be()).collect();
+
+        lhs_set == rhs_set
     }
 }

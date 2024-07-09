@@ -73,7 +73,7 @@ pub fn coset_gens(num_points: usize, num_cosets: usize, bit_reversed: bool) -> V
 /// However the ordering inside of the cosets will be different.
 /// Note: `bit_reverse` on the full group is more concise.
 #[cfg(test)]
-fn generate_cosets(
+pub(crate) fn generate_cosets(
     num_points: usize,
     points_per_coset: usize,
     bit_reversed: bool,
