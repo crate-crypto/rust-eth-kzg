@@ -14,6 +14,7 @@ pub struct BatchToeplitzMatrixVecMul {
     /// fft_vectors represents the group elements in the FFT domain.
     /// This means when we are computing the matrix-vector multiplication by embedding it
     /// into a circulant matrix, we will not need to do an FFT on the vector.
+    /// TODO: remove
     fft_vectors: Vec<Vec<G1Projective>>,
     /// Multiples of the fft_vectors that are precomputed for the fixed base msm
     /// calculation.
@@ -43,12 +44,9 @@ impl BatchToeplitzMatrixVecMul {
             .map(|vector| circulant_domain.fft_g1(vector))
             .collect();
 
-        let mut transposed_msm_vectors = vec![Vec::with_capacity(n); n * 2];
-        for vector in &vectors {
-            for (i, a) in vector.iter().enumerate() {
-                transposed_msm_vectors[i].push(*a);
-            }
-        }
+        // TODO: possibly add a transpose method since this is done also again below
+        // TODO: remove the clone once we remove `fft_vectors`
+        let transposed_msm_vectors = transpose(vectors.clone());
 
         let table_bits = 8;
         let precomputed_table: Vec<_> = transposed_msm_vectors
@@ -85,17 +83,12 @@ impl BatchToeplitzMatrixVecMul {
         // and sum them together.
         //
         // We note that the aggregation step can be converted into msm's of size `l`
-        let col_ffts = circulant_matrices
+        let col_ffts: Vec<_> = circulant_matrices
             .into_iter()
-            .map(|matrix| self.circulant_domain.fft_scalars(matrix.row));
-        let mut msm_scalars = vec![Vec::with_capacity(self.n); self.n * 2];
+            .map(|matrix| self.circulant_domain.fft_scalars(matrix.row))
+            .collect();
+        let msm_scalars = transpose(col_ffts);
 
-        // Transpose the column ffts
-        for col_fft in col_ffts {
-            for (i, b) in col_fft.into_iter().enumerate() {
-                msm_scalars[i].push(b);
-            }
-        }
         let result: Vec<_> = self
             .precomputed_fft_vectors
             .par_iter()
@@ -107,6 +100,45 @@ impl BatchToeplitzMatrixVecMul {
         // of the result, as this is the result of the Toeplitz matrix multiplication
         self.circulant_domain.ifft_g1_take_n(result, Some(self.n))
     }
+}
+
+/// Transposes a 2D matrix
+///
+/// This function takes a vector of vectors (representing a matrix) and returns its transpose,
+/// ie a new matrix whose rows are the columns of the original.
+///
+/// # Examples
+///
+/// ```text
+/// matrix = [
+///     [1, 2, 3],
+///     [4, 5, 6]
+/// ];
+/// Transpose will produce the following matrix:
+///
+/// [
+///     [1, 4],
+///     [2, 5],
+///     [3, 6]
+/// ]
+/// ```
+fn transpose<T: Clone>(v: Vec<Vec<T>>) -> Vec<Vec<T>> {
+    if v.is_empty() || v[0].is_empty() {
+        return Vec::new();
+    }
+
+    let rows = v.len();
+    let cols = v[0].len();
+
+    let mut result = vec![Vec::with_capacity(rows); cols];
+
+    for row in v {
+        for (i, elem) in row.into_iter().enumerate() {
+            result[i].push(elem);
+        }
+    }
+
+    result
 }
 
 #[cfg(test)]
