@@ -72,13 +72,14 @@ mod tests {
         let poly_domain = Domain::new(POLYNOMIAL_LEN);
 
         const NUMBER_OF_POINTS_TO_EVALUATE: usize = 2 * POLYNOMIAL_LEN;
-        let domain_extended = Domain::new(NUMBER_OF_POINTS_TO_EVALUATE);
+        let evaluation_domain = Domain::new(NUMBER_OF_POINTS_TO_EVALUATE);
 
         const COSET_SIZE: usize = 64;
 
-        let mut domain_extended_roots = domain_extended.roots.clone();
-        reverse_bit_order(&mut domain_extended_roots);
-        let chunked_bit_reversed_roots: Vec<_> = domain_extended_roots.chunks(COSET_SIZE).collect();
+        let mut evaluation_domain_roots = evaluation_domain.roots.clone();
+        reverse_bit_order(&mut evaluation_domain_roots);
+        let chunked_bit_reversed_roots: Vec<_> =
+            evaluation_domain_roots.chunks(COSET_SIZE).collect();
 
         let polynomial_lagrange: Vec<_> = (0..POLYNOMIAL_LEN)
             .map(|i| -Scalar::from(i as u64))

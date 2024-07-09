@@ -59,9 +59,7 @@ pub struct FK20 {
     /// Domain used in FK20 to create the opening proofs
     proof_domain: Domain,
     /// Domain used to evaluate the polynomial at the points we want to open at.
-    ///
-    // Note: This can be thought of as the "evaluation domain"
-    ext_domain: Domain,
+    evaluation_domain: Domain,
     /// Domain used for converting polynomial to monomial form.
     poly_domain: Domain,
     /// Commitment key used for committing to the polynomial
@@ -121,11 +119,9 @@ impl FK20 {
 
         // 2. Compute the domains needed to produce the proofs and the evaluations
         //
-        // The size of the proof domain corresponds to the number of proofs that will be returned.
-        let proof_domain = Domain::new(number_of_points_to_open / points_per_proof);
-        // The size of the extension domain corresponds to the number of points that we want to open
-        let ext_domain = Domain::new(number_of_points_to_open);
-        // The domain needed to convert the polynomial from lagrange form to monomial form.
+        let num_proofs = number_of_points_to_open / points_per_proof;
+        let proof_domain = Domain::new(num_proofs);
+        let evaluation_domain = Domain::new(number_of_points_to_open);
         let poly_domain = Domain::new(polynomial_bound);
 
         FK20 {
@@ -133,7 +129,7 @@ impl FK20 {
             coset_size: points_per_proof,
             number_of_points_to_open,
             proof_domain,
-            ext_domain,
+            evaluation_domain,
             poly_domain,
             commit_key,
         }
@@ -170,7 +166,7 @@ impl FK20 {
     /// at all of the points we want to open at, and then use reverse bit ordering
     /// to group the evaluations into the relevant cosets.
     fn compute_coset_evaluations(&self, polynomial: PolyCoeff) -> Vec<Vec<Scalar>> {
-        let mut evaluations = self.ext_domain.fft_scalars(polynomial);
+        let mut evaluations = self.evaluation_domain.fft_scalars(polynomial);
         reverse_bit_order(&mut evaluations);
         evaluations
             .chunks_exact(self.coset_size)

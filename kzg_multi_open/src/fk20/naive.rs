@@ -76,7 +76,7 @@ pub fn fk20_open_multi_point(
     assert!(commit_key.g1s.len() >= polynomial.len());
 
     let proof_domain = Domain::new(number_of_points_to_open / coset_size);
-    let ext_domain = Domain::new(number_of_points_to_open);
+    let evaluation_domain = Domain::new(number_of_points_to_open);
 
     let h_polys = compute_h_poly(polynomial, coset_size);
     let commitment_h_polys = h_polys
@@ -91,7 +91,8 @@ pub fn fk20_open_multi_point(
     // the regular order.
     reverse_bit_order(&mut proofs_affine);
 
-    let coset_evaluations = fk20_compute_coset_evaluations(polynomial, coset_size, &ext_domain);
+    let coset_evaluations =
+        fk20_compute_coset_evaluations(polynomial, coset_size, &evaluation_domain);
 
     (proofs_affine, coset_evaluations)
 }
@@ -99,10 +100,10 @@ pub fn fk20_open_multi_point(
 fn fk20_compute_coset_evaluations(
     polynomial: &PolyCoeff,
     coset_size: usize,
-    ext_domain: &Domain,
+    evaluation_domain: &Domain,
 ) -> Vec<Vec<Scalar>> {
     // Compute the evaluations of the polynomial at the cosets by doing an fft
-    let mut evaluations = ext_domain.fft_scalars(polynomial.clone());
+    let mut evaluations = evaluation_domain.fft_scalars(polynomial.clone());
     reverse_bit_order(&mut evaluations);
 
     evaluations
