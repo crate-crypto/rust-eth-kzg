@@ -122,7 +122,7 @@ impl BatchToeplitzMatrixVecMul {
 ///     [3, 6]
 /// ]
 /// ```
-fn transpose<T: Clone>(v: Vec<Vec<T>>) -> Vec<Vec<T>> {
+pub(crate) fn transpose<T: Clone>(v: Vec<Vec<T>>) -> Vec<Vec<T>> {
     if v.is_empty() || v[0].is_empty() {
         return Vec::new();
     }
