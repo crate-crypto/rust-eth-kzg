@@ -68,7 +68,7 @@ mod tests {
     use bls12_381::Scalar;
 
     use crate::{
-        create_eth_commit_opening_keys,
+        create_insecure_commit_opening_keys,
         fk20::{h_poly::take_every_nth, naive, FK20},
     };
 
@@ -85,7 +85,7 @@ mod tests {
         use bls12_381::ff::Field;
         let poly = vec![Scalar::random(&mut rand::thread_rng()); 4096];
         let coset_size: usize = 64;
-        let (commit_key, _) = create_eth_commit_opening_keys();
+        let (commit_key, _) = create_insecure_commit_opening_keys();
 
         // Compute the commitment to the h_polynomials naively
         //

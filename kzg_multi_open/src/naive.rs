@@ -161,11 +161,11 @@ fn _verify_multi_opening_naive(
 mod tests {
     use bls12_381::Scalar;
 
-    use crate::create_eth_commit_opening_keys;
+    use crate::create_insecure_commit_opening_keys;
 
     #[test]
     fn smoke_test_naive_multi_opening() {
-        let (ck, opening_key) = create_eth_commit_opening_keys();
+        let (ck, opening_key) = create_insecure_commit_opening_keys();
 
         let num_points_to_open = 16;
         let input_points: Vec<_> = (0..num_points_to_open).map(|i| Scalar::from(i)).collect();

@@ -249,7 +249,7 @@ impl FK20 {
 #[cfg(test)]
 mod tests {
     use crate::{
-        create_eth_commit_opening_keys,
+        create_insecure_commit_opening_keys,
         fk20::{naive, FK20},
     };
     use bls12_381::ff::Field;
@@ -261,7 +261,7 @@ mod tests {
         let poly_len = 4096;
         let poly = vec![Scalar::random(&mut rand::thread_rng()); poly_len];
         let l = 64;
-        let (commit_key, _) = create_eth_commit_opening_keys();
+        let (commit_key, _) = create_insecure_commit_opening_keys();
         let proof_domain = Domain::new(2 * poly_len / l);
         let ext_domain = Domain::new(2 * poly_len);
 
