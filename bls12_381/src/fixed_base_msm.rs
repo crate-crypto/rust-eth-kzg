@@ -1,4 +1,4 @@
-use crate::{g1_batch_normalize, G1Projective, Scalar};
+use crate::{G1Projective, Scalar};
 use blstrs::{Fp, G1Affine};
 
 /// FixedBasedMSM computes a multi scalar multiplication using pre-computations.
@@ -13,11 +13,9 @@ pub struct FixedBaseMSM {
 }
 
 impl FixedBaseMSM {
-    pub fn new(generators: Vec<G1Projective>, wbits: usize) -> Self {
-        let num_points = generators.len();
+    pub fn new(generators_affine: Vec<G1Affine>, wbits: usize) -> Self {
+        let num_points = generators_affine.len();
         let table_size = unsafe { blst::blst_p1s_mult_wbits_precompute_sizeof(wbits, num_points) };
-
-        let generators_affine = g1_batch_normalize(&generators);
 
         // blst expects these to be references, so we convert from Vec<T> to Vec<&T>
         let generators_affine: Vec<&G1Affine> = generators_affine.iter().collect();
@@ -87,7 +85,7 @@ mod tests {
     fn smoke_test_fixed_base_msm() {
         let length = 64;
         let generators: Vec<_> = (0..length)
-            .map(|_| G1Projective::random(&mut rand::thread_rng()))
+            .map(|_| G1Projective::random(&mut rand::thread_rng()).into())
             .collect();
         let scalars: Vec<_> = (0..length)
             .map(|_| Scalar::random(&mut thread_rng()))

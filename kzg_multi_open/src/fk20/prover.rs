@@ -1,10 +1,10 @@
-use crate::fk20::cosets::{log2, reverse_bit_order, reverse_bits};
-use crate::fk20::h_poly::take_every_nth;
-use bls12_381::{g1_batch_normalize, group::Group, G1Point, G1Projective, Scalar};
-use polynomial::{domain::Domain, monomial::PolyCoeff};
-
 use crate::commit_key::CommitKey;
 use crate::fk20::batch_toeplitz::BatchToeplitzMatrixVecMul;
+use crate::fk20::cosets::{log2, reverse_bit_order, reverse_bits};
+use crate::fk20::h_poly::take_every_nth;
+use bls12_381::group::prime::PrimeCurveAffine;
+use bls12_381::{g1_batch_normalize, G1Point, Scalar};
+use polynomial::{domain::Domain, monomial::PolyCoeff};
 
 use super::h_poly::compute_h_poly_commitments;
 
@@ -95,7 +95,7 @@ impl FK20Prover {
         // will pad these.
         for srs_vector in &mut srs_vectors {
             let pad_by = srs_vector.len().next_power_of_two();
-            srs_vector.resize(pad_by, G1Projective::identity());
+            srs_vector.resize(pad_by, G1Point::identity());
         }
 
         // Initialize structure that will allow us to do efficient sum of multiple toeplitz matrix
@@ -186,7 +186,7 @@ impl FK20Prover {
         // Compute opening proofs for the polynomial
         //
         let h_poly_commitments =
-            compute_h_poly_commitments(&&self.batch_toeplitz, polynomial.clone(), self.coset_size);
+            compute_h_poly_commitments(&self.batch_toeplitz, polynomial.clone(), self.coset_size);
         let mut proofs = self.proof_domain.fft_g1(h_poly_commitments);
 
         // Reverse bit order the set of proofs, so that the proofs line up with the

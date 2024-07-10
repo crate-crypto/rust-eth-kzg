@@ -1,5 +1,5 @@
 use crate::fk20::toeplitz::{CirculantMatrix, ToeplitzMatrix};
-use bls12_381::{fixed_base_msm::FixedBaseMSM, G1Projective};
+use bls12_381::{fixed_base_msm::FixedBaseMSM, g1_batch_normalize, G1Point, G1Projective};
 use polynomial::domain::Domain;
 use rayon::prelude::*;
 
@@ -22,7 +22,7 @@ pub struct BatchToeplitzMatrixVecMul {
 }
 
 impl BatchToeplitzMatrixVecMul {
-    pub fn new(vectors: Vec<Vec<G1Projective>>) -> Self {
+    pub fn new(vectors: Vec<Vec<G1Point>>) -> Self {
         let n = vectors[0].len();
         let vectors_all_same_length = vectors.iter().all(|v| v.len() == n);
         assert!(
@@ -33,9 +33,15 @@ impl BatchToeplitzMatrixVecMul {
         let circulant_domain = Domain::new(n * 2);
 
         // Precompute the FFT of the vectors
-        let vectors: Vec<Vec<G1Projective>> = vectors
+        let vectors: Vec<Vec<G1Point>> = vectors
             .into_par_iter()
-            .map(|vector| circulant_domain.fft_g1(vector))
+            .map(|vector| {
+                let vector_projective = vector
+                    .iter()
+                    .map(|point| G1Projective::from(*point))
+                    .collect::<Vec<_>>();
+                g1_batch_normalize(&circulant_domain.fft_g1(vector_projective))
+            })
             .collect();
         let batch_size = vectors.len();
 
@@ -139,13 +145,14 @@ mod tests {
     use crate::fk20::batch_toeplitz::BatchToeplitzMatrixVecMul;
     use crate::fk20::toeplitz::ToeplitzMatrix;
     use bls12_381::group::Group;
-    use bls12_381::{G1Projective, Scalar};
+    use bls12_381::{g1_batch_normalize, G1Projective, Scalar};
 
     #[test]
     fn smoke_aggregated_matrix_vector_mul() {
         // Create the toeplitz matrices and vectors that we want to perform matrix-vector multiplication with
         let mut toeplitz_matrices = Vec::new();
         let mut vectors = Vec::new();
+        let mut vectors_affine = Vec::new();
 
         let num_matrices = 10;
         for i in 0..num_matrices {
@@ -168,11 +175,12 @@ mod tests {
                 G1Projective::generator() * Scalar::from((i + 4) as u64),
             ];
 
+            vectors_affine.push(g1_batch_normalize(&vector.clone()));
             vectors.push(vector);
             toeplitz_matrices.push(ToeplitzMatrix::new(row, col));
         }
 
-        let bm = BatchToeplitzMatrixVecMul::new(vectors.clone());
+        let bm = BatchToeplitzMatrixVecMul::new(vectors_affine);
         let got_result = bm.sum_matrix_vector_mul(toeplitz_matrices.clone());
 
         let mut expected_result = vec![G1Projective::identity(); got_result.len()];

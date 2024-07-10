@@ -1,6 +1,6 @@
 use bls12_381::{
     lincomb::{g1_lincomb, g2_lincomb},
-    G1Projective, G2Point, G2Projective, Scalar,
+    G1Point, G1Projective, G2Point, G2Projective, Scalar,
 };
 
 /// Opening Key is used to verify opening proofs made about a committed polynomial.
@@ -9,11 +9,11 @@ pub struct OpeningKey {
     /// The powers of tau G1 used in the setup
     ///
     /// ie group elements of the form `{ \tau^i G }`
-    pub g1s: Vec<G1Projective>,
+    pub g1s: Vec<G1Point>,
     /// The powers of tau G2 used in the setup
     ///
     /// ie group elements of the form `{ \tau^i G }`
-    pub g2s: Vec<G2Projective>,
+    pub g2s: Vec<G2Point>,
     /// The degree-0 term in the powers of tau G2 elements.
     pub g2_gen: G2Point,
     // TODO: We could possibly remove these fields below and
@@ -36,15 +36,15 @@ pub struct OpeningKey {
 
 impl OpeningKey {
     pub fn new(
-        g1s: Vec<G1Projective>,
-        g2s: Vec<G2Projective>,
+        g1s: Vec<G1Point>,
+        g2s: Vec<G2Point>,
         coset_size: usize,
         num_coefficients_in_polynomial: usize,
     ) -> Self {
         // This assumes that the trusted setup contains more than 1 element.
         //
         // For all of our purposes and for any useful applications, this will be the case.
-        let g2_gen = g2s[0].into();
+        let g2_gen = g2s[0];
 
         Self {
             g1s,

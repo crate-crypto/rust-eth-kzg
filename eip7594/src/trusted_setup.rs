@@ -1,4 +1,4 @@
-use bls12_381::{G1Projective, G2Projective};
+use bls12_381::{G1Point, G2Point};
 use kzg_multi_open::{commit_key::CommitKey, opening_key::OpeningKey};
 use rust_embed::Embed;
 use serde::Deserialize;
@@ -122,10 +122,7 @@ impl TrustedSetup {
 
 /// Deserialize G1 points from hex strings without checking that the element
 /// is in the correct subgroup.
-fn deserialize_g1<T: AsRef<str>>(
-    g1_points_hex_str: &[T],
-    check: SubgroupCheck,
-) -> Vec<G1Projective> {
+fn deserialize_g1<T: AsRef<str>>(g1_points_hex_str: &[T], check: SubgroupCheck) -> Vec<G1Point> {
     let mut g1_points = Vec::new();
     for g1_hex_str in g1_points_hex_str {
         let g1_hex_str = g1_hex_str.as_ref();
@@ -140,10 +137,10 @@ fn deserialize_g1<T: AsRef<str>>(
 
         let point = match check {
             SubgroupCheck::Check => {
-                G1Projective::from_compressed(&g1_point_bytes).expect("invalid g1 point")
+                G1Point::from_compressed(&g1_point_bytes).expect("invalid g1 point")
             }
             SubgroupCheck::NoCheck => {
-                G1Projective::from_compressed_unchecked(&g1_point_bytes).expect("invalid g1 point")
+                G1Point::from_compressed_unchecked(&g1_point_bytes).expect("invalid g1 point")
             }
         };
 
@@ -155,10 +152,7 @@ fn deserialize_g1<T: AsRef<str>>(
 
 /// Deserialize G2 points from hex strings without checking that the element
 /// is in the correct subgroup.
-fn deserialize_g2<T: AsRef<str>>(
-    g2_points_hex_str: &[T],
-    check: SubgroupCheck,
-) -> Vec<G2Projective> {
+fn deserialize_g2<T: AsRef<str>>(g2_points_hex_str: &[T], check: SubgroupCheck) -> Vec<G2Point> {
     let mut g2_points = Vec::new();
     for g2_hex_str in g2_points_hex_str {
         let g2_hex_str = g2_hex_str.as_ref();
@@ -171,10 +165,8 @@ fn deserialize_g2<T: AsRef<str>>(
             .expect("expected 96 bytes for G2 point");
 
         let point = match check {
-            SubgroupCheck::Check => G2Projective::from_compressed(&g2_point_bytes).unwrap(),
-            SubgroupCheck::NoCheck => {
-                G2Projective::from_compressed_unchecked(&g2_point_bytes).unwrap()
-            }
+            SubgroupCheck::Check => G2Point::from_compressed(&g2_point_bytes).unwrap(),
+            SubgroupCheck::NoCheck => G2Point::from_compressed_unchecked(&g2_point_bytes).unwrap(),
         };
         g2_points.push(point)
     }

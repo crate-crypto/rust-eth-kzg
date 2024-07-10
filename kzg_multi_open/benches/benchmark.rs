@@ -1,6 +1,6 @@
 use bls12_381::lincomb::{g1_lincomb, g1_lincomb_unsafe, g2_lincomb, g2_lincomb_unsafe};
 use bls12_381::{ff::Field, group::Group, G1Projective};
-use bls12_381::{G2Projective, Scalar};
+use bls12_381::{g1_batch_normalize, g2_batch_normalize, G1Point, G2Point, G2Projective, Scalar};
 use crate_crypto_kzg_multi_open_fk20::commit_key::CommitKey;
 use crate_crypto_kzg_multi_open_fk20::fk20::{FK20Prover, ProverInput};
 use crate_crypto_kzg_multi_open_fk20::opening_key::OpeningKey;
@@ -12,6 +12,7 @@ pub fn bench_msm(c: &mut Criterion) {
     let polynomial_4096 = vec![black_box(Scalar::random(&mut rand::thread_rng())); NUM_G1_ELEMENTS];
     let g1_elements =
         vec![black_box(G1Projective::random(&mut rand::thread_rng())); NUM_G1_ELEMENTS];
+    let g1_elements = g1_batch_normalize(&g1_elements);
 
     c.bench_function(&format!("g1 msm of size {}", NUM_G1_ELEMENTS), |b| {
         b.iter(|| g1_lincomb_unsafe(&g1_elements, &polynomial_4096))
@@ -25,6 +26,7 @@ pub fn bench_msm(c: &mut Criterion) {
     let polynomial_65 = vec![black_box(Scalar::random(&mut rand::thread_rng())); NUM_G2_ELEMENTS];
     let g2_elements =
         vec![black_box(G2Projective::random(&mut rand::thread_rng())); NUM_G2_ELEMENTS];
+    let g2_elements = g2_batch_normalize(&g2_elements);
 
     c.bench_function(&format!("g2 msm of size {}", NUM_G2_ELEMENTS), |b| {
         b.iter(|| g2_lincomb_unsafe(&g2_elements, &polynomial_65))
@@ -87,6 +89,8 @@ pub fn create_insecure_commit_opening_keys() -> (CommitKey, OpeningKey) {
         g1_points.push(g1_gen * current_secret_pow);
         current_secret_pow *= secret;
     }
+    let g1_points = g1_batch_normalize(&g1_points);
+
     let ck = CommitKey::new(g1_points.clone());
 
     let mut g2_points = Vec::new();
@@ -99,6 +103,8 @@ pub fn create_insecure_commit_opening_keys() -> (CommitKey, OpeningKey) {
         g2_points.push(g2_gen * current_secret_pow);
         current_secret_pow *= secret;
     }
+    let g2_points = g2_batch_normalize(&g2_points);
+
     let vk = OpeningKey::new(
         g1_points[0..multi_opening_size + 1].to_vec(),
         g2_points,

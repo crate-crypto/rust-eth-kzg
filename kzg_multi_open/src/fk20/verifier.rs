@@ -111,22 +111,11 @@ impl FK20Verifier {
         );
         let r_powers = compute_powers(r, commitment_indices.len());
 
-        // Convert the proofs to Projective form.
-        // This is essentially free and we are mainly paying for the allocation cost here.
-        let proofs = proofs
-            .iter()
-            .map(bls12_381::G1Projective::from)
-            .collect::<Vec<_>>();
-        let deduplicated_commitments = deduplicated_commitments
-            .iter()
-            .map(bls12_381::G1Projective::from)
-            .collect::<Vec<_>>();
-
         let num_cosets = coset_indices.len();
         let num_unique_commitments = deduplicated_commitments.len();
 
         // First compute a random linear combination of the proofs
-        let comm_random_sum_proofs = g1_lincomb(&proofs, &r_powers)
+        let comm_random_sum_proofs = g1_lincomb(proofs, &r_powers)
             .expect("number of proofs and number of r_powers should be the same");
 
         // Now compute a random linear combination of the commitments
@@ -145,7 +134,7 @@ impl FK20Verifier {
             // We then add the contribution of `r` as a part of that commitments weight.
             weights[commitment_index as usize] += r_powers[k];
         }
-        let comm_random_sum_commitments = g1_lincomb(&deduplicated_commitments, &weights)
+        let comm_random_sum_commitments = g1_lincomb(deduplicated_commitments, &weights)
             .expect("number of row_commitments and number of weights should be the same");
 
         // Compute a random linear combination of the interpolation polynomials
@@ -178,11 +167,11 @@ impl FK20Verifier {
             self.opening_key.commit_g1(&random_sum_interpolation_poly);
 
         let mut weighted_r_powers = Vec::with_capacity(num_cosets);
-        for (coset_index, r_power) in coset_indices.into_iter().zip(r_powers) {
+        for (coset_index, r_power) in coset_indices.iter().zip(r_powers) {
             let coset_shift_pow_n = self.coset_shifts_pow_n[*coset_index as usize];
             weighted_r_powers.push(r_power * coset_shift_pow_n);
         }
-        let random_weighted_sum_proofs = g1_lincomb(&proofs, &weighted_r_powers)
+        let random_weighted_sum_proofs = g1_lincomb(proofs, &weighted_r_powers)
             .expect("number of proofs and number of weighted_r_powers should be the same");
 
         // TODO: Find a better name for this (use it from specs)
@@ -257,11 +246,10 @@ fn compute_fiat_shamir_challenge(
     // This is noted because when we convert a 256 bit hash to a scalar, a bias will be introduced.
     // This however does not affect our security guarantees because the bias is negligible given we
     // want a uniformly random 128 bit integer.
-    let scalar = reduce_bytes_to_scalar_bias(result);
 
     // TODO: computing powers will remove the 128 bit structure, consider generating `n` 128 bit scalars
-    // There is a negligible probably that the scalar is zero, so we do not handle this case here.
-    scalar
+    // Also there is a negligible probably that the scalar is zero, so we do not handle this case here.
+    reduce_bytes_to_scalar_bias(result)
 }
 
 /// Computes a vector of powers of a given scalar value.

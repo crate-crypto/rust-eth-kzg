@@ -1,4 +1,4 @@
-use bls12_381::{lincomb::g1_lincomb, G1Projective, Scalar};
+use bls12_381::{lincomb::g1_lincomb, G1Point, G1Projective, Scalar};
 
 // The key that is used to commit to polynomials in monomial form
 //
@@ -8,11 +8,11 @@ use bls12_381::{lincomb::g1_lincomb, G1Projective, Scalar};
 /// - `G` is some generator of the group
 #[derive(Debug, Clone)]
 pub struct CommitKey {
-    pub g1s: Vec<G1Projective>,
+    pub g1s: Vec<G1Point>,
 }
 
 impl CommitKey {
-    pub fn new(g1_points: Vec<G1Projective>) -> CommitKey {
+    pub fn new(g1_points: Vec<G1Point>) -> CommitKey {
         assert!(
             !g1_points.is_empty(),
             "cannot initialize `CommitKey` with no g1 points"

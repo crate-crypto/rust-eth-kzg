@@ -8,9 +8,10 @@ mod naive;
 #[cfg(test)]
 pub(crate) fn create_insecure_commit_opening_keys(
 ) -> (commit_key::CommitKey, opening_key::OpeningKey) {
-    use bls12_381::{G1Projective, G2Projective, Scalar};
+    use bls12_381::{g1_batch_normalize, g2_batch_normalize, G1Projective, G2Projective, Scalar};
     use commit_key::CommitKey;
     use opening_key::OpeningKey;
+
     // A single proof will attest to the opening of 64 points.
     let multi_opening_size = 64;
 
@@ -28,6 +29,8 @@ pub(crate) fn create_insecure_commit_opening_keys(
         g1_points.push(g1_gen * current_secret_pow);
         current_secret_pow *= secret;
     }
+    let g1_points = g1_batch_normalize(&g1_points);
+
     let ck = CommitKey::new(g1_points.clone());
 
     let mut g2_points = Vec::new();
@@ -40,6 +43,8 @@ pub(crate) fn create_insecure_commit_opening_keys(
         g2_points.push(g2_gen * current_secret_pow);
         current_secret_pow *= secret;
     }
+    let g2_points = g2_batch_normalize(&g2_points);
+
     let vk = OpeningKey::new(
         g1_points[0..multi_opening_size + 1].to_vec(),
         g2_points,

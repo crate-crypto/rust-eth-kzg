@@ -7,6 +7,7 @@ pub mod lincomb;
 // Re-export ff and group, so other crates do not need to directly import(and independently version) them
 pub use ff;
 pub use group;
+use group::{prime::PrimeCurveAffine, Curve};
 
 pub type G1Point = blstrs::G1Affine;
 pub type G1Projective = blstrs::G1Projective;
@@ -26,14 +27,20 @@ pub fn multi_pairings(pairs: &[(&G1Point, &blstrs::G2Prepared)]) -> bool {
     pairing_.is_identity().into()
 }
 
-// TODO: Use batch_inversion trick to speed this up
 pub fn g1_batch_normalize(projective_points: &[G1Projective]) -> Vec<G1Point> {
-    use group::prime::PrimeCurveAffine;
-    use group::Curve;
+    batch_normalize_points(projective_points)
+}
+pub fn g2_batch_normalize(projective_points: &[G2Projective]) -> Vec<G2Point> {
+    batch_normalize_points(projective_points)
+}
 
-    let mut affine_points = vec![G1Point::identity(); projective_points.len()];
-    G1Projective::batch_normalize(projective_points, &mut affine_points);
-
+// TODO: Use batch_inversion trick to speed this up
+pub fn batch_normalize_points<T: PrimeCurveAffine>(points: &[T::Curve]) -> Vec<T>
+where
+    T::Curve: Curve<AffineRepr = T>,
+{
+    let mut affine_points = vec![T::identity(); points.len()];
+    T::Curve::batch_normalize(points, &mut affine_points);
     affine_points
 }
 
