@@ -2,11 +2,11 @@
 
 ## Overview
 
-**What**
+### What
 
 A cryptographic library that is compatible with the PeerDAS KZG commitment scheme used in the Ethereum blockchain.
 
-**Why**
+### Why
 
 The cryptography implemented in this library is the prerequisite needed for Ethereum's version of Data Availability Sampling(DAS). The library has been implemented in a modular way, so one can also use the underlying polynomial commitment scheme, for a different purpose.
 
