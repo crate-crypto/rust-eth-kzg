@@ -4,7 +4,7 @@ use crate::{
 };
 use bls12_381::{
     batch_inversion::batch_inverse, ff::Field, g1_batch_normalize, lincomb::g1_lincomb,
-    multi_pairings, G1Point, G2Point, G2Prepared, Scalar,
+    multi_pairings, reduce_bytes_to_scalar_bias, G1Point, G2Point, G2Prepared, Scalar,
 };
 use polynomial::{domain::Domain, monomial::poly_add};
 use sha2::{Digest, Sha256};
@@ -232,24 +232,19 @@ fn compute_fiat_shamir_challenge(
 
     let mut hasher = Sha256::new();
     hasher.update(hash_input);
-    let mut result: [u8; 32] = hasher.finalize().into();
+    let result: [u8; 32] = hasher.finalize().into();
 
     // For randomization, we only need a 128 bit scalar, since this is used for batch verification.
     // See for example, the randomizers section in : https://cr.yp.to/badbatch/badbatch-20120919.pdf
     //
-    // This is noted because when we truncate the 256 bit hash into a scalar,
-    // a bias will be introduced. This however does not affect our security guarantees
-    // because the bias is negligible given we want a uniformly random 128 bit integer.
-    //
-    // So that we know it fits into a scalar, we shave off 2 bits.
-    result[0] = (result[0] << 2) >> 2;
-    let scalar = Scalar::from_bytes_be(&result)
-        .expect("254 bit integer should have been reducible to a scalar");
+    // This is noted because when we convert a 256 bit hash to a scalar, a bias will be introduced.
+    // This however does not affect our security guarantees because the bias is negligible given we
+    // want a uniformly random 128 bit integer.
+    let scalar = reduce_bytes_to_scalar_bias(result);
 
-    // TODO: Could remove this, since it is statistically improbable
-    // TODO: we add 1 to the scalar, so that it can never be 0
-    // TODO: This is also taken from: https://cr.yp.to/badbatch/badbatch-20120919.pdf
-    scalar + Scalar::ONE
+    // TODO: computing powers will remove the 128 bit structure, consider generating `n` 128 bit scalars
+    // There is a negligible probably that the scalar is zero, so we do not handle this case here.
+    scalar
 }
 
 /// Computes a vector of powers of a given scalar value.
