@@ -3,36 +3,42 @@ use bls12_381::{fixed_base_msm::FixedBaseMSM, g1_batch_normalize, G1Point, G1Pro
 use polynomial::domain::Domain;
 use rayon::prelude::*;
 
-/// BatchToeplitz is a structure that optimizes for the usecase where:
-/// - You need to do multiple matrix-vector multiplications and sum them together
-/// - The vector is known at compile time, so you can precompute it's FFT
-/// - For now, the vector is a group element. We don't have any other usecases in the codebase.
+/// BatchToeplitzMatrixVecMul allows one to compute multiple matrix vector multiplications
+/// and sum them together.
+/// It is optimized for the usecase where:
+///  - The matrices being used are Toeplitz matrices (hence we can use FFTs to compute the matrix-vector multiplication)
+///  - The vectors being used are fixed, so we can precompute their FFTs.
+///  - The vectors being used as group elements (curve points)
 #[derive(Debug)]
 pub struct BatchToeplitzMatrixVecMul {
     /// This contains the number of matrix-vector multiplications that
     /// we can do in a batch.
     batch_size: usize,
     precomputed_fft_vectors: Vec<FixedBaseMSM>,
-    // This is the length of the vector that we are multiplying the matrix with.
+    // This is the length of the vector that we are multiplying the matrices with.
     // and subsequently will be the length of the final result of the matrix-vector multiplication.
-    n: usize,
+    size_of_vector: usize,
     /// This is the domain used in the circulant matrix-vector multiplication.
-    /// It will be double the size of the length of the vector.
+    /// It will be double the size of the length of a pre-computed vector.
     circulant_domain: Domain,
 }
 
 impl BatchToeplitzMatrixVecMul {
     pub fn new(vectors: Vec<Vec<G1Point>>) -> Self {
-        let n = vectors[0].len();
-        let vectors_all_same_length = vectors.iter().all(|v| v.len() == n);
+        let size_of_vector = vectors[0].len();
+        let vectors_all_same_length = vectors.iter().all(|v| v.len() == size_of_vector);
         assert!(
             vectors_all_same_length,
             "expected all vectors to be the same length"
         );
+        assert!(
+            size_of_vector.is_power_of_two(),
+            "expected the size of the vector to be a power of two"
+        );
 
-        let circulant_domain = Domain::new(n * 2);
+        let circulant_domain = Domain::new(size_of_vector * 2);
 
-        // Precompute the FFT of the vectors
+        // Precompute the FFT of the vectors, since they do not change per matrix-vector multiplication
         let vectors: Vec<Vec<G1Point>> = vectors
             .into_par_iter()
             .map(|vector| {
@@ -47,14 +53,18 @@ impl BatchToeplitzMatrixVecMul {
 
         let transposed_msm_vectors = transpose(vectors);
 
-        let table_bits = 8;
+        // Configurable parameter to denote the amount of pre-computation one should do
+        // for the fixed base multi-scalar multiplication.
+        //
+        // This is a trade-off between storage and computation, where storage grows exponentially.
+        const TABLE_BITS: usize = 8;
         let precomputed_table: Vec<_> = transposed_msm_vectors
             .into_par_iter()
-            .map(|v| FixedBaseMSM::new(v, table_bits))
+            .map(|v| FixedBaseMSM::new(v, TABLE_BITS))
             .collect();
 
         BatchToeplitzMatrixVecMul {
-            n,
+            size_of_vector,
             circulant_domain,
             precomputed_fft_vectors: precomputed_table,
             batch_size,
@@ -63,11 +73,10 @@ impl BatchToeplitzMatrixVecMul {
 
     // Computes the aggregated sum of many Toeplitz matrix-vector multiplications.
     //
-    // ie this method computes \sum_{i}^{n} A_i* x_i
+    // ie this method computes \sum_{i}^{n} A_i* x_i (where x_i is fixed)
     //
-    // This is faster than computing the matrix vector multiplication for each Toeplitz matrix and then summing the results
-    // since only one IFFT is done as opposed to `n`
-    // TODO: This method should be refactored for better readability, once we are done applying optimizations
+    // Note: This is faster than computing the matrix vector multiplication for each Toeplitz matrix using circulant
+    // matrix-vector multiplication and then summing the results since only one IFFT is done as opposed to `n`
     pub fn sum_matrix_vector_mul(&self, matrices: Vec<ToeplitzMatrix>) -> Vec<G1Projective> {
         assert_eq!(
             matrices.len(),
@@ -75,13 +84,14 @@ impl BatchToeplitzMatrixVecMul {
             "expected the number of matrices to be the same as the number of vectors"
         );
 
-        // Embed Toeplitz matrices into Circulant matrices
+        // Embed Toeplitz matrices into circulant matrices
         let circulant_matrices = matrices.into_iter().map(CirculantMatrix::from_toeplitz);
 
         // Perform circulant matrix-vector multiplication between all of the matrices and vectors
         // and sum them together.
         //
-        // We note that the aggregation step can be converted into msm's of size `l`
+        // Transpose the circulant matrices so that we convert a group of hadamard products into a group of
+        // inner products.
         let col_ffts: Vec<_> = circulant_matrices
             .into_iter()
             .map(|matrix| self.circulant_domain.fft_scalars(matrix.row))
@@ -95,9 +105,11 @@ impl BatchToeplitzMatrixVecMul {
             .map(|(points, scalars)| points.msm(scalars))
             .collect();
 
-        // Once the Circulant matrix-vector multiplication is done, we need to take the first half
-        // of the result, as this is the result of the Toeplitz matrix multiplication
-        self.circulant_domain.ifft_g1_take_n(result, Some(self.n))
+        // Once the aggregate circulant matrix-vector multiplication is done, we need to take the first half
+        // of the result, as the second half are extra terms that were added due to the fact that the Toeplitz matrices
+        // were embedded into circulant matrices.
+        self.circulant_domain
+            .ifft_g1_take_n(result, Some(self.size_of_vector))
     }
 }
 
