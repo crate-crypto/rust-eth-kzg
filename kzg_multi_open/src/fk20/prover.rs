@@ -18,7 +18,7 @@ pub enum Input {
     Data(Vec<Scalar>),
 }
 
-/// FK20 initializes all of the components needed to compute a KZG multi point
+/// FK20Prover initializes all of the components needed to compute a KZG multi point
 /// proof using the FK20 method.
 ///
 /// The FK20 method gives an efficient algorithm for opening points, where
