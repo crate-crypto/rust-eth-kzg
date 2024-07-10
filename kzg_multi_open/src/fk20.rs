@@ -39,7 +39,7 @@ pub enum Input {
 /// See [Fk21](https://github.com/khovratovich/Kate/blob/master/Kate_amortized.pdf) for details
 /// on the scheme.
 #[derive(Debug)]
-pub struct FK20 {
+pub struct FK20Prover {
     batch_toeplitz: BatchToeplitzMatrixVecMul,
     /// The amount of points that a single proof will attest to the opening of.
     ///
@@ -67,7 +67,7 @@ pub struct FK20 {
     commit_key: CommitKey,
 }
 
-impl FK20 {
+impl FK20Prover {
     /// Initialize a FK20 struct with the given parameters.
     ///
     /// commit_key: The commitment key used to commit to polynomials.
@@ -79,7 +79,7 @@ impl FK20 {
         polynomial_bound: usize,
         points_per_proof: usize,
         number_of_points_to_open: usize,
-    ) -> FK20 {
+    ) -> FK20Prover {
         assert!(points_per_proof.is_power_of_two());
         assert!(number_of_points_to_open.is_power_of_two());
         assert!(number_of_points_to_open > points_per_proof);
@@ -124,7 +124,7 @@ impl FK20 {
         let evaluation_domain = Domain::new(number_of_points_to_open);
         let poly_domain = Domain::new(polynomial_bound);
 
-        FK20 {
+        FK20Prover {
             batch_toeplitz,
             coset_size: points_per_proof,
             number_of_points_to_open,
@@ -292,7 +292,7 @@ impl FK20 {
 mod tests {
     use std::collections::HashSet;
 
-    use super::{Input, FK20};
+    use super::{FK20Prover, Input};
     use crate::{
         create_insecure_commit_opening_keys,
         fk20::{cosets::generate_cosets, naive as fk20naive, verify::FK20Verifier},
@@ -311,7 +311,7 @@ mod tests {
         let num_points_to_open = 2 * poly_len;
         let coset_size = 64;
 
-        let fk20 = FK20::new(commit_key, poly_len, coset_size, num_points_to_open);
+        let fk20 = FK20Prover::new(commit_key, poly_len, coset_size, num_points_to_open);
 
         let data: Vec<_> = (0..poly_len).map(|i| Scalar::from(i as u64)).collect();
         let (_, cells) = fk20.compute_multi_opening_proofs(Input::Data(data.clone()));
@@ -330,7 +330,7 @@ mod tests {
         let coset_size = 64;
         let num_cosets = num_points_to_open / coset_size;
 
-        let fk20 = FK20::new(commit_key, poly_len, coset_size, num_points_to_open);
+        let fk20 = FK20Prover::new(commit_key, poly_len, coset_size, num_points_to_open);
         let fk20_verifier = FK20Verifier::new(opening_key, num_points_to_open, num_cosets, true);
 
         let data: Vec<_> = (0..poly_len).map(|i| Scalar::from(i as u64)).collect();
@@ -362,7 +362,7 @@ mod tests {
             fk20naive::open_multi_point(&commit_key, &poly, coset_size, 2 * poly_len);
 
         // Compute proofs using optimized FK20 implementation
-        let fk20 = FK20::new(commit_key, poly_len, coset_size, 2 * poly_len);
+        let fk20 = FK20Prover::new(commit_key, poly_len, coset_size, 2 * poly_len);
         let (got_proofs, got_evaluations) =
             fk20.compute_multi_opening_proofs_poly_coeff(poly.clone());
 

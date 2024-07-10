@@ -2,7 +2,7 @@ use bls12_381::lincomb::{g1_lincomb, g1_lincomb_unsafe, g2_lincomb, g2_lincomb_u
 use bls12_381::{ff::Field, group::Group, G1Projective};
 use bls12_381::{G2Projective, Scalar};
 use crate_crypto_kzg_multi_open_fk20::commit_key::CommitKey;
-use crate_crypto_kzg_multi_open_fk20::fk20::{Input, FK20};
+use crate_crypto_kzg_multi_open_fk20::fk20::{Input, FK20Prover};
 use crate_crypto_kzg_multi_open_fk20::opening_key::OpeningKey;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
@@ -46,7 +46,7 @@ pub fn bench_compute_proof(c: &mut Criterion) {
 
     const NUMBER_OF_POINTS_PER_PROOF: usize = 64;
 
-    let fk20 = FK20::new(
+    let fk20 = FK20Prover::new(
         ck,
         POLYNOMIAL_LEN,
         NUMBER_OF_POINTS_PER_PROOF,

@@ -14,7 +14,7 @@ use crate::{
 use bls12_381::Scalar;
 use erasure_codes::{reed_solomon::Erasures, ReedSolomon};
 use kzg_multi_open::{
-    fk20::{self, verify::FK20Verifier, FK20},
+    fk20::{self, verify::FK20Verifier, FK20Prover},
     opening_key::OpeningKey,
 };
 
@@ -169,7 +169,7 @@ impl PeerDASContext {
         // This comment does leak the fact that the cells are not in the "correct" order,
         // which the API tries to hide.
         let (cell_indices_normal_order, flattened_coset_evaluations_normal_order) =
-            FK20::recover_evaluations_in_domain_order(
+            FK20Prover::recover_evaluations_in_domain_order(
                 FIELD_ELEMENTS_PER_EXT_BLOB,
                 cell_indices,
                 coset_evaluations,

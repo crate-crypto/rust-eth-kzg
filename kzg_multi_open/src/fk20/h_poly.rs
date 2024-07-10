@@ -1,4 +1,4 @@
-use crate::fk20::{toeplitz::ToeplitzMatrix, FK20};
+use crate::fk20::{toeplitz::ToeplitzMatrix, FK20Prover};
 use bls12_381::{G1Projective, Scalar};
 use polynomial::monomial::PolyCoeff;
 
@@ -13,7 +13,7 @@ pub(crate) fn take_every_nth<T: Clone + Copy>(list: &[T], n: usize) -> Vec<Vec<T
         .collect()
 }
 
-impl FK20 {
+impl FK20Prover {
     /// Computes the `h` polynomials for the FK20 proofs.
     ///
     /// The `h` polynomial refer to the polynomial that are shared across the computation
@@ -72,7 +72,7 @@ impl FK20 {
 mod tests {
     use crate::{
         create_insecure_commit_opening_keys,
-        fk20::{h_poly::take_every_nth, naive, FK20},
+        fk20::{h_poly::take_every_nth, naive, FK20Prover},
     };
     use bls12_381::Scalar;
 
@@ -100,7 +100,7 @@ mod tests {
 
         // Compute the commitment to the h_polynomials using the method noted in the FK20 paper
         //
-        let fk20 = FK20::new(commit_key, 4096, coset_size, 2 * 4096);
+        let fk20 = FK20Prover::new(commit_key, 4096, coset_size, 2 * 4096);
         let got_comm_h_polys = fk20.compute_h_poly_commitments(poly, coset_size);
 
         assert_eq!(expected_comm_h_polys.len(), got_comm_h_polys.len());

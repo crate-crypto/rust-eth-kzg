@@ -2,7 +2,7 @@ pub use crate::errors::ProverError;
 
 use kzg_multi_open::{
     commit_key::CommitKey,
-    fk20::{Input, FK20},
+    fk20::{Input, FK20Prover},
 };
 
 use crate::{
@@ -19,7 +19,7 @@ use crate::{
 /// This includes, computing the commitments, proofs and cells.
 #[derive(Debug)]
 pub struct ProverContext {
-    fk20: FK20,
+    fk20: FK20Prover,
 }
 
 impl Default for ProverContext {
@@ -43,7 +43,7 @@ impl ProverContext {
         // by doing number_of_points_to_open / point_set_size.
         let number_of_points_to_open = FIELD_ELEMENTS_PER_EXT_BLOB;
 
-        let fk20 = FK20::new(
+        let fk20 = FK20Prover::new(
             commit_key,
             FIELD_ELEMENTS_PER_BLOB,
             point_set_size,
