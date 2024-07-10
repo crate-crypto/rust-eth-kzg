@@ -52,7 +52,7 @@ impl ReedSolomon {
         }
         self.evaluation_domain.fft_scalars(poly_coefficient_form)
     }
-
+    // TODO: Add terminology around burst errors
     pub fn recover_polynomial_coefficient(
         &self,
         codeword_with_errors: Vec<Scalar>,
