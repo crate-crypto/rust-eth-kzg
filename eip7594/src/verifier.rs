@@ -12,7 +12,7 @@ use crate::{
     Bytes48Ref, CellIndex, CellRef, PeerDASContext, RowIndex,
 };
 use bls12_381::Scalar;
-use erasure_codes::{reed_solomon::Erasures, ReedSolomon};
+use erasure_codes::{Erasures, ReedSolomon};
 use kzg_multi_open::{
     opening_key::OpeningKey,
     {Prover, Verifier},
