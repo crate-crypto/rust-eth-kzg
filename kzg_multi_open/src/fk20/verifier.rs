@@ -28,13 +28,10 @@ pub struct FK20Verifier {
 }
 
 impl FK20Verifier {
-    pub fn new(
-        opening_key: OpeningKey,
-        num_points_to_open: usize,
-        num_cosets: usize,
-        bit_reversed: bool,
-    ) -> Self {
-        let coset_shifts = coset_gens(num_points_to_open, num_cosets, bit_reversed);
+    pub fn new(opening_key: OpeningKey, num_points_to_open: usize, num_cosets: usize) -> Self {
+        const BIT_REVERSED: bool = true;
+        let coset_shifts = coset_gens(num_points_to_open, num_cosets, BIT_REVERSED);
+
         let coset_size = num_points_to_open / num_cosets;
         assert!(
             opening_key.g2s.len() >= coset_size,

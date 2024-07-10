@@ -36,12 +36,8 @@ impl VerifierContext {
     pub fn new(trusted_setup: &TrustedSetup) -> VerifierContext {
         let opening_key = OpeningKey::from(trusted_setup);
 
-        let fk20_verifier = FK20Verifier::new(
-            opening_key,
-            FIELD_ELEMENTS_PER_EXT_BLOB,
-            CELLS_PER_EXT_BLOB,
-            true,
-        );
+        let fk20_verifier =
+            FK20Verifier::new(opening_key, FIELD_ELEMENTS_PER_EXT_BLOB, CELLS_PER_EXT_BLOB);
 
         VerifierContext {
             rs: ReedSolomon::new(FIELD_ELEMENTS_PER_BLOB, EXTENSION_FACTOR),

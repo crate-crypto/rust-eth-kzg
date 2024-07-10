@@ -322,7 +322,7 @@ mod tests {
         let num_cosets = num_points_to_open / coset_size;
 
         let fk20 = FK20Prover::new(commit_key, poly_len, coset_size, num_points_to_open);
-        let fk20_verifier = FK20Verifier::new(opening_key, num_points_to_open, num_cosets, true);
+        let fk20_verifier = FK20Verifier::new(opening_key, num_points_to_open, num_cosets);
 
         let data: Vec<_> = (0..poly_len).map(|i| Scalar::from(i as u64)).collect();
         let (proofs, cells) = fk20.compute_multi_opening_proofs(Input::Data(data.clone()));
