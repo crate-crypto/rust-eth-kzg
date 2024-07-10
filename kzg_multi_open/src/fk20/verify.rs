@@ -138,12 +138,13 @@ impl FK20Verifier {
 
         // Compute a random linear combination of the interpolation polynomials
         let mut sum_interpolation_poly = Vec::new();
-        for k in 0..num_cosets {
-            let mut coset_evals_clone = coset_evals[k].clone();
-            reverse_bit_order(&mut coset_evals_clone);
+        let coset_evals = coset_evals.to_vec();
+        for (k, mut coset_eval) in coset_evals.into_iter().enumerate() {
+            // Reverse the order, so it matches the fft domain
+            reverse_bit_order(&mut coset_eval);
 
             // Compute the interpolation polynomial
-            let ifft_scalars = self.coset_domain.ifft_scalars(coset_evals_clone);
+            let ifft_scalars = self.coset_domain.ifft_scalars(coset_eval);
             let inv_h_k_powers = &self.inv_coset_shifts_pow_n[coset_indices[k] as usize];
             let ifft_scalars: Vec<_> = ifft_scalars
                 .into_iter()
