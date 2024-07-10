@@ -69,7 +69,7 @@ impl FK20Verifier {
             .collect::<Vec<_>>();
 
         let num_cosets = coset_indices.len();
-        let n = self.opening_key.multi_opening_size;
+        let n = self.opening_key.coset_size;
         let num_unique_commitments = row_commitments.len();
 
         // First compute a random linear combination of the proofs
@@ -95,7 +95,7 @@ impl FK20Verifier {
         let random_sum_commitments = bls12_381::lincomb::g1_lincomb(&row_commitments, &weights)
             .expect("number of row_commitments and number of weights should be the same");
 
-        let domain = polynomial::domain::Domain::new(self.opening_key.multi_opening_size);
+        let domain = polynomial::domain::Domain::new(self.opening_key.coset_size);
 
         // Compute a random linear combination of the interpolation polynomials
         let mut sum_interpolation_poly = Vec::new();
@@ -170,7 +170,7 @@ fn compute_fiat_shamir_challenge(
     hash_input.extend((opening_key.num_coefficients_in_polynomial as u64).to_be_bytes());
 
     // field elements per coset
-    hash_input.extend((opening_key.multi_opening_size as u64).to_be_bytes());
+    hash_input.extend((opening_key.coset_size as u64).to_be_bytes());
 
     let num_commitments = row_commitments.len() as u64;
     hash_input.extend(num_commitments.to_be_bytes());

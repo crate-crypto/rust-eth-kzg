@@ -26,7 +26,7 @@ pub struct OpeningKey {
     /// In most cases, this is the number of G1 elements,
     /// however, we have this explicit parameter to
     /// avoid foot guns.
-    pub multi_opening_size: usize,
+    pub coset_size: usize,
     // This the number of coefficients in the polynomial that we want to
     // verify claims about.
     //
@@ -38,7 +38,7 @@ impl OpeningKey {
     pub fn new(
         g1s: Vec<G1Projective>,
         g2s: Vec<G2Projective>,
-        multi_opening_size: usize,
+        coset_size: usize,
         num_coefficients_in_polynomial: usize,
     ) -> Self {
         // This assumes that the trusted setup contains more than 1 element.
@@ -50,7 +50,7 @@ impl OpeningKey {
             g1s,
             g2s,
             g2_gen,
-            multi_opening_size,
+            coset_size,
             num_coefficients_in_polynomial,
         }
     }
