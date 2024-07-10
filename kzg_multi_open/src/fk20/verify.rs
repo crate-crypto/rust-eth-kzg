@@ -1,10 +1,13 @@
-use super::coset_gens;
-use crate::{fk20::cosets::reverse_bit_order, opening_key::OpeningKey};
+use crate::{
+    fk20::cosets::{coset_gens, reverse_bit_order},
+    opening_key::OpeningKey,
+};
 use bls12_381::{
     batch_inversion::batch_inverse, ff::Field, g1_batch_normalize, lincomb::g1_lincomb,
     multi_pairings, G1Point, G2Point, G2Prepared, Scalar,
 };
 use polynomial::{domain::Domain, monomial::poly_add};
+use sha2::{Digest, Sha256};
 
 #[derive(Debug)]
 pub struct FK20Verifier {
@@ -163,9 +166,9 @@ impl FK20Verifier {
         let random_sum_interpolation = self.opening_key.commit_g1(&sum_interpolation_poly);
 
         let mut weighted_r_powers = Vec::with_capacity(num_cosets);
-        for k in 0..num_cosets {
-            let h_k_pow = self.coset_shifts_pow_n[coset_indices[k] as usize];
-            let wrp = r_powers[k] * h_k_pow;
+        for (coset_index, r_power) in coset_indices.into_iter().zip(r_powers) {
+            let h_k_pow = self.coset_shifts_pow_n[*coset_index as usize];
+            let wrp = r_power * h_k_pow;
             weighted_r_powers.push(wrp);
         }
         let random_weighted_sum_proofs = g1_lincomb(&proofs, &weighted_r_powers)
@@ -220,9 +223,7 @@ fn compute_fiat_shamir_challenge(
         }
         hash_input.extend(proofs[k as usize].to_compressed())
     }
-    use bls12_381::ff::Field;
 
-    use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
     hasher.update(hash_input);
     let mut result: [u8; 32] = hasher.finalize().into();
