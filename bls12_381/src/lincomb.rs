@@ -44,6 +44,7 @@ pub fn g2_lincomb_unsafe(points: &[G2Projective], scalars: &[Scalar]) -> Option<
 /// This method is a safe wrapper around `g1_lincomb_unsafe`.
 ///
 /// It filters out any points that are the identity.
+// TODO: Make this take either G1Point or Into<G1Projective> (Ideally the latter)
 pub fn g1_lincomb(points: &[G1Projective], scalars: &[Scalar]) -> Option<G1Projective> {
     let (points_filtered, scalars_filtered): (Vec<_>, Vec<_>) = points
         .iter()
