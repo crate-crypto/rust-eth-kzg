@@ -1,14 +1,27 @@
 use super::coset_gens;
 use crate::{fk20::cosets::reverse_bit_order, opening_key::OpeningKey};
 use bls12_381::{
-    batch_inversion::batch_inverse, multi_pairings, G1Point, G2Point, G2Prepared, Scalar,
+    batch_inversion::batch_inverse, ff::Field, g1_batch_normalize, lincomb::g1_lincomb,
+    multi_pairings, G1Point, G2Point, G2Prepared, Scalar,
 };
-use polynomial::monomial::poly_add;
+use polynomial::{domain::Domain, monomial::poly_add};
 
 #[derive(Debug)]
 pub struct FK20Verifier {
     pub opening_key: OpeningKey,
+    // These are bit-reversed.
     pub coset_shifts: Vec<Scalar>,
+    coset_domain: Domain,
+    // Pre-computations for the verification algorithm
+    //
+    // [s^n]_2
+    s_pow_n: G2Prepared,
+    // [-1]_2
+    neg_g2_gen: G2Prepared,
+    //
+    pub coset_shifts_pow_n: Vec<Scalar>,
+    //
+    inv_coset_shifts_pow_n: Vec<Vec<Scalar>>,
 }
 
 impl FK20Verifier {
@@ -24,9 +37,37 @@ impl FK20Verifier {
             opening_key.g2s.len() >= coset_size,
             "need as many g2 points as coset size"
         );
+        let coset_domain = polynomial::domain::Domain::new(opening_key.coset_size);
+
+        let n = opening_key.coset_size;
+        // [s^n]_2
+        let s_pow_n = G2Prepared::from(G2Point::from(opening_key.g2s[n]));
+        // [-1]_2
+        let neg_g2_gen = G2Prepared::from(-opening_key.g2_gen());
+
+        let coset_shifts_pow_n = coset_shifts
+            .iter()
+            .map(|&coset_shift| coset_shift.pow_vartime([n as u64]))
+            .collect();
+
+        // TODO: We might be able to remove this if we modify the API for fft to take arbitrary cosets
+        let inv_coset_shifts_pow_n: Vec<_> = coset_shifts
+            .iter()
+            .map(|&coset_shift| {
+                let mut inv_coset_shift_powers = compute_powers(coset_shift, n);
+                batch_inverse(&mut inv_coset_shift_powers); // The coset generators are all roots of unity, so none of them will be zero
+                inv_coset_shift_powers
+            })
+            .collect();
+
         Self {
             opening_key,
             coset_shifts,
+            coset_domain,
+            s_pow_n,
+            neg_g2_gen,
+            coset_shifts_pow_n,
+            inv_coset_shifts_pow_n,
         }
     }
 
@@ -34,12 +75,13 @@ impl FK20Verifier {
         &self,
         row_commitments: &[G1Point],
         commitment_indices: &[u64],
+        // These are bit-reversed.
         coset_indices: &[u64],
+        // These are bit-reversed.
         coset_evals: &[Vec<Scalar>],
+        // These are bit-reversed.
         proofs: &[G1Point],
     ) -> bool {
-        use bls12_381::ff::Field;
-
         // Compute random challenges for batching the opening together.
         //
         // We compute one challenge `r` using fiat-shamir and the rest are powers of `r`
@@ -69,11 +111,10 @@ impl FK20Verifier {
             .collect::<Vec<_>>();
 
         let num_cosets = coset_indices.len();
-        let n = self.opening_key.coset_size;
         let num_unique_commitments = row_commitments.len();
 
         // First compute a random linear combination of the proofs
-        let random_sum_proofs = bls12_381::lincomb::g1_lincomb(&proofs, &r_powers)
+        let random_sum_proofs = g1_lincomb(&proofs, &r_powers)
             .expect("number of proofs and number of r_powers should be the same");
 
         // Now compute a random linear combination of the commitments
@@ -92,10 +133,8 @@ impl FK20Verifier {
             // We then add the contribution of `r` as a part of that commitments weight.
             weights[commitment_index as usize] += r_powers[k];
         }
-        let random_sum_commitments = bls12_381::lincomb::g1_lincomb(&row_commitments, &weights)
+        let random_sum_commitments = g1_lincomb(&row_commitments, &weights)
             .expect("number of row_commitments and number of weights should be the same");
-
-        let domain = polynomial::domain::Domain::new(self.opening_key.coset_size);
 
         // Compute a random linear combination of the interpolation polynomials
         let mut sum_interpolation_poly = Vec::new();
@@ -104,10 +143,8 @@ impl FK20Verifier {
             reverse_bit_order(&mut coset_evals_clone);
 
             // Compute the interpolation polynomial
-            let ifft_scalars = domain.ifft_scalars(coset_evals_clone);
-            let h_k = self.coset_shifts[coset_indices[k] as usize];
-            let mut inv_h_k_powers = compute_powers(h_k, ifft_scalars.len());
-            batch_inverse(&mut inv_h_k_powers); // The coset generators are all roots of unity, so none of them will be zero
+            let ifft_scalars = self.coset_domain.ifft_scalars(coset_evals_clone);
+            let inv_h_k_powers = &self.inv_coset_shifts_pow_n[coset_indices[k] as usize];
             let ifft_scalars: Vec<_> = ifft_scalars
                 .into_iter()
                 .zip(inv_h_k_powers)
@@ -124,31 +161,23 @@ impl FK20Verifier {
         }
         let random_sum_interpolation = self.opening_key.commit_g1(&sum_interpolation_poly);
 
-        // [s^n]
-        let s_pow_n = self.opening_key.g2s[n];
-
         let mut weighted_r_powers = Vec::with_capacity(num_cosets);
         for k in 0..num_cosets {
-            // This is expensive and does not need to be done all the time.
-            let h_k = self.coset_shifts[coset_indices[k] as usize];
-            let h_k_pow = h_k.pow_vartime([n as u64]);
+            let h_k_pow = self.coset_shifts_pow_n[coset_indices[k] as usize];
             let wrp = r_powers[k] * h_k_pow;
             weighted_r_powers.push(wrp);
         }
-        let random_weighted_sum_proofs =
-            bls12_381::lincomb::g1_lincomb(&proofs, &weighted_r_powers)
-                .expect("number of proofs and number of weighted_r_powers should be the same");
+        let random_weighted_sum_proofs = g1_lincomb(&proofs, &weighted_r_powers)
+            .expect("number of proofs and number of weighted_r_powers should be the same");
 
         // TODO: Find a better name for this
         let rl = (random_sum_commitments - random_sum_interpolation) + random_weighted_sum_proofs;
 
-        // TODO: These .into are a bit expensive since they are converting from projective to affine
+        let normalized_vectors = g1_batch_normalize(&[random_sum_proofs, rl]);
+        let random_sum_proofs = normalized_vectors[0];
+        let rl = normalized_vectors[1];
 
-        let s_pow_n: G2Point = s_pow_n.into(); // TODO: This can be precomputed and stored in the opening-key
-        multi_pairings(&[
-            (&random_sum_proofs.into(), &G2Prepared::from(s_pow_n)),
-            (&rl.into(), &G2Prepared::from(-self.opening_key.g2_gen())), // TODO: We can precompute and store `G2Prepared::from(-opening_key.g2_gen())` in the openingkey too
-        ])
+        multi_pairings(&[(&random_sum_proofs, &self.s_pow_n), (&rl, &self.neg_g2_gen)])
     }
 }
 
