@@ -258,7 +258,7 @@ fn compute_fiat_shamir_challenge(
 fn compute_powers(value: Scalar, num_elements: usize) -> Vec<Scalar> {
     use bls12_381::ff::Field;
 
-    let mut powers = Vec::new();
+    let mut powers = Vec::with_capacity(num_elements);
     let mut current_power = Scalar::ONE;
 
     for _ in 0..num_elements {
