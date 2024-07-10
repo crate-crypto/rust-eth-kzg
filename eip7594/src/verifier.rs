@@ -14,14 +14,14 @@ use crate::{
 use bls12_381::Scalar;
 use erasure_codes::{reed_solomon::Erasures, ReedSolomon};
 use kzg_multi_open::{
-    fk20::{FK20Prover, FK20Verifier},
     opening_key::OpeningKey,
+    {Prover, Verifier},
 };
 
 /// The context object that is used to call functions in the verifier API.
 #[derive(Debug)]
 pub struct VerifierContext {
-    fk20: FK20Verifier,
+    kzg_multipoint_verifier: Verifier,
     rs: ReedSolomon,
 }
 
@@ -36,12 +36,12 @@ impl VerifierContext {
     pub fn new(trusted_setup: &TrustedSetup) -> VerifierContext {
         let opening_key = OpeningKey::from(trusted_setup);
 
-        let fk20_verifier =
-            FK20Verifier::new(opening_key, FIELD_ELEMENTS_PER_EXT_BLOB, CELLS_PER_EXT_BLOB);
+        let multipoint_verifier =
+            Verifier::new(opening_key, FIELD_ELEMENTS_PER_EXT_BLOB, CELLS_PER_EXT_BLOB);
 
         VerifierContext {
             rs: ReedSolomon::new(FIELD_ELEMENTS_PER_BLOB, EXTENSION_FACTOR),
-            fk20: fk20_verifier,
+            kzg_multipoint_verifier: multipoint_verifier,
         }
     }
 }
@@ -124,13 +124,16 @@ impl PeerDASContext {
 
             // Computation
             //
-            let ok = self.verifier_ctx.fk20.verify_multi_opening(
-                &row_commitment_,
-                &row_indices,
-                &cell_indices,
-                &coset_evals,
-                &proofs_,
-            );
+            let ok = self
+                .verifier_ctx
+                .kzg_multipoint_verifier
+                .verify_multi_opening(
+                    &row_commitment_,
+                    &row_indices,
+                    &cell_indices,
+                    &coset_evals,
+                    &proofs_,
+                );
 
             // Convert the boolean value into a Result
             if ok {
@@ -166,7 +169,7 @@ impl PeerDASContext {
         // This comment does leak the fact that the cells are not in the "correct" order,
         // which the API tries to hide.
         let (cell_indices_normal_order, flattened_coset_evaluations_normal_order) =
-            FK20Prover::recover_evaluations_in_domain_order(
+            Prover::recover_evaluations_in_domain_order(
                 FIELD_ELEMENTS_PER_EXT_BLOB,
                 cell_indices,
                 coset_evaluations,

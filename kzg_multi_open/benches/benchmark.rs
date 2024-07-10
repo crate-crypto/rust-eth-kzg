@@ -2,8 +2,8 @@ use bls12_381::lincomb::{g1_lincomb, g1_lincomb_unsafe, g2_lincomb, g2_lincomb_u
 use bls12_381::{ff::Field, group::Group, G1Projective};
 use bls12_381::{g1_batch_normalize, g2_batch_normalize, G2Projective, Scalar};
 use crate_crypto_kzg_multi_open_fk20::commit_key::CommitKey;
-use crate_crypto_kzg_multi_open_fk20::fk20::{FK20Prover, ProverInput};
 use crate_crypto_kzg_multi_open_fk20::opening_key::OpeningKey;
+use crate_crypto_kzg_multi_open_fk20::{Prover, ProverInput};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 pub fn bench_msm(c: &mut Criterion) {
@@ -48,13 +48,13 @@ pub fn bench_compute_proof(c: &mut Criterion) {
 
     const NUMBER_OF_POINTS_PER_PROOF: usize = 64;
 
-    let fk20 = FK20Prover::new(
+    let prover = Prover::new(
         ck,
         POLYNOMIAL_LEN,
         NUMBER_OF_POINTS_PER_PROOF,
         NUMBER_OF_POINTS_TO_EVALUATE,
     );
-    let num_proofs = fk20.num_proofs();
+    let num_proofs = prover.num_proofs();
     c.bench_function(
         &format!(
             "computing proofs with fk20. POLY_SIZE {}, NUM_INPUT_POINTS {}, NUM_PROOFS {}",
@@ -62,7 +62,7 @@ pub fn bench_compute_proof(c: &mut Criterion) {
         ),
         |b| {
             b.iter(|| {
-                fk20.compute_multi_opening_proofs(ProverInput::PolyCoeff(polynomial_4096.clone()))
+                prover.compute_multi_opening_proofs(ProverInput::PolyCoeff(polynomial_4096.clone()))
             })
         },
     );

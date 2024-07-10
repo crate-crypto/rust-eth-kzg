@@ -2,7 +2,7 @@ pub use crate::errors::ProverError;
 
 use kzg_multi_open::{
     commit_key::CommitKey,
-    fk20::{FK20Prover, ProverInput},
+    {Prover, ProverInput},
 };
 
 use crate::{
@@ -19,7 +19,7 @@ use crate::{
 /// This includes, computing the commitments, proofs and cells.
 #[derive(Debug)]
 pub struct ProverContext {
-    fk20: FK20Prover,
+    kzg_multipoint_prover: Prover,
 }
 
 impl Default for ProverContext {
@@ -43,14 +43,16 @@ impl ProverContext {
         // by doing number_of_points_to_open / point_set_size.
         let number_of_points_to_open = FIELD_ELEMENTS_PER_EXT_BLOB;
 
-        let fk20 = FK20Prover::new(
+        let fk20 = Prover::new(
             commit_key,
             FIELD_ELEMENTS_PER_BLOB,
             point_set_size,
             number_of_points_to_open,
         );
 
-        ProverContext { fk20 }
+        ProverContext {
+            kzg_multipoint_prover: fk20,
+        }
     }
 }
 
@@ -62,7 +64,10 @@ impl PeerDASContext {
             let scalars = serialization::deserialize_blob_to_scalars(blob)?;
 
             // Compute commitment using FK20
-            let commitment = self.prover_ctx.fk20.commit(ProverInput::Data(scalars));
+            let commitment = self
+                .prover_ctx
+                .kzg_multipoint_prover
+                .commit(ProverInput::Data(scalars));
 
             // Serialize the commitment.
             Ok(serialize_g1_compressed(&commitment))
@@ -83,7 +88,7 @@ impl PeerDASContext {
             //
             let (proofs, cells) = self
                 .prover_ctx
-                .fk20
+                .kzg_multipoint_prover
                 .compute_multi_opening_proofs(ProverInput::Data(scalars));
 
             Ok(serialization::serialize_cells_and_proofs(cells, proofs))
@@ -93,7 +98,7 @@ impl PeerDASContext {
     /// Recovers the cells and computes the KZG proofs, given a subset of cells.
     ///
     /// Use erasure decoding to recover the polynomial corresponding to the cells
-    /// that were generated from fk20.
+    /// that were generated from KZG multi point prover.
     ///
     // Note: The fact that we recover the polynomial for the bit-reversed version of the blob
     // is irrelevant.
@@ -111,7 +116,7 @@ impl PeerDASContext {
             //
             let (proofs, coset_evaluations) = self
                 .prover_ctx
-                .fk20
+                .kzg_multipoint_prover
                 .compute_multi_opening_proofs(ProverInput::PolyCoeff(poly_coeff));
 
             Ok(serialization::serialize_cells_and_proofs(
