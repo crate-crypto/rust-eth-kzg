@@ -190,6 +190,11 @@ impl FK20Verifier {
     }
 }
 
+/// Computes a random challenge which will allow us to efficiently verify multiple opening proofs.
+///
+/// Efficiently refers to being able to verify these proofs faster than verifying each proof individually.
+///
+/// The matching function in the spec is: https://github.com/ethereum/consensus-specs/blob/b9e7b031b5f2c18d76143007ea779a32b5505155/specs/_features/eip7594/polynomial-commitments-sampling.md#compute_verify_cell_kzg_proof_batch_challenge
 fn compute_fiat_shamir_challenge(
     opening_key: &OpeningKey,
     row_commitments: &[G1Point],
