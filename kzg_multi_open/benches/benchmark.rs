@@ -1,6 +1,6 @@
 use bls12_381::lincomb::{g1_lincomb, g1_lincomb_unsafe, g2_lincomb, g2_lincomb_unsafe};
 use bls12_381::{ff::Field, group::Group, G1Projective};
-use bls12_381::{g1_batch_normalize, g2_batch_normalize, G1Point, G2Point, G2Projective, Scalar};
+use bls12_381::{g1_batch_normalize, g2_batch_normalize, G2Projective, Scalar};
 use crate_crypto_kzg_multi_open_fk20::commit_key::CommitKey;
 use crate_crypto_kzg_multi_open_fk20::fk20::{FK20Prover, ProverInput};
 use crate_crypto_kzg_multi_open_fk20::opening_key::OpeningKey;
