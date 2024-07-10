@@ -43,7 +43,7 @@ impl ProverContext {
         // by doing number_of_points_to_open / point_set_size.
         let number_of_points_to_open = FIELD_ELEMENTS_PER_EXT_BLOB;
 
-        let fk20 = Prover::new(
+        let kzg_multipoint_prover = Prover::new(
             commit_key,
             FIELD_ELEMENTS_PER_BLOB,
             point_set_size,
@@ -51,7 +51,7 @@ impl ProverContext {
         );
 
         ProverContext {
-            kzg_multipoint_prover: fk20,
+            kzg_multipoint_prover,
         }
     }
 }
@@ -63,7 +63,7 @@ impl PeerDASContext {
             // Deserialize the blob into scalars.
             let scalars = serialization::deserialize_blob_to_scalars(blob)?;
 
-            // Compute commitment using FK20
+            // Compute commitment
             let commitment = self
                 .prover_ctx
                 .kzg_multipoint_prover
