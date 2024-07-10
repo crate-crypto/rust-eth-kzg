@@ -6,7 +6,7 @@ mod h_poly;
 pub(crate) mod naive;
 
 mod toeplitz;
-pub mod verify;
+pub mod verifier;
 
 use bls12_381::{g1_batch_normalize, group::Group, G1Point, G1Projective, Scalar};
 use cosets::{log2, reverse_bits};
@@ -290,7 +290,7 @@ mod tests {
     use super::{FK20Prover, Input};
     use crate::{
         create_insecure_commit_opening_keys,
-        fk20::{cosets::generate_cosets, naive as fk20naive, verify::FK20Verifier},
+        fk20::{cosets::generate_cosets, naive as fk20naive, verifier::FK20Verifier},
         naive as kzgnaive,
     };
     use bls12_381::Scalar;

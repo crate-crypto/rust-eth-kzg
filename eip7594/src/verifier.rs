@@ -14,7 +14,7 @@ use crate::{
 use bls12_381::Scalar;
 use erasure_codes::{reed_solomon::Erasures, ReedSolomon};
 use kzg_multi_open::{
-    fk20::{verify::FK20Verifier, FK20Prover},
+    fk20::{verifier::FK20Verifier, FK20Prover},
     opening_key::OpeningKey,
 };
 
