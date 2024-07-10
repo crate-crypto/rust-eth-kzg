@@ -9,6 +9,13 @@ use bls12_381::{
 use polynomial::{domain::Domain, monomial::poly_add};
 use sha2::{Digest, Sha256};
 
+/// FK20Verifier initializes all of the components needed to verify KZG multi point
+/// proofs that were created using the FK20Prover.
+///
+/// Note: The proofs can be created naively not using the FK20 strategy (see naive.rs)
+/// however, we put FK20 in the name since:
+///  - From the callers perspective, this distinction is not important
+///  - We only use FK20 to create proofs
 #[derive(Debug)]
 pub struct FK20Verifier {
     pub opening_key: OpeningKey,
