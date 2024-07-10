@@ -4,6 +4,12 @@ use bls12_381::{
 };
 use polynomial::monomial::poly_add;
 
+#[derive(Debug)]
+pub struct FK20Verifier {
+    pub opening_key: OpeningKey,
+    pub coset_shifts: Vec<Scalar>,
+}
+
 fn compute_fiat_shamir_challenge(
     opening_key: &OpeningKey,
     row_commitments: &[G1Point],

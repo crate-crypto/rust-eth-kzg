@@ -14,16 +14,18 @@ use crate::{
 use bls12_381::Scalar;
 use erasure_codes::{reed_solomon::Erasures, ReedSolomon};
 use kzg_multi_open::{
-    fk20::{self, verify::verify_multi_opening, FK20},
+    fk20::{
+        self,
+        verify::{verify_multi_opening, FK20Verifier},
+        FK20,
+    },
     opening_key::OpeningKey,
 };
 
 /// The context object that is used to call functions in the verifier API.
 #[derive(Debug)]
 pub struct VerifierContext {
-    opening_key: OpeningKey,
-    // TODO: This can be moved into FK20 verification procedure
-    coset_shifts: Vec<Scalar>,
+    fk20: FK20Verifier,
     rs: ReedSolomon,
 }
 
@@ -39,10 +41,14 @@ impl VerifierContext {
         let opening_key = OpeningKey::from(trusted_setup);
         let coset_shifts = fk20::coset_gens(FIELD_ELEMENTS_PER_EXT_BLOB, CELLS_PER_EXT_BLOB, true);
 
-        VerifierContext {
+        let fk20_verifier = FK20Verifier {
             opening_key,
-            rs: ReedSolomon::new(FIELD_ELEMENTS_PER_BLOB, EXTENSION_FACTOR),
             coset_shifts,
+        };
+
+        VerifierContext {
+            rs: ReedSolomon::new(FIELD_ELEMENTS_PER_BLOB, EXTENSION_FACTOR),
+            fk20: fk20_verifier,
         }
     }
 }
@@ -126,11 +132,11 @@ impl PeerDASContext {
             // Computation
             //
             let ok = verify_multi_opening(
-                &self.verifier_ctx.opening_key,
+                &self.verifier_ctx.fk20.opening_key,
                 &row_commitment_,
                 &row_indices,
                 &cell_indices,
-                &self.verifier_ctx.coset_shifts,
+                &self.verifier_ctx.fk20.coset_shifts,
                 &coset_evals,
                 &proofs_,
             );
