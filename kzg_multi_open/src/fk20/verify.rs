@@ -194,7 +194,13 @@ fn compute_fiat_shamir_challenge(
     proofs: &[G1Point],
 ) -> Scalar {
     const DOMAIN_SEP: &str = "RCKZGCBATCH__V1_";
-    let mut hash_input: Vec<u8> = Vec::new();
+    let mut hash_input: Vec<u8> = Vec::with_capacity(
+        DOMAIN_SEP.as_bytes().len()
+            + row_commitments.len() * 48
+            + (row_indices.len() + coset_indices.len()) * 8
+            + (coset_evals.len() * opening_key.coset_size) * 32
+            + proofs.len() * 48,
+    ); // TODO: this capacity is not exact and the magic numbers here are not great, lets refactor and benchmark this
 
     // Domain separation
     hash_input.extend(DOMAIN_SEP.as_bytes());
