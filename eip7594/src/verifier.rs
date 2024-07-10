@@ -14,7 +14,7 @@ use crate::{
 use bls12_381::Scalar;
 use erasure_codes::{reed_solomon::Erasures, ReedSolomon};
 use kzg_multi_open::{
-    fk20::{self, verify::FK20Verifier, FK20Prover},
+    fk20::{verify::FK20Verifier, FK20Prover},
     opening_key::OpeningKey,
 };
 
@@ -35,12 +35,13 @@ impl Default for VerifierContext {
 impl VerifierContext {
     pub fn new(trusted_setup: &TrustedSetup) -> VerifierContext {
         let opening_key = OpeningKey::from(trusted_setup);
-        let coset_shifts = fk20::coset_gens(FIELD_ELEMENTS_PER_EXT_BLOB, CELLS_PER_EXT_BLOB, true);
 
-        let fk20_verifier = FK20Verifier {
+        let fk20_verifier = FK20Verifier::new(
             opening_key,
-            coset_shifts,
-        };
+            FIELD_ELEMENTS_PER_EXT_BLOB,
+            CELLS_PER_EXT_BLOB,
+            true,
+        );
 
         VerifierContext {
             rs: ReedSolomon::new(FIELD_ELEMENTS_PER_BLOB, EXTENSION_FACTOR),
