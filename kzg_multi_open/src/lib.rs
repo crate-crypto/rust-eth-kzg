@@ -2,6 +2,8 @@ pub mod commit_key;
 pub mod fk20;
 pub mod opening_key;
 
+pub use fk20::{Prover, ProverInput, Verifier};
+
 #[cfg(test)]
 mod naive;
 

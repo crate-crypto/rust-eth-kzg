@@ -9,5 +9,5 @@ mod prover;
 mod toeplitz;
 mod verifier;
 
-pub use prover::{FK20Prover, Input as ProverInput};
-pub use verifier::FK20Verifier;
+pub use prover::{FK20Prover as Prover, Input as ProverInput};
+pub use verifier::FK20Verifier as Verifier;
