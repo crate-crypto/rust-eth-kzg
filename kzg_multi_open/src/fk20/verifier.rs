@@ -252,6 +252,9 @@ fn compute_fiat_shamir_challenge(
     scalar + Scalar::ONE
 }
 
+/// Computes a vector of powers of a given scalar value.
+///
+/// Example: compute_powers(x, 5) = [1, x, x^2, x^3, x^4]
 fn compute_powers(value: Scalar, num_elements: usize) -> Vec<Scalar> {
     use bls12_381::ff::Field;
 
@@ -264,4 +267,28 @@ fn compute_powers(value: Scalar, num_elements: usize) -> Vec<Scalar> {
     }
 
     powers
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bls12_381::Scalar;
+
+    #[test]
+    fn test_compute_powers() {
+        let base = Scalar::from(2u64);
+        let num_elements = 5;
+
+        let powers = compute_powers(base, num_elements);
+
+        assert_eq!(powers.len(), num_elements);
+        assert_eq!(powers[0], Scalar::ONE);
+        assert_eq!(powers[1], base);
+        assert_eq!(powers[2], base.pow_vartime(&[2]));
+        assert_eq!(powers[3], base.pow_vartime(&[3]));
+        assert_eq!(powers[4], base.pow_vartime(&[4]));
+
+        let powers = compute_powers(base, 0);
+        assert!(powers.is_empty());
+    }
 }
