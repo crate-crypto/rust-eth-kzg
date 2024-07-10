@@ -42,7 +42,7 @@ pub fn bench_erasure_code_decoding_4096_8192(c: &mut Criterion) {
         ),
         |b| {
             b.iter(|| {
-                rs.recover_polynomial_codeword(
+                rs.recover_polynomial_coefficient(
                     encoded_polynomial.clone(),
                     Erasures {
                         coset_size: cell_size,
