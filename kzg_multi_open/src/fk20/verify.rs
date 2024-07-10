@@ -1,3 +1,4 @@
+use super::coset_gens;
 use crate::{fk20::cosets::reverse_bit_order, opening_key::OpeningKey};
 use bls12_381::{
     batch_inversion::batch_inverse, multi_pairings, G1Point, G2Point, G2Prepared, Scalar,
@@ -8,6 +9,40 @@ use polynomial::monomial::poly_add;
 pub struct FK20Verifier {
     pub opening_key: OpeningKey,
     pub coset_shifts: Vec<Scalar>,
+}
+
+impl FK20Verifier {
+    pub fn new(
+        opening_key: OpeningKey,
+        num_points_to_open: usize,
+        coset_size: usize,
+        bit_reversed: bool,
+    ) -> Self {
+        let coset_shifts = coset_gens(num_points_to_open, coset_size, bit_reversed);
+        Self {
+            opening_key,
+            coset_shifts,
+        }
+    }
+
+    pub fn verify_multi_opening(
+        &self,
+        row_commitments: &[G1Point],
+        commitment_indices: &[u64],
+        coset_indices: &[u64],
+        coset_evals: &[Vec<Scalar>],
+        proofs: &[G1Point],
+    ) -> bool {
+        verify_multi_opening(
+            &self.opening_key,
+            row_commitments,
+            commitment_indices,
+            coset_indices,
+            &self.coset_shifts,
+            coset_evals,
+            proofs,
+        )
+    }
 }
 
 fn compute_fiat_shamir_challenge(
@@ -87,7 +122,7 @@ fn compute_powers(value: Scalar, num_elements: usize) -> Vec<Scalar> {
     powers
 }
 
-pub fn verify_multi_opening(
+pub(crate) fn verify_multi_opening(
     opening_key: &OpeningKey,
     row_commitments: &[G1Point],
     commitment_indices: &[u64],

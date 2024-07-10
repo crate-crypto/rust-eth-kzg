@@ -14,11 +14,7 @@ use crate::{
 use bls12_381::Scalar;
 use erasure_codes::{reed_solomon::Erasures, ReedSolomon};
 use kzg_multi_open::{
-    fk20::{
-        self,
-        verify::{verify_multi_opening, FK20Verifier},
-        FK20,
-    },
+    fk20::{self, verify::FK20Verifier, FK20},
     opening_key::OpeningKey,
 };
 
@@ -131,12 +127,10 @@ impl PeerDASContext {
 
             // Computation
             //
-            let ok = verify_multi_opening(
-                &self.verifier_ctx.fk20.opening_key,
+            let ok = self.verifier_ctx.fk20.verify_multi_opening(
                 &row_commitment_,
                 &row_indices,
                 &cell_indices,
-                &self.verifier_ctx.fk20.coset_shifts,
                 &coset_evals,
                 &proofs_,
             );
