@@ -15,10 +15,7 @@ use polynomial::{domain::Domain, monomial::PolyCoeff};
 
 use crate::commit_key::CommitKey;
 use crate::fk20::batch_toeplitz::BatchToeplitzMatrixVecMul;
-
 use cosets::reverse_bit_order;
-
-pub use cosets::coset_gens;
 
 /// Input contains the various structures that we can make FK20 proofs over.
 pub enum Input {
