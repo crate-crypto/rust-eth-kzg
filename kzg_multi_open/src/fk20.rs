@@ -219,6 +219,7 @@ impl FK20Prover {
     //
     // Note: It is the callers responsibility to ensure that there are no duplicate
     // coset indices.
+    // TODO: possibly put on FK20verifier
     pub fn recover_evaluations_in_domain_order(
         domain_size: usize,
         coset_indices: Vec<usize>,
