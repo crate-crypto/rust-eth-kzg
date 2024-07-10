@@ -292,10 +292,10 @@ impl FK20 {
 mod tests {
     use std::collections::HashSet;
 
-    use super::{coset_gens, verify::verify_multi_opening, Input, FK20};
+    use super::{Input, FK20};
     use crate::{
         create_insecure_commit_opening_keys,
-        fk20::{cosets::generate_cosets, naive as fk20naive},
+        fk20::{cosets::generate_cosets, naive as fk20naive, verify::FK20Verifier},
         naive as kzgnaive,
     };
     use bls12_381::Scalar;
@@ -328,23 +328,22 @@ mod tests {
         let poly_len = 4096;
         let num_points_to_open = 2 * poly_len;
         let coset_size = 64;
+        let num_cosets = num_points_to_open / coset_size;
 
         let fk20 = FK20::new(commit_key, poly_len, coset_size, num_points_to_open);
+        let fk20_verifier = FK20Verifier::new(opening_key, num_points_to_open, num_cosets, true);
 
         let data: Vec<_> = (0..poly_len).map(|i| Scalar::from(i as u64)).collect();
         let (proofs, cells) = fk20.compute_multi_opening_proofs(Input::Data(data.clone()));
 
         let commitment = fk20.commit(Input::Data(data));
 
-        let coset_indices: Vec<u64> = (0..fk20.num_proofs() as u64).collect();
-        let coset_shifts = coset_gens(num_points_to_open, fk20.num_proofs(), true);
+        let coset_indices: Vec<u64> = (0..num_cosets as u64).collect();
 
-        let is_valid = verify_multi_opening(
-            &opening_key,
+        let is_valid = fk20_verifier.verify_multi_opening(
             &vec![commitment],
-            &vec![0u64; cells.len()],
+            &vec![0u64; num_cosets],
             &coset_indices,
-            &coset_shifts,
             &cells,
             &proofs,
         );
