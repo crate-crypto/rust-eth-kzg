@@ -46,9 +46,6 @@ pub struct FK20Prover {
     /// Note: FK20 allows you to create a proof of an opening for multiple points.
     /// Each proof will attest to the opening of `l` points.
     /// In the FK20 paper, this is also referred to as `l` (ELL).
-    ///
-    /// TODO(Note): This has ramifications for the number of G2 points, but it is not checked
-    /// TODO: in the constructor here.
     coset_size: usize,
     /// The total number of points that we want to open a polynomial at.
     ///

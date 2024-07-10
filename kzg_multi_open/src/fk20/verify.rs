@@ -19,6 +19,11 @@ impl FK20Verifier {
         bit_reversed: bool,
     ) -> Self {
         let coset_shifts = coset_gens(num_points_to_open, num_cosets, bit_reversed);
+        let coset_size = num_points_to_open / num_cosets;
+        assert!(
+            opening_key.g2s.len() >= coset_size,
+            "need as many g2 points as coset size"
+        );
         Self {
             opening_key,
             coset_shifts,
