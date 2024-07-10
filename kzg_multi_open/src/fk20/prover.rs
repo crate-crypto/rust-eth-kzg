@@ -6,6 +6,8 @@ use polynomial::{domain::Domain, monomial::PolyCoeff};
 use crate::commit_key::CommitKey;
 use crate::fk20::batch_toeplitz::BatchToeplitzMatrixVecMul;
 
+use super::h_poly::compute_h_poly_commitments;
+
 /// Input contains the various structures that we can make FK20 proofs over.
 pub enum Input {
     /// This is akin to creating proofs over a polynomial in monomial basis.
@@ -26,7 +28,7 @@ pub enum Input {
 /// on the scheme.
 #[derive(Debug)]
 pub struct FK20Prover {
-    pub(crate) batch_toeplitz: BatchToeplitzMatrixVecMul,
+    batch_toeplitz: BatchToeplitzMatrixVecMul,
     /// The amount of points that a single proof will attest to the opening of.
     ///
     /// Note: FK20 allows you to create a proof of an opening for multiple points.
@@ -184,7 +186,7 @@ impl FK20Prover {
         // Compute opening proofs for the polynomial
         //
         let h_poly_commitments =
-            self.compute_h_poly_commitments(polynomial.clone(), self.coset_size);
+            compute_h_poly_commitments(&&self.batch_toeplitz, polynomial.clone(), self.coset_size);
         let mut proofs = self.proof_domain.fft_g1(h_poly_commitments);
 
         // Reverse bit order the set of proofs, so that the proofs line up with the
@@ -269,6 +271,11 @@ impl FK20Prover {
             .collect();
 
         Some((new_coset_indices, elements))
+    }
+
+    #[cfg(test)]
+    pub(crate) fn batch_toeplitz_matrix(&self) -> &BatchToeplitzMatrixVecMul {
+        &self.batch_toeplitz
     }
 }
 
