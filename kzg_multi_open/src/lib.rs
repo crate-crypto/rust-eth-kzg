@@ -3,10 +3,7 @@ pub mod fk20;
 pub mod opening_key;
 
 #[cfg(test)]
-pub(crate) mod naive;
-
-// Re-export the polynomial crate
-pub use polynomial;
+mod naive;
 
 #[cfg(test)]
 pub(crate) fn create_insecure_commit_opening_keys(
