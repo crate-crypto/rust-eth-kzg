@@ -4,8 +4,7 @@ use bls12_381::{batch_inversion::batch_inverse, Scalar};
 use crate::errors::DecodeError;
 use polynomial::{domain::Domain, monomial::vanishing_poly};
 
-// The erasures can be either indices of the polynomial
-// or groups of indices
+// The erasures are groups of indices of a polynomial
 #[derive(Debug, Clone)]
 pub struct Erasures {
     pub coset_size: usize,
@@ -52,18 +51,6 @@ impl ReedSolomon {
             )
         }
         self.evaluation_domain.fft_scalars(poly_coefficient_form)
-    }
-
-    pub fn recover_polynomial_codeword(
-        &self,
-        codeword_with_errors: Vec<Scalar>,
-        missing_indices: Erasures,
-    ) -> Vec<Scalar> {
-        recover_polynomial_evaluations(
-            &self.evaluation_domain,
-            codeword_with_errors,
-            missing_indices,
-        )
     }
 
     pub fn recover_polynomial_coefficient(
@@ -144,17 +131,6 @@ fn recover_polynomial_coefficient(
     evaluation_domain.coset_ifft_scalars(coset_quotient_eval)
 }
 
-fn recover_polynomial_evaluations(
-    evaluation_domain: &Domain,
-    evaluations: Vec<Scalar>,
-    missing_indices: Erasures,
-) -> Vec<Scalar> {
-    let polynomial_coeff =
-        recover_polynomial_coefficient(evaluation_domain, evaluations, missing_indices);
-
-    evaluation_domain.fft_scalars(polynomial_coeff)
-}
-
 fn construct_vanishing_poly_from_erasures(
     erasures: Erasures,
     evaluation_domain: &Domain,
@@ -180,19 +156,23 @@ fn construct_vanishing_poly_from_erasures(
 #[test]
 fn smoke_test_recovery_no_errors() {
     let rs = ReedSolomon::new(16, 2);
-    let poly_coeff: Vec<_> = (0..15).map(|i| -Scalar::from(i)).collect();
+    let poly_coeff: Vec<_> = (0..16).map(|i| -Scalar::from(i)).collect();
 
-    let codewords = rs.encode(poly_coeff);
+    let codewords = rs.encode(poly_coeff.clone());
     assert_eq!(codewords.len(), 32);
-    let got_codewords = rs.recover_polynomial_codeword(
-        codewords.clone(),
-        Erasures {
-            coset_size: 64,
-            cosets: Vec::new(),
-        },
-    );
 
-    assert_eq!(got_codewords, codewords);
+    let got_poly_coeff = rs
+        .recover_polynomial_coefficient(
+            codewords.clone(),
+            Erasures {
+                coset_size: 1,
+                cosets: Vec::new(),
+            },
+        )
+        .unwrap();
+
+    assert_eq!(got_poly_coeff.len(), poly_coeff.len());
+    assert_eq!(got_poly_coeff, poly_coeff);
 }
 
 // #[test]
