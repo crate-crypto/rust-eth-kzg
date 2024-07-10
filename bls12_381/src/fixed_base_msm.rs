@@ -13,14 +13,9 @@ pub struct FixedBaseMSM {
 }
 
 impl FixedBaseMSM {
-    pub fn new(generators: Vec<G1Projective>, wbits: usize) -> Self {
-        let num_points = generators.len();
+    pub fn new(generators_affine: Vec<G1Affine>, wbits: usize) -> Self {
+        let num_points = generators_affine.len();
         let table_size = unsafe { blst::blst_p1s_mult_wbits_precompute_sizeof(wbits, num_points) };
-
-        use group::prime::PrimeCurveAffine;
-        use group::Curve;
-        let mut generators_affine = vec![G1Affine::identity(); generators.len()];
-        G1Projective::batch_normalize(&generators, &mut generators_affine);
 
         // blst expects these to be references, so we convert from Vec<T> to Vec<&T>
         let generators_affine: Vec<&G1Affine> = generators_affine.iter().collect();
@@ -90,7 +85,7 @@ mod tests {
     fn smoke_test_fixed_base_msm() {
         let length = 64;
         let generators: Vec<_> = (0..length)
-            .map(|_| G1Projective::random(&mut rand::thread_rng()))
+            .map(|_| G1Projective::random(&mut rand::thread_rng()).into())
             .collect();
         let scalars: Vec<_> = (0..length)
             .map(|_| Scalar::random(&mut thread_rng()))

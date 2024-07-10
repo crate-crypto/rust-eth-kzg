@@ -73,7 +73,7 @@ pub fn coset_gens(num_points: usize, num_cosets: usize, bit_reversed: bool) -> V
 /// However the ordering inside of the cosets will be different.
 /// Note: `bit_reverse` on the full group is more concise.
 #[cfg(test)]
-fn generate_cosets(
+pub(crate) fn generate_cosets(
     num_points: usize,
     points_per_coset: usize,
     bit_reversed: bool,
@@ -106,8 +106,9 @@ mod tests {
     use polynomial::{domain::Domain, monomial::poly_eval};
 
     use crate::fk20::{
+        batch_toeplitz::transpose,
         cosets::{generate_cosets, log2, reverse_bit_order, reverse_bits},
-        take_every_nth,
+        h_poly::take_every_nth,
     };
 
     #[test]
@@ -288,25 +289,6 @@ mod tests {
             full_subgroup.into_iter().map(|s| s.to_bytes_be()).collect();
 
         assert_eq!(full_subgroup_set, cosets_flattened_set)
-    }
-
-    fn transpose<T: Clone>(v: Vec<Vec<T>>) -> Vec<Vec<T>> {
-        if v.is_empty() || v[0].is_empty() {
-            return Vec::new();
-        }
-
-        let rows = v.len();
-        let cols = v[0].len();
-
-        let mut result = vec![Vec::with_capacity(rows); cols];
-
-        for row in v {
-            for (i, elem) in row.into_iter().enumerate() {
-                result[i].push(elem);
-            }
-        }
-
-        result
     }
 
     #[test]

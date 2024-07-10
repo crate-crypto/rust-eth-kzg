@@ -1,5 +1,5 @@
-use crate::group::Group;
-use crate::{G1Projective, G2Projective, Scalar};
+use crate::{G1Point, G1Projective, G2Point, G2Projective, Scalar};
+use group::{prime::PrimeCurveAffine, Group};
 
 /// A multi-scalar multiplication algorithm over G1 elements
 ///
@@ -10,11 +10,14 @@ use crate::{G1Projective, G2Projective, Scalar};
 /// identity elements amongst their points.
 ///
 /// See test below named `blst_footgun` for the edge case.
-pub fn g1_lincomb_unsafe(points: &[G1Projective], scalars: &[Scalar]) -> Option<G1Projective> {
+pub fn g1_lincomb_unsafe(points: &[G1Point], scalars: &[Scalar]) -> Option<G1Projective> {
     if points.len() != scalars.len() {
         return None;
     }
-    Some(G1Projective::multi_exp(points, scalars))
+    // Convert to Projective, since the API forces us to do this
+    let points: Vec<G1Projective> = points.iter().map(|p| p.into()).collect();
+
+    Some(G1Projective::multi_exp(&points, scalars))
 }
 
 /// A multi-scalar multiplication algorithm over G2 elements
@@ -29,11 +32,14 @@ pub fn g1_lincomb_unsafe(points: &[G1Projective], scalars: &[Scalar]) -> Option<
 /// identity elements amongst their points.
 ///
 /// See test below named `blst_footgun` for the edge case.
-pub fn g2_lincomb_unsafe(points: &[G2Projective], scalars: &[Scalar]) -> Option<G2Projective> {
+pub fn g2_lincomb_unsafe(points: &[G2Point], scalars: &[Scalar]) -> Option<G2Projective> {
     if points.len() != scalars.len() {
         return None;
     }
-    Some(G2Projective::multi_exp(points, scalars))
+    // Convert to Projective, since the API forces us to do this
+    let points: Vec<G2Projective> = points.iter().map(|p| p.into()).collect();
+
+    Some(G2Projective::multi_exp(&points, scalars))
 }
 
 /// A multi-scalar multiplication algorithm over G1 elements
@@ -44,7 +50,7 @@ pub fn g2_lincomb_unsafe(points: &[G2Projective], scalars: &[Scalar]) -> Option<
 /// This method is a safe wrapper around `g1_lincomb_unsafe`.
 ///
 /// It filters out any points that are the identity.
-pub fn g1_lincomb(points: &[G1Projective], scalars: &[Scalar]) -> Option<G1Projective> {
+pub fn g1_lincomb(points: &[G1Point], scalars: &[Scalar]) -> Option<G1Projective> {
     let (points_filtered, scalars_filtered): (Vec<_>, Vec<_>) = points
         .iter()
         .zip(scalars)
@@ -65,7 +71,7 @@ pub fn g1_lincomb(points: &[G1Projective], scalars: &[Scalar]) -> Option<G1Proje
 /// This method is a safe wrapper around `g2_lincomb_unsafe`.
 ///
 /// It filters out any points that are the identity.
-pub fn g2_lincomb(points: &[G2Projective], scalars: &[Scalar]) -> Option<G2Projective> {
+pub fn g2_lincomb(points: &[G2Point], scalars: &[Scalar]) -> Option<G2Projective> {
     let (points_filtered, scalars_filtered): (Vec<_>, Vec<_>) = points
         .iter()
         .zip(scalars)
@@ -82,13 +88,14 @@ pub fn g2_lincomb(points: &[G2Projective], scalars: &[Scalar]) -> Option<G2Proje
 mod tests {
     use crate::ff::Field;
     use crate::group::Group;
-    use crate::{G1Projective, Scalar};
+    use crate::{G1Point, G1Projective, Scalar};
 
     use crate::lincomb::{g1_lincomb, g1_lincomb_unsafe};
 
     #[test]
     fn blst_footgun() {
-        let points = vec![G1Projective::generator(), G1Projective::identity()];
+        use group::prime::PrimeCurveAffine;
+        let points = vec![G1Point::generator(), G1Point::identity()];
         let scalars = vec![Scalar::ONE, Scalar::ONE];
 
         // Ideally, we expect the answer to be:

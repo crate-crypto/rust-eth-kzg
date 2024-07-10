@@ -1,8 +1,8 @@
 pub use crate::errors::ProverError;
 
 use kzg_multi_open::{
-    commit_key::{CommitKey, CommitKeyLagrange},
-    fk20::FK20,
+    commit_key::CommitKey,
+    {Prover, ProverInput},
 };
 
 use crate::{
@@ -19,7 +19,7 @@ use crate::{
 /// This includes, computing the commitments, proofs and cells.
 #[derive(Debug)]
 pub struct ProverContext {
-    fk20: FK20,
+    kzg_multipoint_prover: Prover,
 }
 
 impl Default for ProverContext {
@@ -32,7 +32,6 @@ impl Default for ProverContext {
 impl ProverContext {
     pub fn new(trusted_setup: &TrustedSetup) -> Self {
         let commit_key = CommitKey::from(trusted_setup);
-        let commit_key_lagrange = CommitKeyLagrange::from(trusted_setup);
 
         // The number of points that we will make an opening proof for,
         // ie a proof will attest to the value of a polynomial at these points.
@@ -44,15 +43,16 @@ impl ProverContext {
         // by doing number_of_points_to_open / point_set_size.
         let number_of_points_to_open = FIELD_ELEMENTS_PER_EXT_BLOB;
 
-        let fk20 = FK20::new(
+        let kzg_multipoint_prover = Prover::new(
             commit_key,
-            commit_key_lagrange,
             FIELD_ELEMENTS_PER_BLOB,
             point_set_size,
             number_of_points_to_open,
         );
 
-        ProverContext { fk20 }
+        ProverContext {
+            kzg_multipoint_prover,
+        }
     }
 }
 
@@ -63,8 +63,11 @@ impl PeerDASContext {
             // Deserialize the blob into scalars.
             let scalars = serialization::deserialize_blob_to_scalars(blob)?;
 
-            // Compute commitment using FK20
-            let commitment = self.prover_ctx.fk20.commit_to_data(scalars);
+            // Compute commitment
+            let commitment = self
+                .prover_ctx
+                .kzg_multipoint_prover
+                .commit(ProverInput::Data(scalars));
 
             // Serialize the commitment.
             Ok(serialize_g1_compressed(&commitment))
@@ -85,8 +88,8 @@ impl PeerDASContext {
             //
             let (proofs, cells) = self
                 .prover_ctx
-                .fk20
-                .compute_multi_opening_proofs_on_data(scalars);
+                .kzg_multipoint_prover
+                .compute_multi_opening_proofs(ProverInput::Data(scalars));
 
             Ok(serialization::serialize_cells_and_proofs(cells, proofs))
         })
@@ -95,7 +98,7 @@ impl PeerDASContext {
     /// Recovers the cells and computes the KZG proofs, given a subset of cells.
     ///
     /// Use erasure decoding to recover the polynomial corresponding to the cells
-    /// that were generated from fk20.
+    /// that were generated from KZG multi point prover.
     ///
     // Note: The fact that we recover the polynomial for the bit-reversed version of the blob
     // is irrelevant.
@@ -111,13 +114,13 @@ impl PeerDASContext {
 
             // Compute proofs and evaluation sets
             //
-            let (proofs, evaluation_sets) = self
+            let (proofs, coset_evaluations) = self
                 .prover_ctx
-                .fk20
-                .compute_multi_opening_proofs_poly_coeff(poly_coeff);
+                .kzg_multipoint_prover
+                .compute_multi_opening_proofs(ProverInput::PolyCoeff(poly_coeff));
 
             Ok(serialization::serialize_cells_and_proofs(
-                evaluation_sets,
+                coset_evaluations,
                 proofs,
             ))
         })

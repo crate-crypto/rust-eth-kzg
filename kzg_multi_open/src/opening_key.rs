@@ -1,5 +1,7 @@
-use bls12_381::lincomb::{g1_lincomb, g2_lincomb};
-use bls12_381::{G1Projective, G2Point, G2Projective, Scalar};
+use bls12_381::{
+    lincomb::{g1_lincomb, g2_lincomb},
+    G1Point, G1Projective, G2Point, G2Projective, Scalar,
+};
 
 /// Opening Key is used to verify opening proofs made about a committed polynomial.
 #[derive(Clone, Debug)]
@@ -7,11 +9,13 @@ pub struct OpeningKey {
     /// The powers of tau G1 used in the setup
     ///
     /// ie group elements of the form `{ \tau^i G }`
-    pub g1s: Vec<G1Projective>,
+    pub g1s: Vec<G1Point>,
     /// The powers of tau G2 used in the setup
     ///
     /// ie group elements of the form `{ \tau^i G }`
-    pub g2s: Vec<G2Projective>,
+    pub g2s: Vec<G2Point>,
+    /// The degree-0 term in the powers of tau G2 elements.
+    pub g2_gen: G2Point,
     // TODO: We could possibly remove these fields below and
     // TODO: create a new structure called ProtocolDescription.
     /// This is the number of points that will be a
@@ -22,7 +26,7 @@ pub struct OpeningKey {
     /// In most cases, this is the number of G1 elements,
     /// however, we have this explicit parameter to
     /// avoid foot guns.
-    pub multi_opening_size: usize,
+    pub coset_size: usize,
     // This the number of coefficients in the polynomial that we want to
     // verify claims about.
     //
@@ -32,18 +36,25 @@ pub struct OpeningKey {
 
 impl OpeningKey {
     pub fn new(
-        g1s: Vec<G1Projective>,
-        g2s: Vec<G2Projective>,
-        multi_opening_size: usize,
+        g1s: Vec<G1Point>,
+        g2s: Vec<G2Point>,
+        coset_size: usize,
         num_coefficients_in_polynomial: usize,
     ) -> Self {
+        // This assumes that the trusted setup contains more than 1 element.
+        //
+        // For all of our purposes and for any useful applications, this will be the case.
+        let g2_gen = g2s[0];
+
         Self {
             g1s,
             g2s,
-            multi_opening_size,
+            g2_gen,
+            coset_size,
             num_coefficients_in_polynomial,
         }
     }
+
     /// Commit to a polynomial in monomial form using the G2 group elements
     pub fn commit_g2(&self, polynomial: &[Scalar]) -> G2Projective {
         assert!(self.g2s.len() >= polynomial.len());
@@ -58,9 +69,8 @@ impl OpeningKey {
             .expect("number of g1 points is equal to the number of coefficients in the polynomial")
     }
 
-    // TODO: Check if there is a cost to converting G2Projective to G2Point
-    // TODO: when z==1
+    /// Returns the degree-0 element in the G2 powers of tau list
     pub fn g2_gen(&self) -> G2Point {
-        self.g2s[0].into()
+        self.g2_gen
     }
 }

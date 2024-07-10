@@ -16,6 +16,7 @@ polynomial = { workspace = true }
 hex = { workspace = true }
 rayon = { workspace = true }
 sha2 = "0.10.8"
+
 [dev-dependencies]
 criterion = "0.5.1"
 rand = "0.8.4"

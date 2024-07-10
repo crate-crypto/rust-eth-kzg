@@ -2,23 +2,14 @@ use crate::{commit_key::CommitKey, opening_key::OpeningKey};
 use bls12_381::{multi_pairings, G1Point, G1Projective, G2Point, G2Prepared, Scalar};
 use polynomial::monomial::{lagrange_interpolate, poly_eval, poly_sub, vanishing_poly, PolyCoeff};
 
-pub struct Proof {
-    /// Commitment to the `witness` or quotient polynomial
-    pub quotient_commitment: G1Point,
-    /// Evaluation of the polynomial at the input points.
-    ///
-    /// This implementation is only concerned with the case where the input points are roots of unity.
-    pub output_points: Vec<Scalar>,
-}
-
 /// This modules contains code to create and verify opening proofs in a naive way.
-/// It is also generally meaning the points we are creating opening proofs
+/// It is also general, meaning the points we are creating opening proofs
 /// for, do not need to have any special structure.
 ///
 /// This generalized scheme can be seen in [BDFG21](https://eprint.iacr.org/2020/081.pdf)
 ///
 /// This is in contrast to the scheme we will use in practice which dictates that the
-/// points we open at, must be roots of unity. This scheme is called FK20 and is orders
+/// points we open at, must be (cosets) of the roots of unity. This scheme is called FK20 and is orders
 /// of magnitudes faster than the naive scheme.
 ///
 /// We will use the naive scheme for testing purposes.
@@ -33,33 +24,28 @@ pub struct Proof {
 // This is done intentionally since that method
 // has additional checks that require the evaluations and computing
 // the output points, the naive way is quite expensive.
-pub fn compute_multi_opening(
+pub(crate) fn compute_multi_opening(
     commit_key: &CommitKey,
     polynomial: &PolyCoeff,
     input_points: &[Scalar],
-) -> Proof {
-    let (quotient_commitment, output_points) =
-        _compute_multi_opening_naive(commit_key, polynomial, input_points);
-
-    Proof {
-        quotient_commitment,
-        output_points,
-    }
+) -> (G1Point, Vec<Scalar>) {
+    _compute_multi_opening_naive(commit_key, polynomial, input_points)
 }
 
 /// Naively Verifies a multi-point opening proof.
-pub fn verify_multi_opening(
-    proof: &Proof,
+pub(crate) fn verify_multi_opening(
+    quotient_commitment: G1Point,
     opening_key: &OpeningKey,
     commitment: G1Point,
     input_points: &[Scalar],
+    output_points: &[Scalar],
 ) -> bool {
     _verify_multi_opening_naive(
         opening_key,
         commitment,
-        proof.quotient_commitment,
+        quotient_commitment,
         input_points,
-        &proof.output_points,
+        output_points,
     )
 }
 
@@ -175,11 +161,11 @@ fn _verify_multi_opening_naive(
 mod tests {
     use bls12_381::Scalar;
 
-    use crate::create_eth_commit_opening_keys;
+    use crate::create_insecure_commit_opening_keys;
 
     #[test]
     fn smoke_test_naive_multi_opening() {
-        let (ck, opening_key) = create_eth_commit_opening_keys();
+        let (ck, opening_key) = create_insecure_commit_opening_keys();
 
         let num_points_to_open = 16;
         let input_points: Vec<_> = (0..num_points_to_open).map(|i| Scalar::from(i)).collect();
@@ -189,17 +175,28 @@ mod tests {
             .collect();
         let commitment = ck.commit_g1(&polynomial).into();
 
-        let proof = super::compute_multi_opening(&ck, &polynomial, &input_points);
-        let proof_valid =
-            super::verify_multi_opening(&proof, &opening_key, commitment, &input_points);
+        let (quotient_commitment, output_points) =
+            super::compute_multi_opening(&ck, &polynomial, &input_points);
+        let proof_valid = super::verify_multi_opening(
+            quotient_commitment,
+            &opening_key,
+            commitment,
+            &input_points,
+            &output_points,
+        );
         assert!(proof_valid);
 
         // Proof is invalid since we changed the input points
         let input_points: Vec<_> = (0..num_points_to_open)
             .map(|i| Scalar::from(i) + Scalar::from(i))
             .collect();
-        let proof_valid =
-            super::verify_multi_opening(&proof, &opening_key, commitment, &input_points);
+        let proof_valid = super::verify_multi_opening(
+            quotient_commitment,
+            &opening_key,
+            commitment,
+            &input_points,
+            &output_points,
+        );
         assert!(!proof_valid);
     }
 }

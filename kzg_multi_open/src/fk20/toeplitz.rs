@@ -2,19 +2,103 @@
 
 use bls12_381::Scalar;
 
-#[cfg(test)]
-use bls12_381::G1Projective;
-#[cfg(test)]
-use polynomial::domain::Domain;
-
+/// A Toeplitz matrix is a matrix in which each descending diagonal from left to right is constant.
+/// "Constant" here means that all elements along any given diagonal have the same value.
+///
+/// For example, in the matrix:
+/// ```text
+/// [a b c d]
+/// [e a b c]
+/// [f e a b]
+/// [g f e a]
+/// ```
+/// The main diagonal (top-left to bottom-right) is constant with value 'a'.
+/// The diagonal above it is constant with value 'b', the one above that with 'c', and so on.
+/// Similarly, the diagonal below the main one is constant with value 'e', the next with 'f', etc.
+///
+/// # Efficient Representation
+///
+/// Due to the constant diagonal property, a Toeplitz matrix is fully determined by its first row
+/// and first column. This allows for an efficient representation using only these two vectors,
+/// significantly reducing memory usage for large matrices.
+///
+/// - The first row contains all the elements that appear on or above the main diagonal.
+/// - The first column (excluding the first element) contains all the elements below the main diagonal.
+///
+/// This structure leverages this property to store the entire matrix using only these two vectors.
+///
+/// # Examples
+///
+/// ```text
+///
+/// row = [1, 2, 3, 4];
+/// col = [1, 5, 6, 7];
+///
+///  This efficiently represents the following 4x4 Toeplitz matrix:
+///  [1 2 3 4]
+///  [5 1 2 3]
+///  [6 5 1 2]
+///  [7 6 5 1]
+/// ```
+///
+/// In this example, we only store 8 elements (4 in `row` and 4 in `col`) to represent
+/// a 4x4 matrix that would normally require 16 elements.
 #[derive(Debug, Clone)]
 pub struct ToeplitzMatrix {
+    /// A vector representing the first row of the matrix.
     row: Vec<Scalar>,
+    ///  A vector representing the first column of the matrix, including the first element
+    ///  (even though the first element is already included in the `row`).
     col: Vec<Scalar>,
 }
 
+/// A circulant matrix is a special kind of Toeplitz matrix where each row is rotated one
+/// element to the right relative to the preceding row. This structure allows for an even
+/// more efficient representation than a general Toeplitz matrix.
+///
+/// # Efficient Representation
+///
+/// Due to the circulant property, the entire matrix is fully determined by its first row alone.
+/// Each subsequent row is a cyclic shift of the first row. This allows for an extremely
+/// memory-efficient representation, storing only a single vector for the entire matrix.
+///
+/// For an n × n circulant matrix, we only need to store n elements instead of n^2.
+///
+/// # Example
+///
+/// Given the first row [a, b, c, d], the full 4x4 circulant matrix would be:
+/// ```text
+/// [a b c d]
+/// [d a b c]
+/// [c d a b]
+/// [b c d a]
+/// ```
+///
+/// # Examples
+///
+/// ```text
+/// use crate_crypto_kzg_multi_open_fk20::fk20::toeplitz::CirculantMatrix;
+///
+/// row = [1, 2, 3, 4]
+///
+/// This efficiently represents the following 4x4 circulant matrix:
+///  [1 2 3 4]
+///  [4 1 2 3]
+///  [3 4 1 2]
+///  [2 3 4 1]
+/// ```
+///
+/// In this example, we only store 4 elements to represent a 4x4 matrix that would
+/// normally require 16 elements.
+///
+/// # Properties
+///
+/// The main property of Circulant matrices that we leverage is that they are diagonalized by the Fourier
+/// transform, which allows for efficient computations.
 #[derive(Debug, Clone)]
 pub(crate) struct CirculantMatrix {
+    /// A vector representing the first row of the matrix. This single row defines
+    ///   the entire circulant matrix.
     pub(crate) row: Vec<Scalar>,
 }
 
@@ -22,7 +106,7 @@ impl ToeplitzMatrix {
     pub fn new(row: Vec<Scalar>, col: Vec<Scalar>) -> Self {
         assert!(
             !row.is_empty() && !col.is_empty(),
-            "cannot initialize ToeplitzMatrix with empty row or col"
+            "cannot initialize ToeplitzMatrix with an empty row or column"
         );
 
         Self { row, col }
@@ -30,8 +114,9 @@ impl ToeplitzMatrix {
 }
 
 impl CirculantMatrix {
-    // Embeds the Toeplitz matrix into a circulant matrix, increasing the
-    // dimension by two.
+    /// This method takes a Toeplitz matrix and embeds it into a larger circulant matrix.
+    /// The resulting circulant matrix has a dimension that is twice as large as the original
+    /// Toeplitz matrix.
     pub(crate) fn from_toeplitz(tm: ToeplitzMatrix) -> CirculantMatrix {
         let mut extension_col = tm.row.clone();
         extension_col.rotate_left(1);
@@ -45,8 +130,12 @@ impl CirculantMatrix {
 
 #[cfg(test)]
 impl CirculantMatrix {
+    /// This method performs an efficient multiplication of the circulant matrix
+    /// with a vector of scalars using FFT.
+    ///
+    /// See https://www.johndcook.com/blog/2023/05/12/circulant-matrices/ for more details.
     fn vector_mul_scalar(self, vector: Vec<Scalar>) -> Vec<Scalar> {
-        let domain = Domain::new(vector.len() * 2);
+        let domain = polynomial::domain::Domain::new(vector.len() * 2);
         let m_fft = domain.fft_scalars(vector);
         let col_fft = domain.fft_scalars(self.row);
 
@@ -58,8 +147,16 @@ impl CirculantMatrix {
         domain.ifft_scalars(evaluations)
     }
 
-    fn vector_mul_g1(self, vector: Vec<G1Projective>) -> Vec<G1Projective> {
-        let domain = Domain::new(vector.len() * 2);
+    /// This method performs an efficient multiplication of the circulant matrix
+    /// with a vector of G1 points using FFT.
+    ///
+    /// See https://www.johndcook.com/blog/2023/05/12/circulant-matrices/ for more details.
+    fn vector_mul_g1(self, vector: Vec<bls12_381::G1Projective>) -> Vec<bls12_381::G1Projective> {
+        assert!(vector.len().is_power_of_two());
+
+        // Compute the circulant domain
+        let domain = polynomial::domain::Domain::new(vector.len() * 2);
+        // Compute the fft of the
         let m_fft = domain.fft_g1(vector);
         let col_fft = domain.fft_scalars(self.row);
 
@@ -83,7 +180,10 @@ impl ToeplitzMatrix {
         circulant_result.into_iter().take(n).collect()
     }
 
-    pub(crate) fn vector_mul_g1(self, vector: Vec<G1Projective>) -> Vec<G1Projective> {
+    pub(crate) fn vector_mul_g1(
+        self,
+        vector: Vec<bls12_381::G1Projective>,
+    ) -> Vec<bls12_381::G1Projective> {
         let n = vector.len();
         let cm = CirculantMatrix::from_toeplitz(self);
         let circulant_result = cm.vector_mul_g1(vector);
@@ -93,10 +193,12 @@ impl ToeplitzMatrix {
     }
 }
 
-#[derive(Debug)]
 #[cfg(test)]
-/// Dense representation of a matrix
-/// This should only be used for tests
+/// This structure stores a matrix as a vector of vectors, where each inner
+/// vector represents a row of the matrix.
+///
+/// This should should only be used for tests.
+#[derive(Debug, Clone)]
 struct DenseMatrix {
     inner: Vec<Vec<Scalar>>,
 }
@@ -131,7 +233,12 @@ impl DenseMatrix {
 
         self.vector_mul(vector, inner_product)
     }
-
+    /// Performs a generalized matrix-vector multiplication.
+    ///
+    /// This method allows for matrix-vector multiplication with custom types and
+    /// inner product operations.
+    ///
+    /// This is useful for multiplying G1 points TODO: Check if we need this generalize version
     fn vector_mul<T>(
         self,
         vector: Vec<T>,
@@ -155,11 +262,9 @@ impl DenseMatrix {
 
 #[cfg(test)]
 mod tests {
-    use bls12_381::Scalar;
-
-    use crate::fk20::toeplitz::ToeplitzMatrix;
-
     use super::DenseMatrix;
+    use crate::fk20::toeplitz::ToeplitzMatrix;
+    use bls12_381::Scalar;
 
     fn is_toeplitz(dense_matrix: &DenseMatrix) -> bool {
         let num_rows = dense_matrix.inner.len();
