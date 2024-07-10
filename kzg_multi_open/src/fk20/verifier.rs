@@ -71,10 +71,15 @@ impl FK20Verifier {
         }
     }
 
+    /// Verify multiple multi-opening proofs.
+    ///
+    /// The matching function in the spec is: https://github.com/ethereum/consensus-specs/blob/b9e7b031b5f2c18d76143007ea779a32b5505155/specs/_features/eip7594/polynomial-commitments-sampling.md#verify_cell_kzg_proof_batch_impl
     pub fn verify_multi_opening(
         &self,
-        row_commitments: &[G1Point],
+
+        deduplicated_commitments: &[G1Point],
         commitment_indices: &[u64],
+
         // These are bit-reversed.
         coset_indices: &[u64],
         // These are bit-reversed.
@@ -91,7 +96,7 @@ impl FK20Verifier {
         // TODO: when we serialize the point for fiat shamir. (I'm leaving this TOOD here until we benchmark the diff)
         let r = compute_fiat_shamir_challenge(
             &self.opening_key,
-            row_commitments,
+            deduplicated_commitments,
             commitment_indices,
             coset_indices,
             coset_evals,
@@ -105,16 +110,16 @@ impl FK20Verifier {
             .iter()
             .map(bls12_381::G1Projective::from)
             .collect::<Vec<_>>();
-        let row_commitments = row_commitments
+        let deduplicated_commitments = deduplicated_commitments
             .iter()
             .map(bls12_381::G1Projective::from)
             .collect::<Vec<_>>();
 
         let num_cosets = coset_indices.len();
-        let num_unique_commitments = row_commitments.len();
+        let num_unique_commitments = deduplicated_commitments.len();
 
         // First compute a random linear combination of the proofs
-        let random_sum_proofs = g1_lincomb(&proofs, &r_powers)
+        let comm_random_sum_proofs = g1_lincomb(&proofs, &r_powers)
             .expect("number of proofs and number of r_powers should be the same");
 
         // Now compute a random linear combination of the commitments
@@ -133,11 +138,11 @@ impl FK20Verifier {
             // We then add the contribution of `r` as a part of that commitments weight.
             weights[commitment_index as usize] += r_powers[k];
         }
-        let random_sum_commitments = g1_lincomb(&row_commitments, &weights)
+        let comm_random_sum_commitments = g1_lincomb(&deduplicated_commitments, &weights)
             .expect("number of row_commitments and number of weights should be the same");
 
         // Compute a random linear combination of the interpolation polynomials
-        let mut sum_interpolation_poly = Vec::new();
+        let mut random_sum_interpolation_poly = Vec::new();
         let coset_evals = coset_evals.to_vec();
         for (k, mut coset_eval) in coset_evals.into_iter().enumerate() {
             // Reverse the order, so it matches the fft domain
@@ -145,36 +150,39 @@ impl FK20Verifier {
 
             // Compute the interpolation polynomial
             let ifft_scalars = self.coset_domain.ifft_scalars(coset_eval);
-            let inv_h_k_powers = &self.inv_coset_shifts_pow_n[coset_indices[k] as usize];
+            let inv_coset_shift_pow_n = &self.inv_coset_shifts_pow_n[coset_indices[k] as usize];
             let ifft_scalars: Vec<_> = ifft_scalars
                 .into_iter()
-                .zip(inv_h_k_powers)
+                .zip(inv_coset_shift_pow_n)
                 .map(|(scalar, inv_h_k_pow)| scalar * inv_h_k_pow)
                 .collect();
 
+            // Scale the interpolation polynomial by the challenge
             let scale_factor = r_powers[k];
-            let r_x = ifft_scalars
+            let scaled_interpolation_poly = ifft_scalars
                 .into_iter()
                 .map(|coeff| coeff * scale_factor)
                 .collect::<Vec<_>>();
 
-            sum_interpolation_poly = poly_add(sum_interpolation_poly, r_x);
+            random_sum_interpolation_poly =
+                poly_add(random_sum_interpolation_poly, scaled_interpolation_poly);
         }
-        let random_sum_interpolation = self.opening_key.commit_g1(&sum_interpolation_poly);
+        let comm_random_sum_interpolation_poly =
+            self.opening_key.commit_g1(&random_sum_interpolation_poly);
 
         let mut weighted_r_powers = Vec::with_capacity(num_cosets);
         for (coset_index, r_power) in coset_indices.into_iter().zip(r_powers) {
-            let h_k_pow = self.coset_shifts_pow_n[*coset_index as usize];
-            let wrp = r_power * h_k_pow;
-            weighted_r_powers.push(wrp);
+            let coset_shift_pow_n = self.coset_shifts_pow_n[*coset_index as usize];
+            weighted_r_powers.push(r_power * coset_shift_pow_n);
         }
         let random_weighted_sum_proofs = g1_lincomb(&proofs, &weighted_r_powers)
             .expect("number of proofs and number of weighted_r_powers should be the same");
 
-        // TODO: Find a better name for this
-        let rl = (random_sum_commitments - random_sum_interpolation) + random_weighted_sum_proofs;
+        // TODO: Find a better name for this (use it from specs)
+        let rl = (comm_random_sum_commitments - comm_random_sum_interpolation_poly)
+            + random_weighted_sum_proofs;
 
-        let normalized_vectors = g1_batch_normalize(&[random_sum_proofs, rl]);
+        let normalized_vectors = g1_batch_normalize(&[comm_random_sum_proofs, rl]);
         let random_sum_proofs = normalized_vectors[0];
         let rl = normalized_vectors[1];
 
