@@ -1,4 +1,4 @@
-use crate::fk20::{toeplitz::ToeplitzMatrix, FK20Prover};
+use crate::fk20::{prover::FK20Prover, toeplitz::ToeplitzMatrix};
 use bls12_381::{G1Projective, Scalar};
 use polynomial::monomial::PolyCoeff;
 
@@ -72,7 +72,7 @@ impl FK20Prover {
 mod tests {
     use crate::{
         create_insecure_commit_opening_keys,
-        fk20::{h_poly::take_every_nth, naive, FK20Prover},
+        fk20::{h_poly::take_every_nth, naive, prover::FK20Prover},
     };
     use bls12_381::Scalar;
 

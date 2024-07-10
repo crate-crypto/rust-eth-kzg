@@ -2,7 +2,7 @@ use bls12_381::lincomb::{g1_lincomb, g1_lincomb_unsafe, g2_lincomb, g2_lincomb_u
 use bls12_381::{ff::Field, group::Group, G1Projective};
 use bls12_381::{G2Projective, Scalar};
 use crate_crypto_kzg_multi_open_fk20::commit_key::CommitKey;
-use crate_crypto_kzg_multi_open_fk20::fk20::{Input, FK20Prover};
+use crate_crypto_kzg_multi_open_fk20::fk20::{FK20Prover, ProverInput};
 use crate_crypto_kzg_multi_open_fk20::opening_key::OpeningKey;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
@@ -58,7 +58,11 @@ pub fn bench_compute_proof(c: &mut Criterion) {
             "computing proofs with fk20. POLY_SIZE {}, NUM_INPUT_POINTS {}, NUM_PROOFS {}",
             POLYNOMIAL_LEN, NUMBER_OF_POINTS_PER_PROOF, num_proofs
         ),
-        |b| b.iter(|| fk20.compute_multi_opening_proofs(Input::PolyCoeff(polynomial_4096.clone()))),
+        |b| {
+            b.iter(|| {
+                fk20.compute_multi_opening_proofs(ProverInput::PolyCoeff(polynomial_4096.clone()))
+            })
+        },
     );
 }
 

@@ -2,7 +2,7 @@ pub use crate::errors::ProverError;
 
 use kzg_multi_open::{
     commit_key::CommitKey,
-    fk20::{Input, FK20Prover},
+    fk20::{FK20Prover, ProverInput},
 };
 
 use crate::{
@@ -62,7 +62,7 @@ impl PeerDASContext {
             let scalars = serialization::deserialize_blob_to_scalars(blob)?;
 
             // Compute commitment using FK20
-            let commitment = self.prover_ctx.fk20.commit(Input::Data(scalars));
+            let commitment = self.prover_ctx.fk20.commit(ProverInput::Data(scalars));
 
             // Serialize the commitment.
             Ok(serialize_g1_compressed(&commitment))
@@ -84,7 +84,7 @@ impl PeerDASContext {
             let (proofs, cells) = self
                 .prover_ctx
                 .fk20
-                .compute_multi_opening_proofs(Input::Data(scalars));
+                .compute_multi_opening_proofs(ProverInput::Data(scalars));
 
             Ok(serialization::serialize_cells_and_proofs(cells, proofs))
         })
@@ -112,7 +112,7 @@ impl PeerDASContext {
             let (proofs, coset_evaluations) = self
                 .prover_ctx
                 .fk20
-                .compute_multi_opening_proofs(Input::PolyCoeff(poly_coeff));
+                .compute_multi_opening_proofs(ProverInput::PolyCoeff(poly_coeff));
 
             Ok(serialization::serialize_cells_and_proofs(
                 coset_evaluations,
