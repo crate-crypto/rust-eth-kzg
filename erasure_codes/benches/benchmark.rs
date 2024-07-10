@@ -44,9 +44,9 @@ pub fn bench_erasure_code_decoding_4096_8192(c: &mut Criterion) {
             b.iter(|| {
                 rs.recover_polynomial_codeword(
                     encoded_polynomial.clone(),
-                    Erasures::Cells {
-                        cell_size,
-                        cells: missing_cells.clone(),
+                    Erasures {
+                        coset_size: cell_size,
+                        cosets: missing_cells.clone(),
                     },
                 )
             })

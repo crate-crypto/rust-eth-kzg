@@ -182,9 +182,9 @@ impl PeerDASContext {
         // Recover the polynomial in monomial form, that one can use to generate the cells.
         let recovered_polynomial_coeff = self.verifier_ctx.rs.recover_polynomial_coefficient(
             flattened_coset_evaluations_normal_order,
-            Erasures::Cells {
-                cell_size: FIELD_ELEMENTS_PER_CELL,
-                cells: missing_cell_indices,
+            Erasures {
+                coset_size: FIELD_ELEMENTS_PER_CELL,
+                cosets: missing_cell_indices,
             },
         )?;
 
