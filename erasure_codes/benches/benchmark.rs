@@ -1,13 +1,14 @@
 use std::ops::Range;
 
 use bls12_381::Scalar;
-use crate_crypto_internal_peerdas_erasure_codes::{BlockErasures, ReedSolomon};
+use crate_crypto_internal_peerdas_erasure_codes::{BlockErasureIndices, ReedSolomon};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 pub fn bench_erasure_code_decoding_4096_8192(c: &mut Criterion) {
     const POLYNOMIAL_LEN: usize = 4096;
 
-    let rs = ReedSolomon::new(POLYNOMIAL_LEN, 2);
+    let cell_size = 64;
+    let rs = ReedSolomon::new(POLYNOMIAL_LEN, cell_size, 2);
     let extended_poly_len = rs.extended_polynomial_length();
 
     let mut encoded_polynomial = Vec::with_capacity(extended_poly_len);
@@ -22,7 +23,6 @@ pub fn bench_erasure_code_decoding_4096_8192(c: &mut Criterion) {
         numbers.into_iter().take(n).collect()
     }
 
-    let cell_size = 64;
     let num_cells = extended_poly_len / cell_size;
 
     let missing_cells = generate_unique_random_numbers(0..cell_size, num_cells / 2);
@@ -44,10 +44,7 @@ pub fn bench_erasure_code_decoding_4096_8192(c: &mut Criterion) {
             b.iter(|| {
                 rs.recover_polynomial_coefficient(
                     encoded_polynomial.clone(),
-                    BlockErasures {
-                        coset_size: cell_size,
-                        cosets: missing_cells.clone(),
-                    },
+                    BlockErasureIndices(missing_cells.clone()),
                 )
             })
         },

@@ -12,7 +12,7 @@ use crate::{
     Bytes48Ref, CellIndex, CellRef, PeerDASContext, RowIndex,
 };
 use bls12_381::Scalar;
-use erasure_codes::{BlockErasures, ReedSolomon};
+use erasure_codes::{BlockErasureIndices, ReedSolomon};
 use kzg_multi_open::{
     opening_key::OpeningKey,
     {Prover, Verifier},
@@ -186,9 +186,7 @@ impl PeerDASContext {
         // Recover the polynomial in monomial form, that one can use to generate the cells.
         let recovered_polynomial_coeff = self.verifier_ctx.rs.recover_polynomial_coefficient(
             flattened_coset_evaluations_normal_order,
-            BlockErasures {
-                cosets: missing_cell_indices,
-            },
+            BlockErasureIndices(missing_cell_indices),
         )?;
 
         Ok(recovered_polynomial_coeff)
