@@ -12,7 +12,7 @@ use crate::{
     Bytes48Ref, CellIndex, CellRef, PeerDASContext, RowIndex,
 };
 use bls12_381::Scalar;
-use erasure_codes::{Erasures, ReedSolomon};
+use erasure_codes::{BlockErasures, ReedSolomon};
 use kzg_multi_open::{
     opening_key::OpeningKey,
     {Prover, Verifier},
@@ -40,7 +40,11 @@ impl VerifierContext {
             Verifier::new(opening_key, FIELD_ELEMENTS_PER_EXT_BLOB, CELLS_PER_EXT_BLOB);
 
         VerifierContext {
-            rs: ReedSolomon::new(FIELD_ELEMENTS_PER_BLOB, EXTENSION_FACTOR),
+            rs: ReedSolomon::new(
+                FIELD_ELEMENTS_PER_BLOB,
+                FIELD_ELEMENTS_PER_CELL,
+                EXTENSION_FACTOR,
+            ),
             kzg_multipoint_verifier: multipoint_verifier,
         }
     }
@@ -182,8 +186,7 @@ impl PeerDASContext {
         // Recover the polynomial in monomial form, that one can use to generate the cells.
         let recovered_polynomial_coeff = self.verifier_ctx.rs.recover_polynomial_coefficient(
             flattened_coset_evaluations_normal_order,
-            Erasures {
-                coset_size: FIELD_ELEMENTS_PER_CELL,
+            BlockErasures {
                 cosets: missing_cell_indices,
             },
         )?;

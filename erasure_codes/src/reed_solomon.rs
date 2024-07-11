@@ -7,7 +7,6 @@ use polynomial::{domain::Domain, monomial::vanishing_poly};
 // The erasures are groups of indices of a polynomial
 #[derive(Debug, Clone)]
 pub struct BlockErasures {
-    pub coset_size: usize,
     pub cosets: Vec<usize>,
 }
 
@@ -15,16 +14,18 @@ pub struct BlockErasures {
 pub struct ReedSolomon {
     expansion_factor: usize,
     poly_len: usize,
+    coset_size: usize,
     evaluation_domain: Domain,
 }
 
 impl ReedSolomon {
-    pub fn new(poly_len: usize, expansion_factor: usize) -> Self {
+    pub fn new(poly_len: usize, coset_size: usize, expansion_factor: usize) -> Self {
         let evaluation_domain = Domain::new(poly_len * expansion_factor);
         Self {
             poly_len,
             evaluation_domain,
             expansion_factor,
+            coset_size,
         }
     }
 
@@ -62,6 +63,7 @@ impl ReedSolomon {
             &self.evaluation_domain,
             codeword_with_errors,
             missing_indices,
+            self.coset_size,
         );
 
         // Check that the polynomial being returned has the correct degree
@@ -92,10 +94,12 @@ fn recover_polynomial_coefficient(
     evaluation_domain: &Domain,
     data_eval: Vec<Scalar>,
     missing_indices: BlockErasures,
+    coset_size: usize,
 ) -> Vec<Scalar> {
     // Compute Z(X) which is the polynomial that vanishes on all
     // of the missing points
-    let z_x = construct_vanishing_poly_from_erasures(missing_indices, evaluation_domain);
+    let z_x =
+        construct_vanishing_poly_from_erasures(missing_indices, coset_size, evaluation_domain);
 
     // Compute Z(X)_eval which is the vanishing polynomial evaluated
     // at the missing points
@@ -133,10 +137,10 @@ fn recover_polynomial_coefficient(
 
 fn construct_vanishing_poly_from_erasures(
     erasures: BlockErasures,
+    coset_size: usize,
     evaluation_domain: &Domain,
 ) -> Vec<Scalar> {
     let cosets = erasures.cosets;
-    let coset_size = erasures.coset_size;
 
     let evaluation_domain_size = evaluation_domain.roots.len();
     let num_cosets_per_extended_polynomial = evaluation_domain_size / coset_size;
@@ -155,20 +159,14 @@ fn construct_vanishing_poly_from_erasures(
 
 #[test]
 fn smoke_test_recovery_no_errors() {
-    let rs = ReedSolomon::new(16, 2);
+    let rs = ReedSolomon::new(16, 1, 2);
     let poly_coeff: Vec<_> = (0..16).map(|i| -Scalar::from(i)).collect();
 
     let codewords = rs.encode(poly_coeff.clone());
     assert_eq!(codewords.len(), 32);
 
     let got_poly_coeff = rs
-        .recover_polynomial_coefficient(
-            codewords.clone(),
-            BlockErasures {
-                coset_size: 1,
-                cosets: Vec::new(),
-            },
-        )
+        .recover_polynomial_coefficient(codewords.clone(), BlockErasures { cosets: Vec::new() })
         .unwrap();
 
     assert_eq!(got_poly_coeff.len(), poly_coeff.len());
