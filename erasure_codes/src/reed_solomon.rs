@@ -35,7 +35,7 @@ impl ReedSolomon {
     }
 
     /// The number of scalars in the reed solomon encoded polynomial
-    pub fn extended_polynomial_length(&self) -> usize {
+    pub fn codeword_length(&self) -> usize {
         self.poly_len * self.expansion_factor
     }
 

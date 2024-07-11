@@ -9,7 +9,7 @@ pub fn bench_erasure_code_decoding_4096_8192(c: &mut Criterion) {
 
     let cell_size = 64;
     let rs = ReedSolomon::new(POLYNOMIAL_LEN, cell_size, 2);
-    let extended_poly_len = rs.extended_polynomial_length();
+    let extended_poly_len = rs.codeword_length();
 
     let mut encoded_polynomial = Vec::with_capacity(extended_poly_len);
     for i in 0..extended_poly_len {
