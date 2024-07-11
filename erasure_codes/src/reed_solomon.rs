@@ -4,9 +4,11 @@ use bls12_381::{batch_inversion::batch_inverse, Scalar};
 use crate::errors::DecodeError;
 use polynomial::{domain::Domain, monomial::vanishing_poly};
 
+pub type BlockErasureIndex = usize;
+
 // The erasures are groups of indices of a polynomial
 #[derive(Debug, Clone)]
-pub struct BlockErasureIndices(pub Vec<usize>);
+pub struct BlockErasureIndices(pub Vec<BlockErasureIndex>);
 
 #[derive(Debug)]
 pub struct ReedSolomon {
@@ -14,16 +16,21 @@ pub struct ReedSolomon {
     poly_len: usize,
     coset_size: usize,
     evaluation_domain: Domain,
+    coset_domain: Domain,
 }
 
 impl ReedSolomon {
     pub fn new(poly_len: usize, coset_size: usize, expansion_factor: usize) -> Self {
         let evaluation_domain = Domain::new(poly_len * expansion_factor);
+
+        let num_cosets = (poly_len * expansion_factor) / coset_size;
+        let coset_domain = Domain::new(num_cosets);
         Self {
             poly_len,
             evaluation_domain,
             expansion_factor,
             coset_size,
+            coset_domain,
         }
     }
 
@@ -59,6 +66,7 @@ impl ReedSolomon {
     ) -> Result<Vec<Scalar>, DecodeError> {
         let coefficients = recover_polynomial_coefficient(
             &self.evaluation_domain,
+            &self.coset_domain,
             codeword_with_errors,
             missing_indices,
             self.coset_size,
@@ -90,14 +98,19 @@ impl ReedSolomon {
 /// with the missing indices filled in (recovered).
 fn recover_polynomial_coefficient(
     evaluation_domain: &Domain,
+    coset_domain: &Domain,
     data_eval: Vec<Scalar>,
     missing_indices: BlockErasureIndices,
     coset_size: usize,
 ) -> Vec<Scalar> {
     // Compute Z(X) which is the polynomial that vanishes on all
     // of the missing points
-    let z_x =
-        construct_vanishing_poly_from_erasures(missing_indices, coset_size, evaluation_domain);
+    let z_x = construct_vanishing_poly_from_erasures(
+        missing_indices,
+        coset_size,
+        coset_domain,
+        evaluation_domain,
+    );
 
     // Compute Z(X)_eval which is the vanishing polynomial evaluated
     // at the missing points
@@ -136,16 +149,17 @@ fn recover_polynomial_coefficient(
 fn construct_vanishing_poly_from_erasures(
     erasures: BlockErasureIndices,
     coset_size: usize,
+    coset_domain: &Domain,
     evaluation_domain: &Domain,
 ) -> Vec<Scalar> {
     let cosets = erasures.0;
 
     let evaluation_domain_size = evaluation_domain.roots.len();
-    let num_cosets_per_extended_polynomial = evaluation_domain_size / coset_size;
-    let domain = Domain::new(num_cosets_per_extended_polynomial);
 
-    let z_x_missing_indices_roots: Vec<_> =
-        cosets.iter().map(|index| domain.roots[*index]).collect();
+    let z_x_missing_indices_roots: Vec<_> = cosets
+        .iter()
+        .map(|index| coset_domain.roots[*index])
+        .collect();
     let short_zero_poly = vanishing_poly(&z_x_missing_indices_roots);
 
     let mut z_x = vec![Scalar::ZERO; evaluation_domain_size];
