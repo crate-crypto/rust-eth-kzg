@@ -1,7 +1,7 @@
 use std::ops::Range;
 
 use bls12_381::Scalar;
-use crate_crypto_internal_peerdas_erasure_codes::{Erasures, ReedSolomon};
+use crate_crypto_internal_peerdas_erasure_codes::{BlockErasures, ReedSolomon};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 pub fn bench_erasure_code_decoding_4096_8192(c: &mut Criterion) {
@@ -44,7 +44,7 @@ pub fn bench_erasure_code_decoding_4096_8192(c: &mut Criterion) {
             b.iter(|| {
                 rs.recover_polynomial_coefficient(
                     encoded_polynomial.clone(),
-                    Erasures {
+                    BlockErasures {
                         coset_size: cell_size,
                         cosets: missing_cells.clone(),
                     },
