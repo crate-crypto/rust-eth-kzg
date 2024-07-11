@@ -4,6 +4,8 @@ use bls12_381::{batch_inversion::batch_inverse, Scalar};
 use crate::errors::DecodeError;
 use polynomial::{domain::Domain, monomial::vanishing_poly};
 
+// TODO: the idea of it being a burst block/contiguous chunk of evaluations
+// TODO: might not be correct, after brp, we might have to change the description.
 pub type BlockErasureIndex = usize;
 
 // The erasures are groups of indices of a polynomial
