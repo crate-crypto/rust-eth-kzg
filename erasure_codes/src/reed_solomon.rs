@@ -66,13 +66,8 @@ impl ReedSolomon {
         codeword_with_errors: Vec<Scalar>,
         missing_indices: BlockErasureIndices,
     ) -> Result<Vec<Scalar>, DecodeError> {
-        let coefficients = recover_polynomial_coefficient(
-            &self.evaluation_domain,
-            &self.coset_domain,
-            codeword_with_errors,
-            missing_indices,
-            self.coset_size,
-        );
+        let coefficients =
+            self._recover_polynomial_coefficient(codeword_with_errors, missing_indices);
 
         // Check that the polynomial being returned has the correct degree
         //
@@ -81,10 +76,10 @@ impl ReedSolomon {
         // have the same number of coefficients as the original data.
         //
         // All of the coefficients after the original data should be zero.
-        for (i, coefficient) in coefficients.iter().enumerate().skip(self.poly_len) {
+        for coefficient in coefficients.iter().skip(self.poly_len) {
             if *coefficient != Scalar::ZERO {
                 return Err(DecodeError::PolynomialHasInvalidLength {
-                    num_coefficients: i,
+                    num_coefficients: coefficients.len(),
                     expected_num_coefficients: self.poly_len,
                 });
             }
@@ -93,82 +88,71 @@ impl ReedSolomon {
         // Return the truncated polynomial
         Ok(coefficients[0..self.poly_len].to_vec())
     }
-}
 
-/// Given a set of evaluations and a list of its erasures,
-/// This method will return the polynomial in coefficient form
-/// with the missing indices filled in (recovered).
-fn recover_polynomial_coefficient(
-    evaluation_domain: &Domain,
-    coset_domain: &Domain,
-    data_eval: Vec<Scalar>,
-    missing_indices: BlockErasureIndices,
-    coset_size: usize,
-) -> Vec<Scalar> {
-    // Compute Z(X) which is the polynomial that vanishes on all
-    // of the missing points
-    let z_x = construct_vanishing_poly_from_erasures(
-        missing_indices,
-        coset_size,
-        coset_domain,
-        evaluation_domain,
-    );
+    fn construct_vanishing_poly_from_erasures(&self, erasures: BlockErasureIndices) -> Vec<Scalar> {
+        let cosets = erasures.0;
 
-    // Compute Z(X)_eval which is the vanishing polynomial evaluated
-    // at the missing points
-    let z_x_eval = evaluation_domain.fft_scalars(z_x.clone());
+        let evaluation_domain_size = self.evaluation_domain.roots.len();
 
-    assert_eq!(
-        z_x_eval.len(),
-        data_eval.len(),
-        "incorrect length for encoded data, expected {}, found {}",
-        z_x_eval.len(),
-        data_eval.len()
-    );
-    // Compute (D * Z)(X) or (E * Z)(X) (same polynomials)
-    let ez_eval: Vec<_> = z_x_eval
-        .iter()
-        .zip(data_eval)
-        .map(|(zx, d)| zx * d)
-        .collect();
+        let z_x_missing_indices_roots: Vec<_> = cosets
+            .iter()
+            .map(|index| self.coset_domain.roots[*index])
+            .collect();
+        let short_zero_poly = vanishing_poly(&z_x_missing_indices_roots);
 
-    let dz_poly = evaluation_domain.ifft_scalars(ez_eval);
-
-    let mut coset_z_x_eval = evaluation_domain.coset_fft_scalars(z_x);
-    let coset_dz_eval = evaluation_domain.coset_fft_scalars(dz_poly);
-    // We know that none of the values will be zero since we are evaluating z_x
-    // over a coset, that we know it has no roots in.
-    batch_inverse(&mut coset_z_x_eval);
-    let coset_quotient_eval: Vec<_> = coset_dz_eval
-        .iter()
-        .zip(coset_z_x_eval)
-        .map(|(d, zx_inv)| d * zx_inv)
-        .collect();
-
-    evaluation_domain.coset_ifft_scalars(coset_quotient_eval)
-}
-
-fn construct_vanishing_poly_from_erasures(
-    erasures: BlockErasureIndices,
-    coset_size: usize,
-    coset_domain: &Domain,
-    evaluation_domain: &Domain,
-) -> Vec<Scalar> {
-    let cosets = erasures.0;
-
-    let evaluation_domain_size = evaluation_domain.roots.len();
-
-    let z_x_missing_indices_roots: Vec<_> = cosets
-        .iter()
-        .map(|index| coset_domain.roots[*index])
-        .collect();
-    let short_zero_poly = vanishing_poly(&z_x_missing_indices_roots);
-
-    let mut z_x = vec![Scalar::ZERO; evaluation_domain_size];
-    for (i, coeff) in short_zero_poly.into_iter().enumerate() {
-        z_x[i * coset_size] = coeff;
+        let mut z_x = vec![Scalar::ZERO; evaluation_domain_size];
+        for (i, coeff) in short_zero_poly.into_iter().enumerate() {
+            z_x[i * self.coset_size] = coeff;
+        }
+        z_x
     }
-    z_x
+
+    /// Given a set of evaluations and a list of its erasures,
+    /// This method will return the polynomial in coefficient form
+    /// with the missing indices filled in (recovered).
+    fn _recover_polynomial_coefficient(
+        &self,
+        data_eval: Vec<Scalar>,
+        missing_indices: BlockErasureIndices,
+    ) -> Vec<Scalar> {
+        // Compute Z(X) which is the polynomial that vanishes on all
+        // of the missing points
+        let z_x = self.construct_vanishing_poly_from_erasures(missing_indices);
+
+        // Compute Z(X)_eval which is the vanishing polynomial evaluated
+        // at the missing points
+        let z_x_eval = self.evaluation_domain.fft_scalars(z_x.clone());
+
+        assert_eq!(
+            z_x_eval.len(),
+            data_eval.len(),
+            "incorrect length for encoded data, expected {}, found {}",
+            z_x_eval.len(),
+            data_eval.len()
+        );
+        // Compute (D * Z)(X) or (E * Z)(X) (same polynomials)
+        let ez_eval: Vec<_> = z_x_eval
+            .iter()
+            .zip(data_eval)
+            .map(|(zx, d)| zx * d)
+            .collect();
+
+        let dz_poly = self.evaluation_domain.ifft_scalars(ez_eval);
+
+        let mut coset_z_x_eval = self.evaluation_domain.coset_fft_scalars(z_x);
+        let coset_dz_eval = self.evaluation_domain.coset_fft_scalars(dz_poly);
+        // We know that none of the values will be zero since we are evaluating z_x
+        // over a coset, that we know it has no roots in.
+        batch_inverse(&mut coset_z_x_eval);
+        let coset_quotient_eval: Vec<_> = coset_dz_eval
+            .iter()
+            .zip(coset_z_x_eval)
+            .map(|(d, zx_inv)| d * zx_inv)
+            .collect();
+
+        self.evaluation_domain
+            .coset_ifft_scalars(coset_quotient_eval)
+    }
 }
 
 #[test]
