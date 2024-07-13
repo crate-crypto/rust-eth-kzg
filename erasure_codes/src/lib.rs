@@ -1,3 +1,3 @@
 pub mod errors;
-pub mod reed_solomon;
-pub use reed_solomon::ReedSolomon;
+mod reed_solomon;
+pub use reed_solomon::{BlockErasureIndices, ReedSolomon};

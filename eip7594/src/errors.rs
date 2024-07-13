@@ -1,4 +1,4 @@
-use erasure_codes::errors::DecodeError;
+use erasure_codes::errors::RSError;
 
 use crate::CellIndex;
 
@@ -60,15 +60,15 @@ pub enum VerifierError {
         cells_len: usize,
         proofs_len: usize,
     },
-    ReedSolomon(DecodeError),
+    ReedSolomon(RSError),
     PolynomialHasInvalidLength {
         num_coefficients: usize,
         expected_num_coefficients: usize,
     },
 }
 
-impl From<DecodeError> for VerifierError {
-    fn from(value: DecodeError) -> Self {
+impl From<RSError> for VerifierError {
+    fn from(value: RSError) -> Self {
         VerifierError::ReedSolomon(value)
     }
 }
