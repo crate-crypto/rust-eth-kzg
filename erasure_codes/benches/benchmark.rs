@@ -7,8 +7,9 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 pub fn bench_erasure_code_decoding_4096_8192(c: &mut Criterion) {
     const POLYNOMIAL_LEN: usize = 4096;
 
-    let cell_size = 64;
-    let rs = ReedSolomon::new(POLYNOMIAL_LEN, cell_size, 2);
+    let block_size = 128;
+    let expansion_factor = 2;
+    let rs = ReedSolomon::new(POLYNOMIAL_LEN, expansion_factor, block_size);
     let extended_poly_len = rs.codeword_length();
 
     let mut encoded_polynomial = Vec::with_capacity(extended_poly_len);
@@ -23,14 +24,14 @@ pub fn bench_erasure_code_decoding_4096_8192(c: &mut Criterion) {
         numbers.into_iter().take(n).collect()
     }
 
-    let num_cells = extended_poly_len / cell_size;
+    let num_blocks = extended_poly_len / block_size;
 
-    let missing_cells = generate_unique_random_numbers(0..cell_size, num_cells / 2);
+    let missing_blocks = generate_unique_random_numbers(0..block_size, num_blocks / 2);
 
-    // Zero out the values in the polynomial that correspond to the cell_id
-    for cell in &missing_cells {
-        for i in 0..cell_size {
-            encoded_polynomial[*cell as usize * cell_size + i] = Scalar::from(0);
+    // Zero out the values in the polynomial that correspond to the block_index
+    for block_index in &missing_blocks {
+        for i in 0..block_size {
+            encoded_polynomial[*block_index as usize * block_size + i] = Scalar::from(0);
         }
     }
 
@@ -38,13 +39,13 @@ pub fn bench_erasure_code_decoding_4096_8192(c: &mut Criterion) {
         &format!(
             "computing decoding: EXT_SIZE {}, MISSING_CELLS {}",
             extended_poly_len,
-            num_cells / 2
+            num_blocks / 2
         ),
         |b| {
             b.iter(|| {
                 rs.recover_polynomial_coefficient(
                     encoded_polynomial.clone(),
-                    BlockErasureIndices(missing_cells.clone()),
+                    BlockErasureIndices(missing_blocks.clone()),
                 )
             })
         },

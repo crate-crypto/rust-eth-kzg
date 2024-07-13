@@ -4,8 +4,7 @@ pub use crate::errors::VerifierError;
 
 use crate::{
     constants::{
-        CELLS_PER_EXT_BLOB, EXTENSION_FACTOR, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL,
-        FIELD_ELEMENTS_PER_EXT_BLOB,
+        CELLS_PER_EXT_BLOB, EXTENSION_FACTOR, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_EXT_BLOB,
     },
     serialization::{deserialize_cells, deserialize_compressed_g1_points},
     trusted_setup::TrustedSetup,
@@ -42,8 +41,8 @@ impl VerifierContext {
         VerifierContext {
             rs: ReedSolomon::new(
                 FIELD_ELEMENTS_PER_BLOB,
-                FIELD_ELEMENTS_PER_CELL,
                 EXTENSION_FACTOR,
+                CELLS_PER_EXT_BLOB,
             ),
             kzg_multipoint_verifier: multipoint_verifier,
         }
