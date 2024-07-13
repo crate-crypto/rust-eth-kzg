@@ -201,7 +201,21 @@ impl FK20Prover {
 
     /// Given a group of coset evaluations, this method will return/reorder the evaluations as if
     /// we evaluated them on the relevant extended domain.
-    /// The coset indices are returned in domain order.
+    /// The coset indices returned can be used to locate the coset_evaluations in the new flattened order:
+    ///   - The idea is that a particular coset evaluation is evenly distributed across the set of flattened
+    ///     evaluations.
+    ///   Example:
+    ///     - Lets say we have `k` cosets. Each coset holds `m` values. Each coset will have an associated index.
+    ///     - Once this method has completed, we will be given a flattened set of evaluations where the
+    ///       `m` values in each coset are now a distant of `k` values apart from each other.
+    ///     - The first value that was in the first coset, will be in position `0`.
+    ///     - The second value that was in the first coset, will be in position `k`
+    ///     - The third value that was in the first coset, will be in position `2k`
+    ///     - The first value that was in the second coset, will NOT be in position `1`
+    ///        Instead it will be in position `t = reverse_bit_order(1, k)`.
+    ///     - This value of `t` is what the function returns alongside the flattened evaluations,
+    ///       allowing the caller to deduce the other positions.
+    ///     
     //
     // Note: For evaluations that are missing, this method will fill these in with zeroes.
     //
@@ -286,7 +300,11 @@ mod tests {
     use super::{FK20Prover, Input};
     use crate::{
         create_insecure_commit_opening_keys,
-        fk20::{cosets::generate_cosets, naive as fk20naive, verifier::FK20Verifier},
+        fk20::{
+            cosets::{generate_cosets, log2, reverse_bits},
+            naive as fk20naive,
+            verifier::FK20Verifier,
+        },
         naive as kzgnaive,
     };
     use bls12_381::Scalar;
@@ -411,5 +429,86 @@ mod tests {
         let rhs_set: HashSet<_> = rhs.iter().map(|s| s.to_bytes_be()).collect();
 
         lhs_set == rhs_set
+    }
+
+    #[test]
+    fn show_data_distribution_on_recover_evaluations_in_domain_order() {
+        use bls12_381::ff::Field;
+
+        const DOMAIN_SIZE: usize = 32;
+        const POINTS_PER_COSET: usize = 4;
+        const NUM_COSETS: usize = 8;
+
+        // Lets pretend that we've generated the coset_evaluations in bit-reversed order
+        let bit_reversed_evaluations: Vec<_> = (0..DOMAIN_SIZE)
+            .map(|i| Scalar::from((i + 1) as u64))
+            .collect();
+        let mut bit_reversed_coset_evaluations: Vec<Vec<Scalar>> = bit_reversed_evaluations
+            .chunks(POINTS_PER_COSET)
+            .map(|chunk| chunk.to_vec())
+            .collect();
+
+        // We have 32 values and 4 points per coset, so we have 8 cosets.
+        let coset_indices: Vec<_> = (0..NUM_COSETS).collect();
+
+        // Zero out the first coset
+        let first_coset = &mut bit_reversed_coset_evaluations[0];
+        for evaluation in first_coset {
+            *evaluation = Scalar::ZERO
+        }
+        // Zero out the 4th coset
+        let fourth_coset = &mut bit_reversed_coset_evaluations[3];
+        for evaluation in fourth_coset {
+            *evaluation = Scalar::ZERO
+        }
+
+        // Now lets simulate the first and fourth coset missing
+        let coset_evaluations_missing: Vec<_> = bit_reversed_coset_evaluations
+            .into_iter()
+            .enumerate()
+            .filter(|(i, _)| *i != 0 && *i != 3)
+            .map(|(_, coset)| coset)
+            .collect();
+        let coset_indices_missing: Vec<_> = coset_indices
+            .into_iter()
+            .enumerate()
+            .filter(|(i, _)| *i != 0 && *i != 3)
+            .map(|(_, coset)| coset)
+            .collect();
+
+        let (coset_indices_normal_order, coset_evaluations_normal_order) =
+            FK20Prover::recover_evaluations_in_domain_order(
+                DOMAIN_SIZE,
+                coset_indices_missing,
+                coset_evaluations_missing,
+            )
+            .unwrap();
+
+        let missing_coset_index_0 = reverse_bits(0, log2(NUM_COSETS as u32));
+        let missing_coset_index_3 = reverse_bits(3, log2(NUM_COSETS as u32));
+
+        // Lets show what happened to the evaluations in the first and fourth cosets which were missing
+        //
+        // It was in the first coset, so the idea is that there will be zeroes in every `rbo(0) + NUM_COSET * i` position
+        // where i ranges from 0 to NUM_COSET.
+        //
+        // The same is also the case for the fourth missing coset, ie we would also have 0s in every `rbo(4) + NUM_COSET * i` position.
+        //
+        // In general, if the `k`th coset is missing, then this function will return the evaluations with 0s
+        // in the `rbo(k) + NUM_COSET  * i`'th positions.
+        for block in coset_evaluations_normal_order.chunks(8) {
+            for (index, element) in block.into_iter().enumerate() {
+                if index == missing_coset_index_0 || index == missing_coset_index_3 {
+                    assert_eq!(*element, Scalar::ZERO)
+                } else {
+                    assert_ne!(*element, Scalar::ZERO)
+                }
+            }
+        }
+
+        // We also note that the coset indices that are returned will not have `missing_coset_index_3` or
+        // missing_coset_index_0
+        assert!(!coset_indices_normal_order.contains(&missing_coset_index_0));
+        assert!(!coset_indices_normal_order.contains(&missing_coset_index_3));
     }
 }
