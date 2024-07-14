@@ -1,0 +1,55 @@
+name: Build and Upload Static Libraries
+
+on:
+  push:
+    branches:
+      - kw/nim-release-branch
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+        override: true
+
+    - name: Run compile script
+      run: ./scripts/compile.sh nim
+      shell: bash
+
+    - name: Upload library
+      uses: actions/upload-artifact@v2
+      with:
+        name: static-libs
+        path: bindings/nim/nim_code/build
+
+  merge_and_push:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        ref: precompiled-libs
+        fetch-depth: 0
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v2
+      with:
+        name: static-libs
+        path: bindings/nim/nim_code/build
+
+    - name: Commit and push if changed
+      run: |
+        git config --global user.name 'GitHub Actions'
+        git config --global user.email 'github-actions@users.noreply.github.com'
+        git add bindings/nim/nim_code/build
+        git commit -m "Update precompiled libraries" || exit 0
+        git push
