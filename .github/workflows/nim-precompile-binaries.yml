@@ -37,7 +37,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       with:
-        ref: precompiled-libs
+        ref: kw/nim-release-branch
         fetch-depth: 0
 
     - name: Download all artifacts
