@@ -17,7 +17,7 @@ pub type Bytes48Ref<'a> = &'a [u8; 48];
 
 // TODO: We require a bit of feedback re usage to know whether we should make
 // TODO: Cell type just be Vec<u8> -- This would avoid accidental stack overflows.
-pub type Cell = Box<[u8; BYTES_PER_CELL]>;
+pub type Cell = Vec<u8>;
 pub type CellRef<'a> = &'a [u8; BYTES_PER_CELL];
 
 pub type KZGProof = [u8; BYTES_PER_COMMITMENT];

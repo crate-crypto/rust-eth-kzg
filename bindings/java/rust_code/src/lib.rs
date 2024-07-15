@@ -52,7 +52,6 @@ fn compute_cells_and_kzg_proofs<'local>(
     let blob = slice_to_array_ref(&blob, "blob")?;
 
     let (cells, proofs) = ctx.inner().compute_cells_and_kzg_proofs(blob)?;
-    let cells = cells.map(|cell| *cell);
     cells_and_proofs_to_jobject(env, &cells, &proofs).map_err(Error::from)
 }
 
@@ -236,7 +235,6 @@ fn recover_cells_and_kzg_proofs<'local>(
 
     let (recovered_cells, recovered_proofs) =
         ctx.inner().recover_cells_and_proofs(cell_ids, cells)?;
-    let recovered_cells = recovered_cells.map(|cell| *cell);
     cells_and_proofs_to_jobject(env, &recovered_cells, &recovered_proofs).map_err(Error::from)
 }
 
