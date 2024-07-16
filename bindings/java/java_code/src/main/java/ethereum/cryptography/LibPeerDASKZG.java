@@ -45,7 +45,7 @@ public class LibPeerDASKZG implements AutoCloseable{
     }
 
     // TODO: Finalization was deprecated, we should find a method that does
-    // TODO: not require a lot of code. Possibly separate the wrapper from the 
+    // TODO: not require a lot of code. Possibly separate the wrapper from the
     // TODO: bindings code too.
     @Override
     public void close() {
@@ -71,16 +71,11 @@ public class LibPeerDASKZG implements AutoCloseable{
         checkContextHasNotBeenFreed();
         return blobToKZGCommitment(contextPtr, blob);
     }
-    
+
     public CellsAndProofs computeCellsAndKZGProofs(byte[] blob) {
         checkContextHasNotBeenFreed();
         CellsAndProofs cellsAndProofs = computeCellsAndKZGProofs(contextPtr, blob);
         return cellsAndProofs;
-    }
-
-    public boolean verifyCellKZGProof(byte[] commitment, long cellID, byte[] cell, byte[] proof) {
-        checkContextHasNotBeenFreed();
-        return verifyCellKZGProof(contextPtr, commitment, cellID, cell, proof);
     }
 
     public boolean verifyCellKZGProofBatch(byte[][] commitmentsArr, long[] rowIndices, long[] columnIndices, byte[][] cellsArr,
@@ -88,7 +83,7 @@ public class LibPeerDASKZG implements AutoCloseable{
                 checkContextHasNotBeenFreed();
         return verifyCellKZGProofBatch(contextPtr, commitmentsArr, rowIndices, columnIndices, cellsArr, proofsArr);
     }
-    
+
     public CellsAndProofs recoverCellsAndProofs(long[] cellIDs, byte[][] cellsArr) {
         checkContextHasNotBeenFreed();
         return recoverCellsAndProof(contextPtr, cellIDs, cellsArr);
@@ -107,12 +102,9 @@ public class LibPeerDASKZG implements AutoCloseable{
 
     private static native byte[] blobToKZGCommitment(long context_ptr, byte[] blob);
 
-    private static native boolean verifyCellKZGProof(
-            long context_ptr, byte[] commitment, long cell_id, byte[] cell, byte[] proof);
-    
     private static native boolean verifyCellKZGProofBatch(
             long context_ptr, byte[][] commitments, long[] rowIndices, long[] columnIndices, byte[][] cells, byte[][] proofs);
-    
+
     private static native CellsAndProofs recoverCellsAndProof(long context_ptr, long[] cellIDs, byte[][] cells);
 
     private static final String LIBRARY_NAME = "java_peerdas_kzg";

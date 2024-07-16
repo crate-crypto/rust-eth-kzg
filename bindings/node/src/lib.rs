@@ -167,47 +167,6 @@ impl PeerDASContextJs {
   }
 
   #[napi]
-  pub fn verify_cell_kzg_proof(
-    &self,
-    commitment: Uint8Array,
-    cell_index: BigInt,
-    cell: Uint8Array,
-    proof: Uint8Array,
-  ) -> Result<bool> {
-    let commitment = commitment.as_ref();
-    let cell = cell.as_ref();
-    let proof = proof.as_ref();
-    let cell_index_u64 = bigint_to_u64(cell_index);
-
-    let ctx = &self.inner;
-
-    let cell = slice_to_array_ref(cell, "cell")?;
-    let commitment = slice_to_array_ref(commitment, "commitment")?;
-    let proof = slice_to_array_ref(proof, "proof")?;
-
-    let valid = ctx.verify_cell_kzg_proof(commitment, cell_index_u64, cell, proof);
-    match valid {
-      Ok(_) => Ok(true),
-      Err(VerifierError::InvalidProof) => Ok(false),
-      Err(err) => Err(Error::from_reason(format!(
-        "failed to compute verify_cell_kzg_proof: {:?}",
-        err
-      ))),
-    }
-  }
-
-  #[napi]
-  pub async fn async_verify_cell_kzg_proof(
-    &self,
-    commitment: Uint8Array,
-    cell_index: BigInt,
-    cell: Uint8Array,
-    proof: Uint8Array,
-  ) -> Result<bool> {
-    self.verify_cell_kzg_proof(commitment, cell_index, cell, proof)
-  }
-
-  #[napi]
   pub fn verify_cell_kzg_proof_batch(
     &self,
     commitments: Vec<Uint8Array>,

@@ -24,8 +24,6 @@ export class PeerDasContextJs {
   asyncComputeCells(blob: Uint8Array): Promise<Array<Uint8Array>>
   recoverCellsAndKzgProofs(cellIndices: Array<bigint>, cells: Array<Uint8Array>): CellsAndProofs
   asyncRecoverCellsAndKzgProofs(cellIndices: Array<bigint>, cells: Array<Uint8Array>): Promise<CellsAndProofs>
-  verifyCellKzgProof(commitment: Uint8Array, cellIndex: bigint, cell: Uint8Array, proof: Uint8Array): boolean
-  asyncVerifyCellKzgProof(commitment: Uint8Array, cellIndex: bigint, cell: Uint8Array, proof: Uint8Array): Promise<boolean>
   verifyCellKzgProofBatch(commitments: Array<Uint8Array>, rowIndices: Array<bigint>, columnIndices: Array<bigint>, cells: Array<Uint8Array>, proofs: Array<Uint8Array>): boolean
   asyncVerifyCellKzgProofBatch(commitments: Array<Uint8Array>, rowIndices: Array<bigint>, columnIndices: Array<bigint>, cells: Array<Uint8Array>, proofs: Array<Uint8Array>): Promise<boolean>
 }

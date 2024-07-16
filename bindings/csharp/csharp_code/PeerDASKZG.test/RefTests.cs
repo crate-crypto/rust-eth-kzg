@@ -32,7 +32,6 @@ public class ReferenceTests
     private const string TestDir = "../../../../../../../consensus_test_vectors";
     private readonly string _blobToKzgCommitmentTests = Path.Join(TestDir, "blob_to_kzg_commitment");
     private readonly string _computeCellsAndKzgProofsTests = Path.Join(TestDir, "compute_cells_and_kzg_proofs");
-    private readonly string _verifyCellKzgProofTests = Path.Join(TestDir, "verify_cell_kzg_proof");
     private readonly string _verifyCellKzgProofBatchTests = Path.Join(TestDir, "verify_cell_kzg_proof_batch");
     private readonly string _recoverCellsAndKzgProofsTests = Path.Join(TestDir, "recover_cells_and_kzg_proofs");
 
@@ -150,59 +149,6 @@ public class ReferenceTests
 
     #endregion
 
-    #region VerifyCellKzgProof
-
-    private class VerifyCellKzgProofInput
-    {
-        public string Commitment { get; set; } = null!;
-        public ulong CellId { get; set; } = 0!;
-        public string Cell { get; set; } = null!;
-        public string Proof { get; set; } = null!;
-    }
-
-    private class VerifyCellKzgProofTest
-    {
-        public VerifyCellKzgProofInput Input { get; set; } = null!;
-        public bool? Output { get; set; } = null!;
-    }
-
-
-
-    [TestCase]
-    public void TestVerifyCellKzgProof()
-    {
-        Matcher matcher = new();
-        matcher.AddIncludePatterns(new[] { "*/*/data.yaml" });
-
-        IEnumerable<string> testFiles = matcher.GetResultsInFullPath(_verifyCellKzgProofTests);
-        Assert.That(testFiles.Count(), Is.GreaterThan(0));
-
-
-        foreach (string testFile in testFiles)
-        {
-            string yaml = File.ReadAllText(testFile);
-            VerifyCellKzgProofTest test = _deserializerUnderscoreNaming.Deserialize<VerifyCellKzgProofTest>(yaml);
-            Assert.That(test, Is.Not.EqualTo(null));
-
-            byte[] commitment = GetBytes(test.Input.Commitment);
-            ulong cellId = test.Input.CellId;
-            byte[] cell = GetBytes(test.Input.Cell);
-            byte[] proof = GetBytes(test.Input.Proof);
-
-            try
-            {
-                bool isCorrect = _context.VerifyCellKZGProof(commitment, cellId, cell, proof);
-                Assert.That(isCorrect, Is.EqualTo(test.Output));
-            }
-            catch
-            {
-                Assert.That(test.Output, Is.EqualTo(null));
-            }
-        }
-    }
-
-    #endregion
-
     #region VerifyCellKzgProofBatch
 
     private class VerifyCellKzgProofBatchInput
@@ -286,7 +232,7 @@ public class ReferenceTests
 
             ulong[] cellIndices = test.Input.CellIndices.ToArray();
             byte[][] cells = GetByteArrays(test.Input.Cells);
-            
+
             try
             {
                 (byte[][] recoveredCells, byte[][] recoveredProofs) = _context.RecoverCellsAndKZGProofs(cellIndices, cells);
