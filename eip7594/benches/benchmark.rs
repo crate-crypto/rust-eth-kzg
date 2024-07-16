@@ -2,7 +2,8 @@ use bls12_381::Scalar;
 use criterion::{criterion_group, criterion_main, Criterion};
 use eip7594::{
     constants::{BYTES_PER_BLOB, CELLS_PER_EXT_BLOB},
-    trusted_setup, Cell, KZGCommitment, KZGProof, PeerDASContext,
+    trusted_setup, Bytes48Ref, Cell, CellIndex, CellRef, KZGCommitment, KZGProof, PeerDASContext,
+    RowIndex,
 };
 
 const POLYNOMIAL_LEN: usize = 4096;
@@ -51,7 +52,7 @@ pub fn bench_compute_cells_and_kzg_proofs(c: &mut Criterion) {
 pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
     let trusted_setup = trusted_setup::TrustedSetup::default();
 
-    let (_, (cells, proofs)) = dummy_commitment_cells_and_proofs();
+    let (_, (cells, _)) = dummy_commitment_cells_and_proofs();
     let cell_indices: Vec<u64> = (0..cells.len()).map(|x| x as u64).collect();
 
     // Worse case is when half of the cells are missing
@@ -78,16 +79,32 @@ pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
     }
 }
 
-pub fn bench_verify_cell_kzg_proofs(c: &mut Criterion) {
+pub fn bench_verify_cell_kzg_proof_batch(c: &mut Criterion) {
     let trusted_setup = trusted_setup::TrustedSetup::default();
 
     let (commitment, (cells, proofs)) = dummy_commitment_cells_and_proofs();
 
+    let commitments = vec![&commitment];
+    let row_indices: Vec<RowIndex> = vec![0; CELLS_PER_EXT_BLOB];
+    let cell_indices: Vec<CellIndex> = (0..CELLS_PER_EXT_BLOB).map(|x| x as CellIndex).collect();
+    let cell_refs: Vec<CellRef> = cells.iter().map(|cell| cell.as_ref()).collect();
+    let proof_refs: Vec<Bytes48Ref> = proofs.iter().map(|proof| proof).collect();
+
     for num_threads in THREAD_COUNTS {
         let ctx = PeerDASContext::with_threads(&trusted_setup, num_threads);
         c.bench_function(
-            &format!("verify_cell_kzg_proof - NUM_THREADS: {}", num_threads),
-            |b| b.iter(|| ctx.verify_cell_kzg_proof(&commitment, 0, &cells[0], &proofs[0])),
+            &format!("verify_cell_kzg_proof_batch - NUM_THREADS: {}", num_threads),
+            |b| {
+                b.iter(|| {
+                    ctx.verify_cell_kzg_proof_batch(
+                        commitments.clone(),
+                        row_indices.clone(),
+                        cell_indices.clone(),
+                        cell_refs.clone(),
+                        proof_refs.clone(),
+                    )
+                })
+            },
         );
     }
 }
@@ -108,6 +125,6 @@ criterion_group!(
     bench_init_context
     bench_compute_cells_and_kzg_proofs,
     bench_recover_cells_and_compute_kzg_proofs,
-    bench_verify_cell_kzg_proofs
+    bench_verify_cell_kzg_proof_batch
 );
 criterion_main!(benches);
