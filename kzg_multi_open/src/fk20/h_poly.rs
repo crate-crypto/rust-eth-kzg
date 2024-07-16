@@ -36,7 +36,7 @@ pub(crate) fn compute_h_poly_commitments(
     // See 3.1.1 of the FK20 paper, for the ordering.
     polynomial.reverse();
 
-    // Compute the toeplitz rows for the `l` toeplitz matrices
+    // Compute the toeplitz rows for the `coset_size` toeplitz matrices
     let toeplitz_rows = take_every_nth(&polynomial, coset_size);
 
     // Compute the Toeplitz matrices
@@ -45,7 +45,7 @@ pub(crate) fn compute_h_poly_commitments(
     // are zeroes except for the first element, which must equal the first
     // element of the row.
     let mut matrices = Vec::with_capacity(toeplitz_rows.len());
-    // We want to do `l` toeplitz matrix multiplications
+    // We want to do `coset_size` toeplitz matrix multiplications
     for row in toeplitz_rows.into_iter() {
         let mut toeplitz_column = vec![Scalar::from(0u64); row.len()];
         toeplitz_column[0] = row[0];
@@ -53,7 +53,7 @@ pub(crate) fn compute_h_poly_commitments(
         matrices.push(ToeplitzMatrix::new(row, toeplitz_column));
     }
 
-    // Compute `l` toeplitz matrix-vector multiplications and sum them together
+    // Compute `coset_size` toeplitz matrix-vector multiplications and sum them together
     batch_toeplitz.sum_matrix_vector_mul(matrices)
 }
 
