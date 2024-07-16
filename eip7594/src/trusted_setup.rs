@@ -85,16 +85,16 @@ impl TrustedSetup {
     }
 
     fn to_commit_key(&self, subgroup_check: SubgroupCheck) -> CommitKey {
-        let points = deserialize_g1(&self.g1_monomial, subgroup_check);
+        let points = deserialize_g1_points(&self.g1_monomial, subgroup_check);
         CommitKey::new(points)
     }
 
     fn to_opening_key(&self, subgroup_check: SubgroupCheck) -> OpeningKey {
-        let g2_points = deserialize_g2(&self.g2_monomial, subgroup_check);
+        let g2_points = deserialize_g2_points(&self.g2_monomial, subgroup_check);
         let num_g2_points = g2_points.len();
         // The setup needs as many g1 elements for the opening key as g2 elements, in order
         // to commit to the remainder/interpolation polynomial.
-        let g1_points = deserialize_g1(&self.g1_monomial[..num_g2_points], subgroup_check);
+        let g1_points = deserialize_g1_points(&self.g1_monomial[..num_g2_points], subgroup_check);
 
         OpeningKey::new(
             g1_points,
@@ -106,13 +106,13 @@ impl TrustedSetup {
 
     /// Loads the official trusted setup file being used on mainnet from the embedded data folder.
     fn from_embed() -> TrustedSetup {
-        Self::from_json(TRUSTED_SETUP_JSON)
+        Self::from_json_unchecked(TRUSTED_SETUP_JSON)
     }
 }
 
 /// Deserialize G1 points from hex strings without checking that the element
 /// is in the correct subgroup.
-fn deserialize_g1<T: AsRef<str>>(g1_points_hex_str: &[T], check: SubgroupCheck) -> Vec<G1Point> {
+fn deserialize_g1_points<T: AsRef<str>>(g1_points_hex_str: &[T], check: SubgroupCheck) -> Vec<G1Point> {
     let mut g1_points = Vec::new();
     for g1_hex_str in g1_points_hex_str {
         let g1_hex_str = g1_hex_str.as_ref();
@@ -142,7 +142,7 @@ fn deserialize_g1<T: AsRef<str>>(g1_points_hex_str: &[T], check: SubgroupCheck) 
 
 /// Deserialize G2 points from hex strings without checking that the element
 /// is in the correct subgroup.
-fn deserialize_g2<T: AsRef<str>>(g2_points_hex_str: &[T], check: SubgroupCheck) -> Vec<G2Point> {
+fn deserialize_g2_points<T: AsRef<str>>(g2_points_hex_str: &[T], check: SubgroupCheck) -> Vec<G2Point> {
     let mut g2_points = Vec::new();
     for g2_hex_str in g2_points_hex_str {
         let g2_hex_str = g2_hex_str.as_ref();
