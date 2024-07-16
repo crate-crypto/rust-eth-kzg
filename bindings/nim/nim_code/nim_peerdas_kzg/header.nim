@@ -83,26 +83,6 @@ proc compute_cells_and_kzg_proofs*(ctx: ptr PeerDASContext,
                                    out_cells: ptr pointer,
                                    out_proofs: ptr pointer): CResult {.importc: "compute_cells_and_kzg_proofs".}
 
-## Verifies a cell corresponds to a particular commitment.
-#
-# # Safety
-#
-# - The caller must ensure that the pointers are valid.
-# - The caller must ensure that `cell` points to a region of memory that is at least `BYTES_PER_CELLS` bytes.
-# - The caller must ensure that `commitment` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
-# - The caller must ensure that `proof` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
-# - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
-# # Undefined behavior
-#  - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
-#    If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
-#
-proc verify_cell_kzg_proof*(ctx: ptr PeerDASContext,
-                            cell: pointer,
-                            commitment: pointer,
-                            cell_id: uint64,
-                            proof: pointer,
-                            verified: pointer): CResult {.importc: "verify_cell_kzg_proof".}
-
 ## Verifies a batch of cells and their KZG proofs.
 #
 # # Safety

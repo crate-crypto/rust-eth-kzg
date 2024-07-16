@@ -35,16 +35,16 @@ public class LibPeerDASKZGTest {
         try {
             instance1 = new LibPeerDASKZG();
             instance2 = new LibPeerDASKZG();
-            
+
             assertNotNull(instance1);
             assertNotNull(instance2);
             assertNotEquals(instance1, instance2);
-            
+
             // Test a simple operation to ensure both instances are functional
             byte[] dummyBlob = new byte[LibPeerDASKZG.BYTES_PER_BLOB];
             byte[] commitment1 = instance1.blobToKZGCommitment(dummyBlob);
             byte[] commitment2 = instance2.blobToKZGCommitment(dummyBlob);
-            
+
             assertNotNull(commitment1);
             assertNotNull(commitment2);
             assertArrayEquals(commitment1, commitment2);
@@ -89,21 +89,6 @@ public class LibPeerDASKZGTest {
       } catch (IllegalArgumentException ex) {
         assertNull(test.getOutput());
       }
-    }
-
-    @ParameterizedTest
-    @MethodSource("ethereum.cryptography.TestUtils#getVerifyCellKzgProofTests")
-    public void verifyCellKzgProofTests(final VerifyCellKzgProofTest test) {
-        try {
-            boolean valid = context.verifyCellKZGProof(
-                    test.getInput().getCommitment(),
-                    test.getInput().getCellId(),
-                    test.getInput().getCell(),
-                    test.getInput().getProof());
-            assertEquals(test.getOutput(), valid);
-        } catch (IllegalArgumentException ex) {
-            assertNull(test.getOutput());
-        }
     }
 
     @ParameterizedTest

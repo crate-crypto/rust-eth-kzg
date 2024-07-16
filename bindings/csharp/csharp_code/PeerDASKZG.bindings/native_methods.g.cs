@@ -95,24 +95,6 @@ namespace PeerDAS.Native
         internal static extern CResult compute_cells_and_kzg_proofs(PeerDASContext* ctx, byte* blob, byte** out_cells, byte** out_proofs);
 
         /// <summary>
-        ///  Verifies a cell corresponds to a particular commitment.
-        ///
-        ///  # Safety
-        ///
-        ///  - The caller must ensure that the pointers are valid.
-        ///  - The caller must ensure that `cell` points to a region of memory that is at least `BYTES_PER_CELLS` bytes.
-        ///  - The caller must ensure that `commitment` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
-        ///  - The caller must ensure that `proof` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
-        ///  - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
-        ///  # Undefined behavior
-        ///   - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
-        ///     If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
-        ///
-        /// </summary>
-        [DllImport(__DllName, EntryPoint = "verify_cell_kzg_proof", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        internal static extern CResult verify_cell_kzg_proof(PeerDASContext* ctx, byte* cell, byte* commitment, ulong cell_id, byte* proof, bool* verified);
-
-        /// <summary>
         ///  Verifies a batch of cells and their KZG proofs.
         ///
         ///  # Safety

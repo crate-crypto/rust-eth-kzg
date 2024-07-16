@@ -16,7 +16,6 @@ const
   testBase = kzgPath & "consensus_test_vectors/"
   BLOB_TO_KZG_COMMITMENT_TESTS = testBase & "blob_to_kzg_commitment"
   COMPUTE_CELLS_AND_KZG_PROOFS_TESTS = testBase & "compute_cells_and_kzg_proofs"
-  VERIFY_CELL_KZG_PROOF_TESTS = testBase & "verify_cell_kzg_proof"
   VERIFY_CELL_KZG_PROOF_BATCH_TESTS = testBase & "verify_cell_kzg_proof_batch"
   RECOVER_CELLS_AND_PROOFS_TESTS = testBase & "recover_cells_and_kzg_proofs"
 
@@ -77,7 +76,7 @@ suite "yaml tests":
   var ctx: KZGCtx
   # We cannot run this in `setup` because that runs before _every_ test
   # and we only want to run this once
-  # 
+  #
   # This should also remove order dependency between tests; ie if we ran setup in a test
   ctx = newKZGCtx()
 
@@ -97,7 +96,7 @@ suite "yaml tests":
       check cells == res.get.cells
       let proofs = KZGProof.fromHexList(n["output"][1])
       check proofs == res.get.proofs
-    
+
   runTests(RECOVER_CELLS_AND_PROOFS_TESTS):
     let
       cellIndices = uint64.fromIntList(n["input"]["cell_indices"])
@@ -109,15 +108,6 @@ suite "yaml tests":
       check cells == res.get.cells
       let proofs = KZGProof.fromHexList(n["output"][1])
       check proofs == res.get.proofs
-
-  runTests(VERIFY_CELL_KZG_PROOF_TESTS):
-    let
-      commitment = KZGCommitment.fromHex(n["input"]["commitment"])
-      cellId = n["input"]["cell_id"].content.parseInt().uint64
-      cell = Cell.fromHex(n["input"]["cell"])
-      proof = KZGProof.fromHex(n["input"]["proof"])
-      res = ctx.verifyCellKZGProof(commitment, cellId, cell, proof)
-    checkBool(res)
 
   runTests(VERIFY_CELL_KZG_PROOF_BATCH_TESTS):
     let
