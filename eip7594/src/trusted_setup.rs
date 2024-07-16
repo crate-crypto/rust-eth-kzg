@@ -1,13 +1,10 @@
 use bls12_381::{G1Point, G2Point};
 use kzg_multi_open::{commit_key::CommitKey, opening_key::OpeningKey};
-use rust_embed::Embed;
 use serde::Deserialize;
 
 use crate::constants::{FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL};
 
-#[derive(Embed)]
-#[folder = "data"]
-struct EmbeddedData;
+pub const TRUSTED_SETUP_JSON: &str = include_str!("../data/trusted_setup_4096.json");
 
 #[derive(Deserialize, Debug, PartialEq, Eq)]
 pub struct TrustedSetup {
@@ -109,14 +106,7 @@ impl TrustedSetup {
 
     /// Loads the official trusted setup file being used on mainnet from the embedded data folder.
     fn from_embed() -> TrustedSetup {
-        const TRUSTED_SETUP_FILE_NAME: &str = "trusted_setup_4096.json";
-
-        let file = EmbeddedData::get(TRUSTED_SETUP_FILE_NAME)
-            .expect("expected the trusted setup file to be embedded in the binary");
-        let json_str = std::str::from_utf8(file.data.as_ref())
-            .expect("expected the trusted setup file to be valid utf8");
-
-        Self::from_json(json_str)
+        Self::from_json(TRUSTED_SETUP_JSON)
     }
 }
 
