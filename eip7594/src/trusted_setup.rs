@@ -152,7 +152,10 @@ fn deserialize_g1<T: AsRef<str>>(g1_points_hex_str: &[T], check: SubgroupCheck) 
 
 /// Deserialize G2 points from hex strings without checking that the element
 /// is in the correct subgroup.
-fn deserialize_g2<T: AsRef<str>>(g2_points_hex_str: &[T], check: SubgroupCheck) -> Vec<G2Point> {
+fn deserialize_g2<T: AsRef<str>>(
+    g2_points_hex_str: &[T],
+    subgroup_check: SubgroupCheck,
+) -> Vec<G2Point> {
     let mut g2_points = Vec::new();
     for g2_hex_str in g2_points_hex_str {
         let g2_hex_str = g2_hex_str.as_ref();
@@ -164,7 +167,7 @@ fn deserialize_g2<T: AsRef<str>>(g2_points_hex_str: &[T], check: SubgroupCheck) 
             .try_into()
             .expect("expected 96 bytes for G2 point");
 
-        let point = match check {
+        let point = match subgroup_check {
             SubgroupCheck::Check => G2Point::from_compressed(&g2_point_bytes).unwrap(),
             SubgroupCheck::NoCheck => G2Point::from_compressed_unchecked(&g2_point_bytes).unwrap(),
         };
