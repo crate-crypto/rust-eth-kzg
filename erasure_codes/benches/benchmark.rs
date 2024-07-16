@@ -27,14 +27,6 @@ pub fn bench_erasure_code_decoding_4096_8192(c: &mut Criterion) {
     let num_blocks = extended_poly_len / block_size;
 
     let missing_blocks = generate_unique_random_numbers(0..block_size, num_blocks / 2);
-
-    // Zero out the values in the polynomial that correspond to the block_index
-    for block_index in &missing_blocks {
-        for i in 0..block_size {
-            encoded_polynomial[*block_index as usize * block_size + i] = Scalar::from(0);
-        }
-    }
-
     c.bench_function(
         &format!(
             "computing decoding: EXT_SIZE {}, MISSING_CELLS {}",
