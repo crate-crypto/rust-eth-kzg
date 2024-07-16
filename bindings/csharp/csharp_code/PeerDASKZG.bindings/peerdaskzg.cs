@@ -20,7 +20,7 @@ public sealed unsafe class PeerDASKZG : IDisposable
     public const int BytesPerBlob = 131_072;
     // The number of columns needed to represent an extended blob.
     public const int MaxNumColumns = 128;
-    // This is the same as the MaxNumColumns, but this terminology is used 
+    // This is the same as the MaxNumColumns, but this terminology is used
     // in the cryptography implementation, so we use it internally for readability.
     private const int CellsPerExtBlob = MaxNumColumns;
     // The number of bytes in a single cell.
@@ -109,36 +109,6 @@ public sealed unsafe class PeerDASKZG : IDisposable
             ThrowOnError(result);
         }
         return (outCells, outProofs);
-    }
-
-    public unsafe bool VerifyCellKZGProof(byte[] commitment, ulong cellId, byte[] cell, byte[] proof)
-    {
-        // Length checks
-        if (cell.Length != BytesPerCell)
-        {
-            throw new ArgumentException($"cell has an invalid length");
-        }
-        if (proof.Length != BytesPerProof)
-        {
-            throw new ArgumentException($"proof has an invalid length");
-        }
-        if (commitment.Length != BytesPerCommitment)
-        {
-            throw new ArgumentException($"commitment has an invalid length");
-        }
-
-        bool verified = false;
-        bool* verifiedPtr = &verified;
-
-        fixed (byte* cellPtr = cell)
-        fixed (byte* commitmentPtr = commitment)
-        fixed (byte* proofPtr = proof)
-        {
-            CResult result = verify_cell_kzg_proof(_context, cellPtr, commitmentPtr, cellId, proofPtr, verifiedPtr);
-            ThrowOnError(result);
-        }
-
-        return verified;
     }
 
     public bool VerifyCellKZGProofBatch(byte[][] rowCommitments, ulong[] rowIndices, ulong[] columnIndices, byte[][] cells, byte[][] proofs)

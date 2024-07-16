@@ -64,25 +64,6 @@ fn find_missing_cell_indices(present_cell_indices: &[usize]) -> Vec<usize> {
 }
 
 impl PeerDASContext {
-    /// Verify that a cell is consistent with a commitment using a KZG proof.
-    pub fn verify_cell_kzg_proof(
-        &self,
-        commitment_bytes: Bytes48Ref,
-        cell_index: CellIndex,
-        cell: CellRef,
-        proof_bytes: Bytes48Ref,
-    ) -> Result<(), VerifierError> {
-        self.thread_pool.install(|| {
-            self.verify_cell_kzg_proof_batch(
-                vec![commitment_bytes],
-                vec![0],
-                vec![cell_index],
-                vec![cell],
-                vec![proof_bytes],
-            )
-        })
-    }
-
     /// Given a collection of commitments, cells and proofs, this functions verifies that
     /// the cells are consistent with the commitments using their respective KZG proofs.
     pub fn verify_cell_kzg_proof_batch(
