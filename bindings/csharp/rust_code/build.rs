@@ -24,6 +24,7 @@ fn main() {
         .csharp_dll_name(package_name_of_c_crate)
         .csharp_class_name("NativeMethods")
         .csharp_use_nint_types(false)
+        .csharp_file_header("using C = uint;")
         .generate_csharp_file(path_to_output_file)
         .unwrap();
 }
