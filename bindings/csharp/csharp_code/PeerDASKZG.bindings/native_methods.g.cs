@@ -193,7 +193,7 @@ namespace PeerDAS.Native
     }
 
 
-    internal enum CResultStatus : C
+    internal enum CResultStatus : uint
     {
         Ok,
         Err,
