@@ -4,7 +4,7 @@ using System.Runtime.Loader;
 
 namespace PeerDAS.Native;
 
-public static unsafe partial class NativeMethods
+internal static unsafe partial class NativeMethods
 {
     // When the static methods are called, .NET will look for the library in some
     // conventional locations. If it cannot find it, it will then trigger 
@@ -14,7 +14,7 @@ public static unsafe partial class NativeMethods
     // The first parameter to DLLImport is the path that gets passed to the event handler.
     static NativeMethods() => AssemblyLoadContext.Default.ResolvingUnmanagedDll += LoadNativeLibrary;
 
-    public static IntPtr LoadNativeLibrary(Assembly _, string path)
+    internal static IntPtr LoadNativeLibrary(Assembly _, string path)
     {
         // This checks whether the requested library is the one we're interested in
         // ie this class can only be used to load a dynamic library with the name `__DllName`

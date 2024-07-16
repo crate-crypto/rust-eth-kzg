@@ -53,14 +53,6 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_cryptography_LibPeerDASKZG_blobToKZGC
 
 /*
  * Class:     ethereum_cryptography_LibPeerDASKZG
- * Method:    verifyCellKZGProof
- * Signature: (J[BJ[B[B)Z
- */
-JNIEXPORT jboolean JNICALL Java_ethereum_cryptography_LibPeerDASKZG_verifyCellKZGProof
-  (JNIEnv *, jclass, jlong, jbyteArray, jlong, jbyteArray, jbyteArray);
-
-/*
- * Class:     ethereum_cryptography_LibPeerDASKZG
  * Method:    verifyCellKZGProofBatch
  * Signature: (J[[B[J[J[[B[[B)Z
  */
