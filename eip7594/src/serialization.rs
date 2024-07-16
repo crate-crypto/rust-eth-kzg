@@ -47,7 +47,7 @@ pub(crate) fn deserialize_cell_to_scalars(
 pub(crate) fn deserialize_scalar(scalar_bytes: &[u8]) -> Result<Scalar, SerializationError> {
     let bytes32 : [u8;BYTES_PER_FIELD_ELEMENT]= scalar_bytes.try_into().expect("infallible: expected blob chunks to be exactly {SCALAR_SERIALIZED_SIZE} bytes, since blob was a multiple of {SCALAR_SERIALIZED_SIZE");
 
-    // convert the CtOption into Option
+    // Convert the CtOption into Option
     let option_scalar: Option<Scalar> = Scalar::from_bytes_be(&bytes32).into();
     match option_scalar {
         Some(scalar) => Ok(scalar),
@@ -110,7 +110,7 @@ pub(crate) fn deserialize_cells(
         .collect()
 }
 
-/// Converts a a set of scalars (evaluations) to the `Cell` type
+/// Converts a set of scalars (evaluations) to the `Cell` type.
 pub(crate) fn coset_evaluations_to_cells<T: AsRef<[Scalar]>>(
     evaluations: impl Iterator<Item = T>,
 ) -> [Cell; CELLS_PER_EXT_BLOB] {

@@ -10,6 +10,10 @@ pub const BYTES_PER_FIELD_ELEMENT: usize = 32;
 ///
 /// Note: This is user defined; modifying this value will change the number of proofs produced,
 /// the proof generation time and the time it takes to verify a proof.
+///
+/// Note: This value must be a power of two between 1 and 64. The greatest value is 64 because there
+/// are only 65 G2 points in the trusted setup. Technically, it's still feasible to have a cell with
+/// more points, say 128, but it will require two proofs per cell.
 pub const FIELD_ELEMENTS_PER_CELL: usize = 64;
 
 /// The number of field elements needed to represent a blob.

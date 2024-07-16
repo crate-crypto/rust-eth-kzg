@@ -32,7 +32,7 @@ cargo build
 
 ## Benchmarks
 
-Benchmarks can be ran by calling:
+Benchmarks can be run by calling:
 
 ```
 cargo bench

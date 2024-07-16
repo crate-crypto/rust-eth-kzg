@@ -207,7 +207,7 @@ impl FK20Prover {
     ///   Example:
     ///     - Lets say we have `k` cosets. Each coset holds `m` values. Each coset will have an associated index.
     ///     - Once this method has completed, we will be given a flattened set of evaluations where the
-    ///       `m` values in each coset are now a distant of `k` values apart from each other.
+    ///       `m` values in each coset are now a distance of `k` values apart from each other.
     ///     - The first value that was in the first coset, will be in position `0`.
     ///     - The second value that was in the first coset, will be in position `k`
     ///     - The third value that was in the first coset, will be in position `2k`
@@ -215,7 +215,7 @@ impl FK20Prover {
     ///        Instead it will be in position `t = reverse_bit_order(1, k)`.
     ///     - This value of `t` is what the function returns alongside the flattened evaluations,
     ///       allowing the caller to deduce the other positions.
-    ///     
+    ///
     //
     // Note: For evaluations that are missing, this method will fill these in with zeroes.
     //
@@ -227,7 +227,7 @@ impl FK20Prover {
         coset_indices: Vec<usize>,
         coset_evaluations: Vec<Vec<Scalar>>,
     ) -> Option<(Vec<usize>, Vec<Scalar>)> {
-        assert!(coset_indices.len() == coset_evaluations.len());
+        assert_eq!(coset_indices.len(), coset_evaluations.len());
 
         if coset_indices.is_empty() {
             return None;
@@ -439,7 +439,7 @@ mod tests {
         const POINTS_PER_COSET: usize = 4;
         const NUM_COSETS: usize = 8;
 
-        // Lets pretend that we've generated the coset_evaluations in bit-reversed order
+        // Let's pretend that we've generated the coset_evaluations in bit-reversed order
         let bit_reversed_evaluations: Vec<_> = (0..DOMAIN_SIZE)
             .map(|i| Scalar::from((i + 1) as u64))
             .collect();
@@ -462,7 +462,7 @@ mod tests {
             *evaluation = Scalar::ZERO
         }
 
-        // Now lets simulate the first and fourth coset missing
+        // Now let's simulate the first and fourth coset missing
         let coset_evaluations_missing: Vec<_> = bit_reversed_coset_evaluations
             .into_iter()
             .enumerate()
@@ -487,7 +487,7 @@ mod tests {
         let missing_coset_index_0 = reverse_bits(0, log2(NUM_COSETS as u32));
         let missing_coset_index_3 = reverse_bits(3, log2(NUM_COSETS as u32));
 
-        // Lets show what happened to the evaluations in the first and fourth cosets which were missing
+        // Let's show what happened to the evaluations in the first and fourth cosets which were missing
         //
         // It was in the first coset, so the idea is that there will be zeroes in every `rbo(0) + NUM_COSET * i` position
         // where i ranges from 0 to NUM_COSET.
