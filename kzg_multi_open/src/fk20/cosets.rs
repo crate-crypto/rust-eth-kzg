@@ -162,7 +162,7 @@ mod tests {
 
             assert_eq!(coset_set, bit_reversed_set);
 
-            // A set will remove duplicates, for sanity, lets check that the lengths are the same
+            // A set will remove duplicates, for sanity, let's check that the lengths are the same
             // after we converted the vectors to sets.
             assert_eq!(coset_set.len(), coset_len);
             assert_eq!(bit_reversed_set.len(), coset_len);
@@ -217,7 +217,7 @@ mod tests {
             coset_evaluations.push(evaluations)
         }
 
-        // Lets explain how the data is distributed:
+        // Let's explain how the data is distributed:
         //
         // Because the cosets are formed by essentially shifting a smaller subgroup
         // by \omega^0, \omega^1, \omega^2, each point in the coset is equally spaced
@@ -248,7 +248,7 @@ mod tests {
         let got_coset_evaluations = take_every_nth(&extended_evaluations, 128);
         assert_eq!(got_coset_evaluations, coset_evaluations);
 
-        // Lets now extract the original data
+        // Let's now extract the original data
         let transposed_coset_evaluations = transpose(got_coset_evaluations);
         let flattened_transposed_evaluations: Vec<_> =
             transposed_coset_evaluations.into_iter().flatten().collect();

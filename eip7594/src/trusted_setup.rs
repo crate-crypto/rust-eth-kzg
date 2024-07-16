@@ -112,7 +112,10 @@ impl TrustedSetup {
 
 /// Deserialize G1 points from hex strings without checking that the element
 /// is in the correct subgroup.
-fn deserialize_g1_points<T: AsRef<str>>(g1_points_hex_str: &[T], check: SubgroupCheck) -> Vec<G1Point> {
+fn deserialize_g1_points<T: AsRef<str>>(
+    g1_points_hex_str: &[T],
+    check: SubgroupCheck,
+) -> Vec<G1Point> {
     let mut g1_points = Vec::new();
     for g1_hex_str in g1_points_hex_str {
         let g1_hex_str = g1_hex_str.as_ref();
@@ -146,7 +149,6 @@ fn deserialize_g2_points<T: AsRef<str>>(
     g2_points_hex_str: &[T],
     subgroup_check: SubgroupCheck,
 ) -> Vec<G2Point> {
-
     let mut g2_points = Vec::new();
     for g2_hex_str in g2_points_hex_str {
         let g2_hex_str = g2_hex_str.as_ref();
