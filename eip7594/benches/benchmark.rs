@@ -92,8 +92,20 @@ pub fn bench_verify_cell_kzg_proofs(c: &mut Criterion) {
     }
 }
 
+pub fn bench_init_context(c: &mut Criterion) {
+    const NUM_THREADS : usize = 1;
+    c.bench_function(
+        &format!("Initialize context"),
+        |b| b.iter(|| {
+            let trusted_setup = trusted_setup::TrustedSetup::default();
+            PeerDASContext::with_threads(&trusted_setup, NUM_THREADS)
+        }),
+    );
+}
+
 criterion_group!(
     benches,
+    bench_init_context
     bench_compute_cells_and_kzg_proofs,
     bench_recover_cells_and_compute_kzg_proofs,
     bench_verify_cell_kzg_proofs
