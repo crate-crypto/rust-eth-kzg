@@ -28,6 +28,11 @@
                 {
                     "type": "toml",
                     "path": "Cargo.toml",
+                    "jsonpath": "$.workspace.dependencies.erasure_codes.version"
+                },
+                {
+                    "type": "toml",
+                    "path": "Cargo.toml",
                     "jsonpath": "$.workspace.dependencies.c_peerdas_kzg.version"
                 },
                 {
