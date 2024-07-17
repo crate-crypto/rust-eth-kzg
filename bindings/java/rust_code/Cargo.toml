@@ -12,7 +12,7 @@ repository = { workspace = true }
 jni = "^0.21.1"
 rust_eth_kzg = { workspace = true }
 hex = { workspace = true }
-c_peerdas_kzg = { workspace = true }
+c_eth_kzg = { workspace = true }
 
 [lib]
 crate_type = ["cdylib"]

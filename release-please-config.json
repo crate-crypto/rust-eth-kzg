@@ -33,7 +33,7 @@
                 {
                     "type": "toml",
                     "path": "Cargo.toml",
-                    "jsonpath": "$.workspace.dependencies.c_peerdas_kzg.version"
+                    "jsonpath": "$.workspace.dependencies.c_eth_kzg.version"
                 },
                 {
                     "type": "toml",

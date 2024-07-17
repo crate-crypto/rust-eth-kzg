@@ -1,4 +1,4 @@
-use c_peerdas_kzg::DASContext;
+use c_eth_kzg::DASContext;
 use jni::objects::JObjectArray;
 use jni::objects::{JByteArray, JClass, JLongArray, JObject, JValue};
 use jni::sys::{jboolean, jlong};
@@ -13,7 +13,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_DASContextNew(
     _class: JClass,
 ) -> jlong {
     // TODO: Switch to using the Rust DASContext object
-    c_peerdas_kzg::das_context_new() as jlong
+    c_eth_kzg::das_context_new() as jlong
 }
 
 #[no_mangle]
@@ -23,7 +23,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_DASContextDestro
     ctx_ptr: jlong,
 ) {
     // TODO: Switch to using the Rust DASContext object
-    c_peerdas_kzg::das_context_free(ctx_ptr as *mut DASContext);
+    c_eth_kzg::das_context_free(ctx_ptr as *mut DASContext);
 }
 
 #[no_mangle]
