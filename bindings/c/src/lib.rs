@@ -16,7 +16,7 @@ pub use eip7594::constants::{
     BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT,
     CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB,
 };
-use eip7594::{verifier::VerifierError, Error};
+use eip7594::Error;
 
 // This is a wrapper around the PeerDASContext from the eip7594 library.
 // We need to wrap it as some bindgen tools cannot pick up items
@@ -198,7 +198,7 @@ fn verification_result_to_bool_cresult(
 ) -> Result<bool, CResult> {
     match verification_result {
         Ok(_) => Ok(true),
-        Err(Error::VerifierError(VerifierError::InvalidProof)) => Ok(false),
+        Err(x) if x.invalid_proof() => Ok(false),
         Err(err) => Err(CResult::with_error(&format!("{:?}", err))),
     }
 }

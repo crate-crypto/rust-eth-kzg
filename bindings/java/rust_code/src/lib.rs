@@ -1,6 +1,4 @@
 use c_peerdas_kzg::PeerDASContext;
-use eip7594::verifier::VerifierError;
-use eip7594::Error as DASError;
 use jni::objects::JObjectArray;
 use jni::objects::{JByteArray, JClass, JLongArray, JObject, JValue};
 use jni::sys::{jboolean, jlong};
@@ -150,7 +148,7 @@ fn verify_cell_kzg_proof_batch<'local>(
         proofs,
     ) {
         Ok(_) => Ok(jboolean::from(true)),
-        Err(DASError::VerifierError(VerifierError::InvalidProof)) => Ok(jboolean::from(false)),
+        Err(x) if x.invalid_proof() => Ok(jboolean::from(false)),
         Err(err) => Err(Error::DASError(err)),
     }
 }
