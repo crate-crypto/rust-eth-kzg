@@ -18,29 +18,29 @@ pub use eip7594::constants::{
 };
 use eip7594::Error;
 
-// This is a wrapper around the PeerDASContext from the eip7594 library.
+// This is a wrapper around the DASContext from the eip7594 library.
 // We need to wrap it as some bindgen tools cannot pick up items
 // not defined in this file.
 #[derive(Default)]
-pub struct PeerDASContext {
-    inner: eip7594::PeerDASContext,
+pub struct DASContext {
+    inner: eip7594::DASContext,
 }
 
-impl PeerDASContext {
-    pub fn inner(&self) -> &eip7594::PeerDASContext {
+impl DASContext {
+    pub fn inner(&self) -> &eip7594::DASContext {
         &self.inner
     }
 }
 
-/// Create a new PeerDASContext and return a pointer to it.
+/// Create a new DASContext and return a pointer to it.
 ///
 /// # Memory faults
 ///
 /// To avoid memory leaks, one should ensure that the pointer is freed after use
 /// by calling `peerdas_context_free`.
 #[no_mangle]
-pub extern "C" fn peerdas_context_new() -> *mut PeerDASContext {
-    let ctx = Box::<PeerDASContext>::default();
+pub extern "C" fn peerdas_context_new() -> *mut DASContext {
+    let ctx = Box::<DASContext>::default();
     Box::into_raw(ctx)
 }
 
@@ -59,7 +59,7 @@ pub extern "C" fn peerdas_context_new() -> *mut PeerDASContext {
 /// a pointer that was not created by `peerdas_context_new`.
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[no_mangle]
-pub extern "C" fn peerdas_context_free(ctx: *mut PeerDASContext) {
+pub extern "C" fn peerdas_context_free(ctx: *mut DASContext) {
     if ctx.is_null() {
         return;
     }
@@ -146,7 +146,7 @@ pub unsafe extern "C" fn free_error_message(c_message: *mut std::os::raw::c_char
 #[no_mangle]
 #[must_use]
 pub extern "C" fn blob_to_kzg_commitment(
-    ctx: *const PeerDASContext,
+    ctx: *const DASContext,
 
     blob: *const u8,
 
@@ -176,7 +176,7 @@ pub extern "C" fn blob_to_kzg_commitment(
 #[no_mangle]
 #[must_use]
 pub extern "C" fn compute_cells_and_kzg_proofs(
-    ctx: *const PeerDASContext,
+    ctx: *const DASContext,
 
     blob: *const u8,
 
@@ -231,7 +231,7 @@ fn verification_result_to_bool_cresult(
 #[no_mangle]
 #[must_use]
 pub extern "C" fn verify_cell_kzg_proof_batch(
-    ctx: *const PeerDASContext,
+    ctx: *const DASContext,
 
     row_commitments_length: u64,
     row_commitments: *const *const u8,
@@ -294,7 +294,7 @@ pub extern "C" fn verify_cell_kzg_proof_batch(
 #[no_mangle]
 #[must_use]
 pub extern "C" fn recover_cells_and_proofs(
-    ctx: *const PeerDASContext,
+    ctx: *const DASContext,
 
     cells_length: u64,
     cells: *const *const u8,

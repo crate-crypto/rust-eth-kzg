@@ -74,7 +74,7 @@ template verify_result(res: CResult, ret: untyped): untyped =
 
 type
   KZGCtx* = ref object
-    ctx_ptr: ptr PeerDASContext
+    ctx_ptr: ptr DASContext
 
 # Define custom destructor
 # Nim2 does not allow us to take in a var T

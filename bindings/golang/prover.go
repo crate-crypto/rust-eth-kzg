@@ -41,21 +41,21 @@ const (
 	BytesPerCell = 2048
 )
 
-type PeerDASContext struct {
-	_inner *C.PeerDASContext
+type DASContext struct {
+	_inner *C.DASContext
 }
 
-func NewProverContext() *PeerDASContext {
-	self := &PeerDASContext{_inner: C.peerdas_context_new()}
+func NewProverContext() *DASContext {
+	self := &DASContext{_inner: C.peerdas_context_new()}
 
-	runtime.SetFinalizer(self, func(self *PeerDASContext) {
+	runtime.SetFinalizer(self, func(self *DASContext) {
 		C.peerdas_context_free(self.inner())
 	})
 
 	return self
 }
 
-func (prover *PeerDASContext) BlobToKZGCommitment(blob []byte) ([]byte, error) {
+func (prover *DASContext) BlobToKZGCommitment(blob []byte) ([]byte, error) {
 	if len(blob) != BytesPerBlob {
 		return nil, errors.New("invalid blob size")
 	}
@@ -64,6 +64,6 @@ func (prover *PeerDASContext) BlobToKZGCommitment(blob []byte) ([]byte, error) {
 	return out, nil
 }
 
-func (prover *PeerDASContext) inner() *C.PeerDASContext {
+func (prover *DASContext) inner() *C.DASContext {
 	return prover._inner
 }

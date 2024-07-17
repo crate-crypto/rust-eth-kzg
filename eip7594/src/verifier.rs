@@ -9,7 +9,7 @@ use crate::{
     errors::Error,
     serialization::{deserialize_cells, deserialize_compressed_g1_points},
     trusted_setup::TrustedSetup,
-    Bytes48Ref, CellIndex, CellRef, PeerDASContext, RowIndex,
+    Bytes48Ref, CellIndex, CellRef, DASContext, RowIndex,
 };
 use bls12_381::Scalar;
 use erasure_codes::{BlockErasureIndices, ReedSolomon};
@@ -64,7 +64,7 @@ fn find_missing_cell_indices(present_cell_indices: &[usize]) -> Vec<usize> {
     missing
 }
 
-impl PeerDASContext {
+impl DASContext {
     /// Given a collection of commitments, cells and proofs, this functions verifies that
     /// the cells are consistent with the commitments using their respective KZG proofs.
     pub fn verify_cell_kzg_proof_batch(
