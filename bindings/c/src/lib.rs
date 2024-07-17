@@ -16,7 +16,7 @@ pub use eip7594::constants::{
     BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT,
     CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB,
 };
-use eip7594::verifier::VerifierError;
+use eip7594::{verifier::VerifierError, Error};
 
 // This is a wrapper around the PeerDASContext from the eip7594 library.
 // We need to wrap it as some bindgen tools cannot pick up items
@@ -194,11 +194,11 @@ pub extern "C" fn compute_cells_and_kzg_proofs(
 // From the callers perspective, as long as the verification procedure is invalid, it doesn't matter why it is invalid.
 // We need to unwrap it here because the FFI API is not rich enough to distinguish invalid proof vs invalid input.
 fn verification_result_to_bool_cresult(
-    verification_result: Result<(), VerifierError>,
+    verification_result: Result<(), Error>,
 ) -> Result<bool, CResult> {
     match verification_result {
         Ok(_) => Ok(true),
-        Err(VerifierError::InvalidProof) => Ok(false),
+        Err(Error::VerifierError(VerifierError::InvalidProof)) => Ok(false),
         Err(err) => Err(CResult::with_error(&format!("{:?}", err))),
     }
 }
