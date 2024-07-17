@@ -6,8 +6,8 @@ pub enum Error {
         got: usize,
         name: &'static str,
     },
-    Prover(eip7594::prover::ProverError),
-    Verifier(eip7594::verifier::VerifierError),
+    Prover(rust_eth_kzg::prover::ProverError),
+    Verifier(rust_eth_kzg::verifier::VerifierError),
 }
 
 impl From<jni::errors::Error> for Error {
@@ -16,8 +16,8 @@ impl From<jni::errors::Error> for Error {
     }
 }
 
-impl From<eip7594::prover::ProverError> for Error {
-    fn from(err: eip7594::prover::ProverError) -> Self {
+impl From<rust_eth_kzg::prover::ProverError> for Error {
+    fn from(err: rust_eth_kzg::prover::ProverError) -> Self {
         Error::Prover(err)
     }
 }

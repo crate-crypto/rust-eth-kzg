@@ -6,7 +6,7 @@ use napi::{
 };
 use napi_derive::napi;
 
-use eip7594::{constants, verifier::VerifierError, PeerDASContext};
+use rust_eth_kzg::{constants, verifier::VerifierError, PeerDASContext};
 
 #[napi]
 pub const BYTES_PER_COMMITMENT: u32 = constants::BYTES_PER_COMMITMENT as u32;

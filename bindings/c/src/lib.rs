@@ -12,22 +12,22 @@ use recover_cells_and_kzg_proofs::_recover_cells_and_proofs;
 
 pub(crate) mod pointer_utils;
 
-pub use eip7594::constants::{
+pub use rust_eth_kzg::constants::{
     BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT,
     CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB,
 };
-use eip7594::verifier::VerifierError;
+use rust_eth_kzg::verifier::VerifierError;
 
 // This is a wrapper around the PeerDASContext from the eip7594 library.
 // We need to wrap it as some bindgen tools cannot pick up items
 // not defined in this file.
 #[derive(Default)]
 pub struct PeerDASContext {
-    inner: eip7594::PeerDASContext,
+    inner: rust_eth_kzg::PeerDASContext,
 }
 
 impl PeerDASContext {
-    pub fn inner(&self) -> &eip7594::PeerDASContext {
+    pub fn inner(&self) -> &rust_eth_kzg::PeerDASContext {
         &self.inner
     }
 }

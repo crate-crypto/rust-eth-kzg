@@ -1,6 +1,6 @@
 use bls12_381::Scalar;
 use criterion::{criterion_group, criterion_main, Criterion};
-use eip7594::{
+use rust_eth_kzg::{
     constants::{BYTES_PER_BLOB, CELLS_PER_EXT_BLOB},
     trusted_setup, Bytes48Ref, Cell, CellIndex, CellRef, KZGCommitment, KZGProof, PeerDASContext,
     RowIndex,
@@ -110,14 +110,13 @@ pub fn bench_verify_cell_kzg_proof_batch(c: &mut Criterion) {
 }
 
 pub fn bench_init_context(c: &mut Criterion) {
-    const NUM_THREADS : usize = 1;
-    c.bench_function(
-        &format!("Initialize context"),
-        |b| b.iter(|| {
+    const NUM_THREADS: usize = 1;
+    c.bench_function(&format!("Initialize context"), |b| {
+        b.iter(|| {
             let trusted_setup = trusted_setup::TrustedSetup::default();
             PeerDASContext::with_threads(&trusted_setup, NUM_THREADS)
-        }),
-    );
+        })
+    });
 }
 
 criterion_group!(

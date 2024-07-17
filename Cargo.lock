@@ -160,8 +160,8 @@ name = "c_peerdas_kzg"
 version = "0.3.0"
 dependencies = [
  "cbindgen",
- "eip7594",
  "libc",
+ "rust_eth_kzg",
 ]
 
 [[package]]
@@ -482,23 +482,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "eip7594"
-version = "0.3.0"
-dependencies = [
- "crate_crypto_internal_peerdas_bls12_381",
- "crate_crypto_internal_peerdas_erasure_codes",
- "crate_crypto_kzg_multi_open_fk20",
- "criterion",
- "hex",
- "rand",
- "rayon",
- "rust-embed",
- "serde",
- "serde_json",
- "serde_yaml",
-]
-
-[[package]]
 name = "either"
 version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -723,9 +706,9 @@ name = "java_peerdas_kzg"
 version = "0.3.0"
 dependencies = [
  "c_peerdas_kzg",
- "eip7594",
  "hex",
  "jni",
+ "rust_eth_kzg",
 ]
 
 [[package]]
@@ -971,10 +954,10 @@ dependencies = [
 name = "peerdas-kzg"
 version = "0.3.0"
 dependencies = [
- "eip7594",
  "napi",
  "napi-build",
  "napi-derive",
+ "rust_eth_kzg",
 ]
 
 [[package]]
@@ -1174,6 +1157,23 @@ checksum = "38c74a686185620830701348de757fd36bef4aa9680fd23c49fc539ddcc1af32"
 dependencies = [
  "sha2",
  "walkdir",
+]
+
+[[package]]
+name = "rust_eth_kzg"
+version = "0.3.0"
+dependencies = [
+ "crate_crypto_internal_peerdas_bls12_381",
+ "crate_crypto_internal_peerdas_erasure_codes",
+ "crate_crypto_kzg_multi_open_fk20",
+ "criterion",
+ "hex",
+ "rand",
+ "rayon",
+ "rust-embed",
+ "serde",
+ "serde_json",
+ "serde_yaml",
 ]
 
 [[package]]
