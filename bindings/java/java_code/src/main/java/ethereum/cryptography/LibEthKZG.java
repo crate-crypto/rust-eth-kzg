@@ -63,7 +63,7 @@ public class LibEthKZG implements AutoCloseable{
     // TODO: add this code to all bindings
     private void checkContextHasNotBeenFreed() {
         if (contextPtr == 0) {
-            throw new IllegalStateException("PeerDAS context has been destroyed");
+            throw new IllegalStateException("KZG context context has been destroyed");
         }
     }
 
