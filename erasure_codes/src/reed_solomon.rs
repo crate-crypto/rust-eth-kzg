@@ -8,13 +8,13 @@ use polynomial::{domain::Domain, monomial::vanishing_poly};
 ///
 /// This is useful as it allows us to optimize the construction of
 /// the vanishing polynomial. This is by far the most time consuming part
-/// of unique decoding.  
+/// of unique decoding.
 pub(crate) enum ErasurePattern {
     /// Given a block_size, we can group the codeword into blocks.
     /// A block erasure index now signifies
     /// an erasure in the same position of each block.
     /// Example:
-    ///  - Codeword = [0,b,0,d,0,f,0, h]
+    ///  - Codeword = [0,b,0,d,0,f,0,h]
     ///  - block_size = 2
     ///  - block_index = 0
     /// In the above example, we had 4 blocks and
@@ -36,7 +36,7 @@ pub struct BlockErasureIndices(pub Vec<BlockErasureIndex>);
 
 #[derive(Debug)]
 pub struct ReedSolomon {
-    /// expansion_factor denotes the factor by which the message/poly_len will be expanded.
+    /// Denotes the factor by which the message/poly_len will be expanded.
     /// Example, if poly_len = 2 and expansion_factor = 4, Then the codeword will have length 4 * 2 = 8.
     expansion_factor: usize,
     /// The length of the polynomial that we will be encoding to a codeword.
@@ -87,7 +87,7 @@ impl ReedSolomon {
 
     /// Returns the maximum number of known missing values that we can
     /// tolerate before are not able to recover the message.
-    ///  
+    ///
     /// Note: we need to have at least `poly_len` evaluations
     fn acceptable_num_random_erasures(&self) -> usize {
         let total_codeword_len = self.poly_len * self.expansion_factor;
@@ -197,7 +197,7 @@ impl ReedSolomon {
         // Where \omega is a `num_blocks` root of unity.
         let mut z_x = vec![Scalar::ZERO; evaluation_domain_size];
         for (i, coeff) in vanish_poly_first_block.into_iter().enumerate() {
-            // Lets compute the bounds for the array access below to argue that it is safe:
+            // Let's compute the bounds for the array access below to argue that it is safe:
             //
             //  For all array accesses to be in bound, we have:
             //  i * self.num_blocks < z_x.len()
