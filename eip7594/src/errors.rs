@@ -10,6 +10,12 @@ pub enum Error {
     Serialization(SerializationError),
 }
 
+impl Error {
+    pub fn invalid_proof(&self) -> bool {
+        matches!(self, Error::VerifierError(VerifierError::InvalidProof))
+    }
+}
+
 impl From<ProverError> for Error {
     fn from(value: ProverError) -> Self {
         Error::Prover(value)

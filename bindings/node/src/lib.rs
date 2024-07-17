@@ -6,7 +6,7 @@ use napi::{
 };
 use napi_derive::napi;
 
-use eip7594::{constants, verifier::VerifierError, Error as DASError, PeerDASContext};
+use eip7594::{constants, PeerDASContext};
 
 #[napi]
 pub const BYTES_PER_COMMITMENT: u32 = constants::BYTES_PER_COMMITMENT as u32;
@@ -197,7 +197,7 @@ impl PeerDASContextJs {
       ctx.verify_cell_kzg_proof_batch(commitments, row_indices, column_indices, cells, proofs);
     match valid {
       Ok(_) => Ok(true),
-      Err(DASError::VerifierError(VerifierError::InvalidProof)) => Ok(false),
+      Err(x) if x.invalid_proof() => Ok(false),
       Err(err) => Err(Error::from_reason(format!(
         "failed to compute verify_cell_kzg_proof_batch: {:?}",
         err

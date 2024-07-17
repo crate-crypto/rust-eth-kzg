@@ -1,5 +1,3 @@
-pub use crate::errors::ProverError;
-
 use kzg_multi_open::{
     commit_key::CommitKey,
     {Prover, ProverInput},
