@@ -71,7 +71,7 @@ jobs:
               pom {
                 name = 'PeerDAS KZG Dummy Library'
                 description = 'A dummy library for testing PeerDAS KZG operations publication'
-                url = 'https://github.com/crate-crypto/peerdas-kzg'
+                url = 'https://github.com/crate-crypto/rust-eth-kzg'
                 licenses {
                   license {
                     name = 'The Apache License, Version 2.0'
@@ -86,9 +86,9 @@ jobs:
                   }
                 }
                 scm {
-                  connection = 'scm:git:git://github.com/crate-crypto/peerdas-kzg.git'
-                  developerConnection = 'scm:git:ssh://github.com:crate-crypto/peerdas-kzg.git'
-                  url = 'https://github.com/crate-crypto/peerdas-kzg'
+                  connection = 'scm:git:git://github.com/crate-crypto/rust-eth-kzg.git'
+                  developerConnection = 'scm:git:ssh://github.com:crate-crypto/rust-eth-kzg.git'
+                  url = 'https://github.com/crate-crypto/rust-eth-kzg'
                 }
               }
             }

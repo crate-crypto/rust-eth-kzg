@@ -1,4 +1,4 @@
-# PeerDAS KZG
+# Rust Eth KZG
 
 ## Overview
 

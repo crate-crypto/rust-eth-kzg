@@ -21,7 +21,7 @@ edition = "2021"
 license = "MIT"
 version = "0.3.0"
 rust-version = "1.70"
-repository = "https://github.com/crate-crypto/peerdas-kzg"
+repository = "https://github.com/crate-crypto/rust-eth-kzg"
 
 [workspace.dependencies]
 # These names are essentially a way to achieve scoping when we publish to crates.io
