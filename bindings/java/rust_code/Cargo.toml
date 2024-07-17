@@ -15,4 +15,4 @@ hex = { workspace = true }
 c_peerdas_kzg = { workspace = true }
 
 [lib]
-crate_type = ["cdylib"]
+crate-type = ["cdylib"]
