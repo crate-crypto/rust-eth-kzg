@@ -31,19 +31,19 @@ jobs:
       # These steps are in a specific order so crate dependencies are updated first
       - name: Publish bls12_381
         run: |
-          cargo publish --package crate_crypto_internal_peerdas_bls12_381
+          cargo publish --package crate_crypto_internal_eth_kzg_bls12_381
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_RELEASE_TOKEN }}
 
       - name: Publish polynomial
         run: |
-          cargo publish --package crate_crypto_internal_peerdas_polynomial
+          cargo publish --package crate_crypto_internal_eth_kzg_polynomial
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_RELEASE_TOKEN }}
 
       - name: Publish erasure_codes
         run: |
-          cargo publish --package crate_crypto_internal_peerdas_erasure_codes
+          cargo publish --package crate_crypto_internal_eth_kzg_erasure_codes
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_RELEASE_TOKEN }}
 

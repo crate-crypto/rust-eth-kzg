@@ -1,4 +1,4 @@
-package peerdas_kzg
+package eth_kzg
 
 import (
 	"testing"

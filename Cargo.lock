@@ -306,7 +306,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "crate_crypto_internal_peerdas_bls12_381"
+name = "crate_crypto_internal_eth_kzg_bls12_381"
 version = "0.3.0"
 dependencies = [
  "blst",
@@ -320,20 +320,20 @@ dependencies = [
 ]
 
 [[package]]
-name = "crate_crypto_internal_peerdas_erasure_codes"
+name = "crate_crypto_internal_eth_kzg_erasure_codes"
 version = "0.3.0"
 dependencies = [
- "crate_crypto_internal_peerdas_bls12_381",
- "crate_crypto_internal_peerdas_polynomial",
+ "crate_crypto_internal_eth_kzg_bls12_381",
+ "crate_crypto_internal_eth_kzg_polynomial",
  "criterion",
  "rand",
 ]
 
 [[package]]
-name = "crate_crypto_internal_peerdas_polynomial"
+name = "crate_crypto_internal_eth_kzg_polynomial"
 version = "0.3.0"
 dependencies = [
- "crate_crypto_internal_peerdas_bls12_381",
+ "crate_crypto_internal_eth_kzg_bls12_381",
  "criterion",
  "rand",
 ]
@@ -342,8 +342,8 @@ dependencies = [
 name = "crate_crypto_kzg_multi_open_fk20"
 version = "0.3.0"
 dependencies = [
- "crate_crypto_internal_peerdas_bls12_381",
- "crate_crypto_internal_peerdas_polynomial",
+ "crate_crypto_internal_eth_kzg_bls12_381",
+ "crate_crypto_internal_eth_kzg_polynomial",
  "criterion",
  "hex",
  "rand",
@@ -439,7 +439,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "csharp_peerdas_kzg"
+name = "csharp_eth_kzg"
 version = "0.3.0"
 dependencies = [
  "csbindgen",
@@ -1041,8 +1041,8 @@ checksum = "7a66a03ae7c801facd77a29370b4faec201768915ac14a721ba36f20bc9c209b"
 name = "rust_eth_kzg"
 version = "0.3.0"
 dependencies = [
- "crate_crypto_internal_peerdas_bls12_381",
- "crate_crypto_internal_peerdas_erasure_codes",
+ "crate_crypto_internal_eth_kzg_bls12_381",
+ "crate_crypto_internal_eth_kzg_erasure_codes",
  "crate_crypto_kzg_multi_open_fk20",
  "criterion",
  "hex",

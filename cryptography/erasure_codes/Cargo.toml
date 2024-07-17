@@ -1,5 +1,5 @@
 [package]
-name = "crate_crypto_internal_peerdas_erasure_codes"
+name = "crate_crypto_internal_eth_kzg_erasure_codes"
 description = "This crate provides an implementation of erasure encoding and decoding"
 version = { workspace = true }
 authors = { workspace = true }

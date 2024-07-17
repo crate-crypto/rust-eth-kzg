@@ -4,7 +4,7 @@
 
 ### What
 
-A cryptographic library that is compatible with the PeerDAS KZG commitment scheme used in the Ethereum blockchain.
+A cryptographic library that is compatible with the KZG commitment scheme used in the Ethereum blockchain for PeerDAS.
 
 ### Why
 
