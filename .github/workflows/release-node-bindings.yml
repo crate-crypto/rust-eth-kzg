@@ -49,6 +49,7 @@ jobs:
     name: Build - ${{ matrix.settings.target }}
     runs-on: ${{ matrix.settings.host }}
     steps:
+      - uses: cargo-bins/cargo-binstall@main
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
@@ -74,10 +75,10 @@ jobs:
           version: 0.13.0
       - name: Install cargo-zigbuild (Linux only)
         if: runner.os == 'Linux'
-        run: cargo install cargo-zigbuild
+        run: cargo binstall cargo-zigbuild
       - name: Install cargo-xwin (Windows on Linux only)
         if: runner.os == 'Linux' && contains(matrix.settings.target, 'windows')
-        run: cargo install cargo-xwin
+        run: cargo binstall cargo-xwin
       - name: Build (macOS)
         if: runner.os == 'macOS'
         run: |
