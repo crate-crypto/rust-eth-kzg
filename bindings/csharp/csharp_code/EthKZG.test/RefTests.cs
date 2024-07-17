@@ -4,8 +4,8 @@ using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
 
-// Testing code below taken from CKZG and modified to work with PeerDASKZG
-namespace PeerDASKZG.test;
+// Testing code below taken from CKZG and modified to work with EthKZG
+namespace EthKZG.test;
 
 [TestFixture]
 public class ReferenceTests
@@ -14,7 +14,7 @@ public class ReferenceTests
     public void Setup()
     {
 
-        _context = new PeerDASKZG();
+        _context = new EthKZG();
         _deserializer = new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
         // TODO(Note): On some systems, this is needed as the normal deserializer has trouble deserializing
         // `cell_id` to `CellId` ie the underscore is not being parsed correctly.
@@ -28,7 +28,7 @@ public class ReferenceTests
     }
 
 
-    private PeerDASKZG _context;
+    private EthKZG _context;
     private const string TestDir = "../../../../../../../consensus_test_vectors";
     private readonly string _blobToKzgCommitmentTests = Path.Join(TestDir, "blob_to_kzg_commitment");
     private readonly string _computeCellsAndKzgProofsTests = Path.Join(TestDir, "compute_cells_and_kzg_proofs");

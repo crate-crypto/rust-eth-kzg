@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PeerDASKZG.bindings\PeerDASKZG.csproj" />
+    <ProjectReference Include="..\EthKZG.bindings\EthKZG.csproj" />
   </ItemGroup>
 
 </Project>

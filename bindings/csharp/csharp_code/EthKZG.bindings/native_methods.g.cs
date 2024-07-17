@@ -9,7 +9,7 @@ using System;
 using System.Runtime.InteropServices;
 
 
-namespace PeerDAS.Native
+namespace EthKZG.Native
 {
     internal static unsafe partial class NativeMethods
     {
