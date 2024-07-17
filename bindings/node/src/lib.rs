@@ -6,7 +6,7 @@ use napi::{
 };
 use napi_derive::napi;
 
-use eip7594::{constants, PeerDASContext};
+use eip7594::{constants, DASContext};
 
 #[napi]
 pub const BYTES_PER_COMMITMENT: u32 = constants::BYTES_PER_COMMITMENT as u32;
@@ -28,22 +28,22 @@ pub struct CellsAndProofs {
 }
 
 #[napi]
-pub struct PeerDASContextJs {
-  inner: Arc<PeerDASContext>,
+pub struct DASContextJs {
+  inner: Arc<DASContext>,
 }
 
-impl Default for PeerDASContextJs {
+impl Default for DASContextJs {
   fn default() -> Self {
     Self::new()
   }
 }
 
 #[napi]
-impl PeerDASContextJs {
+impl DASContextJs {
   #[napi(constructor)]
   pub fn new() -> Self {
-    PeerDASContextJs {
-      inner: Arc::new(PeerDASContext::default()),
+    DASContextJs {
+      inner: Arc::new(DASContext::default()),
     }
   }
 

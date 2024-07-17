@@ -18,15 +18,15 @@ namespace PeerDAS.Native
 
 
         /// <summary>
-        ///  Create a new PeerDASContext and return a pointer to it.
+        ///  Create a new DASContext and return a pointer to it.
         ///
         ///  # Memory faults
         ///
         ///  To avoid memory leaks, one should ensure that the pointer is freed after use
-        ///  by calling `peerdas_context_free`.
+        ///  by calling `das_context_free`.
         /// </summary>
-        [DllImport(__DllName, EntryPoint = "peerdas_context_new", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        internal static extern PeerDASContext* peerdas_context_new();
+        [DllImport(__DllName, EntryPoint = "das_context_new", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern DASContext* das_context_new();
 
         /// <summary>
         ///  # Safety
@@ -41,10 +41,10 @@ namespace PeerDAS.Native
         ///  # Undefined behavior
         ///
         ///  - Since the `ctx` is created in Rust, we can only get undefined behavior, if the caller passes in
-        ///  a pointer that was not created by `peerdas_context_new`.
+        ///  a pointer that was not created by `das_context_new`.
         /// </summary>
-        [DllImport(__DllName, EntryPoint = "peerdas_context_free", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        internal static extern void peerdas_context_free(PeerDASContext* ctx);
+        [DllImport(__DllName, EntryPoint = "das_context_free", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern void das_context_free(DASContext* ctx);
 
         /// <summary>
         ///  Free the memory allocated for the error message.
@@ -72,7 +72,7 @@ namespace PeerDAS.Native
         ///    If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
         /// </summary>
         [DllImport(__DllName, EntryPoint = "blob_to_kzg_commitment", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        internal static extern CResult blob_to_kzg_commitment(PeerDASContext* ctx, byte* blob, byte* @out);
+        internal static extern CResult blob_to_kzg_commitment(DASContext* ctx, byte* blob, byte* @out);
 
         /// <summary>
         ///  Computes the cells and KZG proofs for a given blob.
@@ -92,7 +92,7 @@ namespace PeerDAS.Native
         ///    If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
         /// </summary>
         [DllImport(__DllName, EntryPoint = "compute_cells_and_kzg_proofs", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        internal static extern CResult compute_cells_and_kzg_proofs(PeerDASContext* ctx, byte* blob, byte** out_cells, byte** out_proofs);
+        internal static extern CResult compute_cells_and_kzg_proofs(DASContext* ctx, byte* blob, byte** out_cells, byte** out_proofs);
 
         /// <summary>
         ///  Verifies a batch of cells and their KZG proofs.
@@ -122,7 +122,7 @@ namespace PeerDAS.Native
         ///    If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
         /// </summary>
         [DllImport(__DllName, EntryPoint = "verify_cell_kzg_proof_batch", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        internal static extern CResult verify_cell_kzg_proof_batch(PeerDASContext* ctx, ulong row_commitments_length, byte** row_commitments, ulong row_indices_length, ulong* row_indices, ulong column_indices_length, ulong* column_indices, ulong cells_length, byte** cells, ulong proofs_length, byte** proofs, bool* verified);
+        internal static extern CResult verify_cell_kzg_proof_batch(DASContext* ctx, ulong row_commitments_length, byte** row_commitments, ulong row_indices_length, ulong* row_indices, ulong column_indices_length, ulong* column_indices, ulong cells_length, byte** cells, ulong proofs_length, byte** proofs, bool* verified);
 
         /// <summary>
         ///  Recovers all cells and their KZG proofs from the given cell indices and cells
@@ -149,7 +149,7 @@ namespace PeerDAS.Native
         ///    If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
         /// </summary>
         [DllImport(__DllName, EntryPoint = "recover_cells_and_proofs", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        internal static extern CResult recover_cells_and_proofs(PeerDASContext* ctx, ulong cells_length, byte** cells, ulong cell_indices_length, ulong* cell_indices, byte** out_cells, byte** out_proofs);
+        internal static extern CResult recover_cells_and_proofs(DASContext* ctx, ulong cells_length, byte** cells, ulong cell_indices_length, ulong* cell_indices, byte** out_cells, byte** out_proofs);
 
         [DllImport(__DllName, EntryPoint = "constant_bytes_per_cell", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         internal static extern ulong constant_bytes_per_cell();
@@ -164,7 +164,7 @@ namespace PeerDAS.Native
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal unsafe partial struct PeerDASContext
+    internal unsafe partial struct DASContext
     {
     }
 
