@@ -1,5 +1,5 @@
-use crate_crypto_internal_peerdas_bls12_381::ff::Field;
-use crate_crypto_internal_peerdas_bls12_381::{batch_inversion, Scalar};
+use crate_crypto_internal_eth_kzg_bls12_381::ff::Field;
+use crate_crypto_internal_eth_kzg_bls12_381::{batch_inversion, Scalar};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 pub fn batch_inversion(c: &mut Criterion) {

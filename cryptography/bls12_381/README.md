@@ -12,5 +12,5 @@ that we can publish the multi-opening protocol to crates.io. Nevertheless, insta
 
 ```toml
 [dependencies]
-crate_crypto_internal_peerdas_bls12_381 = "0.1.0"
+crate_crypto_internal_eth_kzg_bls12_381 = "0.1.0"
 ```

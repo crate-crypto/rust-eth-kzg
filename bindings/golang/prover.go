@@ -1,4 +1,4 @@
-package peerdas_kzg
+package eth_kzg
 
 /*
 #cgo darwin,amd64 LDFLAGS: ./build/x86_64-apple-darwin/libc_eth_kzg.a

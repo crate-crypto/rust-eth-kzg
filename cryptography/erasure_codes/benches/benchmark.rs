@@ -1,7 +1,7 @@
 use std::ops::Range;
 
 use bls12_381::Scalar;
-use crate_crypto_internal_peerdas_erasure_codes::{BlockErasureIndices, ReedSolomon};
+use crate_crypto_internal_eth_kzg_erasure_codes::{BlockErasureIndices, ReedSolomon};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 pub fn bench_erasure_code_decoding_4096_8192(c: &mut Criterion) {

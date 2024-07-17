@@ -1,5 +1,5 @@
 [package]
-name = "crate_crypto_internal_peerdas_polynomial"
+name = "crate_crypto_internal_eth_kzg_polynomial"
 description = "This crate provides utility methods that are needed for Polynomial objects"
 version = { workspace = true }
 authors = { workspace = true }
