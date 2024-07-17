@@ -75,10 +75,10 @@ jobs:
           version: 0.13.0
       - name: Install cargo-zigbuild (Linux only)
         if: runner.os == 'Linux'
-        run: cargo binstall cargo-zigbuild
+        run: cargo binstall cargo-zigbuild -y
       - name: Install cargo-xwin (Windows on Linux only)
         if: runner.os == 'Linux' && contains(matrix.settings.target, 'windows')
-        run: cargo binstall cargo-xwin
+        run: cargo binstall cargo-xwin -y
       - name: Build (macOS)
         if: runner.os == 'macOS'
         run: |
