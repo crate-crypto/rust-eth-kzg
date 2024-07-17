@@ -7,7 +7,7 @@ type CResultStatus* = enum
   Ok
   Err
 
-type PeerDASContext* {.incompleteStruct.} = object
+type DASContext* {.incompleteStruct.} = object
 
 ## A C-style struct to represent the success result of a function call.
 #
@@ -16,13 +16,13 @@ type CResult* = object
   xstatus*: CResultStatus
   xerror_msg*: pointer
 
-## Create a new PeerDASContext and return a pointer to it.
+## Create a new DASContext and return a pointer to it.
 #
 # # Memory faults
 #
 # To avoid memory leaks, one should ensure that the pointer is freed after use
-# by calling `peerdas_context_free`.
-proc peerdas_context_new*(): ptr PeerDASContext {.importc: "peerdas_context_new".}
+# by calling `das_context_free`.
+proc das_context_new*(): ptr DASContext {.importc: "das_context_new".}
 
 ## # Safety
 #
@@ -36,8 +36,8 @@ proc peerdas_context_new*(): ptr PeerDASContext {.importc: "peerdas_context_new"
 # # Undefined behavior
 #
 # - Since the `ctx` is created in Rust, we can only get undefined behavior, if the caller passes in
-# a pointer that was not created by `peerdas_context_new`.
-proc peerdas_context_free*(ctx: ptr PeerDASContext): void {.importc: "peerdas_context_free".}
+# a pointer that was not created by `das_context_new`.
+proc das_context_free*(ctx: ptr DASContext): void {.importc: "das_context_free".}
 
 ## Free the memory allocated for the error message.
 #
@@ -59,7 +59,7 @@ proc free_error_message*(c_message: pointer): void {.importc: "free_error_messag
 #
 # - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
 #   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
-proc blob_to_kzg_commitment*(ctx: ptr PeerDASContext,
+proc blob_to_kzg_commitment*(ctx: ptr DASContext,
                              blob: pointer,
                              outx: pointer): CResult {.importc: "blob_to_kzg_commitment".}
 
@@ -78,7 +78,7 @@ proc blob_to_kzg_commitment*(ctx: ptr PeerDASContext,
 #
 # - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
 #   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
-proc compute_cells_and_kzg_proofs*(ctx: ptr PeerDASContext,
+proc compute_cells_and_kzg_proofs*(ctx: ptr DASContext,
                                    blob: pointer,
                                    out_cells: ptr pointer,
                                    out_proofs: ptr pointer): CResult {.importc: "compute_cells_and_kzg_proofs".}
@@ -108,7 +108,7 @@ proc compute_cells_and_kzg_proofs*(ctx: ptr PeerDASContext,
 #
 # - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
 #   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
-proc verify_cell_kzg_proof_batch*(ctx: ptr PeerDASContext,
+proc verify_cell_kzg_proof_batch*(ctx: ptr DASContext,
                                   row_commitments_length: uint64,
                                   row_commitments: ptr pointer,
                                   row_indices_length: uint64,
@@ -143,7 +143,7 @@ proc verify_cell_kzg_proof_batch*(ctx: ptr PeerDASContext,
 #
 # - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
 #   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
-proc recover_cells_and_proofs*(ctx: ptr PeerDASContext,
+proc recover_cells_and_proofs*(ctx: ptr DASContext,
                                cells_length: uint64,
                                cells: ptr pointer,
                                cell_indices_length: uint64,

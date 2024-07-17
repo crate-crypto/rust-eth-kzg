@@ -30,7 +30,7 @@ public class LibPeerDASKZG implements AutoCloseable{
 
     public LibPeerDASKZG() {
         ensureLibraryLoaded();
-        this.contextPtr = peerDASContextNew();
+        this.contextPtr = DASContextNew();
     }
 
     private static void ensureLibraryLoaded() {
@@ -54,7 +54,7 @@ public class LibPeerDASKZG implements AutoCloseable{
 
     public void destroy() {
         if (contextPtr != 0) {
-            peerDASContextDestroy(contextPtr);
+            DASContextDestroy(contextPtr);
             contextPtr = 0;
         }
     }
@@ -94,9 +94,9 @@ public class LibPeerDASKZG implements AutoCloseable{
      * library
      */
 
-    private static native long peerDASContextNew();
+    private static native long DASContextNew();
 
-    private static native void peerDASContextDestroy(long ctx_ptr);
+    private static native void DASContextDestroy(long ctx_ptr);
 
     private static native CellsAndProofs computeCellsAndKZGProofs(long context_ptr, byte[] blob);
 

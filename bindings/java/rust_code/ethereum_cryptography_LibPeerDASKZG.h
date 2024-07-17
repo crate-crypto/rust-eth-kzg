@@ -21,18 +21,18 @@ extern "C" {
 #define ethereum_cryptography_LibPeerDASKZG_BYTES_PER_CELL 2048L
 /*
  * Class:     ethereum_cryptography_LibPeerDASKZG
- * Method:    peerDASContextNew
+ * Method:    DASContextNew
  * Signature: ()J
  */
-JNIEXPORT jlong JNICALL Java_ethereum_cryptography_LibPeerDASKZG_peerDASContextNew
+JNIEXPORT jlong JNICALL Java_ethereum_cryptography_LibPeerDASKZG_DASContextNew
   (JNIEnv *, jclass);
 
 /*
  * Class:     ethereum_cryptography_LibPeerDASKZG
- * Method:    peerDASContextDestroy
+ * Method:    DASContextDestroy
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_ethereum_cryptography_LibPeerDASKZG_peerDASContextDestroy
+JNIEXPORT void JNICALL Java_ethereum_cryptography_LibPeerDASKZG_DASContextDestroy
   (JNIEnv *, jclass, jlong);
 
 /*

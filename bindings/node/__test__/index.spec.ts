@@ -1,6 +1,5 @@
 import {
-  PeerDasContextJs,
-  PeerDASContextJs,
+  DasContextJs,
 } from "../index.js";
 
 import { readFileSync } from "fs";
@@ -60,8 +59,8 @@ function assertBytesEqual(a: Uint8Array | Buffer, b: Uint8Array | Buffer): void 
   }
 }
 
-describe("ProverContext", () => {
-  const ctx = new PeerDasContextJs();
+describe("Spec tests", () => {
+  const ctx = new DasContextJs();
 
   it("reference tests for blobToKzgCommitment should pass", () => {
     const tests = globSync(BLOB_TO_KZG_COMMITMENT_TESTS);

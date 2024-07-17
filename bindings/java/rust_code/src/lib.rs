@@ -1,4 +1,4 @@
-use c_peerdas_kzg::PeerDASContext;
+use c_peerdas_kzg::DASContext;
 use jni::objects::JObjectArray;
 use jni::objects::{JByteArray, JClass, JLongArray, JObject, JValue};
 use jni::sys::{jboolean, jlong};
@@ -9,22 +9,22 @@ mod errors;
 use errors::Error;
 
 #[no_mangle]
-pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_peerDASContextNew(
+pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_DASContextNew(
     _env: JNIEnv,
     _class: JClass,
 ) -> jlong {
-    // TODO: Switch to using the Rust PeerDASContext object
-    c_peerdas_kzg::peerdas_context_new() as jlong
+    // TODO: Switch to using the Rust DASContext object
+    c_peerdas_kzg::das_context_new() as jlong
 }
 
 #[no_mangle]
-pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_peerDASContextDestroy(
+pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_DASContextDestroy(
     _env: JNIEnv,
     _class: JClass,
     ctx_ptr: jlong,
 ) {
-    // TODO: Switch to using the Rust PeerDASContext object
-    c_peerdas_kzg::peerdas_context_free(ctx_ptr as *mut PeerDASContext);
+    // TODO: Switch to using the Rust DASContext object
+    c_peerdas_kzg::das_context_free(ctx_ptr as *mut DASContext);
 }
 
 #[no_mangle]
@@ -34,7 +34,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_computeCellsAndK
     ctx_ptr: jlong,
     blob: JByteArray<'local>,
 ) -> JObject<'local> {
-    let ctx = unsafe { &*(ctx_ptr as *const PeerDASContext) };
+    let ctx = unsafe { &*(ctx_ptr as *const DASContext) };
     match compute_cells_and_kzg_proofs(&mut env, ctx, blob) {
         Ok(cells_and_proofs) => cells_and_proofs,
         Err(err) => {
@@ -45,7 +45,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_computeCellsAndK
 }
 fn compute_cells_and_kzg_proofs<'local>(
     env: &mut JNIEnv<'local>,
-    ctx: &PeerDASContext,
+    ctx: &DASContext,
     blob: JByteArray<'local>,
 ) -> Result<JObject<'local>, Error> {
     let blob = env.convert_byte_array(blob)?;
@@ -63,7 +63,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_blobToKZGCommitm
     ctx_ptr: jlong,
     blob: JByteArray<'local>,
 ) -> JByteArray<'local> {
-    let ctx = unsafe { &*(ctx_ptr as *const PeerDASContext) };
+    let ctx = unsafe { &*(ctx_ptr as *const DASContext) };
     match blob_to_kzg_commitment(&mut env, ctx, blob) {
         Ok(commitment) => commitment,
         Err(err) => {
@@ -74,7 +74,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_blobToKZGCommitm
 }
 fn blob_to_kzg_commitment<'local>(
     env: &mut JNIEnv<'local>,
-    ctx: &PeerDASContext,
+    ctx: &DASContext,
     blob: JByteArray<'local>,
 ) -> Result<JByteArray<'local>, Error> {
     let blob = env.convert_byte_array(blob)?;
@@ -95,7 +95,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_verifyCellKZGPro
     cells: JObjectArray<'local>,
     proofs: JObjectArray<'local>,
 ) -> jboolean {
-    let ctx = unsafe { &*(ctx_ptr as *const PeerDASContext) };
+    let ctx = unsafe { &*(ctx_ptr as *const DASContext) };
 
     match verify_cell_kzg_proof_batch(
         &mut env,
@@ -115,7 +115,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_verifyCellKZGPro
 }
 fn verify_cell_kzg_proof_batch<'local>(
     env: &mut JNIEnv,
-    ctx: &PeerDASContext,
+    ctx: &DASContext,
     commitment: JObjectArray<'local>,
     row_indices: JLongArray,
     column_indices: JLongArray,
@@ -162,7 +162,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_recoverCellsAndP
     cell_ids: JLongArray,
     cells: JObjectArray<'local>,
 ) -> JObject<'local> {
-    let ctx = unsafe { &*(ctx_ptr as *const PeerDASContext) };
+    let ctx = unsafe { &*(ctx_ptr as *const DASContext) };
 
     match recover_cells_and_kzg_proofs(&mut env, ctx, cell_ids, cells) {
         Ok(cells_and_proofs) => cells_and_proofs,
@@ -174,7 +174,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_recoverCellsAndP
 }
 fn recover_cells_and_kzg_proofs<'local>(
     env: &mut JNIEnv<'local>,
-    ctx: &PeerDASContext,
+    ctx: &DASContext,
     cell_ids: JLongArray,
     cells: JObjectArray<'local>,
 ) -> Result<JObject<'local>, Error> {

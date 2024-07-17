@@ -28,21 +28,21 @@ pub struct CellsAndProofs {
 }
 
 #[napi]
-pub struct PeerDASContextJs {
+pub struct DASContextJs {
   inner: Arc<DASContext>,
 }
 
-impl Default for PeerDASContextJs {
+impl Default for DASContextJs {
   fn default() -> Self {
     Self::new()
   }
 }
 
 #[napi]
-impl PeerDASContextJs {
+impl DASContextJs {
   #[napi(constructor)]
   pub fn new() -> Self {
-    PeerDASContextJs {
+    DASContextJs {
       inner: Arc::new(DASContext::default()),
     }
   }

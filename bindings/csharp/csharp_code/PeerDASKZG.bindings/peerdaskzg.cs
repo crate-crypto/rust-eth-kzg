@@ -26,18 +26,18 @@ public sealed unsafe class PeerDASKZG : IDisposable
     // The number of bytes in a single cell.
     public const int BytesPerCell = 2048;
 
-    private PeerDASContext* _context;
+    private DASContext* _context;
 
     public PeerDASKZG()
     {
-        _context = peerdas_context_new();
+        _context = das_context_new();
     }
 
     public void Dispose()
     {
         if (_context != null)
         {
-            peerdas_context_free(_context);
+            das_context_free(_context);
             _context = null;
         }
     }
