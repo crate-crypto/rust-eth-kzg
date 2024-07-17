@@ -6,7 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
-public class LibPeerDASKZG implements AutoCloseable{
+public class LibEthKZG implements AutoCloseable{
     // TODO: Add equality tests
     //
     /** The number of bytes in a KZG commitment. */
@@ -28,7 +28,7 @@ public class LibPeerDASKZG implements AutoCloseable{
     private static final Object libraryLock = new Object();
 
 
-    public LibPeerDASKZG() {
+    public LibEthKZG() {
         ensureLibraryLoaded();
         this.contextPtr = DASContextNew();
     }
@@ -160,7 +160,7 @@ public class LibPeerDASKZG implements AutoCloseable{
             throw new UnsupportedOperationException("Unsupported OS or architecture: " + osName + ", " + osArch);
         }
 
-        InputStream libraryResource = LibPeerDASKZG.class.getResourceAsStream(libraryResourcePath);
+        InputStream libraryResource = LibEthKZG.class.getResourceAsStream(libraryResourcePath);
 
         if (libraryResource == null) {
             try {
