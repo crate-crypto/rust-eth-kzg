@@ -23,15 +23,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - name: Dispatch to publish workflow
+        uses: benc-uk/workflow-dispatch@v1
         with:
-          node-version: '20'
-
-      - name: Build
-        working-directory: bindings/node
-        run: yarn && yarn install && yarn build
-
-      - name: Run tests
-        working-directory: bindings/node
-        run: yarn test
+            workflow: release-node-bindings.yml
+            ref: master
+            inputs: '{ "ref": "${{ github.ref }}", "release-type": "none" }'
+            token: ${{ secrets.RELEASE_TOKEN }}
