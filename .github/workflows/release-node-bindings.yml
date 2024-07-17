@@ -12,11 +12,16 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
   workflow_dispatch:
     inputs:
       ref:
         description: The reference (branch/tag/commit) to checkout
-        required: true
+        required: false
+        default: ${{ github.ref }}
       release-type:
         type: choice
         required: false
