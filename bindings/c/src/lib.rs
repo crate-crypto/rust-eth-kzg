@@ -37,9 +37,9 @@ impl DASContext {
 /// # Memory faults
 ///
 /// To avoid memory leaks, one should ensure that the pointer is freed after use
-/// by calling `peerdas_context_free`.
+/// by calling `das_context_free`.
 #[no_mangle]
-pub extern "C" fn peerdas_context_new() -> *mut DASContext {
+pub extern "C" fn das_context_new() -> *mut DASContext {
     let ctx = Box::<DASContext>::default();
     Box::into_raw(ctx)
 }
@@ -56,10 +56,10 @@ pub extern "C" fn peerdas_context_new() -> *mut DASContext {
 /// # Undefined behavior
 ///
 /// - Since the `ctx` is created in Rust, we can only get undefined behavior, if the caller passes in
-/// a pointer that was not created by `peerdas_context_new`.
+/// a pointer that was not created by `das_context_new`.
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[no_mangle]
-pub extern "C" fn peerdas_context_free(ctx: *mut DASContext) {
+pub extern "C" fn das_context_free(ctx: *mut DASContext) {
     if ctx.is_null() {
         return;
     }
