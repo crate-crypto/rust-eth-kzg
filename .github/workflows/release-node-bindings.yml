@@ -21,7 +21,6 @@ on:
       ref:
         description: The reference (branch/tag/commit) to checkout
         required: false
-        default: ${{ github.ref }}
       release-type:
         type: choice
         required: false
@@ -56,7 +55,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ inputs.ref || github.ref }}
       - name: Setup node
         uses: actions/setup-node@v4
         with:
@@ -137,7 +136,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ inputs.ref || github.ref }}
       - name: Setup node
         uses: actions/setup-node@v4
         with:
