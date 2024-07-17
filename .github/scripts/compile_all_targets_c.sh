@@ -12,7 +12,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 OUT_DIR="$PROJECT_ROOT/bindings/c/build"
 LIB_TYPE="dynamic"
-LIB_NAME="c_peerdas_kzg"
+LIB_NAME="c_eth_kzg"
 
 $PROJECT_ROOT/scripts/compile_to_native.sh Darwin arm64 $LIB_NAME $LIB_TYPE $OUT_DIR
 $PROJECT_ROOT/scripts/compile_to_native.sh Darwin x86_64 $LIB_NAME $LIB_TYPE $OUT_DIR

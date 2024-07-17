@@ -13,7 +13,7 @@ namespace PeerDAS.Native
 {
     internal static unsafe partial class NativeMethods
     {
-        const string __DllName = "c_peerdas_kzg";
+        const string __DllName = "c_eth_kzg";
 
 
 

@@ -1,5 +1,5 @@
 [package]
-name = "c_peerdas_kzg"
+name = "c_eth_kzg"
 version = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
