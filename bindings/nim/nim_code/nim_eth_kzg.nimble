@@ -5,7 +5,7 @@ version       = "0.3.0"
 # x-release-please-end
 
 author        = "Kevaundray Wedderburn"
-description   = "PeerDas KZG bindings"
+description   = "KZG bindings for DAS functionality"
 license       = "MIT"
 
 import nim_eth_kzg/build_utils
