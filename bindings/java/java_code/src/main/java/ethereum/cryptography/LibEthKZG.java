@@ -6,7 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
-public class LibPeerDASKZG implements AutoCloseable{
+public class LibEthKZG implements AutoCloseable{
     // TODO: Add equality tests
     //
     /** The number of bytes in a KZG commitment. */
@@ -28,7 +28,7 @@ public class LibPeerDASKZG implements AutoCloseable{
     private static final Object libraryLock = new Object();
 
 
-    public LibPeerDASKZG() {
+    public LibEthKZG() {
         ensureLibraryLoaded();
         this.contextPtr = DASContextNew();
     }
@@ -63,7 +63,7 @@ public class LibPeerDASKZG implements AutoCloseable{
     // TODO: add this code to all bindings
     private void checkContextHasNotBeenFreed() {
         if (contextPtr == 0) {
-            throw new IllegalStateException("PeerDAS context has been destroyed");
+            throw new IllegalStateException("KZG context context has been destroyed");
         }
     }
 
@@ -107,7 +107,7 @@ public class LibPeerDASKZG implements AutoCloseable{
 
     private static native CellsAndProofs recoverCellsAndProof(long context_ptr, long[] cellIDs, byte[][] cells);
 
-    private static final String LIBRARY_NAME = "java_peerdas_kzg";
+    private static final String LIBRARY_NAME = "java_eth_kzg";
     private static final String PLATFORM_NATIVE_LIBRARY_NAME = System.mapLibraryName(LIBRARY_NAME);
 
     private static String getNormalizedArchitecture() {
@@ -160,7 +160,7 @@ public class LibPeerDASKZG implements AutoCloseable{
             throw new UnsupportedOperationException("Unsupported OS or architecture: " + osName + ", " + osArch);
         }
 
-        InputStream libraryResource = LibPeerDASKZG.class.getResourceAsStream(libraryResourcePath);
+        InputStream libraryResource = LibEthKZG.class.getResourceAsStream(libraryResourcePath);
 
         if (libraryResource == null) {
             try {

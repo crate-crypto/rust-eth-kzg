@@ -20,28 +20,28 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import ethereum.cryptography.test_formats.*;
 
-public class LibPeerDASKZGTest {
-    static LibPeerDASKZG context;
+public class LibEthKZGTest {
+    static LibEthKZG context;
 
     @BeforeAll
     public static void setUp() {
-        context = new LibPeerDASKZG();
+        context = new LibEthKZG();
     }
 
     @Test
     void testMultipleInstanceCreation() {
-        LibPeerDASKZG instance1 = null;
-        LibPeerDASKZG instance2 = null;
+        LibEthKZG instance1 = null;
+        LibEthKZG instance2 = null;
         try {
-            instance1 = new LibPeerDASKZG();
-            instance2 = new LibPeerDASKZG();
+            instance1 = new LibEthKZG();
+            instance2 = new LibEthKZG();
 
             assertNotNull(instance1);
             assertNotNull(instance2);
             assertNotEquals(instance1, instance2);
 
             // Test a simple operation to ensure both instances are functional
-            byte[] dummyBlob = new byte[LibPeerDASKZG.BYTES_PER_BLOB];
+            byte[] dummyBlob = new byte[LibEthKZG.BYTES_PER_BLOB];
             byte[] commitment1 = instance1.blobToKZGCommitment(dummyBlob);
             byte[] commitment2 = instance2.blobToKZGCommitment(dummyBlob);
 

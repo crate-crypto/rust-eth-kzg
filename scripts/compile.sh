@@ -16,7 +16,7 @@ compile_java() {
     echo "Compiling for Java..."
     OUT_DIR="$PROJECT_ROOT/bindings/java/java_code/src/main/resources"
     LIB_TYPE="dynamic"
-    LIB_NAME="java_peerdas_kzg"
+    LIB_NAME="java_eth_kzg"
     $PROJECT_ROOT/scripts/compile_to_native.sh $OS $ARCH $LIB_NAME $LIB_TYPE $OUT_DIR
 }
 

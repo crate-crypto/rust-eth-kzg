@@ -8,7 +8,7 @@ mod errors;
 use errors::Error;
 
 #[no_mangle]
-pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_DASContextNew(
+pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_DASContextNew(
     _env: JNIEnv,
     _class: JClass,
 ) -> jlong {
@@ -17,7 +17,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_DASContextNew(
 }
 
 #[no_mangle]
-pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_DASContextDestroy(
+pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_DASContextDestroy(
     _env: JNIEnv,
     _class: JClass,
     ctx_ptr: jlong,
@@ -27,7 +27,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_DASContextDestro
 }
 
 #[no_mangle]
-pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_computeCellsAndKZGProofs<'local>(
+pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_computeCellsAndKZGProofs<'local>(
     mut env: JNIEnv<'local>,
     _class: JClass,
     ctx_ptr: jlong,
@@ -56,7 +56,7 @@ fn compute_cells_and_kzg_proofs<'local>(
 }
 
 #[no_mangle]
-pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_blobToKZGCommitment<'local>(
+pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_blobToKZGCommitment<'local>(
     mut env: JNIEnv<'local>,
     _class: JClass,
     ctx_ptr: jlong,
@@ -84,7 +84,7 @@ fn blob_to_kzg_commitment<'local>(
 }
 
 #[no_mangle]
-pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_verifyCellKZGProofBatch<'local>(
+pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_verifyCellKZGProofBatch<'local>(
     mut env: JNIEnv<'local>,
     _class: JClass,
     ctx_ptr: jlong,
@@ -154,7 +154,7 @@ fn verify_cell_kzg_proof_batch<'local>(
 }
 
 #[no_mangle]
-pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_recoverCellsAndProof<'local>(
+pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_recoverCellsAndProof<'local>(
     mut env: JNIEnv<'local>,
     _class: JClass,
     ctx_ptr: jlong,
