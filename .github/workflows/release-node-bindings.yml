@@ -72,12 +72,19 @@ jobs:
         uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.13.0
+        
+      # Binstall is only needed for install cross-compilation
+      # tools on linux
+      - name: Install Binstall (Linux only)
+        if: runner.os == 'Linux'
+        uses: cargo-bins/cargo-binstall@main
+
       - name: Install cargo-zigbuild (Linux only)
         if: runner.os == 'Linux'
-        run: cargo install cargo-zigbuild
+        run: cargo binstall cargo-zigbuild -y
       - name: Install cargo-xwin (Windows on Linux only)
         if: runner.os == 'Linux' && contains(matrix.settings.target, 'windows')
-        run: cargo install cargo-xwin
+        run: cargo binstall cargo-xwin -y
       - name: Build (macOS)
         if: runner.os == 'macOS'
         run: |
@@ -214,8 +221,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: yarn
-          cache-dependency-path: 'bindings/node'
       - name: Install dependencies
         run: yarn install
       - name: Download all artifacts
