@@ -3,7 +3,7 @@ import
   std/[os, sequtils, strutils, streams],
   unittest2, yaml, results
 
-import nim_peerdas_kzg
+import nim_eth_kzg
 
 # Use our own fromHex implementation so that we can
 # raise an error when the hex string is not the same

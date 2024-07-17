@@ -813,7 +813,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "nim_peerdas_kzg"
+name = "nim_eth_kzg"
 version = "0.3.0"
 dependencies = [
  "c_eth_kzg",

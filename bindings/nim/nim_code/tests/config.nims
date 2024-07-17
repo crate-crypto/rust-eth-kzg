@@ -1,1 +1,1 @@
-switch("path", "$projectDir/../nim_peerdas_kzg")
+switch("path", "$projectDir/../nim_eth_kzg")
