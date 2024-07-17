@@ -1,5 +1,5 @@
 {
-  "name": "@crate-crypto/peerdas-kzg-win32-arm64-msvc",
+  "name": "@crate-crypto/node-eth-kzg-win32-arm64-msvc",
   "version": "0.2.1",
   "publishConfig": {
     "access": "public"
@@ -10,9 +10,9 @@
   "cpu": [
     "arm64"
   ],
-  "main": "peerdas-kzg.win32-arm64-msvc.node",
+  "main": "node-eth-kzg.win32-arm64-msvc.node",
   "files": [
-    "peerdas-kzg.win32-arm64-msvc.node"
+    "node-eth-kzg.win32-arm64-msvc.node"
   ],
   "license": "MIT",
   "engines": {

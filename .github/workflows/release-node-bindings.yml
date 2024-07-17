@@ -1,7 +1,7 @@
 name: Node Napi Cross compile testing
 env:
   DEBUG: napi:*
-  APP_NAME: peerdas-kzg
+  APP_NAME: node-eth-kzg
   MACOSX_DEPLOYMENT_TARGET: '10.13'
 permissions:
   contents: write

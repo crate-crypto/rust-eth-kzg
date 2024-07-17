@@ -1,3 +1,3 @@
-# `peerdas-kzg-win32-x64-msvc`
+# `node-eth-kzg-win32-x64-msvc`
 
-This is the **x86_64-pc-windows-msvc** binary for `peerdas-kzg`
+This is the **x86_64-pc-windows-msvc** binary for `node-eth-kzg`
