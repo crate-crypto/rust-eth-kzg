@@ -205,7 +205,7 @@ impl FK20Prover {
     ///   - The idea is that a particular coset evaluation is evenly distributed across the set of flattened
     ///     evaluations.
     ///   Example:
-    ///     - Lets say we have `k` cosets. Each coset holds `m` values. Each coset will have an associated index.
+    ///     - Let's say we have `k` cosets. Each coset holds `m` values. Each coset will have an associated index.
     ///     - Once this method has completed, we will be given a flattened set of evaluations where the
     ///       `m` values in each coset are now a distance of `k` values apart from each other.
     ///     - The first value that was in the first coset, will be in position `0`.
@@ -249,7 +249,7 @@ impl FK20Prover {
         //
         // The greatest index we will be using is:
         // `t = coset_index * coset_len`
-        // lets denote the returned vectors length as `k`
+        // Let's denote the returned vectors length as `k`
         // We want t < k
         // => coset_index * coset_len < k
         // => coset_index < k / coset_len

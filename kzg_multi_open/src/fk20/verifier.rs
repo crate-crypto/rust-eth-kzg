@@ -8,6 +8,7 @@ use bls12_381::{
 };
 use polynomial::{domain::Domain, monomial::poly_add};
 use sha2::{Digest, Sha256};
+use std::mem::size_of;
 
 /// FK20Verifier initializes all of the components needed to verify KZG multi point
 /// proofs that were created using the FK20Prover.
@@ -200,21 +201,21 @@ fn compute_fiat_shamir_challenge(
     proofs: &[G1Point],
 ) -> Scalar {
     const DOMAIN_SEP: &str = "RCKZGCBATCH__V1_";
-    let mut hash_input: Vec<u8> = Vec::with_capacity(
-        DOMAIN_SEP.as_bytes().len()
-            + row_commitments.len() * 48
-            + (row_indices.len() + coset_indices.len()) * 8
-            + (coset_evals.len() * opening_key.coset_size) * 32
-            + proofs.len() * 48,
-    ); // TODO: this capacity is not exact and the magic numbers here are not great, lets refactor and benchmark this
+    let hash_input_size = DOMAIN_SEP.as_bytes().len()
+            + size_of::<u64>() // polynomial bound
+            + size_of::<u64>() // field elements per coset
+            + size_of::<u64>() // num commitments
+            + size_of::<u64>() // num cosets
+            + row_commitments.len() * G1Point::compressed_size()
+            + row_indices.len() * size_of::<u64>()
+            + coset_indices.len() * size_of::<u64>()
+            + coset_evals.len() * opening_key.coset_size * size_of::<Scalar>()
+            + proofs.len() * G1Point::compressed_size();
 
-    // Domain separation
+    let mut hash_input: Vec<u8> = Vec::with_capacity(hash_input_size);
+
     hash_input.extend(DOMAIN_SEP.as_bytes());
-
-    // polynomial bound
     hash_input.extend((opening_key.num_coefficients_in_polynomial as u64).to_be_bytes());
-
-    // field elements per coset
     hash_input.extend((opening_key.coset_size as u64).to_be_bytes());
 
     let num_commitments = row_commitments.len() as u64;
@@ -236,6 +237,7 @@ fn compute_fiat_shamir_challenge(
         hash_input.extend(proofs[k as usize].to_compressed())
     }
 
+    assert_eq!(hash_input.len(), hash_input_size);
     let mut hasher = Sha256::new();
     hasher.update(hash_input);
     let result: [u8; 32] = hasher.finalize().into();
