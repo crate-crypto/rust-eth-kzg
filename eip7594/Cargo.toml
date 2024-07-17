@@ -1,5 +1,5 @@
 [package]
-name = "eip7594"
+name = "rust_eth_kzg"
 description = "This crate provides an implementation of the cryptography needed for EIP-7594"
 version = { workspace = true }
 authors = { workspace = true }

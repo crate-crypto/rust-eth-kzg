@@ -84,7 +84,7 @@ const TEST_DIR: &str = "../consensus_test_vectors/verify_cell_kzg_proof_batch";
 fn test_verify_cell_kzg_proof_batch() {
     let test_files = collect_test_files(TEST_DIR).unwrap();
 
-    let ctx = eip7594::DASContext::default();
+    let ctx = rust_eth_kzg::DASContext::default();
 
     for test_file in test_files {
         let yaml_data = fs::read_to_string(&test_file).unwrap();

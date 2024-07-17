@@ -1,4 +1,4 @@
-use eip7594::Error as DASError;
+use rust_eth_kzg::Error as DASError;
 
 #[derive(Debug)]
 pub enum Error {

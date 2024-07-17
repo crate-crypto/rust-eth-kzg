@@ -1,6 +1,6 @@
 use crate::pointer_utils::{create_array_ref, deref_const, write_to_2d_slice};
 use crate::{CResult, DASContext};
-use eip7594::constants::{BYTES_PER_BLOB, CELLS_PER_EXT_BLOB};
+use rust_eth_kzg::constants::{BYTES_PER_BLOB, CELLS_PER_EXT_BLOB};
 
 pub(crate) fn _compute_cells_and_kzg_proofs(
     ctx: *const DASContext,

@@ -1,5 +1,5 @@
 use common::collect_test_files;
-use eip7594::constants::BYTES_PER_BLOB;
+use rust_eth_kzg::constants::BYTES_PER_BLOB;
 use serde_::TestVector;
 use std::fs;
 
@@ -62,7 +62,7 @@ const TEST_DIR: &str = "../consensus_test_vectors/blob_to_kzg_commitment";
 fn test_blob_to_kzg_commitment() {
     let test_files = collect_test_files(TEST_DIR).unwrap();
 
-    let ctx = eip7594::DASContext::default();
+    let ctx = rust_eth_kzg::DASContext::default();
 
     for test_file in test_files {
         let yaml_data = fs::read_to_string(test_file).unwrap();
