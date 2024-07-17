@@ -149,8 +149,8 @@ fn verify_cell_kzg_proof_batch<'local>(
         proofs,
     ) {
         Ok(_) => Ok(jboolean::from(true)),
-        Err(VerifierError::InvalidProof) => Ok(jboolean::from(false)),
-        Err(err) => Err(Error::Verifier(err)),
+        Err(x) if x.invalid_proof() => Ok(jboolean::from(false)),
+        Err(err) => Err(Error::DASError(err)),
     }
 }
 
@@ -287,13 +287,12 @@ fn cells_and_proofs_to_jobject<'local>(
 fn throw_on_error(env: &mut JNIEnv, err: Error, func_name: &'static str) {
     let reason = match err {
         Error::Jni(err) => format!("{:?}", err),
-        Error::Prover(err) => format!("{:?}", err),
-        Error::Verifier(err) => format!("{:?}", err),
         Error::IncorrectSize {
             expected,
             got,
             name,
         } => format!("{name} is not the correct size. expected: {expected}\ngot: {got}"),
+        Error::DASError(err) => format!("{:?}", err),
     };
     let msg = format!(
         "function {} has thrown an exception, with reason: {}",

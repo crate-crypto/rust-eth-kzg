@@ -1,3 +1,5 @@
+use rust_eth_kzg::Error as DASError;
+
 #[derive(Debug)]
 pub enum Error {
     Jni(jni::errors::Error),
@@ -6,8 +8,7 @@ pub enum Error {
         got: usize,
         name: &'static str,
     },
-    Prover(rust_eth_kzg::prover::ProverError),
-    Verifier(rust_eth_kzg::verifier::VerifierError),
+    DASError(DASError),
 }
 
 impl From<jni::errors::Error> for Error {
@@ -16,8 +17,8 @@ impl From<jni::errors::Error> for Error {
     }
 }
 
-impl From<rust_eth_kzg::prover::ProverError> for Error {
-    fn from(err: rust_eth_kzg::prover::ProverError) -> Self {
-        Error::Prover(err)
+impl From<DASError> for Error {
+    fn from(err: DASError) -> Self {
+        Error::DASError(err)
     }
 }

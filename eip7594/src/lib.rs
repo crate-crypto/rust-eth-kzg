@@ -1,17 +1,14 @@
-use std::sync::Arc;
-
-use constants::{BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT};
-pub use prover::ProverContext;
-use rayon::ThreadPool;
-pub use trusted_setup::TrustedSetup;
-pub use verifier::VerifierContext;
-
 pub mod constants;
-pub mod prover;
+mod errors;
+mod prover;
 mod serialization;
-pub mod trusted_setup;
-pub mod verifier;
+mod trusted_setup;
+mod verifier;
 
+// Exported types
+//
+pub use errors::Error;
+pub use trusted_setup::TrustedSetup;
 pub type BlobRef<'a> = &'a [u8; BYTES_PER_BLOB];
 pub type Bytes48Ref<'a> = &'a [u8; 48];
 
@@ -25,7 +22,11 @@ pub type KZGCommitment = [u8; BYTES_PER_COMMITMENT];
 pub type CellIndex = u64;
 pub type RowIndex = u64;
 
-mod errors;
+use constants::{BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT};
+use prover::ProverContext;
+use rayon::ThreadPool;
+use std::sync::Arc;
+use verifier::VerifierContext;
 
 /// The context that will be used to create and verify proofs.
 #[derive(Debug)]

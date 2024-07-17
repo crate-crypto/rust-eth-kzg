@@ -2,8 +2,8 @@ use bls12_381::Scalar;
 use criterion::{criterion_group, criterion_main, Criterion};
 use rust_eth_kzg::{
     constants::{BYTES_PER_BLOB, CELLS_PER_EXT_BLOB},
-    trusted_setup, Bytes48Ref, Cell, CellIndex, CellRef, DASContext, KZGCommitment, KZGProof,
-    RowIndex,
+    Bytes48Ref, Cell, CellIndex, CellRef, DASContext, KZGCommitment, KZGProof, RowIndex,
+    TrustedSetup,
 };
 
 const POLYNOMIAL_LEN: usize = 4096;
@@ -33,7 +33,7 @@ fn dummy_commitment_cells_and_proofs() -> (
 const THREAD_COUNTS: [usize; 5] = [1, 4, 8, 16, 32];
 
 pub fn bench_compute_cells_and_kzg_proofs(c: &mut Criterion) {
-    let trusted_setup = trusted_setup::TrustedSetup::default();
+    let trusted_setup = TrustedSetup::default();
 
     let blob = dummy_blob();
 
@@ -50,7 +50,7 @@ pub fn bench_compute_cells_and_kzg_proofs(c: &mut Criterion) {
 }
 
 pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
-    let trusted_setup = trusted_setup::TrustedSetup::default();
+    let trusted_setup = TrustedSetup::default();
 
     let (_, (cells, _)) = dummy_commitment_cells_and_proofs();
     let cell_indices: Vec<u64> = (0..cells.len()).map(|x| x as u64).collect();
@@ -80,7 +80,7 @@ pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
 }
 
 pub fn bench_verify_cell_kzg_proof_batch(c: &mut Criterion) {
-    let trusted_setup = trusted_setup::TrustedSetup::default();
+    let trusted_setup = TrustedSetup::default();
 
     let (commitment, (cells, proofs)) = dummy_commitment_cells_and_proofs();
 
@@ -113,7 +113,7 @@ pub fn bench_init_context(c: &mut Criterion) {
     const NUM_THREADS: usize = 1;
     c.bench_function(&format!("Initialize context"), |b| {
         b.iter(|| {
-            let trusted_setup = trusted_setup::TrustedSetup::default();
+            let trusted_setup = TrustedSetup::default();
             DASContext::with_threads(&trusted_setup, NUM_THREADS)
         })
     });

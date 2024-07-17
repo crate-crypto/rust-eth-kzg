@@ -1,5 +1,4 @@
 use common::collect_test_files;
-use rust_eth_kzg::verifier::VerifierError;
 use serde_::TestVector;
 use std::fs;
 
@@ -147,7 +146,7 @@ fn test_verify_cell_kzg_proof_batch() {
                 // We arrive at this point if the proof verified as true
                 assert!(test.output.unwrap())
             }
-            Err(VerifierError::InvalidProof) => {
+            Err(x) if x.invalid_proof() => {
                 assert!(test.output.unwrap() == false);
             }
             Err(_) => {

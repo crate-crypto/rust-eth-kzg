@@ -6,6 +6,7 @@ use crate::{
     constants::{
         CELLS_PER_EXT_BLOB, EXTENSION_FACTOR, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_EXT_BLOB,
     },
+    errors::Error,
     serialization::{deserialize_cells, deserialize_compressed_g1_points},
     trusted_setup::TrustedSetup,
     Bytes48Ref, CellIndex, CellRef, DASContext, RowIndex,
@@ -76,7 +77,7 @@ impl DASContext {
         cell_indices: Vec<CellIndex>,
         cells: Vec<CellRef>,
         proofs_bytes: Vec<Bytes48Ref>,
-    ) -> Result<(), VerifierError> {
+    ) -> Result<(), Error> {
         self.thread_pool.install(|| {
             // Validation
             //
@@ -123,7 +124,7 @@ impl DASContext {
             if ok {
                 Ok(())
             } else {
-                Err(VerifierError::InvalidProof)
+                Err(VerifierError::InvalidProof.into())
             }
         })
     }
@@ -132,7 +133,7 @@ impl DASContext {
         &self,
         cell_indices: Vec<CellIndex>,
         cells: Vec<CellRef>,
-    ) -> Result<Vec<Scalar>, VerifierError> {
+    ) -> Result<Vec<Scalar>, Error> {
         // Validation
         //
         validation::recover_polynomial_coeff(&cell_indices, &cells)?;
@@ -164,10 +165,14 @@ impl DASContext {
         let missing_cell_indices = find_missing_cell_indices(&cell_indices_normal_order);
 
         // Recover the polynomial in monomial form, that one can use to generate the cells.
-        let recovered_polynomial_coeff = self.verifier_ctx.rs.recover_polynomial_coefficient(
-            flattened_coset_evaluations_normal_order,
-            BlockErasureIndices(missing_cell_indices),
-        )?;
+        let recovered_polynomial_coeff = self
+            .verifier_ctx
+            .rs
+            .recover_polynomial_coefficient(
+                flattened_coset_evaluations_normal_order,
+                BlockErasureIndices(missing_cell_indices),
+            )
+            .map_err(VerifierError::from)?;
 
         Ok(recovered_polynomial_coeff)
     }
