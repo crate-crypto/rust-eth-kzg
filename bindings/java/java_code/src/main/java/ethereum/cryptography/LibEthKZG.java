@@ -107,7 +107,7 @@ public class LibEthKZG implements AutoCloseable{
 
     private static native CellsAndProofs recoverCellsAndProof(long context_ptr, long[] cellIDs, byte[][] cells);
 
-    private static final String LIBRARY_NAME = "java_peerdas_kzg";
+    private static final String LIBRARY_NAME = "java_eth_kzg";
     private static final String PLATFORM_NATIVE_LIBRARY_NAME = System.mapLibraryName(LIBRARY_NAME);
 
     private static String getNormalizedArchitecture() {
