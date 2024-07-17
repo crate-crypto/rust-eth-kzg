@@ -1,4 +1,4 @@
-name: Node Napi Cross compile testing
+name: Node Test/Release
 env:
   DEBUG: napi:*
   APP_NAME: node-eth-kzg
