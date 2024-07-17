@@ -51,9 +51,9 @@ publishing {
       from components.java
 
       pom {
-        name = 'PeerDAS KZG Library'
-        description = 'A library for working with PeerDASKZG'
-        url = 'https://github.com/crate-crypto/peerdas-kzg'
+        name = 'Rust Eth KZG Library'
+        description = 'A library for working with the Data Availability Sampling scheme used in Ethereum'
+        url = 'https://github.com/crate-crypto/rust-eth-kzg'
         licenses {
           license {
             name = 'The Apache License, Version 2.0'
@@ -68,9 +68,9 @@ publishing {
           }
         }
         scm {
-          connection = 'scm:git:git://github.com/crate-crypto/peerdas-kzg.git'
-          developerConnection = 'scm:git:ssh://github.com:crate-crypto/peerdas-kzg.git'
-          url = 'https://github.com/crate-crypto/peerdas-kzg'
+          connection = 'scm:git:git://github.com/crate-crypto/rust-eth-kzg.git'
+          developerConnection = 'scm:git:ssh://github.com:crate-crypto/rust-eth-kzg.git'
+          url = 'https://github.com/crate-crypto/rust-eth-kzg'
         }
       }
     }

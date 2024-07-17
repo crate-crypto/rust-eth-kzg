@@ -1,3 +1,3 @@
-module github.com/crate-crypto/peerdas-kzg
+module github.com/crate-crypto/rust-eth-kzg
 
 go 1.20
