@@ -29,21 +29,21 @@ mod errors;
 
 /// The context that will be used to create and verify proofs.
 #[derive(Debug)]
-pub struct PeerDASContext {
+pub struct DASContext {
     thread_pool: Arc<ThreadPool>,
     pub prover_ctx: ProverContext,
     pub verifier_ctx: VerifierContext,
 }
 
-impl Default for PeerDASContext {
+impl Default for DASContext {
     fn default() -> Self {
         let trusted_setup = TrustedSetup::default();
         const DEFAULT_NUM_THREADS: usize = 1;
-        PeerDASContext::with_threads(&trusted_setup, DEFAULT_NUM_THREADS)
+        DASContext::with_threads(&trusted_setup, DEFAULT_NUM_THREADS)
     }
 }
 
-impl PeerDASContext {
+impl DASContext {
     pub fn with_threads(trusted_setup: &TrustedSetup, num_threads: usize) -> Self {
         let thread_pool = std::sync::Arc::new(
             rayon::ThreadPoolBuilder::new()
@@ -52,7 +52,7 @@ impl PeerDASContext {
                 .unwrap(),
         );
 
-        PeerDASContext {
+        DASContext {
             thread_pool,
             prover_ctx: ProverContext::new(trusted_setup),
             verifier_ctx: VerifierContext::new(trusted_setup),

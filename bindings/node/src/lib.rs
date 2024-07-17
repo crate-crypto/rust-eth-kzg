@@ -6,7 +6,7 @@ use napi::{
 };
 use napi_derive::napi;
 
-use rust_eth_kzg::{constants, verifier::VerifierError, PeerDASContext};
+use rust_eth_kzg::{constants, verifier::VerifierError, DASContext};
 
 #[napi]
 pub const BYTES_PER_COMMITMENT: u32 = constants::BYTES_PER_COMMITMENT as u32;
@@ -29,7 +29,7 @@ pub struct CellsAndProofs {
 
 #[napi]
 pub struct PeerDASContextJs {
-  inner: Arc<PeerDASContext>,
+  inner: Arc<DASContext>,
 }
 
 impl Default for PeerDASContextJs {
@@ -43,7 +43,7 @@ impl PeerDASContextJs {
   #[napi(constructor)]
   pub fn new() -> Self {
     PeerDASContextJs {
-      inner: Arc::new(PeerDASContext::default()),
+      inner: Arc::new(DASContext::default()),
     }
   }
 

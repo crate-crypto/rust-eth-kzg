@@ -23,11 +23,11 @@ use rust_eth_kzg::verifier::VerifierError;
 // not defined in this file.
 #[derive(Default)]
 pub struct PeerDASContext {
-    inner: rust_eth_kzg::PeerDASContext,
+    inner: rust_eth_kzg::DASContext,
 }
 
 impl PeerDASContext {
-    pub fn inner(&self) -> &rust_eth_kzg::PeerDASContext {
+    pub fn inner(&self) -> &rust_eth_kzg::DASContext {
         &self.inner
     }
 }
