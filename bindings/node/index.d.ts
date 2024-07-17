@@ -13,8 +13,8 @@ export class CellsAndProofs {
   cells: Array<Uint8Array>
   proofs: Array<Uint8Array>
 }
-export type PeerDASContextJs = PeerDasContextJs
-export class PeerDasContextJs {
+export type DASContextJs = DasContextJs
+export class DasContextJs {
   constructor()
   blobToKzgCommitment(blob: Uint8Array): Uint8Array
   asyncBlobToKzgCommitment(blob: Uint8Array): Promise<Uint8Array>

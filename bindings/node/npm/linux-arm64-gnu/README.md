@@ -1,3 +1,3 @@
-# `peerdas-kzg-linux-arm64-gnu`
+# `node-eth-kzg-linux-arm64-gnu`
 
-This is the **aarch64-unknown-linux-gnu** binary for `peerdas-kzg`
+This is the **aarch64-unknown-linux-gnu** binary for `node-eth-kzg`
