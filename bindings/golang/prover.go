@@ -46,10 +46,10 @@ type DASContext struct {
 }
 
 func NewProverContext() *DASContext {
-	self := &DASContext{_inner: C.peerdas_context_new()}
+	self := &DASContext{_inner: C.das_context_new()}
 
 	runtime.SetFinalizer(self, func(self *DASContext) {
-		C.peerdas_context_free(self.inner())
+		C.das_context_free(self.inner())
 	})
 
 	return self
