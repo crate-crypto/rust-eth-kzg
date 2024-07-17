@@ -49,7 +49,6 @@ jobs:
     name: Build - ${{ matrix.settings.target }}
     runs-on: ${{ matrix.settings.host }}
     steps:
-      - uses: cargo-bins/cargo-binstall@main
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
@@ -73,6 +72,13 @@ jobs:
         uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.13.0
+        
+      # Binstall is only needed for install cross-compilation
+      # tools on linux
+      - name: Install Binstall (Linux only)
+        if: runner.os == 'Linux'
+        uses: cargo-bins/cargo-binstall@main
+
       - name: Install cargo-zigbuild (Linux only)
         if: runner.os == 'Linux'
         run: cargo binstall cargo-zigbuild -y
