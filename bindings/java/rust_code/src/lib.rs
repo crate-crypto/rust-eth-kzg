@@ -8,22 +8,22 @@ mod errors;
 use errors::Error;
 
 #[no_mangle]
-pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_peerDASContextNew(
+pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_DASContextNew(
     _env: JNIEnv,
     _class: JClass,
 ) -> jlong {
     // TODO: Switch to using the Rust DASContext object
-    c_peerdas_kzg::peerdas_context_new() as jlong
+    c_peerdas_kzg::das_context_new() as jlong
 }
 
 #[no_mangle]
-pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_peerDASContextDestroy(
+pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_DASContextDestroy(
     _env: JNIEnv,
     _class: JClass,
     ctx_ptr: jlong,
 ) {
     // TODO: Switch to using the Rust DASContext object
-    c_peerdas_kzg::peerdas_context_free(ctx_ptr as *mut DASContext);
+    c_peerdas_kzg::das_context_free(ctx_ptr as *mut DASContext);
 }
 
 #[no_mangle]

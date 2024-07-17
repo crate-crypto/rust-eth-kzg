@@ -83,11 +83,11 @@ type
 # https://forum.nim-lang.org/t/11229
 proc `=destroy`(x: typeof KZGCtx()[]) =
   if x.ctx_ptr != nil:
-    peerdas_context_free(x.ctx_ptr)
+    das_context_free(x.ctx_ptr)
 
 proc newKZGCtx*(): KZGCtx =
   var kzgCtx = KZGCtx()
-  kzgCtx.ctx_ptr = peerdas_context_new()
+  kzgCtx.ctx_ptr = das_context_new()
   return kzgCtx
 
 
