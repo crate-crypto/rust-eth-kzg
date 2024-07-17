@@ -3,7 +3,6 @@ use jni::objects::JObjectArray;
 use jni::objects::{JByteArray, JClass, JLongArray, JObject, JValue};
 use jni::sys::{jboolean, jlong};
 use jni::JNIEnv;
-use rust_eth_kzg::verifier::VerifierError;
 
 mod errors;
 use errors::Error;
