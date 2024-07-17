@@ -22,7 +22,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibPeerDASKZG_peerDASContextDe
     _class: JClass,
     ctx_ptr: jlong,
 ) {
-    // TODO: Switch to using the Rust PeerDASContext object
+    // TODO: Switch to using the Rust DASContext object
     c_peerdas_kzg::peerdas_context_free(ctx_ptr as *mut DASContext);
 }
 
