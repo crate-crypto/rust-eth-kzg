@@ -1,3 +1,5 @@
+use eip7594::Error as DASError;
+
 #[derive(Debug)]
 pub enum Error {
     Jni(jni::errors::Error),
@@ -6,8 +8,7 @@ pub enum Error {
         got: usize,
         name: &'static str,
     },
-    Prover(eip7594::prover::ProverError),
-    Verifier(eip7594::verifier::VerifierError),
+    DASError(DASError),
 }
 
 impl From<jni::errors::Error> for Error {
@@ -16,8 +17,8 @@ impl From<jni::errors::Error> for Error {
     }
 }
 
-impl From<eip7594::prover::ProverError> for Error {
-    fn from(err: eip7594::prover::ProverError) -> Self {
-        Error::Prover(err)
+impl From<DASError> for Error {
+    fn from(err: DASError) -> Self {
+        Error::DASError(err)
     }
 }

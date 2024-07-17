@@ -10,7 +10,10 @@ use crate::{
         CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL,
         FIELD_ELEMENTS_PER_EXT_BLOB,
     },
-    serialization::{self, serialize_g1_compressed},
+    errors::Error,
+    serialization::{
+        deserialize_blob_to_scalars, serialize_cells_and_proofs, serialize_g1_compressed,
+    },
     trusted_setup::TrustedSetup,
     BlobRef, Cell, CellIndex, CellRef, KZGCommitment, KZGProof, PeerDASContext,
 };
@@ -58,10 +61,10 @@ impl ProverContext {
 
 impl PeerDASContext {
     /// Computes the KZG commitment to the polynomial represented by the blob.
-    pub fn blob_to_kzg_commitment(&self, blob: BlobRef) -> Result<KZGCommitment, ProverError> {
+    pub fn blob_to_kzg_commitment(&self, blob: BlobRef) -> Result<KZGCommitment, Error> {
         self.thread_pool.install(|| {
             // Deserialize the blob into scalars.
-            let scalars = serialization::deserialize_blob_to_scalars(blob)?;
+            let scalars = deserialize_blob_to_scalars(blob)?;
 
             // Compute commitment
             let commitment = self
@@ -78,11 +81,11 @@ impl PeerDASContext {
     pub fn compute_cells_and_kzg_proofs(
         &self,
         blob: BlobRef,
-    ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
+    ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), Error> {
         self.thread_pool.install(|| {
             // Deserialization
             //
-            let scalars = serialization::deserialize_blob_to_scalars(blob)?;
+            let scalars = deserialize_blob_to_scalars(blob)?;
 
             // Computation
             //
@@ -91,7 +94,7 @@ impl PeerDASContext {
                 .kzg_multipoint_prover
                 .compute_multi_opening_proofs(ProverInput::Data(scalars));
 
-            Ok(serialization::serialize_cells_and_proofs(cells, proofs))
+            Ok(serialize_cells_and_proofs(cells, proofs))
         })
     }
 
@@ -106,7 +109,7 @@ impl PeerDASContext {
         &self,
         cell_indices: Vec<CellIndex>,
         cells: Vec<CellRef>,
-    ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), ProverError> {
+    ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), Error> {
         self.thread_pool.install(|| {
             // Recover polynomial
             //
@@ -119,10 +122,7 @@ impl PeerDASContext {
                 .kzg_multipoint_prover
                 .compute_multi_opening_proofs(ProverInput::PolyCoeff(poly_coeff));
 
-            Ok(serialization::serialize_cells_and_proofs(
-                coset_evaluations,
-                proofs,
-            ))
+            Ok(serialize_cells_and_proofs(coset_evaluations, proofs))
         })
     }
 }

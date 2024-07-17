@@ -26,6 +26,7 @@ pub type CellIndex = u64;
 pub type RowIndex = u64;
 
 mod errors;
+pub use errors::Error;
 
 /// The context that will be used to create and verify proofs.
 #[derive(Debug)]
