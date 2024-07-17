@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
 
-namespace PeerDAS.Native;
+namespace EthKZG.Native;
 
 internal static unsafe partial class NativeMethods
 {

@@ -1,10 +1,10 @@
-using PeerDAS.Native;
-using static PeerDAS.Native.NativeMethods;
+using EthKZG.Native;
+using static EthKZG.Native.NativeMethods;
 using System.Runtime.InteropServices;
 
-namespace PeerDASKZG;
+namespace EthKZG;
 
-public sealed unsafe class PeerDASKZG : IDisposable
+public sealed unsafe class EthKZG : IDisposable
 {
     // These constants are copied from the c-kzg csharp bindings file.
     // TODO: This is not ideal, since we want the Rust code to be the single source of truth
@@ -28,7 +28,7 @@ public sealed unsafe class PeerDASKZG : IDisposable
 
     private DASContext* _context;
 
-    public PeerDASKZG()
+    public EthKZG()
     {
         _context = das_context_new();
     }
@@ -274,7 +274,7 @@ public sealed unsafe class PeerDASKZG : IDisposable
             case CResultStatus.Ok:
                 return;
             default:
-                throw new ApplicationException("PeerDASKZG returned an unexpected result variant");
+                throw new ApplicationException("EthKZG returned an unexpected result variant");
         }
     }
 
