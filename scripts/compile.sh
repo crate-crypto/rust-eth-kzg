@@ -23,7 +23,7 @@ compile_java() {
 # Function to compile for C#
 compile_csharp() {
     echo "Compiling for C#..."
-    OUT_DIR="$PROJECT_ROOT/bindings/csharp/csharp_code/PeerDASKZG.bindings/runtimes"
+    OUT_DIR="$PROJECT_ROOT/bindings/csharp/csharp_code/EthKZG.bindings/runtimes"
     LIB_TYPE="dynamic"
     LIB_NAME="c_eth_kzg"
     $PROJECT_ROOT/scripts/compile_to_native.sh $OS $ARCH $LIB_NAME $LIB_TYPE $OUT_DIR
