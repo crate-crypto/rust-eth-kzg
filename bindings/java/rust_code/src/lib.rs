@@ -51,8 +51,8 @@ fn compute_cells_and_kzg_proofs<'local>(
     let blob = slice_to_array_ref(&blob, "blob")?;
 
     let (cells, proofs) = ctx.inner().compute_cells_and_kzg_proofs(blob)?;
-    let cells = cells.map(|cell| *cell);
-    cells_and_proofs_to_jobject(env, &cells, &proofs).map_err(Error::from)
+    let cells: Vec<_> = cells.into_iter().map(|cell| *cell).collect();
+    cells_and_proofs_to_jobject(env, &cells, &*proofs).map_err(Error::from)
 }
 
 #[no_mangle]
@@ -186,8 +186,8 @@ fn recover_cells_and_kzg_proofs<'local>(
 
     let (recovered_cells, recovered_proofs) =
         ctx.inner().recover_cells_and_proofs(cell_ids, cells)?;
-    let recovered_cells = recovered_cells.map(|cell| *cell);
-    cells_and_proofs_to_jobject(env, &recovered_cells, &recovered_proofs).map_err(Error::from)
+    let recovered_cells: Vec<_> = recovered_cells.into_iter().map(|cell| *cell).collect();
+    cells_and_proofs_to_jobject(env, &recovered_cells, &*recovered_proofs).map_err(Error::from)
 }
 
 /// Converts a JLongArray to a Vec<u64>
