@@ -1,4 +1,4 @@
-name: Cross-platform Build Java
+name: Cross-platform Build
 
 on:
   push:
@@ -41,6 +41,12 @@ jobs:
 
     - name: Install cargo-binstall
       uses: taiki-e/install-action@cargo-binstall
+
+    - name: Install Zig
+      if: ${{ !matrix.use_xwin }}
+      uses: goto-bus-stop/setup-zig@v2
+      with:
+        version: 0.10.1
 
     - name: Install cargo-zigbuild
       if: ${{ !matrix.use_xwin }}
