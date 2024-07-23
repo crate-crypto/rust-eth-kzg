@@ -31,6 +31,9 @@ jobs:
         target: ${{ matrix.target }}
         override: true
 
+    - name: Install llvm-preview-tools
+      if: ${{ endsWith(matrix.target, 'windows-gnu') }}
+      run: rustup component add llvm-tools-preview 
     - name: Install cargo-binstall
       uses: taiki-e/install-action@cargo-binstall
 
