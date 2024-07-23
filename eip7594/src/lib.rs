@@ -68,3 +68,44 @@ impl DASContext {
         &self.verifier_ctx
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bls12_381::Scalar;
+    #[test]
+    fn stack_overflow_poc() {
+        use rayon::prelude::*;
+
+        fn compute_blob(offset: u64) -> Vec<u8> {
+            let poly: Vec<_> = (0..4096).map(|i| -Scalar::from(i + offset)).collect();
+            let blob: Vec<_> = poly
+                .into_iter()
+                .flat_map(|scalar| scalar.to_bytes_be())
+                .collect();
+            blob
+        }
+
+        const NUM_BLOBS: u64 = 100;
+        let blobs = (0..NUM_BLOBS).map(compute_blob).collect::<Vec<_>>();
+
+        let trusted_setup = TrustedSetup::default();
+
+        let ctx = DASContext::with_threads(&trusted_setup, 8);
+        let blob_cells_and_proofs_vec: Vec<_> = blobs
+            .par_iter()
+            .map(|blob_vec| {
+                let mut blob = [0; BYTES_PER_BLOB];
+                blob.copy_from_slice(&blob_vec);
+                let cells_and_proofs = ctx.compute_cells_and_kzg_proofs(&blob);
+
+                // let cells_and_proofs =
+                //     ctx.compute_cells_and_kzg_proofs(blob_vec.as_slice().try_into().unwrap());
+
+                cells_and_proofs
+            })
+            .collect();
+
+        std::hint::black_box(blob_cells_and_proofs_vec);
+    }
+}
