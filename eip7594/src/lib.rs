@@ -95,12 +95,12 @@ mod tests {
         let blob_cells_and_proofs_vec: Vec<_> = blobs
             .par_iter()
             .map(|blob_vec| {
-                let mut blob = [0; BYTES_PER_BLOB];
-                blob.copy_from_slice(&blob_vec);
-                let cells_and_proofs = ctx.compute_cells_and_kzg_proofs(&blob);
+                // let mut blob = [0; BYTES_PER_BLOB];
+                // blob.copy_from_slice(&blob_vec);
+                // let cells_and_proofs = ctx.compute_cells_and_kzg_proofs(&blob);
 
-                // let cells_and_proofs =
-                //     ctx.compute_cells_and_kzg_proofs(blob_vec.as_slice().try_into().unwrap());
+                let cells_and_proofs =
+                    ctx.compute_cells_and_kzg_proofs(blob_vec.as_slice().try_into().unwrap());
 
                 cells_and_proofs
             })
