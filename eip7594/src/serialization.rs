@@ -45,10 +45,10 @@ pub(crate) fn deserialize_cell_to_scalars(
 }
 
 pub(crate) fn deserialize_scalar(scalar_bytes: &[u8]) -> Result<Scalar, SerializationError> {
-    let bytes32 : [u8;BYTES_PER_FIELD_ELEMENT]= scalar_bytes.try_into().expect("infallible: expected blob chunks to be exactly {SCALAR_SERIALIZED_SIZE} bytes, since blob was a multiple of {SCALAR_SERIALIZED_SIZE");
+    let bytes32 = scalar_bytes.try_into().expect("infallible: expected blob chunks to be exactly {SCALAR_SERIALIZED_SIZE} bytes, since blob was a multiple of {SCALAR_SERIALIZED_SIZE");
 
     // Convert the CtOption into Option
-    let option_scalar: Option<Scalar> = Scalar::from_bytes_be(&bytes32).into();
+    let option_scalar: Option<Scalar> = Scalar::from_bytes_be(bytes32).into();
     match option_scalar {
         Some(scalar) => Ok(scalar),
         None => Err(SerializationError::CouldNotDeserializeScalar {
@@ -58,7 +58,7 @@ pub(crate) fn deserialize_scalar(scalar_bytes: &[u8]) -> Result<Scalar, Serializ
 }
 
 pub(crate) fn deserialize_compressed_g1(point_bytes: &[u8]) -> Result<G1Point, SerializationError> {
-    let point_bytes: [u8; BYTES_PER_G1_POINT] = match point_bytes.try_into() {
+    let point_bytes = match point_bytes.try_into() {
         Ok(bytes) => bytes,
         Err(_) => {
             return Err(SerializationError::G1PointHasInvalidLength {
@@ -68,7 +68,7 @@ pub(crate) fn deserialize_compressed_g1(point_bytes: &[u8]) -> Result<G1Point, S
         }
     };
 
-    let opt_g1: Option<G1Point> = Option::from(G1Point::from_compressed(&point_bytes));
+    let opt_g1: Option<G1Point> = Option::from(G1Point::from_compressed(point_bytes));
     opt_g1.ok_or(SerializationError::CouldNotDeserializeG1Point {
         bytes: point_bytes.to_vec(),
     })

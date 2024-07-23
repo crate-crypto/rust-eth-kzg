@@ -149,7 +149,7 @@ fn verify_cell_kzg_proof_batch<'local>(
     ) {
         Ok(_) => Ok(jboolean::from(true)),
         Err(x) if x.invalid_proof() => Ok(jboolean::from(false)),
-        Err(err) => Err(Error::DASError(err)),
+        Err(err) => Err(Error::Cryptography(err)),
     }
 }
 
@@ -291,7 +291,7 @@ fn throw_on_error(env: &mut JNIEnv, err: Error, func_name: &'static str) {
             got,
             name,
         } => format!("{name} is not the correct size. expected: {expected}\ngot: {got}"),
-        Error::DASError(err) => format!("{:?}", err),
+        Error::Cryptography(err) => format!("{:?}", err),
     };
     let msg = format!(
         "function {} has thrown an exception, with reason: {}",
