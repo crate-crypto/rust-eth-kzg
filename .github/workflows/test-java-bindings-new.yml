@@ -19,7 +19,7 @@ jobs:
           - x86_64-unknown-linux-gnu
           - aarch64-apple-darwin
           - x86_64-apple-darwin
-          # - x86_64-pc-windows-gnu
+          - x86_64-pc-windows-gnu
 
     steps:
     - uses: actions/checkout@v3
@@ -31,9 +31,6 @@ jobs:
         target: ${{ matrix.target }}
         override: true
 
-    - name: Install llvm-preview-tools
-      if: ${{ endsWith(matrix.target, 'windows-gnu') }}
-      run: rustup component add llvm-tools-preview 
     - name: Install cargo-binstall
       uses: taiki-e/install-action@cargo-binstall
 
@@ -47,6 +44,12 @@ jobs:
 
     - name: Install cargo-xwin
       run: cargo binstall --no-confirm cargo-xwin
+
+    - name: Set up MinGW
+      if: ${{ endsWith(matrix.target, 'windows-gnu') }}
+      uses: egor-tensin/setup-mingw@v2
+      with:
+        platform: x64
 
     - name: Build with cargo-zigbuild (non-Windows)
       if: ${{ !endsWith(matrix.target, 'windows-gnu') }}
