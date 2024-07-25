@@ -96,9 +96,8 @@ public class LibEthKZGTest {
     public void verifyCellKzgProofBatchTests(final VerifyCellKzgProofBatchTest test) {
         try {
             boolean valid = context.verifyCellKZGProofBatch(
-                    test.getInput().getRowCommitments(),
-                    test.getInput().getRowIndices(),
-                    test.getInput().getColumnIndices(),
+                    test.getInput().getCommitments(),
+                    test.getInput().getCellIndices(),
                     test.getInput().getCells(),
                     test.getInput().getProofs());
             assertEquals(test.getOutput(), valid);
