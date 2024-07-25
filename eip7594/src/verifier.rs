@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 pub use crate::errors::VerifierError;
 
@@ -9,7 +9,7 @@ use crate::{
     errors::Error,
     serialization::{deserialize_cells, deserialize_compressed_g1_points},
     trusted_setup::TrustedSetup,
-    Bytes48Ref, CellIndex, CellRef, DASContext, RowIndex,
+    Bytes48Ref, CellIndex, CellRef, DASContext,
 };
 use bls12_381::Scalar;
 use erasure_codes::{BlockErasureIndices, ReedSolomon};
@@ -64,6 +64,33 @@ fn find_missing_cell_indices(present_cell_indices: &[usize]) -> Vec<usize> {
     missing
 }
 
+/// Deduplicates a vector and creates a mapping of original indices to deduplicated indices.
+///
+/// This function takes a vector of items and returns two vectors:
+/// 1. A vector of unique items (deduplicated vector)
+/// 2. A vector of indices that maps each item in the original vector to its position
+///    in the deduplicated vector
+fn deduplicate_with_indices<T: Eq + std::hash::Hash + Clone>(input: Vec<T>) -> (Vec<T>, Vec<u64>) {
+    let mut unique_items = Vec::new();
+    let mut index_map = HashMap::new();
+    let mut indices = Vec::with_capacity(input.len());
+
+    for item in input {
+        let index = match index_map.get(&item) {
+            Some(&index) => index,
+            None => {
+                let new_index = unique_items.len();
+                unique_items.push(item.clone());
+                index_map.insert(item, new_index);
+                new_index
+            }
+        };
+        indices.push(index as u64);
+    }
+
+    (unique_items, indices)
+}
+
 impl DASContext {
     /// Given a collection of commitments, cells and proofs, this functions verifies that
     /// the cells are consistent with the commitments using their respective KZG proofs.
@@ -72,17 +99,17 @@ impl DASContext {
         // This is a deduplicated list of row commitments
         // It is not indicative of the total number of commitments in the batch.
         // This is what row_indices is used for.
-        row_commitments_bytes: Vec<Bytes48Ref>,
-        row_indices: Vec<RowIndex>,
+        commitments: Vec<Bytes48Ref>,
         cell_indices: Vec<CellIndex>,
         cells: Vec<CellRef>,
         proofs_bytes: Vec<Bytes48Ref>,
     ) -> Result<(), Error> {
         self.thread_pool.install(|| {
+            let (deduplicated_commitments, row_indices) = deduplicate_with_indices(commitments);
             // Validation
             //
             validation::verify_cell_kzg_proof_batch(
-                &row_commitments_bytes,
+                &deduplicated_commitments,
                 &row_indices,
                 &cell_indices,
                 &cells,
@@ -91,19 +118,13 @@ impl DASContext {
 
             // If there are no inputs, we return early with no error
             //
-            // Note: We do not check that the commitments are valid in this scenario.
-            // It is possible to "misuse" the API, by passing in invalid commitments
-            // with no cells, here.
-            //
-            // TODO: This is only true while we have the `row_indices` API
-            // TODO: which will be getting removed soon.
             if cells.is_empty() {
                 return Ok(());
             }
 
             // Deserialization
             //
-            let row_commitment_ = deserialize_compressed_g1_points(row_commitments_bytes)?;
+            let row_commitment_ = deserialize_compressed_g1_points(deduplicated_commitments)?;
             let proofs_ = deserialize_compressed_g1_points(proofs_bytes)?;
             let coset_evals = deserialize_cells(cells)?;
 
@@ -314,5 +335,19 @@ mod validation {
             let cell_indices = vec![0, 0, 0];
             assert!(!are_cell_indices_unique(&cell_indices));
         }
+    }
+
+    #[test]
+    fn test_deduplicate_with_indices() {
+        let duplicated_vector: Vec<i32> = vec![0, 1, 0, 2, 3, 4, 0];
+
+        let (deduplicated_vec, indices) =
+            crate::verifier::deduplicate_with_indices(duplicated_vector);
+
+        let expected_vec = vec![0, 1, 2, 3, 4];
+        let expected_indices = vec![0, 1, 0, 2, 3, 4, 0];
+
+        assert_eq!(expected_vec, deduplicated_vec);
+        assert_eq!(expected_indices, indices);
     }
 }
