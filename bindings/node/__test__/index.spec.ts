@@ -21,7 +21,7 @@ type BlobToKzgCommitmentTest = TestMeta<{ blob: string }, string>;
 type ComputeCellsAndKzgProofsTest = TestMeta<{ blob: string }, string[][]>;
 // TODO: number here is incorrect, but it might be worthwhile to change the type in the specs instead
 type VerifyCellKzgProofBatchTest = TestMeta<
-  { row_commitments: string[]; row_indices: number[]; column_indices: number[]; cells: string[]; proofs: string[] },
+  { commitments: string[]; cell_indices: number[]; cells: string[]; proofs: string[] },
   boolean
 >;
 type RecoverCellsAndKzgProofsTest = TestMeta<{ cell_indices: number[]; cells: string[] }, string[][]>;
@@ -164,14 +164,13 @@ describe("Spec tests", () => {
       const test: VerifyCellKzgProofBatchTest = yaml.load(readFileSync(testFile, "ascii"));
 
       let valid;
-      const rowCommitments = test.input.row_commitments.map(bytesFromHex);
-      const rowIndices = test.input.row_indices.map((x) => BigInt(x));
-      const columnIndices = test.input.column_indices.map((x) => BigInt(x));
+      const commitments = test.input.commitments.map(bytesFromHex);
+      const cellIndices = test.input.cell_indices.map((x) => BigInt(x));
       const cells = test.input.cells.map(bytesFromHex);
       const proofs = test.input.proofs.map(bytesFromHex);
 
       try {
-        valid = ctx.verifyCellKzgProofBatch(rowCommitments, rowIndices, columnIndices, cells, proofs);
+        valid = ctx.verifyCellKzgProofBatch(commitments, cellIndices, cells, proofs);
       } catch (err) {
         expect(test.output).toBeNull();
         return;

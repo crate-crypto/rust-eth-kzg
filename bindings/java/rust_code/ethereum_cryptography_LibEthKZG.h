@@ -54,10 +54,10 @@ JNIEXPORT jbyteArray JNICALL Java_ethereum_cryptography_LibEthKZG_blobToKZGCommi
 /*
  * Class:     ethereum_cryptography_LibEthKZG
  * Method:    verifyCellKZGProofBatch
- * Signature: (J[[B[J[J[[B[[B)Z
+ * Signature: (J[[B[J[[B[[B)Z
  */
 JNIEXPORT jboolean JNICALL Java_ethereum_cryptography_LibEthKZG_verifyCellKZGProofBatch
-  (JNIEnv *, jclass, jlong, jobjectArray, jlongArray, jlongArray, jobjectArray, jobjectArray);
+  (JNIEnv *, jclass, jlong, jobjectArray, jlongArray, jobjectArray, jobjectArray);
 
 /*
  * Class:     ethereum_cryptography_LibEthKZG
