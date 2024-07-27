@@ -127,7 +127,7 @@ public class LibEthKZG implements AutoCloseable{
         String osName = System.getProperty("os.name").toLowerCase();
         String osArch = getNormalizedArchitecture();
         String libraryResourcePath = null;
-
+        System.out.println("name: " + osName + " arch:" + osArch + " platform: " + PLATFORM_NATIVE_LIBRARY_NAME);
         if (osName.contains("win")) {
             if (osArch.contains("x86_64")) {
                 libraryResourcePath = "/x86_64-pc-windows-gnu/" + PLATFORM_NATIVE_LIBRARY_NAME;
