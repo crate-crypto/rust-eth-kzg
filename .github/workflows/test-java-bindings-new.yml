@@ -51,8 +51,10 @@ jobs:
       if: ${{ matrix.target == 'x86_64-pc-windows-gnu' }}
       run: sudo apt-get install gcc-mingw-w64-x86-64 -y
 
-    - name: Build with cargo-zigbuild
-      run: cargo zigbuild --target ${{ matrix.target }} --release
+    - name: Run compile script
+      run: |
+        chmod +x .github/scripts/compile_all_targets_java_new.sh
+        .github/scripts/compile_all_targets_java_new.sh ${{ matrix.target }}
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
