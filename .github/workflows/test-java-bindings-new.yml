@@ -11,16 +11,20 @@ env:
 jobs:
   build:
     name: Build for ${{ matrix.target }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        target:
-          - x86_64-unknown-linux-gnu
-          - aarch64-unknown-linux-gnu
-          - aarch64-apple-darwin
-          - x86_64-apple-darwin
-          - x86_64-pc-windows-gnu
-          # - aarch64-pc-windows-msvc
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-unknown-linux-gnu
+            os: linux-arm64
+          - target: aarch64-apple-darwin
+            os: ubuntu-latest
+          - target: x86_64-apple-darwin
+            os: ubuntu-latest
+          - target: x86_64-pc-windows-gnu
+            os: windows-latest
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust
@@ -80,21 +84,17 @@ jobs:
         with:
           name: ${{ matrix.target }}-java-code
           path: bindings/java/java_code
-
       - name: List contents of downloaded artifact
         run: ls -R bindings/java/java_code
         shell: bash
-
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
           java-version: '17'
-
       - name: Build with Gradle (no tests)
         run: ./gradlew build -x test
         working-directory: bindings/java/java_code
-
       - name: Run Gradle tests
         run: ./gradlew test --info --stacktrace --scan
         working-directory: bindings/java/java_code
