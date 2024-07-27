@@ -48,6 +48,7 @@ jobs:
         run: |
           chmod +x .github/scripts/compile_all_targets_java_new.sh
           .github/scripts/compile_all_targets_java_new.sh ${{ matrix.target }}
+        shell: bash
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
