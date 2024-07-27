@@ -170,13 +170,11 @@ impl DASContextJs {
   pub fn verify_cell_kzg_proof_batch(
     &self,
     commitments: Vec<Uint8Array>,
-    row_indices: Vec<BigInt>,
-    column_indices: Vec<BigInt>,
+    cell_indices: Vec<BigInt>,
     cells: Vec<Uint8Array>,
     proofs: Vec<Uint8Array>,
   ) -> Result<bool> {
-    let row_indices: Vec<_> = row_indices.into_iter().map(bigint_to_u64).collect();
-    let column_indices: Vec<_> = column_indices.into_iter().map(bigint_to_u64).collect();
+    let cell_indices: Vec<_> = cell_indices.into_iter().map(bigint_to_u64).collect();
 
     let commitments: Vec<_> = commitments
       .iter()
@@ -193,8 +191,7 @@ impl DASContextJs {
 
     let ctx = &self.inner;
 
-    let valid =
-      ctx.verify_cell_kzg_proof_batch(commitments, row_indices, column_indices, cells, proofs);
+    let valid = ctx.verify_cell_kzg_proof_batch(commitments, cell_indices, cells, proofs);
     match valid {
       Ok(_) => Ok(true),
       Err(x) if x.invalid_proof() => Ok(false),
@@ -209,12 +206,11 @@ impl DASContextJs {
   pub async fn async_verify_cell_kzg_proof_batch(
     &self,
     commitments: Vec<Uint8Array>,
-    row_indices: Vec<BigInt>,
-    column_indices: Vec<BigInt>,
+    cell_indices: Vec<BigInt>,
     cells: Vec<Uint8Array>,
     proofs: Vec<Uint8Array>,
   ) -> Result<bool> {
-    self.verify_cell_kzg_proof_batch(commitments, row_indices, column_indices, cells, proofs)
+    self.verify_cell_kzg_proof_batch(commitments, cell_indices, cells, proofs)
   }
 }
 

@@ -84,8 +84,7 @@ pub fn bench_verify_cell_kzg_proof_batch(c: &mut Criterion) {
 
     let (commitment, (cells, proofs)) = dummy_commitment_cells_and_proofs();
 
-    let commitments = vec![&commitment];
-    let row_indices: Vec<RowIndex> = vec![0; CELLS_PER_EXT_BLOB];
+    let commitments = vec![&commitment; CELLS_PER_EXT_BLOB];
     let cell_indices: Vec<CellIndex> = (0..CELLS_PER_EXT_BLOB).map(|x| x as CellIndex).collect();
     let cell_refs: Vec<CellRef> = cells.iter().map(|cell| cell.as_ref()).collect();
     let proof_refs: Vec<Bytes48Ref> = proofs.iter().map(|proof| proof).collect();
@@ -98,7 +97,6 @@ pub fn bench_verify_cell_kzg_proof_batch(c: &mut Criterion) {
                 b.iter(|| {
                     ctx.verify_cell_kzg_proof_batch(
                         commitments.clone(),
-                        row_indices.clone(),
                         cell_indices.clone(),
                         cell_refs.clone(),
                         proof_refs.clone(),

@@ -89,22 +89,13 @@ pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_verifyCellKZGProofBa
     _class: JClass,
     ctx_ptr: jlong,
     commitment: JObjectArray<'local>,
-    row_indices: JLongArray,
-    column_indices: JLongArray,
+    cell_indices: JLongArray,
     cells: JObjectArray<'local>,
     proofs: JObjectArray<'local>,
 ) -> jboolean {
     let ctx = unsafe { &*(ctx_ptr as *const DASContext) };
 
-    match verify_cell_kzg_proof_batch(
-        &mut env,
-        ctx,
-        commitment,
-        row_indices,
-        column_indices,
-        cells,
-        proofs,
-    ) {
+    match verify_cell_kzg_proof_batch(&mut env, ctx, commitment, cell_indices, cells, proofs) {
         Ok(result) => result,
         Err(err) => {
             throw_on_error(&mut env, err, "verifyCellKZGProofBatch");
@@ -116,14 +107,12 @@ fn verify_cell_kzg_proof_batch<'local>(
     env: &mut JNIEnv,
     ctx: &DASContext,
     commitment: JObjectArray<'local>,
-    row_indices: JLongArray,
-    column_indices: JLongArray,
+    cell_indices: JLongArray,
     cells: JObjectArray<'local>,
     proofs: JObjectArray<'local>,
 ) -> Result<jboolean, Error> {
     let commitment = jobject_array_to_2d_byte_array(env, commitment)?;
-    let row_indices = jlongarray_to_vec_u64(env, row_indices)?;
-    let column_indices = jlongarray_to_vec_u64(env, column_indices)?;
+    let cell_indices = jlongarray_to_vec_u64(env, cell_indices)?;
     let cells = jobject_array_to_2d_byte_array(env, cells)?;
     let proofs = jobject_array_to_2d_byte_array(env, proofs)?;
 
@@ -140,13 +129,10 @@ fn verify_cell_kzg_proof_batch<'local>(
         .map(|proof| slice_to_array_ref(proof, "proof"))
         .collect::<Result<_, _>>()?;
 
-    match ctx.inner().verify_cell_kzg_proof_batch(
-        commitments,
-        row_indices,
-        column_indices,
-        cells,
-        proofs,
-    ) {
+    match ctx
+        .inner()
+        .verify_cell_kzg_proof_batch(commitments, cell_indices, cells, proofs)
+    {
         Ok(_) => Ok(jboolean::from(true)),
         Err(x) if x.invalid_proof() => Ok(jboolean::from(false)),
         Err(err) => Err(Error::Cryptography(err)),

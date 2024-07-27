@@ -119,28 +119,24 @@ proc computeCellsAndProofs*(ctx: KZGCtx, blob : Blob): Result[CellsAndProofs, st
   )
   verify_result(res, ret)
 
-proc verifyCellKZGProofBatch*(ctx: KZGCtx, rowCommitments: openArray[Bytes48],
-                   rowIndices: openArray[uint64],
-                   columnIndices: openArray[uint64],
+proc verifyCellKZGProofBatch*(ctx: KZGCtx, commitments: openArray[Bytes48],
+                   cellIndices: openArray[uint64],
                    cells: openArray[Cell],
                    proofs: openArray[Bytes48]): Result[bool, string] {.gcsafe.} =
   var valid: bool
 
   let cellsPtr = toPtrPtr(cells)
   let proofsPtr = toPtrPtr(proofs)
-  let commitmentsPtr = toPtrPtr(rowCommitments)
+  let commitmentsPtr = toPtrPtr(commitments)
 
   let res = verify_cell_kzg_proof_batch(
     ctx.ctx_ptr,
 
-    uint64(len(rowCommitments)),
+    uint64(len(commitments)),
     commitmentsPtr,
 
-    uint64(len(rowIndices)),
-    rowIndices.safeGetPtr,
-
-    uint64(len(columnIndices)),
-    columnIndices.safeGetPtr,
+    uint64(len(cellIndices)),
+    cellIndices.safeGetPtr,
 
     uint64(len(cells)),
     cellsPtr,

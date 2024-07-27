@@ -153,9 +153,8 @@ public class ReferenceTests
 
     private class VerifyCellKzgProofBatchInput
     {
-        public List<string> RowCommitments { get; set; } = null!;
-        public List<ulong> RowIndices { get; set; } = null!;
-        public List<ulong> ColumnIndices { get; set; } = null!;
+        public List<string> Commitments { get; set; } = null!;
+        public List<ulong> CellIndices { get; set; } = null!;
         public List<string> Cells { get; set; } = null!;
         public List<string> Proofs { get; set; } = null!;
     }
@@ -181,15 +180,14 @@ public class ReferenceTests
             VerifyCellKzgProofBatchTest test = _deserializerUnderscoreNaming.Deserialize<VerifyCellKzgProofBatchTest>(yaml);
             Assert.That(test, Is.Not.EqualTo(null));
 
-            byte[][] rowCommitments = GetByteArrays(test.Input.RowCommitments);
-            ulong[] rowIndices = test.Input.RowIndices.ToArray();
-            ulong[] columnIndices = test.Input.ColumnIndices.ToArray();
+            byte[][] commitments = GetByteArrays(test.Input.Commitments);
+            ulong[] cellIndices = test.Input.CellIndices.ToArray();
             byte[][] cells = GetByteArrays(test.Input.Cells);
             byte[][] proofs = GetByteArrays(test.Input.Proofs);
 
             try
             {
-                bool isCorrect = _context.VerifyCellKZGProofBatch(rowCommitments, rowIndices, columnIndices, cells, proofs);
+                bool isCorrect = _context.VerifyCellKZGProofBatch(commitments, cellIndices, cells, proofs);
                 Assert.That(isCorrect, Is.EqualTo(test.Output));
             }
             catch
