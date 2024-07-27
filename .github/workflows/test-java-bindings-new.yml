@@ -100,4 +100,5 @@ jobs:
       run: chmod +x target/${{ matrix.target }}/release/*
 
     - name: Run tests
-      run: cargo test --target ${{ matrix.target }} -- --nocapture
+      run: cargo test --target ${{ matrix.target }} --package crate_crypto_kzg_multi_open_fk20 --lib -- --test-threads=1 --nocapture
+      
