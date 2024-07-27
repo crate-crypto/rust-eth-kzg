@@ -98,6 +98,15 @@ jobs:
     - name: Make binaries executable
       if: runner.os != 'Windows'
       run: chmod +x target/${{ matrix.target }}/release/*
-
-    - name: Run tests
+      
+    # Windows has a weird heap allocation error when running tests
+    # This happens because each test in fk20, will create commit and opening
+    # keys. Its not clear as to why the tests are not freeing the heap allocations
+    # on windows, but running the tests on a single thread, fixes it.
+    - name: Run tests (Windows)
+      if: runner.os == 'Windows'
       run: cargo test --target ${{ matrix.target }} -- --test-threads=1 --nocapture
+      
+    - name: Run tests
+      if: runner.os != 'Windows'
+      run: cargo test --target ${{ matrix.target }}
