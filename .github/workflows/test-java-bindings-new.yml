@@ -1,5 +1,4 @@
 name: Cross-platform Build and Test
-
 on:
   push:
     branches: [ "master" ]
@@ -22,42 +21,34 @@ jobs:
           - x86_64-apple-darwin
           - x86_64-pc-windows-gnu
           # - aarch64-pc-windows-msvc
-
     steps:
-    - uses: actions/checkout@v3
-
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        target: ${{ matrix.target }}
-        override: true
-
-    - name: Install cargo-binstall
-      uses: taiki-e/install-action@cargo-binstall
-
-    - name: Install Zig
-      uses: goto-bus-stop/setup-zig@v2
-      with:
-        version: 0.10.1
-
-    - name: Install cargo-zigbuild
-      run: cargo binstall --no-confirm cargo-zigbuild
-
-    - name: Set up MinGW (for x86_64 Windows)
-      if: ${{ matrix.target == 'x86_64-pc-windows-gnu' }}
-      run: sudo apt-get install gcc-mingw-w64-x86-64 -y
-
-    - name: Run compile script
-      run: |
-        chmod +x .github/scripts/compile_all_targets_java_new.sh
-        .github/scripts/compile_all_targets_java_new.sh ${{ matrix.target }}
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v3
-      with:
-        name: ${{ matrix.target }}
-        path: target/${{ matrix.target }}/release/*
+      - uses: actions/checkout@v3
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+      - name: Install cargo-binstall
+        uses: taiki-e/install-action@cargo-binstall
+      - name: Install Zig
+        uses: goto-bus-stop/setup-zig@v2
+        with:
+          version: 0.10.1
+      - name: Install cargo-zigbuild
+        run: cargo binstall --no-confirm cargo-zigbuild
+      - name: Set up MinGW (for x86_64 Windows)
+        if: ${{ matrix.target == 'x86_64-pc-windows-gnu' }}
+        run: sudo apt-get install gcc-mingw-w64-x86-64 -y
+      - name: Run compile script
+        run: |
+          chmod +x .github/scripts/compile_all_targets_java_new.sh
+          .github/scripts/compile_all_targets_java_new.sh ${{ matrix.target }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.target }}-java-code
+          path: bindings/java/java_code
 
   test:
     name: Test on ${{ matrix.os }}
@@ -75,37 +66,35 @@ jobs:
             target: aarch64-apple-darwin
           - os: windows-latest
             target: x86_64-pc-windows-gnu
-
     runs-on: ${{ matrix.os }}
-
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+          override: true
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ matrix.target }}-java-code
+          path: bindings/java/java_code
 
-    - name: Install Rust
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        target: ${{ matrix.target }}
-        override: true
+      - name: List contents of downloaded artifact
+        run: ls -R bindings/java/java_code
+        shell: bash
 
-    - name: Download artifacts
-      uses: actions/download-artifact@v3
-      with:
-        name: ${{ matrix.target }}
-        path: target/${{ matrix.target }}/release
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
-    - name: Make binaries executable
-      if: runner.os != 'Windows'
-      run: chmod +x target/${{ matrix.target }}/release/*
-      
-    # Windows has a weird heap allocation error when running tests
-    # This happens because each test in fk20, will create commit and opening
-    # keys. Its not clear as to why the tests are not freeing the heap allocations
-    # on windows, but running the tests on a single thread, fixes it.
-    - name: Run tests (Windows)
-      if: runner.os == 'Windows'
-      run: cargo test --target ${{ matrix.target }} -- --test-threads=1 --nocapture
-      
-    - name: Run tests
-      if: runner.os != 'Windows'
-      run: cargo test --target ${{ matrix.target }}
+      - name: Build with Gradle (no tests)
+        run: ./gradlew build -x test
+        working-directory: bindings/java/java_code
+
+      - name: Run Gradle tests
+        run: ./gradlew test --scan
+        working-directory: bindings/java/java_code
