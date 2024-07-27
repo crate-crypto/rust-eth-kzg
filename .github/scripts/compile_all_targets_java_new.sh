@@ -29,7 +29,7 @@ case $TARGET in
         $PROJECT_ROOT/scripts/compile_to_native.sh Darwin x86_64 $LIB_NAME $LIB_TYPE $OUT_DIR zigbuild
         ;;
     "x86_64-pc-windows-gnu")
-        $PROJECT_ROOT/scripts/compile_to_native.sh Windows x86_64 $LIB_NAME $LIB_TYPE $OUT_DIR zigbuild
+        $PROJECT_ROOT/scripts/compile_to_native.sh Windows x86_64 $LIB_NAME $LIB_TYPE $OUT_DIR
         ;;
     *)
         echo "Unsupported target: $TARGET"
