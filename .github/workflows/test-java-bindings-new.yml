@@ -24,7 +24,7 @@ jobs:
           - target: x86_64-apple-darwin
             os: ubuntu-latest
           - target: x86_64-pc-windows-gnu
-            os: ubuntu-latest
+            os: windows-latest
     steps:
       - uses: actions/checkout@v3
       - name: Install Rust
@@ -41,10 +41,6 @@ jobs:
           version: 0.10.1
       - name: Install cargo-zigbuild
         run: cargo binstall --no-confirm cargo-zigbuild
-    
-      - name: Set up MinGW (for x86_64 Windows)
-        if: ${{ matrix.target == 'x86_64-pc-windows-gnu' }}
-        run: sudo apt-get install gcc-mingw-w64-x86-64 -y
 
       - name: Run compile script
         run: |
