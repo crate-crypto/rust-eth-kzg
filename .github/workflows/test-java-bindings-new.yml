@@ -44,9 +44,6 @@ jobs:
     - name: Install cargo-zigbuild
       run: cargo binstall --no-confirm cargo-zigbuild
 
-    - name: Install cargo-xwin
-      run: cargo binstall --no-confirm cargo-xwin
-
     - name: Set up MinGW (for x86_64 Windows)
       if: ${{ matrix.target == 'x86_64-pc-windows-gnu' }}
       run: sudo apt-get install gcc-mingw-w64-x86-64 -y
