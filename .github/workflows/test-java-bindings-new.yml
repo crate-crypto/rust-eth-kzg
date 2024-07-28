@@ -110,7 +110,7 @@ jobs:
     name: Publish
     # needs: [build, test]
     runs-on: ubuntu-latest
-    if: ${{ inputs.release-type != 'none' }}
+    if: ${{ inputs.release-type != 'none' }} && github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
         with:
