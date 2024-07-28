@@ -5,6 +5,19 @@ on:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'The reference (branch/tag/commit) to checkout'
+        required: false
+      release-type:
+        type: choice
+        required: false
+        default: 'none'
+        description: 'Indicates whether we want to make a release and if which one'
+        options:
+          - release
+          - none
 
 env:
   CARGO_TERM_COLOR: always
@@ -27,7 +40,9 @@ jobs:
           - target: x86_64-pc-windows-gnu
             os: windows-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -47,7 +62,6 @@ jobs:
           chmod +x .github/scripts/compile_all_targets_java_new.sh
           .github/scripts/compile_all_targets_java_new.sh ${{ matrix.target }}
         shell: bash
-
       - name: Upload dynamic libs
         uses: actions/upload-artifact@v3
         with:
@@ -72,13 +86,14 @@ jobs:
             os: windows-latest
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
       - name: Download artifacts
         uses: actions/download-artifact@v3
         with:
           name: ${{ matrix.target }}
           path: bindings/java/java_code/src/main/resources/${{ matrix.target }}
-
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
@@ -95,13 +110,14 @@ jobs:
     name: Merge Artifacts
     needs: [build, test]
     runs-on: ubuntu-latest
+    if: ${{ inputs.release-type != 'none' }}
     steps:
-      - uses: actions/checkout@v3
-      
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
       - name: Download all artifacts
         uses: actions/download-artifact@v3
         with:
           path: bindings/java/java_code/src/main/resources
-
       - name: List merged artifacts
         run: ls -R bindings/java/java_code
