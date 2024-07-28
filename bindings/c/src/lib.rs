@@ -212,11 +212,11 @@ fn verification_result_to_bool_cresult(
 ///   will be created.
 ///
 /// - The caller must ensure that the pointers are valid.
-/// - The caller must ensure that `row_commitments` points to a region of memory that is at least `row_commitments_length` commitments
+/// - The caller must ensure that `commitments` points to a region of memory that is at least `commitments_length` commitments
 ///   and that each commitment is at least `BYTES_PER_COMMITMENT` bytes.
 /// - The caller must ensure that `row_indices` points to a region of memory that is at least `num_cells` elements
 ///   and that each element is 8 bytes.
-/// - The caller must ensure that `column_indices` points to a region of memory that is at least `num_cells` elements
+/// - The caller must ensure that `cell_indices` points to a region of memory that is at least `num_cells` elements
 ///   and that each element is 8 bytes.
 /// - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` proof and
 ///   that each cell is at least `BYTES_PER_CELL` bytes
@@ -233,14 +233,11 @@ fn verification_result_to_bool_cresult(
 pub extern "C" fn verify_cell_kzg_proof_batch(
     ctx: *const DASContext,
 
-    row_commitments_length: u64,
-    row_commitments: *const *const u8,
+    commitments_length: u64,
+    commitments: *const *const u8,
 
-    row_indices_length: u64,
-    row_indices: *const u64,
-
-    column_indices_length: u64,
-    column_indices: *const u64,
+    cell_indices_length: u64,
+    cell_indices: *const u64,
 
     cells_length: u64,
     cells: *const *const u8,
@@ -252,12 +249,10 @@ pub extern "C" fn verify_cell_kzg_proof_batch(
 ) -> CResult {
     match _verify_cell_kzg_proof_batch(
         ctx,
-        row_commitments_length,
-        row_commitments,
-        row_indices_length,
-        row_indices,
-        column_indices_length,
-        column_indices,
+        commitments_length,
+        commitments,
+        cell_indices_length,
+        cell_indices,
         cells_length,
         cells,
         proofs_length,

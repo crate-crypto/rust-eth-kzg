@@ -92,11 +92,11 @@ proc compute_cells_and_kzg_proofs*(ctx: ptr DASContext,
 #   will be created.
 #
 # - The caller must ensure that the pointers are valid.
-# - The caller must ensure that `row_commitments` points to a region of memory that is at least `row_commitments_length` commitments
+# - The caller must ensure that `commitments` points to a region of memory that is at least `commitments_length` commitments
 #   and that each commitment is at least `BYTES_PER_COMMITMENT` bytes.
 # - The caller must ensure that `row_indices` points to a region of memory that is at least `num_cells` elements
 #   and that each element is 8 bytes.
-# - The caller must ensure that `column_indices` points to a region of memory that is at least `num_cells` elements
+# - The caller must ensure that `cell_indices` points to a region of memory that is at least `num_cells` elements
 #   and that each element is 8 bytes.
 # - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` proof and
 #   that each cell is at least `BYTES_PER_CELL` bytes
@@ -109,12 +109,10 @@ proc compute_cells_and_kzg_proofs*(ctx: ptr DASContext,
 # - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
 #   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
 proc verify_cell_kzg_proof_batch*(ctx: ptr DASContext,
-                                  row_commitments_length: uint64,
-                                  row_commitments: ptr pointer,
-                                  row_indices_length: uint64,
-                                  row_indices: pointer,
-                                  column_indices_length: uint64,
-                                  column_indices: pointer,
+                                  commitments_length: uint64,
+                                  commitments: ptr pointer,
+                                  cell_indices_length: uint64,
+                                  cell_indices: pointer,
                                   cells_length: uint64,
                                   cells: ptr pointer,
                                   proofs_length: uint64,

@@ -111,10 +111,9 @@ suite "yaml tests":
 
   runTests(VERIFY_CELL_KZG_PROOF_BATCH_TESTS):
     let
-      rowCommitments = KZGCommitment.fromHexList(n["input"]["row_commitments"])
-      rowIndices = uint64.fromIntList(n["input"]["row_indices"])
-      columnIndices = uint64.fromIntList(n["input"]["column_indices"])
+      commitments = KZGCommitment.fromHexList(n["input"]["commitments"])
+      cellIndices = uint64.fromIntList(n["input"]["cell_indices"])
       cells = Cell.fromHexList(n["input"]["cells"])
       proofs = KZGProof.fromHexList(n["input"]["proofs"])
-      res = ctx.verifyCellKZGProofBatch(rowCommitments, rowIndices, columnIndices, cells, proofs)
+      res = ctx.verifyCellKZGProofBatch(commitments, cellIndices, cells, proofs)
     checkBool(res)

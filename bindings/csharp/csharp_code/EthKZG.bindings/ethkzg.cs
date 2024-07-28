@@ -111,7 +111,7 @@ public sealed unsafe class EthKZG : IDisposable
         return (outCells, outProofs);
     }
 
-    public bool VerifyCellKZGProofBatch(byte[][] rowCommitments, ulong[] rowIndices, ulong[] columnIndices, byte[][] cells, byte[][] proofs)
+    public bool VerifyCellKZGProofBatch(byte[][] commitments, ulong[] cellIndices, byte[][] cells, byte[][] proofs)
     {
 
         // Length checks
@@ -131,9 +131,9 @@ public sealed unsafe class EthKZG : IDisposable
             }
         }
 
-        for (int i = 0; i < rowCommitments.Length; i++)
+        for (int i = 0; i < commitments.Length; i++)
         {
-            if (rowCommitments[i].Length != BytesPerCommitment)
+            if (commitments[i].Length != BytesPerCommitment)
             {
                 throw new ArgumentException($"commitments at index {i} has an invalid length");
             }
@@ -141,9 +141,9 @@ public sealed unsafe class EthKZG : IDisposable
 
         int numCells = cells.Length;
         int numProofs = proofs.Length;
-        int numRowCommitments = rowCommitments.Length;
+        int numCommitments = commitments.Length;
 
-        byte*[] commPtrs = new byte*[numRowCommitments];
+        byte*[] commPtrs = new byte*[numCommitments];
         byte*[] cellsPtrs = new byte*[numCells];
         byte*[] proofsPtrs = new byte*[numProofs];
 
@@ -153,8 +153,7 @@ public sealed unsafe class EthKZG : IDisposable
         fixed (byte** commitmentPtrPtr = commPtrs)
         fixed (byte** cellsPtrPtr = cellsPtrs)
         fixed (byte** proofsPtrPtr = proofsPtrs)
-        fixed (ulong* rowIndicesPtr = rowIndices)
-        fixed (ulong* columnIndicesPtr = columnIndices)
+        fixed (ulong* cellIndicesPtr = cellIndices)
         {
             // Get the pointer for each cell
             for (int i = 0; i < numCells; i++)
@@ -166,9 +165,9 @@ public sealed unsafe class EthKZG : IDisposable
             }
 
             // Get the pointer for each commitment
-            for (int i = 0; i < numRowCommitments; i++)
+            for (int i = 0; i < numCommitments; i++)
             {
-                fixed (byte* commPtr = rowCommitments[i])
+                fixed (byte* commPtr = commitments[i])
                 {
                     commitmentPtrPtr[i] = commPtr;
                 }
@@ -183,7 +182,7 @@ public sealed unsafe class EthKZG : IDisposable
                 }
             }
 
-            CResult result = verify_cell_kzg_proof_batch(_context, Convert.ToUInt64(rowCommitments.Length), commitmentPtrPtr, Convert.ToUInt64(rowIndices.Length), rowIndicesPtr, Convert.ToUInt64(columnIndices.Length), columnIndicesPtr, Convert.ToUInt64(cells.Length), cellsPtrPtr, Convert.ToUInt64(proofs.Length), proofsPtrPtr, verifiedPtr);
+            CResult result = verify_cell_kzg_proof_batch(_context, Convert.ToUInt64(commitments.Length), commitmentPtrPtr, Convert.ToUInt64(cellIndices.Length), cellIndicesPtr, Convert.ToUInt64(cells.Length), cellsPtrPtr, Convert.ToUInt64(proofs.Length), proofsPtrPtr, verifiedPtr);
             ThrowOnError(result);
         }
         return verified;

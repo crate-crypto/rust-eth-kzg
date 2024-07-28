@@ -1,4 +1,4 @@
-use rust_eth_kzg::Error as DASError;
+use rust_eth_kzg::Error as KZGError;
 
 #[derive(Debug)]
 pub enum Error {
@@ -8,7 +8,7 @@ pub enum Error {
         got: usize,
         name: &'static str,
     },
-    DASError(DASError),
+    Cryptography(KZGError),
 }
 
 impl From<jni::errors::Error> for Error {
@@ -17,8 +17,8 @@ impl From<jni::errors::Error> for Error {
     }
 }
 
-impl From<DASError> for Error {
-    fn from(err: DASError) -> Self {
-        Error::DASError(err)
+impl From<KZGError> for Error {
+    fn from(err: KZGError) -> Self {
+        Error::Cryptography(err)
     }
 }

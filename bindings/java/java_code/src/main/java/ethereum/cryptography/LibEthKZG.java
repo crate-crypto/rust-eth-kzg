@@ -78,10 +78,10 @@ public class LibEthKZG implements AutoCloseable{
         return cellsAndProofs;
     }
 
-    public boolean verifyCellKZGProofBatch(byte[][] commitmentsArr, long[] rowIndices, long[] columnIndices, byte[][] cellsArr,
+    public boolean verifyCellKZGProofBatch(byte[][] commitmentsArr,  long[] cellIndices, byte[][] cellsArr,
             byte[][] proofsArr) {
                 checkContextHasNotBeenFreed();
-        return verifyCellKZGProofBatch(contextPtr, commitmentsArr, rowIndices, columnIndices, cellsArr, proofsArr);
+        return verifyCellKZGProofBatch(contextPtr, commitmentsArr, cellIndices, cellsArr, proofsArr);
     }
 
     public CellsAndProofs recoverCellsAndProofs(long[] cellIDs, byte[][] cellsArr) {
@@ -103,7 +103,7 @@ public class LibEthKZG implements AutoCloseable{
     private static native byte[] blobToKZGCommitment(long context_ptr, byte[] blob);
 
     private static native boolean verifyCellKZGProofBatch(
-            long context_ptr, byte[][] commitments, long[] rowIndices, long[] columnIndices, byte[][] cells, byte[][] proofs);
+            long context_ptr, byte[][] commitments, long[] cellIndices, byte[][] cells, byte[][] proofs);
 
     private static native CellsAndProofs recoverCellsAndProof(long context_ptr, long[] cellIDs, byte[][] cells);
 
