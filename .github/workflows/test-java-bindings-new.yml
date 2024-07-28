@@ -77,7 +77,7 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: ${{ matrix.target }}
-          path: bindings/java/java_code/src/main/resources
+          path: bindings/java/java_code/src/main/resources/${{ matrix.target }}
 
       - name: Set up JDK
         uses: actions/setup-java@v3
