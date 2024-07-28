@@ -91,16 +91,40 @@ jobs:
 
   publish:
     name: Merge Artifacts
-    # needs: [build, test]
     needs: [build]
+    # needs: [build, test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
+      - name: Download x86_64-unknown-linux-gnu artifact
+        uses: actions/download-artifact@v3
         with:
-          merge-multiple: true
+          name: x86_64-unknown-linux-gnu-java-code
+          path: bindings/java/java_code
+      
+      - name: Download aarch64-unknown-linux-gnu artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: aarch64-unknown-linux-gnu-java-code
+          path: bindings/java/java_code
+      
+      - name: Download aarch64-apple-darwin artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: aarch64-apple-darwin-java-code
+          path: bindings/java/java_code
+      
+      - name: Download x86_64-apple-darwin artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: x86_64-apple-darwin-java-code
+          path: bindings/java/java_code
+      
+      - name: Download x86_64-pc-windows-gnu artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: x86_64-pc-windows-gnu-java-code
           path: bindings/java/java_code
 
       - name: List merged artifacts
