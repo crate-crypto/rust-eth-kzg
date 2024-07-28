@@ -234,7 +234,7 @@ jobs:
       - name: Move artifacts
         run: yarn artifacts
       - name: Publish
-        if: ${{ inputs.release-type != 'none' }}
+        if: ${{ inputs.release-type != 'none' && github.event_name == 'workflow_dispatch' }}
         run: |
           # TODO: We could remove the yarnpkg registry and set the npmregistry
           # TODO: globally, by doing: yarn config set registry <registry-url>
