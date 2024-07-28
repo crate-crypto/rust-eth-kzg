@@ -97,35 +97,23 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      - name: Download x86_64-unknown-linux-gnu artifact
+      - name: Download all artifacts
         uses: actions/download-artifact@v3
         with:
-          name: x86_64-unknown-linux-gnu-java-code
-          path: bindings/java/java_code
-      
-      - name: Download aarch64-unknown-linux-gnu artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: aarch64-unknown-linux-gnu-java-code
-          path: bindings/java/java_code
-      
-      - name: Download aarch64-apple-darwin artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: aarch64-apple-darwin-java-code
-          path: bindings/java/java_code
-      
-      - name: Download x86_64-apple-darwin artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: x86_64-apple-darwin-java-code
-          path: bindings/java/java_code
-      
-      - name: Download x86_64-pc-windows-gnu artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: x86_64-pc-windows-gnu-java-code
-          path: bindings/java/java_code
+          path: downloaded_artifacts
+
+      - name: Copy dylib files to resources
+        run: |
+          mkdir -p bindings/java/java_code/src/main/resources
+          for platform in downloaded_artifacts/*; do
+            if [ -d "$platform" ]; then
+              platform_name=$(basename "$platform")
+              mkdir -p "bindings/java/java_code/src/main/resources/$platform_name"
+              find "$platform" -name "*.dylib" -exec cp {} "bindings/java/java_code/src/main/resources/$platform_name/" \;
+              find "$platform" -name "*.so" -exec cp {} "bindings/java/java_code/src/main/resources/$platform_name/" \;
+              find "$platform" -name "*.dll" -exec cp {} "bindings/java/java_code/src/main/resources/$platform_name/" \;
+            fi
+          done
 
       - name: List merged artifacts
         run: ls -R bindings/java/java_code
