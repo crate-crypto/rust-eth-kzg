@@ -47,11 +47,12 @@ jobs:
           chmod +x .github/scripts/compile_all_targets_java_new.sh
           .github/scripts/compile_all_targets_java_new.sh ${{ matrix.target }}
         shell: bash
-      - name: Upload artifacts
+
+      - name: Upload dynamic libs
         uses: actions/upload-artifact@v3
         with:
-          name: ${{ matrix.target }}-java-code
-          path: bindings/java/java_code
+          name: ${{ matrix.target }}
+          path: bindings/java/java_code/src/main/resources/${{ matrix.target }}
 
   # test:
   #   name: Test on ${{ matrix.target }}
@@ -100,20 +101,19 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v3
         with:
-          path: downloaded_artifacts
+          path: bindings/java/java_code/src/main/resources
 
-      - name: Copy dylib files to resources
-        run: |
-          mkdir -p bindings/java/java_code/src/main/resources
-          for platform in downloaded_artifacts/*; do
-            if [ -d "$platform" ]; then
-              platform_name=$(basename "$platform")
-              mkdir -p "bindings/java/java_code/src/main/resources/$platform_name"
-              find "$platform" -name "*.dylib" -exec cp {} "bindings/java/java_code/src/main/resources/$platform_name/" \;
-              find "$platform" -name "*.so" -exec cp {} "bindings/java/java_code/src/main/resources/$platform_name/" \;
-              find "$platform" -name "*.dll" -exec cp {} "bindings/java/java_code/src/main/resources/$platform_name/" \;
-            fi
-          done
+      # - name: Copy dylib files to resources
+      #   run: |
+      #     for platform in downloaded_artifacts/*; do
+      #       if [ -d "$platform" ]; then
+      #         platform_name=$(basename "$platform")
+      #         mkdir -p "bindings/java/java_code/src/main/resources/$platform_name"
+      #         find "$platform" -name "*.dylib" -exec cp {} "bindings/java/java_code/src/main/resources/$platform_name/" \;
+      #         find "$platform" -name "*.so" -exec cp {} "bindings/java/java_code/src/main/resources/$platform_name/" \;
+      #         find "$platform" -name "*.dll" -exec cp {} "bindings/java/java_code/src/main/resources/$platform_name/" \;
+      #       fi
+      #     done
 
       - name: List merged artifacts
         run: ls -R bindings/java/java_code
