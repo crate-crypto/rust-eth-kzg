@@ -2,25 +2,26 @@
 
 # Function to display usage information
 usage() {
-    echo "Usage: $0 [OS] [ARCH] [LIB_NAME] [LIB_TYPE] [OUT_DIR]"
-    echo "Compile the project for the specified OS, architecture, library name, library type, and output directory."
+    echo "Usage: $0 [OS] [ARCH] [LIB_NAME] [LIB_TYPE] [OUT_DIR] [BUILD_TOOL]"
+    echo "Compile the project for the specified OS, architecture, library name, library type, output directory, and build tool."
     echo "If no OS and ARCH are provided, it defaults to the current system's OS and architecture."
     echo "If no LIB_NAME is provided, it defaults to 'c_eth_kzg'."
     echo "If no LIB_TYPE is provided, it defaults to 'both'."
     echo "If no OUT_DIR is provided, it defaults to './bindings/c/build'."
+    echo "If no BUILD_TOOL is provided, it defaults to 'cargo'."
     echo
     echo "Arguments:"
-    echo "  OS        Operating system (e.g., Linux, Darwin, MINGW64_NT)"
-    echo "  ARCH      Architecture (e.g., x86_64, arm64, universal)"
-    echo "  LIB_NAME  Library name (e.g., c_eth_kzg)"
-    echo "  LIB_TYPE  Library type to copy (static, dynamic, or both)"
-    echo "  OUT_DIR   Output directory for the compiled libraries"
+    echo "  OS          Operating system (e.g., Linux, Darwin, MINGW64_NT)"
+    echo "  ARCH        Architecture (e.g., x86_64, arm64, universal)"
+    echo "  LIB_NAME    Library name (e.g., c_eth_kzg)"
+    echo "  LIB_TYPE    Library type to copy (static, dynamic, or both)"
+    echo "  OUT_DIR     Output directory for the compiled libraries"
+    echo "  BUILD_TOOL  Build tool to use (cargo or zigbuild)"
     echo
     echo "Examples:"
-    echo "  $0                                        # Uses the system's OS and architecture, copies both libraries to the default directory with the default library name"
-    echo "  $0 Linux x86_64 my_lib static             # Compiles for Linux on x86_64 and copies only static libraries to the default directory with the library name 'my_lib'"
-    echo "  $0 Darwin arm64 my_lib dynamic ./out/dir  # Compiles for macOS on ARM (Apple Silicon) and copies only dynamic libraries to './out/dir' with the library name 'my_lib'"
-    echo "  $0 Darwin universal my_lib both ./out/dir # Compiles a universal binary for macOS and copies both static and dynamic libraries to './out/dir' with the library name 'my_lib'"
+    echo "  $0                                              # Uses the system's OS and architecture, copies both libraries to the default directory with the default library name, using cargo"
+    echo "  $0 Linux x86_64 my_lib static . cargo           # Compiles for Linux on x86_64 and copies only static libraries to the current directory with the library name 'my_lib', using cargo"
+    echo "  $0 Darwin arm64 my_lib dynamic ./out/dir zigbuild  # Compiles for macOS on ARM (Apple Silicon) and copies only dynamic libraries to './out/dir' with the library name 'my_lib', using zigbuild"
     exit 1
 }
 
@@ -33,17 +34,19 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# Determine the operating system, architecture, library name, library type, and output directory if not provided
+# Determine the operating system, architecture, library name, library type, output directory, and build tool if not provided
 OS="${1:-$(uname)}"
 ARCH="${2:-$(uname -m)}"
 LIB_NAME="${3:-c_eth_kzg}"
 LIB_TYPE="${4:-both}"
 OUT_DIR="${5:-$PROJECT_ROOT/bindings/c/build}"
+BUILD_TOOL="${6:-cargo}"
 echo "Detected/Provided OS: $OS"
 echo "Detected/Provided architecture: $ARCH"
 echo "Library name: $LIB_NAME"
 echo "Library type to copy: $LIB_TYPE"
 echo "Output directory: $OUT_DIR"
+echo "Build tool: $BUILD_TOOL"
 
 STATIC_LIB_NAME=""
 DYNAMIC_LIB_NAME=""
@@ -132,14 +135,23 @@ case "$OS" in
         ;;
 esac
 
+# Function to perform the build
+do_build() {
+    local target=$1
+    if [ "$BUILD_TOOL" == "zigbuild" ]; then
+        cargo zigbuild --release --target=$target
+    else
+        cargo build --release --target=$target
+    fi
+}
+
 # Build for universal mac target if selected
 if [[ "$ARCH" == "universal" ]]; then
-
     check_rust_target_installed "x86_64-apple-darwin"
     check_rust_target_installed "aarch64-apple-darwin"
 
-    cargo build --release --target=x86_64-apple-darwin
-    cargo build --release --target=aarch64-apple-darwin
+    do_build "x86_64-apple-darwin"
+    do_build "aarch64-apple-darwin"
 
     # Create the universal binary
     mkdir -p "$OUT_DIR/$TARGET_NAME"
@@ -151,9 +163,8 @@ if [[ "$ARCH" == "universal" ]]; then
         "$PROJECT_ROOT/target/x86_64-apple-darwin/release/$DYNAMIC_LIB_NAME" \
         "$PROJECT_ROOT/target/aarch64-apple-darwin/release/$DYNAMIC_LIB_NAME"
 else
-
     check_rust_target_installed "$TARGET_NAME"
-    cargo build --release --target=$TARGET_NAME
+    do_build "$TARGET_NAME"
 
     # Create the output directory if it doesn't exist
     mkdir -p "$OUT_DIR/$TARGET_NAME"
