@@ -107,7 +107,7 @@ jobs:
         working-directory: bindings/java/java_code
 
   publish:
-    name: Merge Artifacts
+    name: Publish
     needs: [build, test]
     runs-on: ubuntu-latest
     if: ${{ inputs.release-type != 'none' }}
