@@ -24,7 +24,7 @@ env:
 
 jobs:
   build:
-    name: Build for ${{ matrix.target }}
+    name: Build - ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -69,7 +69,7 @@ jobs:
           path: bindings/java/java_code/src/main/resources/${{ matrix.target }}
 
   test:
-    name: Test on ${{ matrix.target }}
+    name: Test - ${{ matrix.target }}
     needs: build
     strategy:
       matrix:
