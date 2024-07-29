@@ -1,4 +1,4 @@
-name: Java Cross-platform Build and Test
+name: Java Bindings
 
 on:
   push:
@@ -59,8 +59,8 @@ jobs:
         run: cargo binstall --no-confirm cargo-zigbuild
       - name: Run compile script
         run: |
-          chmod +x .github/scripts/compile_all_targets_java_new.sh
-          .github/scripts/compile_all_targets_java_new.sh ${{ matrix.target }}
+          chmod +x .github/scripts/compile_all_targets_java.sh
+          .github/scripts/compile_all_targets_java.sh ${{ matrix.target }}
         shell: bash
       - name: Upload dynamic libs
         uses: actions/upload-artifact@v4
