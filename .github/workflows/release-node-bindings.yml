@@ -37,9 +37,9 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - host: macos-13
+          - host: ubuntu-latest
             target: x86_64-apple-darwin
-          - host: macos-14
+          - host: ubuntu-latest
             target: aarch64-apple-darwin
           - host: ubuntu-latest
             target: x86_64-unknown-linux-gnu
@@ -72,37 +72,31 @@ jobs:
       - name: Install dependencies
         run: yarn install
         working-directory: bindings/node
-      - name: Setup Zig (Linux only)
+      - name: Setup Zig
         uses: goto-bus-stop/setup-zig@v2
         with:
           version: 0.13.0
         
-      # Binstall is only needed for install cross-compilation
-      # tools on linux
-      - name: Install Binstall (Linux only)
-        if: runner.os == 'Linux'
+      - name: Install Binstall
         uses: cargo-bins/cargo-binstall@main
 
-      - name: Install cargo-zigbuild (Linux only)
-        if: runner.os == 'Linux'
+      - name: Install cargo-zigbuild
         run: cargo binstall cargo-zigbuild -y
+
       - name: Install cargo-xwin (Windows on Linux only)
-        if: runner.os == 'Linux' && contains(matrix.settings.target, 'windows')
+        if: contains(matrix.settings.target, 'windows')
         run: cargo binstall cargo-xwin -y
-      - name: Build (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          rustup target add ${{ matrix.settings.target }}
-          yarn build --release --target ${{ matrix.settings.target }}
-        working-directory: bindings/node
-      - name: Build (Linux)
-        if: runner.os == 'Linux' && !contains(matrix.settings.target, 'windows')
+
+      - name: Build (Mac and Linux)
+        if: contains(matrix.settings.target, 'windows') == false
         run: yarn build --zig --release --target ${{ matrix.settings.target }}
         working-directory: bindings/node
+
       - name: Build (Windows on Linux)
-        if: runner.os == 'Linux' && contains(matrix.settings.target, 'windows')
+        if: contains(matrix.settings.target, 'windows')
         run: yarn build --release --target ${{ matrix.settings.target }}
         working-directory: bindings/node
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
