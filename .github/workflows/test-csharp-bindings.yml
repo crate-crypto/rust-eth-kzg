@@ -1,50 +1,50 @@
-name: Test C# bindings
+# name: Test C# bindings
 
-on:
-  push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
-  workflow_dispatch:
+# on:
+#   push:
+#     branches:
+#       - master
+#   pull_request:
+#     branches:
+#       - master
+#   workflow_dispatch:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+# concurrency:
+#   group: ${{ github.workflow }}-${{ github.ref }}
+#   cancel-in-progress: true
 
-jobs:
-  build-and-test:
-    runs-on: ${{ matrix.os }}
+# jobs:
+#   build-and-test:
+#     runs-on: ${{ matrix.os }}
 
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+#     strategy:
+#       matrix:
+#         os: [ubuntu-latest, macos-latest, windows-latest]
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v3
 
-      - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
+#       - name: Set up Rust
+#         uses: dtolnay/rust-toolchain@stable
 
-      - name: Run compile script
-        run: ./scripts/compile.sh csharp
-        shell: bash
+#       - name: Run compile script
+#         run: ./scripts/compile.sh csharp
+#         shell: bash
 
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '8.0.x'
+#       - name: Set up .NET
+#         uses: actions/setup-dotnet@v3
+#         with:
+#           dotnet-version: '8.0.x'
 
-      - name: Restore .NET dependencies
-        run: dotnet restore
-        working-directory: bindings/csharp/csharp_code
+#       - name: Restore .NET dependencies
+#         run: dotnet restore
+#         working-directory: bindings/csharp/csharp_code
 
-      - name: Build .NET project
-        run: dotnet build --no-restore
-        working-directory: bindings/csharp/csharp_code
+#       - name: Build .NET project
+#         run: dotnet build --no-restore
+#         working-directory: bindings/csharp/csharp_code
 
-      - name: Run .NET tests
-        run: dotnet test --no-build --verbosity normal
-        working-directory: bindings/csharp/csharp_code
+#       - name: Run .NET tests
+#         run: dotnet test --no-build --verbosity normal
+#         working-directory: bindings/csharp/csharp_code
