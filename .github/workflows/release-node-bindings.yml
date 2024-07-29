@@ -84,22 +84,16 @@ jobs:
         run: cargo binstall cargo-zigbuild -y
 
       - name: Install cargo-xwin (Windows on Linux only)
-        if: runner.os == 'Linux' && contains(matrix.settings.target, 'windows')
+        if: contains(matrix.settings.target, 'windows')
         run: cargo binstall cargo-xwin -y
 
-      - name: Install MacOS target
-        if: runner.os == 'macOS'
-        run: |
-          rustup target add ${{ matrix.settings.target }}
-        working-directory: bindings/node
-
-      - name: Build (Linux)
-        if: runner.os == 'Linux' && !contains(matrix.settings.target, 'windows')
+      - name: Build (Mac and Linux)
+        if: !contains(matrix.settings.target, 'windows')
         run: yarn build --zig --release --target ${{ matrix.settings.target }}
         working-directory: bindings/node
 
       - name: Build (Windows on Linux)
-        if: runner.os == 'Linux' && contains(matrix.settings.target, 'windows')
+        if: contains(matrix.settings.target, 'windows')
         run: yarn build --release --target ${{ matrix.settings.target }}
         working-directory: bindings/node
 
