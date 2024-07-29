@@ -9,7 +9,7 @@ const
 
 proc getInstallDir*(): string =
   when defined(macosx):
-    when defined(aarch64) or defined(amd64):
+    when defined(aarch64) or defined(amd64) or defined(arm64):
       return universalAppleDarwin
     else:
       raise newException(ValueError, "Unsupported architecture on macOS")
@@ -21,7 +21,7 @@ proc getInstallDir*(): string =
   elif defined(linux):
     when defined(amd64):
       return x86_64UnknownLinuxGnu
-    elif defined(aarch64):
+    elif defined(aarch64) or defined(arm64):
       return aarch64UnknownLinuxGnu
     else:
       raise newException(ValueError, "Unsupported architecture on Linux")
