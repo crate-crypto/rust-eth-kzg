@@ -88,7 +88,7 @@ jobs:
         run: cargo binstall cargo-xwin -y
 
       - name: Build (Mac and Linux)
-        if: !contains(matrix.settings.target, 'windows')
+        if: contains(matrix.settings.target, 'windows') == false
         run: yarn build --zig --release --target ${{ matrix.settings.target }}
         working-directory: bindings/node
 
