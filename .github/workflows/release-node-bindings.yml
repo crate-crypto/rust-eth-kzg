@@ -1,4 +1,4 @@
-name: Node Napi Cross compile testing
+name: Node Bindings
 env:
   DEBUG: napi:*
   APP_NAME: node-eth-kzg
@@ -12,11 +12,15 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
   workflow_dispatch:
     inputs:
       ref:
         description: The reference (branch/tag/commit) to checkout
-        required: true
+        required: false
       release-type:
         type: choice
         required: false
@@ -51,7 +55,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ inputs.ref || github.ref }}
       - name: Setup node
         uses: actions/setup-node@v4
         with:
@@ -132,7 +136,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          ref: ${{ inputs.ref || github.ref }}
       - name: Setup node
         uses: actions/setup-node@v4
         with:
@@ -230,7 +234,7 @@ jobs:
       - name: Move artifacts
         run: yarn artifacts
       - name: Publish
-        if: ${{ inputs.release-type != 'none' }}
+        if: ${{ inputs.release-type != 'none' && github.event_name == 'workflow_dispatch' }}
         run: |
           # TODO: We could remove the yarnpkg registry and set the npmregistry
           # TODO: globally, by doing: yarn config set registry <registry-url>

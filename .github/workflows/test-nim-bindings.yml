@@ -33,7 +33,7 @@ jobs:
         shell: bash
 
       - name: Setup Nim
-        uses: jiro4989/setup-nim-action@v1
+        uses: jiro4989/setup-nim-action@v2
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           nim-version: 'stable'
