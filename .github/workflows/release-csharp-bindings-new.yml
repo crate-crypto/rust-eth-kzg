@@ -110,3 +110,30 @@ jobs:
       - name: Run .NET tests
         run: dotnet test --no-build --verbosity normal
         working-directory: bindings/csharp/csharp_code
+
+  publish:
+    name: Publish
+    if: ${{ inputs.release-type != 'none' && github.event_name == 'workflow_dispatch' }}
+    needs: [build, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: bindings/csharp/csharp_code/EthKZG.bindings/runtimes
+
+      - name: Restore NuGet packages
+        working-directory: bindings/csharp/csharp_code/EthKZG.bindings
+        run: dotnet restore
+
+      - name: Package with dotnet pack
+        working-directory: bindings/csharp/csharp_code/EthKZG.bindings
+        run: dotnet pack -c release --no-restore -o nupkgs -p:ContinuousIntegrationBuild=true
+        
+      - name: Publish to Nuget
+        working-directory: bindings/csharp/csharp_code/EthKZG.bindings
+        run: dotnet nuget push nupkgs/*.nupkg --api-key ${{ secrets.NUGET_RELEASE_TOKEN }} --source https://api.nuget.org/v3/index.json
