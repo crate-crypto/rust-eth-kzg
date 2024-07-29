@@ -1,4 +1,4 @@
-name: Java Bindings
+name: C# Bindings
 
 on:
   push:
