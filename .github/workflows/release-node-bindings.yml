@@ -60,10 +60,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: stable
           targets: ${{ matrix.settings.target }}
+
       # llvm-preview-tools are needed for xwin, because we are compiling assembly (blst)
       # Alternatively, you can install llvm
       - name: Install llvm-preview-tools
