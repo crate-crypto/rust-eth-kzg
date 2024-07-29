@@ -1,11 +1,11 @@
 use crate::pointer_utils::{
     create_slice_view, deref_const, ptr_ptr_to_vec_slice_const, write_to_2d_slice,
 };
-use crate::{CResult, PeerDASContext};
-use eip7594::constants::{BYTES_PER_CELL, CELLS_PER_EXT_BLOB};
+use crate::{CResult, DASContext};
+use rust_eth_kzg::constants::{BYTES_PER_CELL, CELLS_PER_EXT_BLOB};
 
 pub(crate) fn _recover_cells_and_proofs(
-    ctx: *const PeerDASContext,
+    ctx: *const DASContext,
     cells_length: u64,
     cells: *const *const u8,
     cell_indices_length: u64,
@@ -17,7 +17,7 @@ pub(crate) fn _recover_cells_and_proofs(
 
     // Dereference the input pointers
     //
-    let ctx = deref_const(ctx).prover_ctx();
+    let ctx = deref_const(ctx).inner();
     let cells = ptr_ptr_to_vec_slice_const::<BYTES_PER_CELL>(cells, cells_length as usize);
     let cell_indices = create_slice_view(cell_indices, cell_indices_length as usize);
 

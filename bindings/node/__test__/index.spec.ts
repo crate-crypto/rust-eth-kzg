@@ -1,6 +1,5 @@
 import {
-  ProverContextJs,
-  VerifierContextJs,
+  DasContextJs,
 } from "../index.js";
 
 import { readFileSync } from "fs";
@@ -15,19 +14,17 @@ interface TestMeta<I extends Record<string, any>, O extends boolean | string | s
 
 const BLOB_TO_KZG_COMMITMENT_TESTS = "../../consensus_test_vectors/blob_to_kzg_commitment/*/*/data.yaml";
 const COMPUTE_CELLS_AND_KZG_PROOFS_TESTS = "../../consensus_test_vectors/compute_cells_and_kzg_proofs/*/*/data.yaml";
-const VERIFY_CELL_KZG_PROOF_TESTS = "../../consensus_test_vectors/verify_cell_kzg_proof/*/*/data.yaml";
 const VERIFY_CELL_KZG_PROOF_BATCH_TESTS = "../../consensus_test_vectors/verify_cell_kzg_proof_batch/*/*/data.yaml";
 const RECOVER_CELLS_AND_KZG_PROOFS_TEST = "../../consensus_test_vectors/recover_cells_and_kzg_proofs/*/*/data.yaml";
 
 type BlobToKzgCommitmentTest = TestMeta<{ blob: string }, string>;
 type ComputeCellsAndKzgProofsTest = TestMeta<{ blob: string }, string[][]>;
 // TODO: number here is incorrect, but it might be worthwhile to change the type in the specs instead
-type VerifyCellKzgProofTest = TestMeta<{ commitment: string; cell_id: number; cell: string; proof: string }, boolean>;
 type VerifyCellKzgProofBatchTest = TestMeta<
-  { row_commitments: string[]; row_indices: number[]; column_indices: number[]; cells: string[]; proofs: string[] },
+  { commitments: string[]; cell_indices: number[]; cells: string[]; proofs: string[] },
   boolean
 >;
-type RecoverCellsAndKzgProofsTest = TestMeta<{cell_indices: number[]; cells: string[]}, string[][]>;
+type RecoverCellsAndKzgProofsTest = TestMeta<{ cell_indices: number[]; cells: string[] }, string[][]>;
 
 /**
  * Converts hex string to binary Uint8Array
@@ -62,8 +59,8 @@ function assertBytesEqual(a: Uint8Array | Buffer, b: Uint8Array | Buffer): void 
   }
 }
 
-describe("ProverContext", () => {
-  const proverContext = new ProverContextJs();
+describe("Spec tests", () => {
+  const ctx = new DasContextJs();
 
   it("reference tests for blobToKzgCommitment should pass", () => {
     const tests = globSync(BLOB_TO_KZG_COMMITMENT_TESTS);
@@ -76,7 +73,7 @@ describe("ProverContext", () => {
       const blob = bytesFromHex(test.input.blob);
 
       try {
-        commitment = proverContext.blobToKzgCommitment(blob);
+        commitment = ctx.blobToKzgCommitment(blob);
       } catch (err) {
         expect(test.output).toBeNull();
         return;
@@ -99,7 +96,7 @@ describe("ProverContext", () => {
       const blob = bytesFromHex(test.input.blob);
 
       try {
-        cells_and_proofs = proverContext.computeCellsAndKzgProofs(blob);
+        cells_and_proofs = ctx.computeCellsAndKzgProofs(blob);
       } catch (err) {
         expect(test.output).toBeNull();
         return;
@@ -135,7 +132,7 @@ describe("ProverContext", () => {
       const cells = test.input.cells.map(bytesFromHex);
 
       try {
-        recoveredCellsAndProofs = proverContext.recoverCellsAndKzgProofs(cellIndices, cells);
+        recoveredCellsAndProofs = ctx.recoverCellsAndKzgProofs(cellIndices, cells);
       } catch (err) {
         expect(test.output).toBeNull();
         return;
@@ -159,11 +156,6 @@ describe("ProverContext", () => {
     });
   });
 
-});
-
-describe("VerifierContext", () => {
-  const verifierContext = new VerifierContextJs();
-
   it("reference tests for verifyCellKzgProofBatch should pass", () => {
     const tests = globSync(VERIFY_CELL_KZG_PROOF_BATCH_TESTS);
     expect(tests.length).toBeGreaterThan(0);
@@ -172,39 +164,13 @@ describe("VerifierContext", () => {
       const test: VerifyCellKzgProofBatchTest = yaml.load(readFileSync(testFile, "ascii"));
 
       let valid;
-      const rowCommitments = test.input.row_commitments.map(bytesFromHex);
-      const rowIndices = test.input.row_indices.map((x) => BigInt(x));
-      const columnIndices = test.input.column_indices.map((x) => BigInt(x));
+      const commitments = test.input.commitments.map(bytesFromHex);
+      const cellIndices = test.input.cell_indices.map((x) => BigInt(x));
       const cells = test.input.cells.map(bytesFromHex);
       const proofs = test.input.proofs.map(bytesFromHex);
 
       try {
-        valid = verifierContext.verifyCellKzgProofBatch(rowCommitments, rowIndices, columnIndices, cells, proofs);
-      } catch (err) {
-        expect(test.output).toBeNull();
-        return;
-      }
-
-      expect(valid).toEqual(test.output);
-    });
-  });
-
-  it("reference tests for verifyCellKzgProof should pass", () => {
-    const tests = globSync(VERIFY_CELL_KZG_PROOF_TESTS);
-    expect(tests.length).toBeGreaterThan(0);
-
-    tests.forEach((testFile: string) => {
-
-      const test: VerifyCellKzgProofTest = yaml.load(readFileSync(testFile, "ascii"));
-
-      let valid;
-      const commitment = bytesFromHex(test.input.commitment);
-      const cellId = BigInt(test.input.cell_id);
-      const cell = bytesFromHex(test.input.cell);
-      const proof = bytesFromHex(test.input.proof);
-
-      try {
-        valid = verifierContext.verifyCellKzgProof(commitment, cellId, cell, proof);
+        valid = ctx.verifyCellKzgProofBatch(commitments, cellIndices, cells, proofs);
       } catch (err) {
         expect(test.output).toBeNull();
         return;

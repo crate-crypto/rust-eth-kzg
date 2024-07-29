@@ -28,7 +28,12 @@
                 {
                     "type": "toml",
                     "path": "Cargo.toml",
-                    "jsonpath": "$.workspace.dependencies.c_peerdas_kzg.version"
+                    "jsonpath": "$.workspace.dependencies.erasure_codes.version"
+                },
+                {
+                    "type": "toml",
+                    "path": "Cargo.toml",
+                    "jsonpath": "$.workspace.dependencies.c_eth_kzg.version"
                 },
                 {
                     "type": "toml",
@@ -38,13 +43,13 @@
                 {
                     "type": "toml",
                     "path": "Cargo.toml",
-                    "jsonpath": "$.workspace.dependencies.eip7594.version"
+                    "jsonpath": "$.workspace.dependencies.rust_eth_kzg.version"
                 },
-                "bindings/nim/nim_code/nim_peerdas_kzg/nim_peerdas_kzg.nimble",
+                "bindings/nim/nim_code/nim_eth_kzg/nim_eth_kzg.nimble",
                 "bindings/java/java_code/build.gradle",
                 {
                     "type": "xml",
-                    "path": "bindings/csharp/csharp_code/PeerDASKZG.bindings/PeerDASKZG.csproj",
+                    "path": "bindings/csharp/csharp_code/EthKZG.bindings/EthKZG.csproj",
                     "xpath": "//Project/PropertyGroup/Version"
                 },
                 {

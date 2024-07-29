@@ -1,5 +1,5 @@
 [package]
-name = "java_peerdas_kzg"
+name = "java_eth_kzg"
 version = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
@@ -10,9 +10,9 @@ repository = { workspace = true }
 
 [dependencies]
 jni = "^0.21.1"
-eip7594 = { workspace = true }
+rust_eth_kzg = { workspace = true }
 hex = { workspace = true }
-c_peerdas_kzg = { workspace = true }
+c_eth_kzg = { workspace = true }
 
 [lib]
-crate_type = ["cdylib"]
+crate-type = ["cdylib"]

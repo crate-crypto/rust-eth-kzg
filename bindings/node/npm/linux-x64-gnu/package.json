@@ -1,5 +1,5 @@
 {
-  "name": "@crate-crypto/peerdas-kzg-linux-x64-gnu",
+  "name": "@crate-crypto/node-eth-kzg-linux-x64-gnu",
   "version": "0.0.0",
   "publishConfig": {
     "access": "public"
@@ -10,9 +10,9 @@
   "cpu": [
     "x64"
   ],
-  "main": "peerdas-kzg.linux-x64-gnu.node",
+  "main": "node-eth-kzg.linux-x64-gnu.node",
   "files": [
-    "peerdas-kzg.linux-x64-gnu.node"
+    "node-eth-kzg.linux-x64-gnu.node"
   ],
   "license": "MIT",
   "engines": {

@@ -1,5 +1,4 @@
 use common::collect_test_files;
-use eip7594::verifier::VerifierError;
 use serde_::TestVector;
 use std::fs;
 
@@ -12,9 +11,8 @@ mod serde_ {
 
     #[derive(Deserialize)]
     struct YamlInput {
-        row_commitments: Vec<String>,
-        row_indices: Vec<u64>,
-        column_indices: Vec<u64>,
+        commitments: Vec<String>,
+        cell_indices: Vec<u64>,
         cells: Vec<String>,
         proofs: Vec<String>,
     }
@@ -28,9 +26,8 @@ mod serde_ {
     }
 
     pub struct TestVector {
-        pub row_commitments: Vec<UnsafeBytes>,
-        pub row_indices: Vec<u64>,
-        pub column_indices: Vec<u64>,
+        pub commitments: Vec<UnsafeBytes>,
+        pub cell_indices: Vec<u64>,
         pub cells: Vec<UnsafeBytes>,
         pub proofs: Vec<UnsafeBytes>,
         pub output: Option<bool>,
@@ -45,9 +42,9 @@ mod serde_ {
 
     impl From<YamlTestVector> for TestVector {
         fn from(yaml_test_vector: YamlTestVector) -> Self {
-            let row_commitments = yaml_test_vector
+            let commitments = yaml_test_vector
                 .input
-                .row_commitments
+                .commitments
                 .into_iter()
                 .map(|commitment| bytes_from_hex(&commitment))
                 .collect();
@@ -63,15 +60,13 @@ mod serde_ {
                 .into_iter()
                 .map(|proof| bytes_from_hex(&proof))
                 .collect();
-            let row_indices = yaml_test_vector.input.row_indices;
-            let column_indices = yaml_test_vector.input.column_indices;
+            let cell_indices = yaml_test_vector.input.cell_indices;
 
             let output = yaml_test_vector.output;
 
             TestVector {
-                row_commitments,
-                row_indices,
-                column_indices,
+                commitments,
+                cell_indices,
                 cells,
                 proofs,
                 output,
@@ -85,7 +80,7 @@ const TEST_DIR: &str = "../consensus_test_vectors/verify_cell_kzg_proof_batch";
 fn test_verify_cell_kzg_proof_batch() {
     let test_files = collect_test_files(TEST_DIR).unwrap();
 
-    let verifier_context = eip7594::verifier::VerifierContext::default();
+    let ctx = rust_eth_kzg::DASContext::default();
 
     for test_file in test_files {
         let yaml_data = fs::read_to_string(&test_file).unwrap();
@@ -107,7 +102,7 @@ fn test_verify_cell_kzg_proof_batch() {
         };
 
         let commitments: Result<_, _> = test
-            .row_commitments
+            .commitments
             .iter()
             .map(Vec::as_slice)
             .map(|v| v.try_into())
@@ -136,18 +131,12 @@ fn test_verify_cell_kzg_proof_batch() {
             }
         };
 
-        match verifier_context.verify_cell_kzg_proof_batch(
-            commitments,
-            test.row_indices,
-            test.column_indices,
-            cells,
-            proofs,
-        ) {
+        match ctx.verify_cell_kzg_proof_batch(commitments, test.cell_indices, cells, proofs) {
             Ok(_) => {
                 // We arrive at this point if the proof verified as true
                 assert!(test.output.unwrap())
             }
-            Err(VerifierError::InvalidProof) => {
+            Err(x) if x.invalid_proof() => {
                 assert!(test.output.unwrap() == false);
             }
             Err(_) => {

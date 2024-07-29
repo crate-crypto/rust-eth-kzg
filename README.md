@@ -1,10 +1,12 @@
-# PeerDAS KZG
+# Rust Eth KZG
 
-**What**
+## Overview
 
-A cryptographic library that is compatible with the PeerDAS KZG commitment scheme used in the Ethereum blockchain.
+### What
 
-**Why**
+A cryptographic library that is compatible with the KZG commitment scheme used in the Ethereum blockchain for PeerDAS.
+
+### Why
 
 The cryptography implemented in this library is the prerequisite needed for Ethereum's version of Data Availability Sampling(DAS). The library has been implemented in a modular way, so one can also use the underlying polynomial commitment scheme, for a different purpose.
 
@@ -30,7 +32,7 @@ cargo build
 
 ## Benchmarks
 
-Benchmarks can be ran by calling:
+Benchmarks can be run by calling:
 
 ```
 cargo bench

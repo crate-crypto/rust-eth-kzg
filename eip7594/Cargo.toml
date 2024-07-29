@@ -1,5 +1,5 @@
 [package]
-name = "eip7594"
+name = "rust_eth_kzg"
 description = "This crate provides an implementation of the cryptography needed for EIP-7594"
 version = { workspace = true }
 authors = { workspace = true }
@@ -16,7 +16,6 @@ erasure_codes = { workspace = true }
 rayon = { workspace = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-rust-embed = { version = "8.4.0", features = ["compression"] }
 
 [dev-dependencies]
 criterion = "0.5.1"

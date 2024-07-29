@@ -1,16 +1,10 @@
-use bls12_381::{G1Projective, G2Projective};
-use kzg_multi_open::{
-    commit_key::{CommitKey, CommitKeyLagrange},
-    opening_key::OpeningKey,
-};
-use rust_embed::Embed;
+use bls12_381::{G1Point, G2Point};
+use kzg_multi_open::{commit_key::CommitKey, opening_key::OpeningKey};
 use serde::Deserialize;
 
 use crate::constants::{FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL};
 
-#[derive(Embed)]
-#[folder = "data"]
-struct EmbeddedData;
+const TRUSTED_SETUP_JSON: &str = include_str!("../data/trusted_setup_4096.json");
 
 #[derive(Deserialize, Debug, PartialEq, Eq)]
 pub struct TrustedSetup {
@@ -37,11 +31,7 @@ impl From<&TrustedSetup> for CommitKey {
         setup.to_commit_key(SubgroupCheck::NoCheck)
     }
 }
-impl From<&TrustedSetup> for CommitKeyLagrange {
-    fn from(setup: &TrustedSetup) -> Self {
-        setup.to_commit_key_lagrange(SubgroupCheck::NoCheck)
-    }
-}
+
 impl From<&TrustedSetup> for OpeningKey {
     fn from(setup: &TrustedSetup) -> Self {
         setup.to_opening_key(SubgroupCheck::NoCheck)
@@ -91,24 +81,20 @@ impl TrustedSetup {
     /// Panics if any of the points are not in the correct subgroup
     fn validate_trusted_setup(&self) {
         self.to_commit_key(SubgroupCheck::Check);
-        self.to_commit_key_lagrange(SubgroupCheck::Check);
         self.to_opening_key(SubgroupCheck::Check);
     }
 
     fn to_commit_key(&self, subgroup_check: SubgroupCheck) -> CommitKey {
-        let points = deserialize_g1(&self.g1_monomial, subgroup_check);
+        let points = deserialize_g1_points(&self.g1_monomial, subgroup_check);
         CommitKey::new(points)
     }
-    fn to_commit_key_lagrange(&self, subgroup_check: SubgroupCheck) -> CommitKeyLagrange {
-        let points = deserialize_g1(&self.g1_lagrange, subgroup_check);
-        CommitKeyLagrange::new(points)
-    }
+
     fn to_opening_key(&self, subgroup_check: SubgroupCheck) -> OpeningKey {
-        let g2_points = deserialize_g2(&self.g2_monomial, subgroup_check);
+        let g2_points = deserialize_g2_points(&self.g2_monomial, subgroup_check);
         let num_g2_points = g2_points.len();
         // The setup needs as many g1 elements for the opening key as g2 elements, in order
         // to commit to the remainder/interpolation polynomial.
-        let g1_points = deserialize_g1(&self.g1_monomial[..num_g2_points], subgroup_check);
+        let g1_points = deserialize_g1_points(&self.g1_monomial[..num_g2_points], subgroup_check);
 
         OpeningKey::new(
             g1_points,
@@ -120,23 +106,16 @@ impl TrustedSetup {
 
     /// Loads the official trusted setup file being used on mainnet from the embedded data folder.
     fn from_embed() -> TrustedSetup {
-        const TRUSTED_SETUP_FILE_NAME: &str = "trusted_setup_4096.json";
-
-        let file = EmbeddedData::get(TRUSTED_SETUP_FILE_NAME)
-            .expect("expected the trusted setup file to be embedded in the binary");
-        let json_str = std::str::from_utf8(file.data.as_ref())
-            .expect("expected the trusted setup file to be valid utf8");
-
-        Self::from_json(json_str)
+        Self::from_json_unchecked(TRUSTED_SETUP_JSON)
     }
 }
 
 /// Deserialize G1 points from hex strings without checking that the element
 /// is in the correct subgroup.
-fn deserialize_g1<T: AsRef<str>>(
+fn deserialize_g1_points<T: AsRef<str>>(
     g1_points_hex_str: &[T],
     check: SubgroupCheck,
-) -> Vec<G1Projective> {
+) -> Vec<G1Point> {
     let mut g1_points = Vec::new();
     for g1_hex_str in g1_points_hex_str {
         let g1_hex_str = g1_hex_str.as_ref();
@@ -151,10 +130,10 @@ fn deserialize_g1<T: AsRef<str>>(
 
         let point = match check {
             SubgroupCheck::Check => {
-                G1Projective::from_compressed(&g1_point_bytes).expect("invalid g1 point")
+                G1Point::from_compressed(&g1_point_bytes).expect("invalid g1 point")
             }
             SubgroupCheck::NoCheck => {
-                G1Projective::from_compressed_unchecked(&g1_point_bytes).expect("invalid g1 point")
+                G1Point::from_compressed_unchecked(&g1_point_bytes).expect("invalid g1 point")
             }
         };
 
@@ -166,10 +145,10 @@ fn deserialize_g1<T: AsRef<str>>(
 
 /// Deserialize G2 points from hex strings without checking that the element
 /// is in the correct subgroup.
-fn deserialize_g2<T: AsRef<str>>(
+fn deserialize_g2_points<T: AsRef<str>>(
     g2_points_hex_str: &[T],
-    check: SubgroupCheck,
-) -> Vec<G2Projective> {
+    subgroup_check: SubgroupCheck,
+) -> Vec<G2Point> {
     let mut g2_points = Vec::new();
     for g2_hex_str in g2_points_hex_str {
         let g2_hex_str = g2_hex_str.as_ref();
@@ -181,11 +160,9 @@ fn deserialize_g2<T: AsRef<str>>(
             .try_into()
             .expect("expected 96 bytes for G2 point");
 
-        let point = match check {
-            SubgroupCheck::Check => G2Projective::from_compressed(&g2_point_bytes).unwrap(),
-            SubgroupCheck::NoCheck => {
-                G2Projective::from_compressed_unchecked(&g2_point_bytes).unwrap()
-            }
+        let point = match subgroup_check {
+            SubgroupCheck::Check => G2Point::from_compressed(&g2_point_bytes).unwrap(),
+            SubgroupCheck::NoCheck => G2Point::from_compressed_unchecked(&g2_point_bytes).unwrap(),
         };
         g2_points.push(point)
     }

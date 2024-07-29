@@ -1,5 +1,5 @@
 {
-  "name": "@crate-crypto/peerdas-kzg",
+  "name": "@crate-crypto/node-eth-kzg",
   "version": "0.2.1",
   "publishConfig": {
     "access": "public"
@@ -35,7 +35,7 @@
     "typescript": "^5.2.2"
   },
   "napi": {
-    "name": "peerdas-kzg",
+    "name": "node-eth-kzg",
     "triples": {
       "additional": [
         "aarch64-apple-darwin",
@@ -53,12 +53,12 @@
     "node": ">= 10"
   },
   "license": "MIT",
-  "homepage": "https://github.com/crate-crypto/peerdas-kzg#readme",
+  "homepage": "https://github.com/crate-crypto/rust-eth-kzg#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/crate-crypto/peerdas-kzg.git"
+    "url": "git+https://github.com/crate-crypto/rust-eth-kzg.git"
   },
   "bugs": {
-    "url": "https://github.com/crate-crypto/peerdas-kzg/issues"
+    "url": "https://github.com/crate-crypto/rust-eth-kzg/issues"
   }
 }

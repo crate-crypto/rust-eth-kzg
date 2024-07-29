@@ -409,9 +409,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@crate-crypto/peerdas-kzg@workspace:.":
+"@crate-crypto/node-eth-kzg@workspace:.":
   version: 0.0.0-use.local
-  resolution: "@crate-crypto/peerdas-kzg@workspace:."
+  resolution: "@crate-crypto/node-eth-kzg@workspace:."
   dependencies:
     "@napi-rs/cli": ^2.18.3
     "@types/jest": ^29.1.2

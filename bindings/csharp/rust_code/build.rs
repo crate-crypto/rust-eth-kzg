@@ -4,7 +4,7 @@ use toml::Value;
 
 /// The path where the generated bindings file will be written, relative to the bindings folder.
 const PATH_FOR_CSHARP_BINDINGS_FILE: &str =
-    "csharp/csharp_code/PeerDASKZG.bindings/native_methods.g.cs";
+    "csharp/csharp_code/EthKZG.bindings/native_methods.g.cs";
 
 fn main() {
     let package_name_of_c_crate = get_package_name_of_c_crate();
@@ -20,13 +20,11 @@ fn main() {
 
     csbindgen::Builder::default()
         .input_extern_file(path_to_c_crates_lib_file)
-        .csharp_namespace("PeerDAS.Native")
+        .csharp_namespace("EthKZG.Native")
         .csharp_dll_name(package_name_of_c_crate)
         .csharp_class_name("NativeMethods")
         .csharp_use_nint_types(false)
-        .csharp_class_accessibility("public")
-        // Once we can make methods internal with the bindgen code, we make everything internal including the NativeMethods class 
-        .csharp_file_header("//TODO: The class and methods in this file are currently public\n// We want to eventually make them internal.\n// This is blocked by csbindgen making all methods public.\n// See: https://github.com/Cysharp/csbindgen/pull/83")
+        .csharp_file_header("using C = uint;")
         .generate_csharp_file(path_to_output_file)
         .unwrap();
 }

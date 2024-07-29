@@ -32,24 +32,24 @@ switch (platform) {
   case 'android':
     switch (arch) {
       case 'arm64':
-        localFileExisted = existsSync(join(__dirname, 'peerdas-kzg.android-arm64.node'))
+        localFileExisted = existsSync(join(__dirname, 'node-eth-kzg.android-arm64.node'))
         try {
           if (localFileExisted) {
-            nativeBinding = require('./peerdas-kzg.android-arm64.node')
+            nativeBinding = require('./node-eth-kzg.android-arm64.node')
           } else {
-            nativeBinding = require('@crate-crypto/peerdas-kzg-android-arm64')
+            nativeBinding = require('@crate-crypto/node-eth-kzg-android-arm64')
           }
         } catch (e) {
           loadError = e
         }
         break
       case 'arm':
-        localFileExisted = existsSync(join(__dirname, 'peerdas-kzg.android-arm-eabi.node'))
+        localFileExisted = existsSync(join(__dirname, 'node-eth-kzg.android-arm-eabi.node'))
         try {
           if (localFileExisted) {
-            nativeBinding = require('./peerdas-kzg.android-arm-eabi.node')
+            nativeBinding = require('./node-eth-kzg.android-arm-eabi.node')
           } else {
-            nativeBinding = require('@crate-crypto/peerdas-kzg-android-arm-eabi')
+            nativeBinding = require('@crate-crypto/node-eth-kzg-android-arm-eabi')
           }
         } catch (e) {
           loadError = e
@@ -63,13 +63,13 @@ switch (platform) {
     switch (arch) {
       case 'x64':
         localFileExisted = existsSync(
-          join(__dirname, 'peerdas-kzg.win32-x64-msvc.node')
+          join(__dirname, 'node-eth-kzg.win32-x64-msvc.node')
         )
         try {
           if (localFileExisted) {
-            nativeBinding = require('./peerdas-kzg.win32-x64-msvc.node')
+            nativeBinding = require('./node-eth-kzg.win32-x64-msvc.node')
           } else {
-            nativeBinding = require('@crate-crypto/peerdas-kzg-win32-x64-msvc')
+            nativeBinding = require('@crate-crypto/node-eth-kzg-win32-x64-msvc')
           }
         } catch (e) {
           loadError = e
@@ -77,13 +77,13 @@ switch (platform) {
         break
       case 'ia32':
         localFileExisted = existsSync(
-          join(__dirname, 'peerdas-kzg.win32-ia32-msvc.node')
+          join(__dirname, 'node-eth-kzg.win32-ia32-msvc.node')
         )
         try {
           if (localFileExisted) {
-            nativeBinding = require('./peerdas-kzg.win32-ia32-msvc.node')
+            nativeBinding = require('./node-eth-kzg.win32-ia32-msvc.node')
           } else {
-            nativeBinding = require('@crate-crypto/peerdas-kzg-win32-ia32-msvc')
+            nativeBinding = require('@crate-crypto/node-eth-kzg-win32-ia32-msvc')
           }
         } catch (e) {
           loadError = e
@@ -91,13 +91,13 @@ switch (platform) {
         break
       case 'arm64':
         localFileExisted = existsSync(
-          join(__dirname, 'peerdas-kzg.win32-arm64-msvc.node')
+          join(__dirname, 'node-eth-kzg.win32-arm64-msvc.node')
         )
         try {
           if (localFileExisted) {
-            nativeBinding = require('./peerdas-kzg.win32-arm64-msvc.node')
+            nativeBinding = require('./node-eth-kzg.win32-arm64-msvc.node')
           } else {
-            nativeBinding = require('@crate-crypto/peerdas-kzg-win32-arm64-msvc')
+            nativeBinding = require('@crate-crypto/node-eth-kzg-win32-arm64-msvc')
           }
         } catch (e) {
           loadError = e
@@ -108,23 +108,23 @@ switch (platform) {
     }
     break
   case 'darwin':
-    localFileExisted = existsSync(join(__dirname, 'peerdas-kzg.darwin-universal.node'))
+    localFileExisted = existsSync(join(__dirname, 'node-eth-kzg.darwin-universal.node'))
     try {
       if (localFileExisted) {
-        nativeBinding = require('./peerdas-kzg.darwin-universal.node')
+        nativeBinding = require('./node-eth-kzg.darwin-universal.node')
       } else {
-        nativeBinding = require('@crate-crypto/peerdas-kzg-darwin-universal')
+        nativeBinding = require('@crate-crypto/node-eth-kzg-darwin-universal')
       }
       break
     } catch {}
     switch (arch) {
       case 'x64':
-        localFileExisted = existsSync(join(__dirname, 'peerdas-kzg.darwin-x64.node'))
+        localFileExisted = existsSync(join(__dirname, 'node-eth-kzg.darwin-x64.node'))
         try {
           if (localFileExisted) {
-            nativeBinding = require('./peerdas-kzg.darwin-x64.node')
+            nativeBinding = require('./node-eth-kzg.darwin-x64.node')
           } else {
-            nativeBinding = require('@crate-crypto/peerdas-kzg-darwin-x64')
+            nativeBinding = require('@crate-crypto/node-eth-kzg-darwin-x64')
           }
         } catch (e) {
           loadError = e
@@ -132,13 +132,13 @@ switch (platform) {
         break
       case 'arm64':
         localFileExisted = existsSync(
-          join(__dirname, 'peerdas-kzg.darwin-arm64.node')
+          join(__dirname, 'node-eth-kzg.darwin-arm64.node')
         )
         try {
           if (localFileExisted) {
-            nativeBinding = require('./peerdas-kzg.darwin-arm64.node')
+            nativeBinding = require('./node-eth-kzg.darwin-arm64.node')
           } else {
-            nativeBinding = require('@crate-crypto/peerdas-kzg-darwin-arm64')
+            nativeBinding = require('@crate-crypto/node-eth-kzg-darwin-arm64')
           }
         } catch (e) {
           loadError = e
@@ -152,12 +152,12 @@ switch (platform) {
     if (arch !== 'x64') {
       throw new Error(`Unsupported architecture on FreeBSD: ${arch}`)
     }
-    localFileExisted = existsSync(join(__dirname, 'peerdas-kzg.freebsd-x64.node'))
+    localFileExisted = existsSync(join(__dirname, 'node-eth-kzg.freebsd-x64.node'))
     try {
       if (localFileExisted) {
-        nativeBinding = require('./peerdas-kzg.freebsd-x64.node')
+        nativeBinding = require('./node-eth-kzg.freebsd-x64.node')
       } else {
-        nativeBinding = require('@crate-crypto/peerdas-kzg-freebsd-x64')
+        nativeBinding = require('@crate-crypto/node-eth-kzg-freebsd-x64')
       }
     } catch (e) {
       loadError = e
@@ -168,26 +168,26 @@ switch (platform) {
       case 'x64':
         if (isMusl()) {
           localFileExisted = existsSync(
-            join(__dirname, 'peerdas-kzg.linux-x64-musl.node')
+            join(__dirname, 'node-eth-kzg.linux-x64-musl.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./peerdas-kzg.linux-x64-musl.node')
+              nativeBinding = require('./node-eth-kzg.linux-x64-musl.node')
             } else {
-              nativeBinding = require('@crate-crypto/peerdas-kzg-linux-x64-musl')
+              nativeBinding = require('@crate-crypto/node-eth-kzg-linux-x64-musl')
             }
           } catch (e) {
             loadError = e
           }
         } else {
           localFileExisted = existsSync(
-            join(__dirname, 'peerdas-kzg.linux-x64-gnu.node')
+            join(__dirname, 'node-eth-kzg.linux-x64-gnu.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./peerdas-kzg.linux-x64-gnu.node')
+              nativeBinding = require('./node-eth-kzg.linux-x64-gnu.node')
             } else {
-              nativeBinding = require('@crate-crypto/peerdas-kzg-linux-x64-gnu')
+              nativeBinding = require('@crate-crypto/node-eth-kzg-linux-x64-gnu')
             }
           } catch (e) {
             loadError = e
@@ -197,26 +197,26 @@ switch (platform) {
       case 'arm64':
         if (isMusl()) {
           localFileExisted = existsSync(
-            join(__dirname, 'peerdas-kzg.linux-arm64-musl.node')
+            join(__dirname, 'node-eth-kzg.linux-arm64-musl.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./peerdas-kzg.linux-arm64-musl.node')
+              nativeBinding = require('./node-eth-kzg.linux-arm64-musl.node')
             } else {
-              nativeBinding = require('@crate-crypto/peerdas-kzg-linux-arm64-musl')
+              nativeBinding = require('@crate-crypto/node-eth-kzg-linux-arm64-musl')
             }
           } catch (e) {
             loadError = e
           }
         } else {
           localFileExisted = existsSync(
-            join(__dirname, 'peerdas-kzg.linux-arm64-gnu.node')
+            join(__dirname, 'node-eth-kzg.linux-arm64-gnu.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./peerdas-kzg.linux-arm64-gnu.node')
+              nativeBinding = require('./node-eth-kzg.linux-arm64-gnu.node')
             } else {
-              nativeBinding = require('@crate-crypto/peerdas-kzg-linux-arm64-gnu')
+              nativeBinding = require('@crate-crypto/node-eth-kzg-linux-arm64-gnu')
             }
           } catch (e) {
             loadError = e
@@ -226,26 +226,26 @@ switch (platform) {
       case 'arm':
         if (isMusl()) {
           localFileExisted = existsSync(
-            join(__dirname, 'peerdas-kzg.linux-arm-musleabihf.node')
+            join(__dirname, 'node-eth-kzg.linux-arm-musleabihf.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./peerdas-kzg.linux-arm-musleabihf.node')
+              nativeBinding = require('./node-eth-kzg.linux-arm-musleabihf.node')
             } else {
-              nativeBinding = require('@crate-crypto/peerdas-kzg-linux-arm-musleabihf')
+              nativeBinding = require('@crate-crypto/node-eth-kzg-linux-arm-musleabihf')
             }
           } catch (e) {
             loadError = e
           }
         } else {
           localFileExisted = existsSync(
-            join(__dirname, 'peerdas-kzg.linux-arm-gnueabihf.node')
+            join(__dirname, 'node-eth-kzg.linux-arm-gnueabihf.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./peerdas-kzg.linux-arm-gnueabihf.node')
+              nativeBinding = require('./node-eth-kzg.linux-arm-gnueabihf.node')
             } else {
-              nativeBinding = require('@crate-crypto/peerdas-kzg-linux-arm-gnueabihf')
+              nativeBinding = require('@crate-crypto/node-eth-kzg-linux-arm-gnueabihf')
             }
           } catch (e) {
             loadError = e
@@ -255,26 +255,26 @@ switch (platform) {
       case 'riscv64':
         if (isMusl()) {
           localFileExisted = existsSync(
-            join(__dirname, 'peerdas-kzg.linux-riscv64-musl.node')
+            join(__dirname, 'node-eth-kzg.linux-riscv64-musl.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./peerdas-kzg.linux-riscv64-musl.node')
+              nativeBinding = require('./node-eth-kzg.linux-riscv64-musl.node')
             } else {
-              nativeBinding = require('@crate-crypto/peerdas-kzg-linux-riscv64-musl')
+              nativeBinding = require('@crate-crypto/node-eth-kzg-linux-riscv64-musl')
             }
           } catch (e) {
             loadError = e
           }
         } else {
           localFileExisted = existsSync(
-            join(__dirname, 'peerdas-kzg.linux-riscv64-gnu.node')
+            join(__dirname, 'node-eth-kzg.linux-riscv64-gnu.node')
           )
           try {
             if (localFileExisted) {
-              nativeBinding = require('./peerdas-kzg.linux-riscv64-gnu.node')
+              nativeBinding = require('./node-eth-kzg.linux-riscv64-gnu.node')
             } else {
-              nativeBinding = require('@crate-crypto/peerdas-kzg-linux-riscv64-gnu')
+              nativeBinding = require('@crate-crypto/node-eth-kzg-linux-riscv64-gnu')
             }
           } catch (e) {
             loadError = e
@@ -283,13 +283,13 @@ switch (platform) {
         break
       case 's390x':
         localFileExisted = existsSync(
-          join(__dirname, 'peerdas-kzg.linux-s390x-gnu.node')
+          join(__dirname, 'node-eth-kzg.linux-s390x-gnu.node')
         )
         try {
           if (localFileExisted) {
-            nativeBinding = require('./peerdas-kzg.linux-s390x-gnu.node')
+            nativeBinding = require('./node-eth-kzg.linux-s390x-gnu.node')
           } else {
-            nativeBinding = require('@crate-crypto/peerdas-kzg-linux-s390x-gnu')
+            nativeBinding = require('@crate-crypto/node-eth-kzg-linux-s390x-gnu')
           }
         } catch (e) {
           loadError = e
@@ -310,7 +310,7 @@ if (!nativeBinding) {
   throw new Error(`Failed to load native binding`)
 }
 
-const { BYTES_PER_COMMITMENT, BYTES_PER_PROOF, BYTES_PER_FIELD_ELEMENT, BYTES_PER_BLOB, MAX_NUM_COLUMNS, BYTES_PER_CELL, CellsAndProofs, ProverContextJs, VerifierContextJs } = nativeBinding
+const { BYTES_PER_COMMITMENT, BYTES_PER_PROOF, BYTES_PER_FIELD_ELEMENT, BYTES_PER_BLOB, MAX_NUM_COLUMNS, BYTES_PER_CELL, CellsAndProofs, DasContextJs } = nativeBinding
 
 module.exports.BYTES_PER_COMMITMENT = BYTES_PER_COMMITMENT
 module.exports.BYTES_PER_PROOF = BYTES_PER_PROOF
@@ -319,5 +319,4 @@ module.exports.BYTES_PER_BLOB = BYTES_PER_BLOB
 module.exports.MAX_NUM_COLUMNS = MAX_NUM_COLUMNS
 module.exports.BYTES_PER_CELL = BYTES_PER_CELL
 module.exports.CellsAndProofs = CellsAndProofs
-module.exports.ProverContextJs = ProverContextJs
-module.exports.VerifierContextJs = VerifierContextJs
+module.exports.DasContextJs = DasContextJs

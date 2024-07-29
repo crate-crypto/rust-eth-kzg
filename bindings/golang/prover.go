@@ -1,12 +1,12 @@
-package peerdas_kzg
+package eth_kzg
 
 /*
-#cgo darwin,amd64 LDFLAGS: ./build/x86_64-apple-darwin/libc_peerdas_kzg.a
-#cgo darwin,arm64 LDFLAGS: ./build/aarch64-apple-darwin/libc_peerdas_kzg.a
-#cgo linux,amd64 LDFLAGS: ./build/x86_64-unknown-linux-gnu/libc_peerdas_kzg.a -lm
-#cgo linux,arm64 LDFLAGS: ./build/aarch64-unknown-linux-gnu/libc_peerdas_kzg.a -lm
-#cgo windows LDFLAGS: ./build/x86_64-pc-windows-gnu/libc_peerdas_kzg.a -lws2_32 -lntdll -luserenv
-#include "./build/c_peerdas_kzg.h"
+#cgo darwin,amd64 LDFLAGS: ./build/x86_64-apple-darwin/libc_eth_kzg.a
+#cgo darwin,arm64 LDFLAGS: ./build/aarch64-apple-darwin/libc_eth_kzg.a
+#cgo linux,amd64 LDFLAGS: ./build/x86_64-unknown-linux-gnu/libc_eth_kzg.a -lm
+#cgo linux,arm64 LDFLAGS: ./build/aarch64-unknown-linux-gnu/libc_eth_kzg.a -lm
+#cgo windows LDFLAGS: ./build/x86_64-pc-windows-gnu/libc_eth_kzg.a -lws2_32 -lntdll -luserenv
+#include "./build/c_eth_kzg.h"
 */
 import "C"
 import (
@@ -41,21 +41,21 @@ const (
 	BytesPerCell = 2048
 )
 
-type PeerDASContext struct {
-	_inner *C.PeerDASContext
+type DASContext struct {
+	_inner *C.DASContext
 }
 
-func NewProverContext() *PeerDASContext {
-	self := &PeerDASContext{_inner: C.peerdas_context_new()}
+func NewProverContext() *DASContext {
+	self := &DASContext{_inner: C.das_context_new()}
 
-	runtime.SetFinalizer(self, func(self *PeerDASContext) {
-		C.peerdas_context_free(self.inner())
+	runtime.SetFinalizer(self, func(self *DASContext) {
+		C.das_context_free(self.inner())
 	})
 
 	return self
 }
 
-func (prover *PeerDASContext) BlobToKZGCommitment(blob []byte) ([]byte, error) {
+func (prover *DASContext) BlobToKZGCommitment(blob []byte) ([]byte, error) {
 	if len(blob) != BytesPerBlob {
 		return nil, errors.New("invalid blob size")
 	}
@@ -64,6 +64,6 @@ func (prover *PeerDASContext) BlobToKZGCommitment(blob []byte) ([]byte, error) {
 	return out, nil
 }
 
-func (prover *PeerDASContext) inner() *C.PeerDASContext {
+func (prover *DASContext) inner() *C.DASContext {
 	return prover._inner
 }

@@ -6,11 +6,7 @@ use napi::{
 };
 use napi_derive::napi;
 
-use eip7594::{
-  constants,
-  prover::ProverContext,
-  verifier::{VerifierContext, VerifierError},
-};
+use rust_eth_kzg::{constants, DASContext};
 
 #[napi]
 pub const BYTES_PER_COMMITMENT: u32 = constants::BYTES_PER_COMMITMENT as u32;
@@ -32,32 +28,32 @@ pub struct CellsAndProofs {
 }
 
 #[napi]
-pub struct ProverContextJs {
-  inner: Arc<ProverContext>,
+pub struct DASContextJs {
+  inner: Arc<DASContext>,
 }
 
-impl Default for ProverContextJs {
+impl Default for DASContextJs {
   fn default() -> Self {
     Self::new()
   }
 }
 
 #[napi]
-impl ProverContextJs {
+impl DASContextJs {
   #[napi(constructor)]
   pub fn new() -> Self {
-    ProverContextJs {
-      inner: Arc::new(ProverContext::default()),
+    DASContextJs {
+      inner: Arc::new(DASContext::default()),
     }
   }
 
   #[napi]
   pub fn blob_to_kzg_commitment(&self, blob: Uint8Array) -> Result<Uint8Array> {
     let blob = blob.as_ref();
-    let prover_context = &self.inner;
+    let ctx = &self.inner;
     let blob = slice_to_array_ref(blob, "blob")?;
 
-    let commitment = prover_context.blob_to_kzg_commitment(blob).map_err(|err| {
+    let commitment = ctx.blob_to_kzg_commitment(blob).map_err(|err| {
       Error::from_reason(format!(
         "failed to compute blob_to_kzg_commitment: {:?}",
         err
@@ -74,18 +70,16 @@ impl ProverContextJs {
   #[napi]
   pub fn compute_cells_and_kzg_proofs(&self, blob: Uint8Array) -> Result<CellsAndProofs> {
     let blob = blob.as_ref();
-    let prover_context = &self.inner;
+    let ctx = &self.inner;
 
     let blob = slice_to_array_ref(blob, "blob")?;
 
-    let (cells, proofs) = prover_context
-      .compute_cells_and_kzg_proofs(blob)
-      .map_err(|err| {
-        Error::from_reason(format!(
-          "failed to compute compute_cells_and_kzg_proofs: {:?}",
-          err
-        ))
-      })?;
+    let (cells, proofs) = ctx.compute_cells_and_kzg_proofs(blob).map_err(|err| {
+      Error::from_reason(format!(
+        "failed to compute compute_cells_and_kzg_proofs: {:?}",
+        err
+      ))
+    })?;
 
     let cells_uint8array = cells
       .into_iter()
@@ -132,14 +126,14 @@ impl ProverContextJs {
     let cell_indices: Vec<_> = cell_indices.into_iter().map(bigint_to_u64).collect();
     let cells: Vec<_> = cells.iter().map(|cell| cell.as_ref()).collect();
 
-    let prover_context = &self.inner;
+    let ctx = &self.inner;
 
     let cells: Vec<_> = cells
       .iter()
       .map(|cell| slice_to_array_ref(cell, "cell"))
       .collect::<Result<_, _>>()?;
 
-    let (cells, proofs) = prover_context
+    let (cells, proofs) = ctx
       .recover_cells_and_proofs(cell_indices, cells)
       .map_err(|err| {
         Error::from_reason(format!(
@@ -171,80 +165,16 @@ impl ProverContextJs {
   ) -> Result<CellsAndProofs> {
     self.recover_cells_and_kzg_proofs(cell_indices, cells)
   }
-}
-
-#[napi]
-pub struct VerifierContextJs {
-  inner: Arc<VerifierContext>,
-}
-
-impl Default for VerifierContextJs {
-  fn default() -> Self {
-    Self::new()
-  }
-}
-
-#[napi]
-impl VerifierContextJs {
-  #[napi(constructor)]
-  pub fn new() -> Self {
-    VerifierContextJs {
-      inner: Arc::new(VerifierContext::default()),
-    }
-  }
-
-  #[napi]
-  pub fn verify_cell_kzg_proof(
-    &self,
-    commitment: Uint8Array,
-    cell_index: BigInt,
-    cell: Uint8Array,
-    proof: Uint8Array,
-  ) -> Result<bool> {
-    let commitment = commitment.as_ref();
-    let cell = cell.as_ref();
-    let proof = proof.as_ref();
-    let cell_index_u64 = bigint_to_u64(cell_index);
-
-    let verifier_context = &self.inner;
-
-    let cell = slice_to_array_ref(cell, "cell")?;
-    let commitment = slice_to_array_ref(commitment, "commitment")?;
-    let proof = slice_to_array_ref(proof, "proof")?;
-
-    let valid = verifier_context.verify_cell_kzg_proof(commitment, cell_index_u64, cell, proof);
-    match valid {
-      Ok(_) => Ok(true),
-      Err(VerifierError::InvalidProof) => Ok(false),
-      Err(err) => Err(Error::from_reason(format!(
-        "failed to compute verify_cell_kzg_proof: {:?}",
-        err
-      ))),
-    }
-  }
-
-  #[napi]
-  pub async fn async_verify_cell_kzg_proof(
-    &self,
-    commitment: Uint8Array,
-    cell_index: BigInt,
-    cell: Uint8Array,
-    proof: Uint8Array,
-  ) -> Result<bool> {
-    self.verify_cell_kzg_proof(commitment, cell_index, cell, proof)
-  }
 
   #[napi]
   pub fn verify_cell_kzg_proof_batch(
     &self,
     commitments: Vec<Uint8Array>,
-    row_indices: Vec<BigInt>,
-    column_indices: Vec<BigInt>,
+    cell_indices: Vec<BigInt>,
     cells: Vec<Uint8Array>,
     proofs: Vec<Uint8Array>,
   ) -> Result<bool> {
-    let row_indices: Vec<_> = row_indices.into_iter().map(bigint_to_u64).collect();
-    let column_indices: Vec<_> = column_indices.into_iter().map(bigint_to_u64).collect();
+    let cell_indices: Vec<_> = cell_indices.into_iter().map(bigint_to_u64).collect();
 
     let commitments: Vec<_> = commitments
       .iter()
@@ -259,18 +189,12 @@ impl VerifierContextJs {
       .map(|proof| slice_to_array_ref(proof, "proof"))
       .collect::<Result<_, _>>()?;
 
-    let verifier_context = &self.inner;
+    let ctx = &self.inner;
 
-    let valid = verifier_context.verify_cell_kzg_proof_batch(
-      commitments,
-      row_indices,
-      column_indices,
-      cells,
-      proofs,
-    );
+    let valid = ctx.verify_cell_kzg_proof_batch(commitments, cell_indices, cells, proofs);
     match valid {
       Ok(_) => Ok(true),
-      Err(VerifierError::InvalidProof) => Ok(false),
+      Err(x) if x.invalid_proof() => Ok(false),
       Err(err) => Err(Error::from_reason(format!(
         "failed to compute verify_cell_kzg_proof_batch: {:?}",
         err
@@ -282,12 +206,11 @@ impl VerifierContextJs {
   pub async fn async_verify_cell_kzg_proof_batch(
     &self,
     commitments: Vec<Uint8Array>,
-    row_indices: Vec<BigInt>,
-    column_indices: Vec<BigInt>,
+    cell_indices: Vec<BigInt>,
     cells: Vec<Uint8Array>,
     proofs: Vec<Uint8Array>,
   ) -> Result<bool> {
-    self.verify_cell_kzg_proof_batch(commitments, row_indices, column_indices, cells, proofs)
+    self.verify_cell_kzg_proof_batch(commitments, cell_indices, cells, proofs)
   }
 }
 

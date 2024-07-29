@@ -1,20 +1,43 @@
-use erasure_codes::errors::DecodeError;
+use erasure_codes::errors::RSError;
 
 use crate::CellIndex;
+
+/// Errors that can occur either during proving or verification.
+#[derive(Debug)]
+pub enum Error {
+    Prover(ProverError),
+    VerifierError(VerifierError),
+    Serialization(SerializationError),
+}
+
+impl Error {
+    pub fn invalid_proof(&self) -> bool {
+        matches!(self, Error::VerifierError(VerifierError::InvalidProof))
+    }
+}
+
+impl From<ProverError> for Error {
+    fn from(value: ProverError) -> Self {
+        Error::Prover(value)
+    }
+}
+impl From<VerifierError> for Error {
+    fn from(value: VerifierError) -> Self {
+        Error::VerifierError(value)
+    }
+}
+impl From<SerializationError> for Error {
+    fn from(value: SerializationError) -> Self {
+        Error::Serialization(value)
+    }
+}
 
 /// Errors that can occur while calling a method in the Prover API
 #[derive(Debug)]
 pub enum ProverError {
     // TODO: This will be getting removed, waiting for consensus-specs PR
     NumProofsDoesNotEqualNumCells,
-    Serialization(SerializationError),
     RecoveryFailure(VerifierError),
-}
-
-impl From<SerializationError> for ProverError {
-    fn from(value: SerializationError) -> Self {
-        ProverError::Serialization(value)
-    }
 }
 
 impl From<VerifierError> for ProverError {
@@ -26,7 +49,6 @@ impl From<VerifierError> for ProverError {
 /// Errors that can occur while calling a method in the Verifier API
 #[derive(Debug)]
 pub enum VerifierError {
-    Serialization(SerializationError),
     NumCellIndicesNotEqualToNumCells {
         num_cell_indices: usize,
         num_cells: usize,
@@ -60,22 +82,16 @@ pub enum VerifierError {
         cells_len: usize,
         proofs_len: usize,
     },
-    ReedSolomon(DecodeError),
+    ReedSolomon(RSError),
     PolynomialHasInvalidLength {
         num_coefficients: usize,
         expected_num_coefficients: usize,
     },
 }
 
-impl From<DecodeError> for VerifierError {
-    fn from(value: DecodeError) -> Self {
+impl From<RSError> for VerifierError {
+    fn from(value: RSError) -> Self {
         VerifierError::ReedSolomon(value)
-    }
-}
-
-impl From<SerializationError> for VerifierError {
-    fn from(value: SerializationError) -> Self {
-        VerifierError::Serialization(value)
     }
 }
 

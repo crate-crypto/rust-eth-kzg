@@ -1,5 +1,5 @@
 [package]
-name = "c_peerdas_kzg"
+name = "c_eth_kzg"
 version = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
@@ -13,7 +13,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 
 [dependencies]
 libc = "0.2.2"
-eip7594 = { workspace = true }
+rust_eth_kzg = { workspace = true }
 
 [build-dependencies]
 cbindgen = "0.26.0"

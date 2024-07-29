@@ -1,9 +1,9 @@
 use bls12_381::Scalar;
 use criterion::{criterion_group, criterion_main, Criterion};
-use eip7594::{
+use rust_eth_kzg::{
     constants::{BYTES_PER_BLOB, CELLS_PER_EXT_BLOB},
-    prover::ProverContext,
-    trusted_setup, Cell, KZGCommitment, KZGProof, VerifierContext,
+    Bytes48Ref, Cell, CellIndex, CellRef, DASContext, KZGCommitment, KZGProof, RowIndex,
+    TrustedSetup,
 };
 
 const POLYNOMIAL_LEN: usize = 4096;
@@ -23,7 +23,7 @@ fn dummy_commitment_cells_and_proofs() -> (
     KZGCommitment,
     ([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]),
 ) {
-    let ctx = ProverContext::default();
+    let ctx = DASContext::default();
     let blob = dummy_blob();
 
     let commitment = ctx.blob_to_kzg_commitment(&blob).unwrap();
@@ -33,26 +33,26 @@ fn dummy_commitment_cells_and_proofs() -> (
 const THREAD_COUNTS: [usize; 5] = [1, 4, 8, 16, 32];
 
 pub fn bench_compute_cells_and_kzg_proofs(c: &mut Criterion) {
-    let trusted_setup = trusted_setup::TrustedSetup::default();
+    let trusted_setup = TrustedSetup::default();
 
     let blob = dummy_blob();
 
     for num_threads in THREAD_COUNTS {
-        let prover_context = ProverContext::with_num_threads(&trusted_setup, num_threads);
+        let ctx = DASContext::with_threads(&trusted_setup, num_threads);
         c.bench_function(
             &format!(
                 "computing cells_and_kzg_proofs - NUM_THREADS: {}",
                 num_threads
             ),
-            |b| b.iter(|| prover_context.compute_cells_and_kzg_proofs(&blob)),
+            |b| b.iter(|| ctx.compute_cells_and_kzg_proofs(&blob)),
         );
     }
 }
 
 pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
-    let trusted_setup = trusted_setup::TrustedSetup::default();
+    let trusted_setup = TrustedSetup::default();
 
-    let (_, (cells, proofs)) = dummy_commitment_cells_and_proofs();
+    let (_, (cells, _)) = dummy_commitment_cells_and_proofs();
     let cell_indices: Vec<u64> = (0..cells.len()).map(|x| x as u64).collect();
 
     // Worse case is when half of the cells are missing
@@ -64,7 +64,7 @@ pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
         .collect::<Vec<_>>();
 
     for num_threads in THREAD_COUNTS {
-        let prover_context = ProverContext::with_num_threads(&trusted_setup, num_threads);
+        let ctx = DASContext::with_threads(&trusted_setup, num_threads);
         c.bench_function(
             &format!(
                 "worse-case recover_cells_and_compute_proofs - NUM_THREADS: {}",
@@ -72,36 +72,56 @@ pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
             ),
             |b| {
                 b.iter(|| {
-                    prover_context
-                        .recover_cells_and_proofs(half_cell_indices.to_vec(), half_cells.to_vec())
+                    ctx.recover_cells_and_proofs(half_cell_indices.to_vec(), half_cells.to_vec())
                 })
             },
         );
     }
 }
 
-pub fn bench_verify_cell_kzg_proofs(c: &mut Criterion) {
-    let trusted_setup = trusted_setup::TrustedSetup::default();
+pub fn bench_verify_cell_kzg_proof_batch(c: &mut Criterion) {
+    let trusted_setup = TrustedSetup::default();
 
     let (commitment, (cells, proofs)) = dummy_commitment_cells_and_proofs();
 
+    let commitments = vec![&commitment; CELLS_PER_EXT_BLOB];
+    let cell_indices: Vec<CellIndex> = (0..CELLS_PER_EXT_BLOB).map(|x| x as CellIndex).collect();
+    let cell_refs: Vec<CellRef> = cells.iter().map(|cell| cell.as_ref()).collect();
+    let proof_refs: Vec<Bytes48Ref> = proofs.iter().map(|proof| proof).collect();
+
     for num_threads in THREAD_COUNTS {
-        let verifier_context = VerifierContext::with_num_threads(&trusted_setup, num_threads);
+        let ctx = DASContext::with_threads(&trusted_setup, num_threads);
         c.bench_function(
-            &format!("verify_cell_kzg_proof - NUM_THREADS: {}", num_threads),
+            &format!("verify_cell_kzg_proof_batch - NUM_THREADS: {}", num_threads),
             |b| {
                 b.iter(|| {
-                    verifier_context.verify_cell_kzg_proof(&commitment, 0, &cells[0], &proofs[0])
+                    ctx.verify_cell_kzg_proof_batch(
+                        commitments.clone(),
+                        cell_indices.clone(),
+                        cell_refs.clone(),
+                        proof_refs.clone(),
+                    )
                 })
             },
         );
     }
+}
+
+pub fn bench_init_context(c: &mut Criterion) {
+    const NUM_THREADS: usize = 1;
+    c.bench_function(&format!("Initialize context"), |b| {
+        b.iter(|| {
+            let trusted_setup = TrustedSetup::default();
+            DASContext::with_threads(&trusted_setup, NUM_THREADS)
+        })
+    });
 }
 
 criterion_group!(
     benches,
+    bench_init_context
     bench_compute_cells_and_kzg_proofs,
     bench_recover_cells_and_compute_kzg_proofs,
-    bench_verify_cell_kzg_proofs
+    bench_verify_cell_kzg_proof_batch
 );
 criterion_main!(benches);

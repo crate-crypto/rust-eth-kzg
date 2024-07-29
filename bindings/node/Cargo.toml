@@ -1,5 +1,5 @@
 [package]
-name = "peerdas-kzg"
+name = "node-eth-kzg"
 version = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
@@ -17,7 +17,7 @@ napi = { version = "2.12.2", default-features = false, features = [
     "async",
 ] }
 napi-derive = "2.12.2"
-eip7594 = { workspace = true }
+rust_eth_kzg = { workspace = true }
 
 [build-dependencies]
 napi-build = "2.0.1"

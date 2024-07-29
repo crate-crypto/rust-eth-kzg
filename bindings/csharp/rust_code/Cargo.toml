@@ -1,5 +1,5 @@
 [package]
-name = "csharp_peerdas_kzg"
+name = "csharp_eth_kzg"
 version = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
@@ -10,5 +10,5 @@ repository = { workspace = true }
 [dependencies]
 
 [build-dependencies]
-csbindgen = "1.8.0"
+csbindgen = "1.9.2"
 toml = "0.5"

@@ -1,5 +1,5 @@
 [package]
-name = "nim_peerdas_kzg"
+name = "nim_eth_kzg"
 version = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
@@ -11,7 +11,7 @@ repository = { workspace = true }
 crate-type = ["staticlib"]
 
 [dependencies]
-c_peerdas_kzg = { workspace = true }
+c_eth_kzg = { workspace = true }
 
 [build-dependencies]
 nbindgen = { git = "https://github.com/arnetheduck/nbindgen/" }
