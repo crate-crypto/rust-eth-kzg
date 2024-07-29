@@ -44,11 +44,10 @@ jobs:
         with:
           ref: ${{ inputs.ref || github.ref }}
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-          target: ${{ matrix.target }}
-          override: true
+          targets: ${{ matrix.target }}
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install Zig
@@ -98,7 +97,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '11'
       - name: Build with Gradle (no tests)
         run: ./gradlew build -x test
         working-directory: bindings/java/java_code
