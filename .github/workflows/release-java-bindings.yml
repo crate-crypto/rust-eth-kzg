@@ -1,4 +1,4 @@
-name: Java Cross-platform Build and Test
+name: Java Bindings
 
 on:
   push:
