@@ -71,13 +71,13 @@ pub enum VerifierError {
         cell_index: CellIndex,
         max_number_of_cells: u64,
     },
-    InvalidRowIndex {
-        row_index: u64,
-        max_number_of_rows: u64,
+    InvalidCommitmentIndex {
+        commitment_index: u64,
+        max_number_of_commitments: u64,
     },
     InvalidProof,
     BatchVerificationInputsMustHaveSameLength {
-        row_indices_len: usize,
+        commitment_indices_len: usize,
         cell_indices_len: usize,
         cells_len: usize,
         proofs_len: usize,
