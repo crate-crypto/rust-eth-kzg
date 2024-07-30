@@ -6,13 +6,13 @@ use crate::CellIndex;
 #[derive(Debug)]
 pub enum Error {
     Prover(ProverError),
-    VerifierError(VerifierError),
+    Verifier(VerifierError),
     Serialization(SerializationError),
 }
 
 impl Error {
     pub fn invalid_proof(&self) -> bool {
-        matches!(self, Error::VerifierError(VerifierError::InvalidProof))
+        matches!(self, Error::Verifier(VerifierError::InvalidProof))
     }
 }
 
@@ -23,7 +23,7 @@ impl From<ProverError> for Error {
 }
 impl From<VerifierError> for Error {
     fn from(value: VerifierError) -> Self {
-        Error::VerifierError(value)
+        Error::Verifier(value)
     }
 }
 impl From<SerializationError> for Error {
@@ -35,8 +35,6 @@ impl From<SerializationError> for Error {
 /// Errors that can occur while calling a method in the Prover API
 #[derive(Debug)]
 pub enum ProverError {
-    // TODO: This will be getting removed, waiting for consensus-specs PR
-    NumProofsDoesNotEqualNumCells,
     RecoveryFailure(VerifierError),
 }
 
