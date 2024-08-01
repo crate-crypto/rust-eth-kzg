@@ -10,5 +10,5 @@ repository = { workspace = true }
 [dependencies]
 
 [build-dependencies]
-csbindgen = "1.9.2"
+csbindgen = "1.9.3"
 toml = "0.5"
