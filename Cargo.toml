@@ -36,5 +36,6 @@ c_eth_kzg = { version = "0.3.0", path = "bindings/c" }
 hex = "0.4.3"
 rayon = "1.10.0"
 
+
 [profile.release]
 lto = true
