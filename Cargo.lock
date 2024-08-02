@@ -151,7 +151,7 @@ checksum = "a12916984aab3fa6e39d655a33e09c0071eb36d6ab3aea5c2d78551f1df6d952"
 
 [[package]]
 name = "c_eth_kzg"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "cbindgen",
  "libc",
@@ -160,7 +160,7 @@ dependencies = [
 
 [[package]]
 name = "cast"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "37b2a672a2cb129a2e41c10b1224bb368f9f37a2b16b612598138befd7b37eb5"
 
@@ -307,7 +307,7 @@ dependencies = [
 
 [[package]]
 name = "crate_crypto_internal_eth_kzg_bls12_381"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "blst",
  "blstrs",
@@ -321,7 +321,7 @@ dependencies = [
 
 [[package]]
 name = "crate_crypto_internal_eth_kzg_erasure_codes"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "crate_crypto_internal_eth_kzg_bls12_381",
  "crate_crypto_internal_eth_kzg_polynomial",
@@ -331,7 +331,7 @@ dependencies = [
 
 [[package]]
 name = "crate_crypto_internal_eth_kzg_polynomial"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "crate_crypto_internal_eth_kzg_bls12_381",
  "criterion",
@@ -340,7 +340,7 @@ dependencies = [
 
 [[package]]
 name = "crate_crypto_kzg_multi_open_fk20"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "crate_crypto_internal_eth_kzg_bls12_381",
  "crate_crypto_internal_eth_kzg_polynomial",
@@ -440,7 +440,7 @@ dependencies = [
 
 [[package]]
 name = "csharp_eth_kzg"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "csbindgen",
  "toml",
@@ -654,7 +654,7 @@ checksum = "49f1f14873335454500d59611f1cf4a4b0f786f9ac11f4312a78e4cf2566695b"
 
 [[package]]
 name = "java_eth_kzg"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "c_eth_kzg",
  "hex",
@@ -680,7 +680,7 @@ dependencies = [
 
 [[package]]
 name = "jni-sys"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8eaf4bc02d17cbdd7ff4c7438cafcdf7fb9a4613313ad11b4f8fefe7d3fa0130"
 
@@ -814,7 +814,7 @@ dependencies = [
 
 [[package]]
 name = "nim_eth_kzg"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "c_eth_kzg",
  "nbindgen",
@@ -822,7 +822,7 @@ dependencies = [
 
 [[package]]
 name = "node-eth-kzg"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "napi",
  "napi-build",
@@ -981,7 +981,7 @@ dependencies = [
 
 [[package]]
 name = "rand_xorshift"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d25bf25ec5ae4a3f1b92f929810509a2f53d7dca2f50b794ff57e3face536c8f"
 dependencies = [
@@ -1039,7 +1039,7 @@ checksum = "7a66a03ae7c801facd77a29370b4faec201768915ac14a721ba36f20bc9c209b"
 
 [[package]]
 name = "rust_eth_kzg"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "crate_crypto_internal_eth_kzg_bls12_381",
  "crate_crypto_internal_eth_kzg_erasure_codes",
