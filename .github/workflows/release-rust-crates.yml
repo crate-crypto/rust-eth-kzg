@@ -55,7 +55,8 @@ jobs:
 
       - name: Build
         run: cargo build --target ${{ matrix.target }} --verbose
-
+        
+        # See issue 133 as to why windows is running on a single thread
       - name: Run tests (Windows)
         if: matrix.target == 'x86_64-pc-windows-gnu'
         run: cargo test --target ${{ matrix.target }} -- --test-threads=1
