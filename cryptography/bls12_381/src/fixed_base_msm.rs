@@ -63,6 +63,9 @@ impl FixedBaseMSM {
                 NUM_BITS_SCALAR,
                 scratch_pad.as_mut_ptr(),
             );
+            drop(scratch_pad);
+            drop(blst_scalar_ptrs);
+            drop(blst_scalars);
         }
 
         let x = Fp::from_raw_unchecked(ret.x.l);
