@@ -57,7 +57,7 @@ jobs:
         run: cargo build --target ${{ matrix.target }} --verbose
         
       - name: Run tests
-        run: RUST_BACKTRACE=1 cargo test --target ${{ matrix.target }}
+        run: RUST_BACKTRACE=1 cargo test --target ${{ matrix.target }} -- -nocapture
         shell: bash
 
 # We really only want to publish the eip7594 crate
