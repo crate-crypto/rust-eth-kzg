@@ -27,12 +27,12 @@ public class TestUtils {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper(new YAMLFactory());
 
-  private static final String BLOB_TO_KZG_COMMITMENT_TESTS = "../../../consensus_test_vectors/blob_to_kzg_commitment/";
+  private static final String BLOB_TO_KZG_COMMITMENT_TESTS = "../../../test_vectors/blob_to_kzg_commitment/";
   private static final String COMPUTE_CELLS_AND_KZG_PROOFS_TESTS =
-      "../../../consensus_test_vectors/compute_cells_and_kzg_proofs/";
+      "../../../test_vectors/compute_cells_and_kzg_proofs/";
   private static final String VERIFY_CELL_KZG_PROOF_BATCH_TESTS =
-      "../../../consensus_test_vectors/verify_cell_kzg_proof_batch/";
-  private static final String RECOVER_CELLS_AND_KZG_PROOFS_TESTS = "../../../consensus_test_vectors/recover_cells_and_kzg_proofs/";
+      "../../../test_vectors/verify_cell_kzg_proof_batch/";
+  private static final String RECOVER_CELLS_AND_KZG_PROOFS_TESTS = "../../../test_vectors/recover_cells_and_kzg_proofs/";
 
   public static byte[] flatten(final byte[]... bytes) {
     final int capacity = Arrays.stream(bytes).mapToInt(b -> b.length).sum();
