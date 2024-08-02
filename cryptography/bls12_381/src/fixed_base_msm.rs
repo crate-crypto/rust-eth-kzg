@@ -41,25 +41,26 @@ impl FixedBaseMSM {
         use ff::PrimeField;
         let mut ret = blst::blst_p1::default();
         const NUM_BITS_SCALAR: usize = Scalar::NUM_BITS as usize;
-
-        let blst_scalars: Vec<_> = scalars
+    
+        let blst_scalars: Vec<blst::blst_scalar> = scalars
             .into_iter()
-            .map(|scalar| Into::<blst::blst_scalar>::into(scalar).b)
+            .map(Into::<blst::blst_scalar>::into)
             .collect();
-        let blst_scalar_ptrs: Vec<*const u8> = blst_scalars
+        
+        let blst_scalar_ptrs: Vec<*const blst::blst_scalar> = blst_scalars
             .iter()
-            .map(|s| s as *const _ as *const u8)
+            .map(|s| s as *const blst::blst_scalar)
             .collect();
-
+    
         let mut scratch_pad: Vec<blst::limb_t> = Vec::with_capacity(self.scratch_space_size);
-
+    
         unsafe {
             blst::blst_p1s_mult_wbits(
                 &mut ret,
                 self.table.as_ptr(),
                 self.wbits,
                 self.num_points,
-                blst_scalar_ptrs.as_ptr(),
+                blst_scalar_ptrs.as_ptr() as *const *const u8,
                 NUM_BITS_SCALAR,
                 scratch_pad.as_mut_ptr(),
             );
@@ -67,11 +68,11 @@ impl FixedBaseMSM {
             drop(blst_scalar_ptrs);
             drop(blst_scalars);
         }
-
+    
         let x = Fp::from_raw_unchecked(ret.x.l);
         let y = Fp::from_raw_unchecked(ret.y.l);
         let z = Fp::from_raw_unchecked(ret.z.l);
-
+    
         G1Projective::from_raw_unchecked(x, y, z)
     }
 }
