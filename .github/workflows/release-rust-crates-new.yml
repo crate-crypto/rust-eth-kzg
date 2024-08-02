@@ -59,6 +59,8 @@ jobs:
       - name: Run tests
         run: cargo test --target ${{ matrix.target }} --verbose
 
+# We really only want to publish the eip7594 crate
+# However, crates.io forces us to publish its dependencies too.
   publish:
     name: Publish in order
     needs: build-and-test
