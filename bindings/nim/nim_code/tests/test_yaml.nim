@@ -13,7 +13,7 @@ import
 
 const
   kzgPath* = currentSourcePath.rsplit(DirSep, 5)[0] & "/"
-  testBase = kzgPath & "consensus_test_vectors/"
+  testBase = kzgPath & "test_vectors/"
   BLOB_TO_KZG_COMMITMENT_TESTS = testBase & "blob_to_kzg_commitment"
   COMPUTE_CELLS_AND_KZG_PROOFS_TESTS = testBase & "compute_cells_and_kzg_proofs"
   VERIFY_CELL_KZG_PROOF_BATCH_TESTS = testBase & "verify_cell_kzg_proof_batch"

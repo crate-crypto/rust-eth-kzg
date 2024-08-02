@@ -12,10 +12,10 @@ interface TestMeta<I extends Record<string, any>, O extends boolean | string | s
   output: O;
 }
 
-const BLOB_TO_KZG_COMMITMENT_TESTS = "../../consensus_test_vectors/blob_to_kzg_commitment/*/*/data.yaml";
-const COMPUTE_CELLS_AND_KZG_PROOFS_TESTS = "../../consensus_test_vectors/compute_cells_and_kzg_proofs/*/*/data.yaml";
-const VERIFY_CELL_KZG_PROOF_BATCH_TESTS = "../../consensus_test_vectors/verify_cell_kzg_proof_batch/*/*/data.yaml";
-const RECOVER_CELLS_AND_KZG_PROOFS_TEST = "../../consensus_test_vectors/recover_cells_and_kzg_proofs/*/*/data.yaml";
+const BLOB_TO_KZG_COMMITMENT_TESTS = "../../test_vectors/blob_to_kzg_commitment/*/*/data.yaml";
+const COMPUTE_CELLS_AND_KZG_PROOFS_TESTS = "../../test_vectors/compute_cells_and_kzg_proofs/*/*/data.yaml";
+const VERIFY_CELL_KZG_PROOF_BATCH_TESTS = "../../test_vectors/verify_cell_kzg_proof_batch/*/*/data.yaml";
+const RECOVER_CELLS_AND_KZG_PROOFS_TEST = "../../test_vectors/recover_cells_and_kzg_proofs/*/*/data.yaml";
 
 type BlobToKzgCommitmentTest = TestMeta<{ blob: string }, string>;
 type ComputeCellsAndKzgProofsTest = TestMeta<{ blob: string }, string[][]>;
