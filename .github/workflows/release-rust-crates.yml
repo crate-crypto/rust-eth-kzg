@@ -56,7 +56,12 @@ jobs:
       - name: Build
         run: cargo build --target ${{ matrix.target }} --verbose
         
-      - name: Run tests
+      - name: Run tests (KZG Multi-Open)
+        working-directory: cryptography/kzg_multi_open
+        run: RUST_BACKTRACE=1 cargo test --target ${{ matrix.target }} -- --nocapture
+        shell: bash
+
+      - name: Run tests (KZG Multi-Open)
         run: RUST_BACKTRACE=1 cargo test --target ${{ matrix.target }} -- --nocapture
         shell: bash
 
