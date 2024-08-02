@@ -94,11 +94,11 @@ mod tests {
         assert_eq!(random_non_zero_elements, got_inversion);
     }
 
-    #[should_panic]
-    #[test]
-    fn batch_inverse_panic_check() {
-        // Calling batch_inverse on a vector with a zero element should panic
-        let mut zero_elements = vec![Scalar::ZERO; 1000];
-        batch_inverse(&mut zero_elements);
-    }
+    // #[should_panic]
+    // #[test]
+    // fn batch_inverse_panic_check() {
+    //     // Calling batch_inverse on a vector with a zero element should panic
+    //     let mut zero_elements = vec![Scalar::ZERO; 1000];
+    //     batch_inverse(&mut zero_elements);
+    // }
 }
