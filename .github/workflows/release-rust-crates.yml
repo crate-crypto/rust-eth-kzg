@@ -58,11 +58,11 @@ jobs:
         
       - name: Run tests (KZG Multi-Open)
         working-directory: cryptography/kzg_multi_open
-        run: RUST_BACKTRACE=1 cargo test --target ${{ matrix.target }} -- --nocapture
+        run: RUST_BACKTRACE=full cargo test --target ${{ matrix.target }} -- --nocapture
         shell: bash
 
       - name: Run tests (KZG Multi-Open)
-        run: RUST_BACKTRACE=1 cargo test --target ${{ matrix.target }} -- --nocapture
+        run: RUST_BACKTRACE=full cargo test --target ${{ matrix.target }} -- --nocapture
         shell: bash
 
 # We really only want to publish the eip7594 crate
