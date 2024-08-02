@@ -56,14 +56,9 @@ jobs:
       - name: Build
         run: cargo build --target ${{ matrix.target }} --verbose
         
-        # See issue 133 as to why windows is running on a single thread
-      - name: Run tests (Windows)
-        if: matrix.target == 'x86_64-pc-windows-gnu'
-        run: cargo test --target ${{ matrix.target }} -- --test-threads=1
-
       - name: Run tests
-        if: matrix.target != 'x86_64-pc-windows-gnu'
-        run: cargo test --target ${{ matrix.target }}
+        run: RUST_BACKTRACE=1 cargo test --target ${{ matrix.target }}
+        shell: bash
 
 # We really only want to publish the eip7594 crate
 # However, crates.io forces us to publish its dependencies too.
