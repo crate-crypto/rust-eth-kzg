@@ -56,8 +56,13 @@ jobs:
       - name: Build
         run: cargo build --target ${{ matrix.target }} --verbose
 
+      - name: Run tests (Windows)
+        if: matrix.target == 'x86_64-pc-windows-gnu'
+        run: cargo test --target ${{ matrix.target }} -- --test-threads=1
+
       - name: Run tests
-        run: RUST_BACKTRACE=1 cargo test -p crate_crypto_kzg_multi_open_fk20 --lib -- --nocapture
+        if: matrix.target != 'x86_64-pc-windows-gnu'
+        run: cargo test --target ${{ matrix.target }}
 
 # We really only want to publish the eip7594 crate
 # However, crates.io forces us to publish its dependencies too.
