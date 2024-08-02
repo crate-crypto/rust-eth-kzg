@@ -100,7 +100,7 @@ impl BatchToeplitzMatrixVecMul {
 
         let result: Vec<_> = self
             .precomputed_fft_vectors
-            .par_iter()
+            .iter()
             .zip(msm_scalars)
             .map(|(points, scalars)| points.msm(scalars))
             .collect();
