@@ -26,11 +26,17 @@ pub(crate) fn _recover_cells_and_proofs(
     let (recovered_cells, recovered_proofs) = ctx
         .recover_cells_and_proofs(cell_indices.to_vec(), cells)
         .map_err(|err| CResult::with_error(&format!("{:?}", err)))?;
-    let recovered_cells_unboxed = recovered_cells.map(|cell| cell.to_vec());
+    let recovered_cells_unboxed: Vec<_> = recovered_cells
+        .into_iter()
+        .map(|cell| cell.to_vec())
+        .collect();
 
     // Write to output
-    write_to_2d_slice::<_, CELLS_PER_EXT_BLOB>(out_cells, recovered_cells_unboxed);
-    write_to_2d_slice::<_, CELLS_PER_EXT_BLOB>(out_proofs, recovered_proofs);
+    write_to_2d_slice::<_, CELLS_PER_EXT_BLOB>(
+        out_cells,
+        recovered_cells_unboxed.try_into().unwrap(),
+    );
+    write_to_2d_slice::<_, CELLS_PER_EXT_BLOB>(out_proofs, recovered_proofs.try_into().unwrap());
 
     Ok(())
 }

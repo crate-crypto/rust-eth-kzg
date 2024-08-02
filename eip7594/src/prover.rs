@@ -4,16 +4,13 @@ use kzg_multi_open::{
 };
 
 use crate::{
-    constants::{
-        CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL,
-        FIELD_ELEMENTS_PER_EXT_BLOB,
-    },
+    constants::{FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL, FIELD_ELEMENTS_PER_EXT_BLOB},
     errors::Error,
     serialization::{
         deserialize_blob_to_scalars, serialize_cells_and_proofs, serialize_g1_compressed,
     },
     trusted_setup::TrustedSetup,
-    BlobRef, Cell, CellIndex, CellRef, KZGCommitment, KZGProof, DASContext,
+    BlobRef, Cell, CellIndex, CellRef, DASContext, KZGCommitment, KZGProof,
 };
 
 /// Context object that is used to call functions in the prover API.
@@ -79,7 +76,7 @@ impl DASContext {
     pub fn compute_cells_and_kzg_proofs(
         &self,
         blob: BlobRef,
-    ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), Error> {
+    ) -> Result<(Vec<Cell>, Vec<KZGProof>), Error> {
         self.thread_pool.install(|| {
             // Deserialization
             //
@@ -107,7 +104,7 @@ impl DASContext {
         &self,
         cell_indices: Vec<CellIndex>,
         cells: Vec<CellRef>,
-    ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), Error> {
+    ) -> Result<(Vec<Cell>, Vec<KZGProof>), Error> {
         self.thread_pool.install(|| {
             // Recover polynomial
             //

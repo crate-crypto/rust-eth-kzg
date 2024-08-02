@@ -20,11 +20,11 @@ pub(crate) fn _compute_cells_and_kzg_proofs(
     let (cells, proofs) = ctx
         .compute_cells_and_kzg_proofs(blob)
         .map_err(|err| CResult::with_error(&format!("{:?}", err)))?;
-    let cells_unboxed = cells.map(|cell| cell.to_vec());
+    let cells_unboxed: Vec<_> = cells.into_iter().map(|cell| cell.to_vec()).collect();
 
     // Write to output
-    write_to_2d_slice::<_, CELLS_PER_EXT_BLOB>(out_cells, cells_unboxed);
-    write_to_2d_slice::<_, CELLS_PER_EXT_BLOB>(out_proofs, proofs);
+    write_to_2d_slice::<_, CELLS_PER_EXT_BLOB>(out_cells, cells_unboxed.try_into().unwrap());
+    write_to_2d_slice::<_, CELLS_PER_EXT_BLOB>(out_proofs, proofs.try_into().unwrap());
 
     Ok(())
 }

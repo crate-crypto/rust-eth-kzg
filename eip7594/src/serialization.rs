@@ -113,7 +113,7 @@ pub(crate) fn deserialize_cells(
 /// Converts a set of scalars (evaluations) to the `Cell` type.
 pub(crate) fn coset_evaluations_to_cells<T: AsRef<[Scalar]>>(
     evaluations: impl Iterator<Item = T>,
-) -> [Cell; CELLS_PER_EXT_BLOB] {
+) -> Vec<Cell> {
     let cells: Vec<Cell> = evaluations
         .map(|eval| serialize_scalars_to_cell(eval.as_ref()))
         .map(|cell| {
@@ -122,24 +122,25 @@ pub(crate) fn coset_evaluations_to_cells<T: AsRef<[Scalar]>>(
                 .expect("infallible: Vec<u8> should have length equal to BYTES_PER_CELL")
         })
         .collect();
-
     cells
-        .try_into()
-        .unwrap_or_else(|_| panic!("expected {} number of cells", CELLS_PER_EXT_BLOB))
+    // cells
+    //     .try_into()
+    //     .unwrap_or_else(|_| panic!("expected {} number of cells", CELLS_PER_EXT_BLOB))
 }
 
 pub(crate) fn serialize_cells_and_proofs(
     coset_evaluations: Vec<Vec<Scalar>>,
     proofs: Vec<G1Point>,
-) -> ([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]) {
+) -> (Vec<Cell>, Vec<KZGProof>) {
     // Serialize the evaluation sets into `Cell`s.
     let cells = coset_evaluations_to_cells(coset_evaluations.into_iter());
 
     // Serialize the proofs into `KZGProof` objects.
     let proofs: Vec<_> = proofs.iter().map(serialize_g1_compressed).collect();
-    let proofs: [KZGProof; CELLS_PER_EXT_BLOB] = proofs
-        .try_into()
-        .unwrap_or_else(|_| panic!("expected {} number of proofs", CELLS_PER_EXT_BLOB));
+    // let proofs: Box<[KZGProof; CELLS_PER_EXT_BLOB]> = proofs
+    //     .into_boxed_slice()
+    //     .try_into()
+    //     .unwrap_or_else(|_| panic!("expected {} number of proofs", CELLS_PER_EXT_BLOB));
 
     (cells, proofs)
 }
