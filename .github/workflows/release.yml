@@ -40,7 +40,7 @@ jobs:
                 with:
                     workflow: release-rust-crates.yml
                     ref: master
-                    inputs: '{ "ref": "${{ needs.release-please.outputs.tag-name }}" }'
+                    inputs: '{ "ref": "${{ needs.release-please.outputs.tag-name }}", "release-type": "release" }'
                     token: ${{ secrets.RELEASE_TOKEN }}
 
   publish-node-bindings:
@@ -82,7 +82,7 @@ jobs:
                 with:
                     workflow: release-csharp-bindings.yml
                     ref: master
-                    inputs: '{ "ref": "${{ needs.release-please.outputs.tag-name }}" }'
+                    inputs: '{ "ref": "${{ needs.release-please.outputs.tag-name }}", "release-type": "release" }'
                     token: ${{ secrets.RELEASE_TOKEN }}
 
   publish-nim-bindings:
