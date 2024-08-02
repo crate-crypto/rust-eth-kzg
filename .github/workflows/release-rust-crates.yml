@@ -55,7 +55,10 @@ jobs:
 
       - name: Build
         run: cargo build --target ${{ matrix.target }} --verbose
-        
+      - name: Setup tmate session
+        if: matrix.target == 'x86_64-pc-windows-gnu'
+        uses: mxschmitt/action-tmate@v3
+
       - name: Run tests (KZG Multi-Open)
         working-directory: cryptography/kzg_multi_open
         run: RUST_BACKTRACE=full cargo test --target ${{ matrix.target }} -- --nocapture
