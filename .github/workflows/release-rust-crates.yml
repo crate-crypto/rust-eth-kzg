@@ -57,7 +57,7 @@ jobs:
         run: cargo build --target ${{ matrix.target }} --verbose
 
       - name: Run tests
-        run: cargo test --target ${{ matrix.target }} --verbose
+        run: RUST_BACKTRACE=1 cargo test -p crate_crypto_kzg_multi_open_fk20 --lib -- --nocapture
 
 # We really only want to publish the eip7594 crate
 # However, crates.io forces us to publish its dependencies too.
