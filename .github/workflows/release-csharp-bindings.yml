@@ -1,76 +1,130 @@
-name: Publish C# bindings
+name: C# Bindings
 
 on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
   workflow_dispatch:
     inputs:
       ref:
-        description: The reference (branch/tag/commit) to checkout
-        required: true
+        description: 'The reference (branch/tag/commit) to checkout'
+        required: false
+      release-type:
+        type: choice
+        required: false
+        default: 'none'
+        description: 'Indicates whether we want to make a release and if which one'
+        options:
+          - release
+          - none
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
-  publish:
-    name: Publish C# bindings
-    runs-on: macos-latest
+  build:
+    name: Build - ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-apple-darwin
+            os: ubuntu-latest
+          - target: x86_64-apple-darwin
+            os: ubuntu-latest
+          - target: x86_64-pc-windows-gnu
+            os: windows-latest
     steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          ref: master
-
+          ref: ${{ inputs.ref || github.ref }}
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@master
+        uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-
-      - name: Install all of the relevant targets
-        run: |
-          chmod +x .github/scripts/install_all_targets.sh
-          .github/scripts/install_all_targets.sh
-
-      - name: Install .NET SDK
-        uses: actions/setup-dotnet@v3
+          target: ${{ matrix.target }}
+          override: true
+      - name: Install cargo-binstall
+        uses: taiki-e/install-action@cargo-binstall
+      - name: Install Zig
+        uses: goto-bus-stop/setup-zig@v2
         with:
-          dotnet-version: '8.x'
-      
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
-
-      - name: Install Homebrew
-        run: |
-          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-      - name: Install mingw-w64 for Windows cross-compilation
-        run: |
-          brew install mingw-w64
-      
-      - name: Install linker for x86_64-unknown-linux-gnu
-        run: |
-          brew install SergioBenitez/osxct/x86_64-unknown-linux-gnu
-    
-      - name: Install linker for aarch64-unknown-linux-gnu
-        run: |
-          brew tap messense/homebrew-macos-cross-toolchains
-          brew install aarch64-unknown-linux-gnu
-
-      - name: Rename cross.toml file so cargo uses the correct linkers
-        run: |
-          mv .cargo/config.cross.toml .cargo/config.toml
-
-      - name: Strip leading v from tagged version
-      # Strip the leading v from the tag name. It should be of the form v0.1.2
-      # dotnet requires it to be of the form 0.1.2
-        run: echo "VERSION=$(echo "${{ inputs.ref }}" | sed 's/^v//')" >> $GITHUB_ENV
-
+          version: 0.10.1
+      - name: Install cargo-zigbuild
+        run: cargo binstall --no-confirm cargo-zigbuild
       - name: Run compile script
         run: |
-          chmod +x .github/scripts/compile_all_targets_c_sharp.sh
-          .github/scripts/compile_all_targets_c_sharp.sh
+          chmod +x .github/scripts/compile_all_targets_c_sharp_new.sh
+          .github/scripts/compile_all_targets_c_sharp_new.sh ${{ matrix.target }}
+        shell: bash
+      - name: Upload dynamic libs
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: bindings/csharp/csharp_code/EthKZG.bindings/runtimes/${{ matrix.target }}
+
+  test:
+    name: Test - ${{ matrix.target }}
+    needs: build
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-unknown-linux-gnu
+            os: linux-arm64
+          - target: x86_64-apple-darwin
+            os: macos-13
+          - target: aarch64-apple-darwin
+            os: macos-14
+          - target: x86_64-pc-windows-gnu
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: bindings/csharp/csharp_code/EthKZG.bindings/runtimes/${{ matrix.target }}
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore .NET dependencies
+        run: dotnet restore
+        working-directory: bindings/csharp/csharp_code
+
+      - name: Build .NET project
+        run: dotnet build --no-restore
+        working-directory: bindings/csharp/csharp_code
+
+      - name: Run .NET tests
+        run: dotnet test --no-build --verbosity normal
+        working-directory: bindings/csharp/csharp_code
+
+  publish:
+    name: Publish
+    if: ${{ inputs.release-type != 'none' && github.event_name == 'workflow_dispatch' }}
+    needs: [build, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: bindings/csharp/csharp_code/EthKZG.bindings/runtimes
 
       - name: Restore NuGet packages
         working-directory: bindings/csharp/csharp_code/EthKZG.bindings
@@ -78,7 +132,7 @@ jobs:
 
       - name: Package with dotnet pack
         working-directory: bindings/csharp/csharp_code/EthKZG.bindings
-        run: dotnet pack -c release --no-restore -o nupkgs -p:Version=${{ env.VERSION }} -p:ContinuousIntegrationBuild=true
+        run: dotnet pack -c release --no-restore -o nupkgs -p:ContinuousIntegrationBuild=true
         
       - name: Publish to Nuget
         working-directory: bindings/csharp/csharp_code/EthKZG.bindings
