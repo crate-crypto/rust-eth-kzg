@@ -15,9 +15,14 @@ pub struct FixedBaseMSM {
 impl FixedBaseMSM {
     pub fn new(generators_affine: Vec<G1Affine>, wbits: usize) -> Self {
         let num_points = generators_affine.len();
-        let table_size = unsafe { blst::blst_p1s_mult_wbits_precompute_sizeof(wbits, num_points) };
+        let table_size_bytes =
+            unsafe { blst::blst_p1s_mult_wbits_precompute_sizeof(wbits, num_points) };
+
         // blst expects these to be references, so we convert from Vec<T> to Vec<&T>
         let generators_affine: Vec<&G1Affine> = generators_affine.iter().collect();
+
+        // Calculate the number of blst_p1_affine elements
+        let table_size = table_size_bytes / std::mem::size_of::<blst::blst_p1_affine>();
 
         let points = generators_affine.as_ptr() as *const *const blst::blst_p1_affine;
 
