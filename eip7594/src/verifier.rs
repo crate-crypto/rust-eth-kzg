@@ -210,31 +210,31 @@ mod validation {
 
     /// Validation logic for `verify_cell_kzg_proof_batch`
     pub fn verify_cell_kzg_proof_batch(
-        row_commitments_bytes: &[Bytes48Ref],
-        row_indices: &[RowIndex],
+        deduplicated_commitments_bytes: &[Bytes48Ref],
+        commitment_indices: &[RowIndex],
         cell_indices: &[CellIndex],
         cells: &[CellRef],
         proofs_bytes: &[Bytes48Ref],
     ) -> Result<(), VerifierError> {
         // All inputs must have the same length according to the specs.
-        let same_length = (row_indices.len() == cell_indices.len())
-            & (row_indices.len() == cells.len())
-            & (row_indices.len() == proofs_bytes.len());
+        let same_length = (commitment_indices.len() == cell_indices.len())
+            & (commitment_indices.len() == cells.len())
+            & (commitment_indices.len() == proofs_bytes.len());
         if !same_length {
             return Err(VerifierError::BatchVerificationInputsMustHaveSameLength {
-                row_indices_len: row_indices.len(),
+                commitment_indices_len: commitment_indices.len(),
                 cell_indices_len: cell_indices.len(),
                 cells_len: cells.len(),
                 proofs_len: proofs_bytes.len(),
             });
         }
 
-        // Check that the row indices are within the correct range
-        for row_index in row_indices {
-            if *row_index >= row_commitments_bytes.len() as u64 {
-                return Err(VerifierError::InvalidRowIndex {
-                    row_index: *row_index,
-                    max_number_of_rows: row_commitments_bytes.len() as u64,
+        // Check that the commitment indices are within the correct range
+        for commitment_index in commitment_indices {
+            if *commitment_index >= deduplicated_commitments_bytes.len() as u64 {
+                return Err(VerifierError::InvalidCommitmentIndex {
+                    commitment_index: *commitment_index,
+                    max_number_of_commitments: deduplicated_commitments_bytes.len() as u64,
                 });
             }
         }

@@ -76,7 +76,7 @@ mod serde_ {
     }
 }
 
-const TEST_DIR: &str = "../consensus_test_vectors/recover_cells_and_kzg_proofs";
+const TEST_DIR: &str = "../test_vectors/recover_cells_and_kzg_proofs";
 #[test]
 fn test_recover_cells_and_proofs() {
     let test_files = collect_test_files(TEST_DIR).unwrap();
