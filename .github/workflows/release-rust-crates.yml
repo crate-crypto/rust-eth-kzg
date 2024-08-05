@@ -99,7 +99,7 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_RELEASE_TOKEN }}
 
-      - name: Publish eip7594
-        run: cargo publish --package eip7594
+      - name: Publish rust_eth_kzg
+        run: cargo publish --package rust_eth_kzg
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_RELEASE_TOKEN }}
