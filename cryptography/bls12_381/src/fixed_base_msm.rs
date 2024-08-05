@@ -16,13 +16,12 @@ impl FixedBaseMSM {
     pub fn new(generators_affine: Vec<G1Affine>, wbits: usize) -> Self {
         let num_points = generators_affine.len();
         let table_size = unsafe { blst::blst_p1s_mult_wbits_precompute_sizeof(wbits, num_points) };
-
         // blst expects these to be references, so we convert from Vec<T> to Vec<&T>
         let generators_affine: Vec<&G1Affine> = generators_affine.iter().collect();
 
         let points = generators_affine.as_ptr() as *const *const blst::blst_p1_affine;
 
-        let mut table = Vec::with_capacity(table_size);
+        let mut table = vec![blst::blst_p1_affine::default(); table_size];
         unsafe {
             blst::blst_p1s_mult_wbits_precompute(table.as_mut_ptr(), wbits, points, num_points)
         };
@@ -97,5 +96,20 @@ mod tests {
 
         let result = fbm.msm(scalars);
         assert_eq!(res, result);
+    }
+
+    #[test]
+    fn fixed_base_msm_non_zero() {
+        // All elements in the table should be non-zero
+        let length = 64;
+        let generators: Vec<_> = (0..length)
+            .map(|_| G1Projective::random(&mut rand::thread_rng()).into())
+            .collect();
+        let fbm = FixedBaseMSM::new(generators, 8);
+        for val in fbm.table.into_iter() {
+            let is_inf =
+                unsafe { blst::blst_p1_affine_is_inf(&val as *const blst::blst_p1_affine) };
+            assert!(!is_inf);
+        }
     }
 }
