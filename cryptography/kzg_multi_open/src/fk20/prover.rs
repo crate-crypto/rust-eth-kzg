@@ -349,14 +349,14 @@ mod tests {
 
         let coset_indices: Vec<u64> = (0..num_cosets as u64).collect();
 
-        let is_valid = fk20_verifier.verify_multi_opening(
+        let valid = fk20_verifier.verify_multi_opening(
             &vec![commitment],
             &vec![0u64; num_cosets],
             &coset_indices,
             &cells,
             &proofs,
         );
-        assert!(is_valid);
+        assert!(valid.is_ok());
     }
 
     #[test]

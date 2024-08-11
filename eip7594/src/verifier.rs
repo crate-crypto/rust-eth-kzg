@@ -141,12 +141,7 @@ impl DASContext {
                     &proofs_,
                 );
 
-            // Convert the boolean value into a Result
-            if ok {
-                Ok(())
-            } else {
-                Err(VerifierError::InvalidProof.into())
-            }
+            ok.map_err(VerifierError::from).map_err(Into::into)
         })
     }
 
