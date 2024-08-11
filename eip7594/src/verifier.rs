@@ -179,8 +179,7 @@ impl DASContext {
                 FIELD_ELEMENTS_PER_EXT_BLOB,
                 cell_indices,
                 coset_evaluations,
-            )
-            .expect("could not recover evaluations in domain order"); // TODO: We could make this an error instead of panic
+            ).ok_or(Error::FK20("could not recover evaluations in domain order"))?;
 
         // Find all of the missing cell indices. This is needed for recovery.
         let missing_cell_indices = find_missing_cell_indices(&cell_indices_normal_order);

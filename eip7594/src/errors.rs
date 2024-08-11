@@ -8,6 +8,7 @@ pub enum Error {
     Prover(ProverError),
     Verifier(VerifierError),
     Serialization(SerializationError),
+    FK20(&'static str),
 }
 
 impl Error {
