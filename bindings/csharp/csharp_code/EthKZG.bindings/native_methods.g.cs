@@ -40,7 +40,7 @@ namespace EthKZG.Native
         ///  # Undefined behavior
         ///
         ///  - Since the `ctx` is created in Rust, we can only get undefined behavior, if the caller passes in
-        ///  a pointer that was not created by `das_context_new`.
+        ///    a pointer that was not created by `das_context_new`.
         /// </summary>
         [DllImport(__DllName, EntryPoint = "das_context_free", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         internal static extern void das_context_free(DASContext* ctx);
@@ -128,7 +128,7 @@ namespace EthKZG.Native
         ///
         ///  # Safety
         ///
-        ///   - If the length parameter for a pointer is set to zero, then this implementation will not check if its pointer is
+        ///  - If the length parameter for a pointer is set to zero, then this implementation will not check if its pointer is
         ///    null. This is because the caller might have passed in a null pointer, if the length is zero. Instead an empty slice
         ///    will be created.
         ///

@@ -204,6 +204,7 @@ impl FK20Prover {
     /// The coset indices returned can be used to locate the coset_evaluations in the new flattened order:
     ///   - The idea is that a particular coset evaluation is evenly distributed across the set of flattened
     ///     evaluations.
+    /// 
     ///   Example:
     ///     - Let's say we have `k` cosets. Each coset holds `m` values. Each coset will have an associated index.
     ///     - Once this method has completed, we will be given a flattened set of evaluations where the

@@ -17,6 +17,7 @@ pub(crate) enum ErasurePattern {
     ///  - Codeword = [0,b,0,d,0,f,0,h]
     ///  - block_size = 2
     ///  - block_index = 0
+    /// 
     /// In the above example, we had 4 blocks and
     /// each block had an erasure at index 0.
     BlockSynchronizedErasures(BlockErasureIndices),
@@ -152,6 +153,7 @@ impl ReedSolomon {
     ///  - All of the blocks are not missing.
     ///  - The block indices are not repeated.
     ///  - The block indices are valid (ie each index references a block)
+    /// 
     /// It is the responsibility of the caller to ensure that these are valid.
     ///
     /// - We note that the algorithm below has an edge case when all of the blocks

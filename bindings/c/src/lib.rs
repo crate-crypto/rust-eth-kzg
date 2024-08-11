@@ -56,7 +56,7 @@ pub extern "C" fn das_context_new() -> *mut DASContext {
 /// # Undefined behavior
 ///
 /// - Since the `ctx` is created in Rust, we can only get undefined behavior, if the caller passes in
-/// a pointer that was not created by `das_context_new`.
+///   a pointer that was not created by `das_context_new`.
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[no_mangle]
 pub extern "C" fn das_context_free(ctx: *mut DASContext) {
@@ -268,7 +268,7 @@ pub extern "C" fn verify_cell_kzg_proof_batch(
 ///
 /// # Safety
 ///
-///  - If the length parameter for a pointer is set to zero, then this implementation will not check if its pointer is
+/// - If the length parameter for a pointer is set to zero, then this implementation will not check if its pointer is
 ///   null. This is because the caller might have passed in a null pointer, if the length is zero. Instead an empty slice
 ///   will be created.
 ///

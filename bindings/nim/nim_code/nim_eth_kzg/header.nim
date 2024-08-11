@@ -36,7 +36,7 @@ proc das_context_new*(): ptr DASContext {.importc: "das_context_new".}
 # # Undefined behavior
 #
 # - Since the `ctx` is created in Rust, we can only get undefined behavior, if the caller passes in
-# a pointer that was not created by `das_context_new`.
+#   a pointer that was not created by `das_context_new`.
 proc das_context_free*(ctx: ptr DASContext): void {.importc: "das_context_free".}
 
 ## Free the memory allocated for the error message.
@@ -123,7 +123,7 @@ proc verify_cell_kzg_proof_batch*(ctx: ptr DASContext,
 #
 # # Safety
 #
-#  - If the length parameter for a pointer is set to zero, then this implementation will not check if its pointer is
+# - If the length parameter for a pointer is set to zero, then this implementation will not check if its pointer is
 #   null. This is because the caller might have passed in a null pointer, if the length is zero. Instead an empty slice
 #   will be created.
 #
