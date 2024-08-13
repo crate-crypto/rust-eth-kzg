@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.4.0...v0.4.1) (2024-08-13)
+
+
+### Bug Fixes
+
+* Put workflow dispatch and push events in a separate group ([#139](https://github.com/crate-crypto/rust-eth-kzg/issues/139)) ([f5f9909](https://github.com/crate-crypto/rust-eth-kzg/commit/f5f9909fc8a0dc20dbeb3c1bb23732bdaa45366f))
+
 ## [0.4.0](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.3.0...v0.4.0) (2024-08-05)
 
 
