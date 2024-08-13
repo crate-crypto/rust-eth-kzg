@@ -19,7 +19,6 @@ const RECOVER_CELLS_AND_KZG_PROOFS_TEST = "../../test_vectors/recover_cells_and_
 
 type BlobToKzgCommitmentTest = TestMeta<{ blob: string }, string>;
 type ComputeCellsAndKzgProofsTest = TestMeta<{ blob: string }, string[][]>;
-// TODO: number here is incorrect, but it might be worthwhile to change the type in the specs instead
 type VerifyCellKzgProofBatchTest = TestMeta<
   { commitments: string[]; cell_indices: number[]; cells: string[]; proofs: string[] },
   boolean
