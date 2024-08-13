@@ -1,8 +1,7 @@
-use std::ops::Range;
-
 use bls12_381::Scalar;
 use crate_crypto_internal_eth_kzg_erasure_codes::{BlockErasureIndices, ReedSolomon};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use std::ops::Range;
 
 pub fn bench_erasure_code_decoding_4096_8192(c: &mut Criterion) {
     const POLYNOMIAL_LEN: usize = 4096;
@@ -15,13 +14,6 @@ pub fn bench_erasure_code_decoding_4096_8192(c: &mut Criterion) {
     let mut encoded_polynomial = Vec::with_capacity(extended_poly_len);
     for i in 0..extended_poly_len {
         encoded_polynomial.push(black_box(-Scalar::from(i as u64 + 1)));
-    }
-
-    fn generate_unique_random_numbers(range: Range<usize>, n: usize) -> Vec<usize> {
-        use rand::prelude::SliceRandom;
-        let mut numbers: Vec<_> = range.into_iter().collect();
-        numbers.shuffle(&mut rand::thread_rng());
-        numbers.into_iter().take(n).collect()
     }
 
     let num_blocks = extended_poly_len / block_size;
@@ -42,6 +34,13 @@ pub fn bench_erasure_code_decoding_4096_8192(c: &mut Criterion) {
             })
         },
     );
+}
+
+fn generate_unique_random_numbers(range: Range<usize>, n: usize) -> Vec<usize> {
+    use rand::prelude::SliceRandom;
+    let mut numbers: Vec<_> = range.into_iter().collect();
+    numbers.shuffle(&mut rand::thread_rng());
+    numbers.into_iter().take(n).collect()
 }
 
 criterion_group!(benches, bench_erasure_code_decoding_4096_8192);
