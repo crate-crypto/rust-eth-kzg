@@ -18,7 +18,7 @@ pub use rust_eth_kzg::constants::{
 };
 use rust_eth_kzg::Error;
 
-/**
+/*
  * Note: All methods in this file have been prefixed with `eth_kzg`.
  * This is so that when they are imported into languages such as nim,
  * they will have a separate namespace to other c libraries.
