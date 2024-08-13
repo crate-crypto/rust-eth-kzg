@@ -93,6 +93,12 @@ impl FK20Verifier {
     /// This corresponds to the guarantee that every opening should have an `input_point` and an `output_point`
     /// with a corresponding proof attesting to `f(input_point) = output_point` and a commitment to the polynomial `f`.  
     ///
+    /// Note: Although this method is on the `FK20Verifier` structure, it is possible to verify methods that are not
+    /// created by the `FK20Prover`. FK20Prover generates multi-proofs efficiently using the FK20 strategy, but we
+    /// could just as well generate those proofs using the naive strategy that we test FK20 against. We leave this
+    /// naming as is since it conveys a meaningful difference between the other internal provers which do not use FK20.
+    /// On the API level, we however export this as Verifier.
+    ///
     /// The matching function in the spec is: https://github.com/ethereum/consensus-specs/blob/b9e7b031b5f2c18d76143007ea779a32b5505155/specs/_features/eip7594/polynomial-commitments-sampling.md#verify_cell_kzg_proof_batch_impl
     pub fn verify_multi_opening(
         &self,
