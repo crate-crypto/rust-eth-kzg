@@ -1,5 +1,6 @@
 use bls12_381::{ff::Field, G1Projective};
 use bls12_381::{g1_batch_normalize, g2_batch_normalize, G2Projective, Scalar};
+use crate_crypto_kzg_multi_open_fk20::Verifier;
 use crate_crypto_kzg_multi_open_fk20::{
     commit_key::CommitKey, opening_key::OpeningKey, Prover, ProverInput,
 };
@@ -29,6 +30,46 @@ pub fn bench_compute_proof_fk20(c: &mut Criterion) {
         |b| {
             b.iter(|| {
                 prover.compute_multi_opening_proofs(ProverInput::PolyCoeff(polynomial_4096.clone()))
+            })
+        },
+    );
+}
+
+pub fn bench_verify_proof_fk20(c: &mut Criterion) {
+    const POLYNOMIAL_LEN: usize = 4096;
+    let polynomial_4096 = random_scalars(POLYNOMIAL_LEN);
+    let (ck, vk) = create_insecure_commit_opening_keys();
+    const NUMBER_OF_POINTS_TO_EVALUATE: usize = 2 * POLYNOMIAL_LEN;
+
+    const NUMBER_OF_POINTS_PER_PROOF: usize = 64;
+
+    let prover = Prover::new(
+        ck,
+        POLYNOMIAL_LEN,
+        NUMBER_OF_POINTS_PER_PROOF,
+        NUMBER_OF_POINTS_TO_EVALUATE,
+    );
+    let num_proofs = prover.num_proofs();
+    let commitment = prover.commit(ProverInput::PolyCoeff(polynomial_4096.clone()));
+    let verifier = Verifier::new(vk, NUMBER_OF_POINTS_TO_EVALUATE, prover.num_proofs());
+
+    let (proofs, coset_evals) =
+        prover.compute_multi_opening_proofs(ProverInput::PolyCoeff(polynomial_4096));
+
+    c.bench_function(
+        &format!(
+            "verifying proofs. POLY_SIZE {}, NUM_INPUT_POINTS {}, NUM_PROOFS {}",
+            POLYNOMIAL_LEN, NUMBER_OF_POINTS_PER_PROOF, num_proofs
+        ),
+        |b| {
+            b.iter(|| {
+                verifier.verify_multi_opening(
+                    &vec![commitment],
+                    &vec![0; 128],
+                    &(0..128).collect::<Vec<_>>(),
+                    &coset_evals,
+                    &proofs,
+                )
             })
         },
     );
@@ -89,5 +130,5 @@ pub fn create_insecure_commit_opening_keys() -> (CommitKey, OpeningKey) {
     (ck, vk)
 }
 
-criterion_group!(benches, bench_compute_proof_fk20,);
+criterion_group!(benches, bench_compute_proof_fk20, bench_verify_proof_fk20);
 criterion_main!(benches);
