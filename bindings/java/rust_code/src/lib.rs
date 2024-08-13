@@ -13,7 +13,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_DASContextNew(
     _class: JClass,
 ) -> jlong {
     // TODO: Switch to using the Rust DASContext object
-    c_eth_kzg::das_context_new() as jlong
+    c_eth_kzg::eth_kzg_das_context_new() as jlong
 }
 
 #[no_mangle]
@@ -23,7 +23,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_DASContextDestroy(
     ctx_ptr: jlong,
 ) {
     // TODO: Switch to using the Rust DASContext object
-    c_eth_kzg::das_context_free(ctx_ptr as *mut DASContext);
+    c_eth_kzg::eth_kzg_das_context_free(ctx_ptr as *mut DASContext);
 }
 
 #[no_mangle]

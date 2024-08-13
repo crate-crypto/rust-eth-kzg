@@ -18,6 +18,15 @@ pub use rust_eth_kzg::constants::{
 };
 use rust_eth_kzg::Error;
 
+/*
+ * Note: All methods in this file have been prefixed with `eth_kzg`.
+ * This is so that when they are imported into languages such as nim,
+ * they will have a separate namespace to other c libraries.
+ *
+ * ie Nim will take two c libraries and put their methods in the same
+ * namespace.
+ */
+
 // This is a wrapper around the DASContext from the eip7594 library.
 // We need to wrap it as some bindgen tools cannot pick up items
 // not defined in this file.
@@ -39,7 +48,7 @@ impl DASContext {
 /// To avoid memory leaks, one should ensure that the pointer is freed after use
 /// by calling `das_context_free`.
 #[no_mangle]
-pub extern "C" fn das_context_new() -> *mut DASContext {
+pub extern "C" fn eth_kzg_das_context_new() -> *mut DASContext {
     let ctx = Box::<DASContext>::default();
     Box::into_raw(ctx)
 }
@@ -59,7 +68,7 @@ pub extern "C" fn das_context_new() -> *mut DASContext {
 /// a pointer that was not created by `das_context_new`.
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[no_mangle]
-pub extern "C" fn das_context_free(ctx: *mut DASContext) {
+pub extern "C" fn eth_kzg_das_context_free(ctx: *mut DASContext) {
     if ctx.is_null() {
         return;
     }
@@ -120,7 +129,7 @@ impl CResult {
 /// - The caller must ensure that the pointer is valid. If the pointer is null, this method will return early.
 /// - The caller should also avoid a double-free by setting the pointer to null after calling this method.
 #[no_mangle]
-pub unsafe extern "C" fn free_error_message(c_message: *mut std::os::raw::c_char) {
+pub unsafe extern "C" fn eth_kzg_free_error_message(c_message: *mut std::os::raw::c_char) {
     // check if the pointer is null
     if c_message.is_null() {
         return;
@@ -145,7 +154,7 @@ pub unsafe extern "C" fn free_error_message(c_message: *mut std::os::raw::c_char
 ///   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
 #[no_mangle]
 #[must_use]
-pub extern "C" fn blob_to_kzg_commitment(
+pub extern "C" fn eth_kzg_blob_to_kzg_commitment(
     ctx: *const DASContext,
 
     blob: *const u8,
@@ -175,7 +184,7 @@ pub extern "C" fn blob_to_kzg_commitment(
 ///   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
 #[no_mangle]
 #[must_use]
-pub extern "C" fn compute_cells_and_kzg_proofs(
+pub extern "C" fn eth_kzg_compute_cells_and_kzg_proofs(
     ctx: *const DASContext,
 
     blob: *const u8,
@@ -230,7 +239,7 @@ fn verification_result_to_bool_cresult(
 ///   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
 #[no_mangle]
 #[must_use]
-pub extern "C" fn verify_cell_kzg_proof_batch(
+pub extern "C" fn eth_kzg_verify_cell_kzg_proof_batch(
     ctx: *const DASContext,
 
     commitments_length: u64,
@@ -288,7 +297,7 @@ pub extern "C" fn verify_cell_kzg_proof_batch(
 ///   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
 #[no_mangle]
 #[must_use]
-pub extern "C" fn recover_cells_and_proofs(
+pub extern "C" fn eth_kzg_recover_cells_and_proofs(
     ctx: *const DASContext,
 
     cells_length: u64,
@@ -317,14 +326,14 @@ pub extern "C" fn recover_cells_and_proofs(
 // Expose the constants to the C API so that languages that have to define them
 // manually can use them in tests.
 #[no_mangle]
-pub extern "C" fn constant_bytes_per_cell() -> u64 {
+pub extern "C" fn eth_kzg_constant_bytes_per_cell() -> u64 {
     BYTES_PER_CELL as u64
 }
 #[no_mangle]
-pub extern "C" fn constant_bytes_per_proof() -> u64 {
+pub extern "C" fn eth_kzg_constant_bytes_per_proof() -> u64 {
     BYTES_PER_COMMITMENT as u64
 }
 #[no_mangle]
-pub extern "C" fn constant_cells_per_ext_blob() -> u64 {
+pub extern "C" fn eth_kzg_constant_cells_per_ext_blob() -> u64 {
     CELLS_PER_EXT_BLOB as u64
 }

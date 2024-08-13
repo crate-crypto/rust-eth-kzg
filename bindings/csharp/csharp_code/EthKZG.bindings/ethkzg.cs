@@ -30,14 +30,14 @@ public sealed unsafe class EthKZG : IDisposable
 
     public EthKZG()
     {
-        _context = das_context_new();
+        _context = eth_kzg_das_context_new();
     }
 
     public void Dispose()
     {
         if (_context != null)
         {
-            das_context_free(_context);
+            eth_kzg_das_context_free(_context);
             _context = null;
         }
     }
@@ -56,7 +56,7 @@ public sealed unsafe class EthKZG : IDisposable
         fixed (byte* blobPtr = blob)
         fixed (byte* commitmentPtr = commitment)
         {
-            CResult result = blob_to_kzg_commitment(_context, blobPtr, commitmentPtr);
+            CResult result = eth_kzg_blob_to_kzg_commitment(_context, blobPtr, commitmentPtr);
 
             ThrowOnError(result);
         }
@@ -105,7 +105,7 @@ public sealed unsafe class EthKZG : IDisposable
                 }
             }
 
-            CResult result = compute_cells_and_kzg_proofs(_context, blobPtr, outCellsPtrPtr, outProofsPtrPtr);
+            CResult result = eth_kzg_compute_cells_and_kzg_proofs(_context, blobPtr, outCellsPtrPtr, outProofsPtrPtr);
             ThrowOnError(result);
         }
         return (outCells, outProofs);
@@ -182,7 +182,7 @@ public sealed unsafe class EthKZG : IDisposable
                 }
             }
 
-            CResult result = verify_cell_kzg_proof_batch(_context, Convert.ToUInt64(commitments.Length), commitmentPtrPtr, Convert.ToUInt64(cellIndices.Length), cellIndicesPtr, Convert.ToUInt64(cells.Length), cellsPtrPtr, Convert.ToUInt64(proofs.Length), proofsPtrPtr, verifiedPtr);
+            CResult result = eth_kzg_verify_cell_kzg_proof_batch(_context, Convert.ToUInt64(commitments.Length), commitmentPtrPtr, Convert.ToUInt64(cellIndices.Length), cellIndicesPtr, Convert.ToUInt64(cells.Length), cellsPtrPtr, Convert.ToUInt64(proofs.Length), proofsPtrPtr, verifiedPtr);
             ThrowOnError(result);
         }
         return verified;
@@ -244,7 +244,7 @@ public sealed unsafe class EthKZG : IDisposable
                 }
             }
 
-            CResult result = recover_cells_and_proofs(_context, Convert.ToUInt64(numInputCells), inputCellsPtrPtr, Convert.ToUInt64(cellIds.Length), cellIdsPtr, outCellsPtrPtr, outProofsPtrPtr);
+            CResult result = eth_kzg_recover_cells_and_proofs(_context, Convert.ToUInt64(numInputCells), inputCellsPtrPtr, Convert.ToUInt64(cellIds.Length), cellIdsPtr, outCellsPtrPtr, outProofsPtrPtr);
             ThrowOnError(result);
         }
 
@@ -261,7 +261,7 @@ public sealed unsafe class EthKZG : IDisposable
                 if (errorMessage != null)
                 {
                     // Free the error message that we allocated on the rust side
-                    free_error_message(result.error_msg);
+                    eth_kzg_free_error_message(result.error_msg);
                     throw new ArgumentException($"an error occurred from the bindings: {errorMessage}");
                 }
                 else

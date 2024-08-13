@@ -24,8 +24,8 @@ namespace EthKZG.Native
         ///  To avoid memory leaks, one should ensure that the pointer is freed after use
         ///  by calling `das_context_free`.
         /// </summary>
-        [DllImport(__DllName, EntryPoint = "das_context_new", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        internal static extern DASContext* das_context_new();
+        [DllImport(__DllName, EntryPoint = "eth_kzg_das_context_new", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern DASContext* eth_kzg_das_context_new();
 
         /// <summary>
         ///  # Safety
@@ -42,8 +42,8 @@ namespace EthKZG.Native
         ///  - Since the `ctx` is created in Rust, we can only get undefined behavior, if the caller passes in
         ///  a pointer that was not created by `das_context_new`.
         /// </summary>
-        [DllImport(__DllName, EntryPoint = "das_context_free", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        internal static extern void das_context_free(DASContext* ctx);
+        [DllImport(__DllName, EntryPoint = "eth_kzg_das_context_free", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern void eth_kzg_das_context_free(DASContext* ctx);
 
         /// <summary>
         ///  Free the memory allocated for the error message.
@@ -53,8 +53,8 @@ namespace EthKZG.Native
         ///  - The caller must ensure that the pointer is valid. If the pointer is null, this method will return early.
         ///  - The caller should also avoid a double-free by setting the pointer to null after calling this method.
         /// </summary>
-        [DllImport(__DllName, EntryPoint = "free_error_message", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        internal static extern void free_error_message(byte* c_message);
+        [DllImport(__DllName, EntryPoint = "eth_kzg_free_error_message", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern void eth_kzg_free_error_message(byte* c_message);
 
         /// <summary>
         ///  Compute a commitment from a Blob
@@ -70,8 +70,8 @@ namespace EthKZG.Native
         ///  - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
         ///    If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
         /// </summary>
-        [DllImport(__DllName, EntryPoint = "blob_to_kzg_commitment", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        internal static extern CResult blob_to_kzg_commitment(DASContext* ctx, byte* blob, byte* @out);
+        [DllImport(__DllName, EntryPoint = "eth_kzg_blob_to_kzg_commitment", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern CResult eth_kzg_blob_to_kzg_commitment(DASContext* ctx, byte* blob, byte* @out);
 
         /// <summary>
         ///  Computes the cells and KZG proofs for a given blob.
@@ -90,8 +90,8 @@ namespace EthKZG.Native
         ///  - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
         ///    If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
         /// </summary>
-        [DllImport(__DllName, EntryPoint = "compute_cells_and_kzg_proofs", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        internal static extern CResult compute_cells_and_kzg_proofs(DASContext* ctx, byte* blob, byte** out_cells, byte** out_proofs);
+        [DllImport(__DllName, EntryPoint = "eth_kzg_compute_cells_and_kzg_proofs", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern CResult eth_kzg_compute_cells_and_kzg_proofs(DASContext* ctx, byte* blob, byte** out_cells, byte** out_proofs);
 
         /// <summary>
         ///  Verifies a batch of cells and their KZG proofs.
@@ -120,8 +120,8 @@ namespace EthKZG.Native
         ///  - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
         ///    If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
         /// </summary>
-        [DllImport(__DllName, EntryPoint = "verify_cell_kzg_proof_batch", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        internal static extern CResult verify_cell_kzg_proof_batch(DASContext* ctx, ulong commitments_length, byte** commitments, ulong cell_indices_length, ulong* cell_indices, ulong cells_length, byte** cells, ulong proofs_length, byte** proofs, bool* verified);
+        [DllImport(__DllName, EntryPoint = "eth_kzg_verify_cell_kzg_proof_batch", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern CResult eth_kzg_verify_cell_kzg_proof_batch(DASContext* ctx, ulong commitments_length, byte** commitments, ulong cell_indices_length, ulong* cell_indices, ulong cells_length, byte** cells, ulong proofs_length, byte** proofs, bool* verified);
 
         /// <summary>
         ///  Recovers all cells and their KZG proofs from the given cell indices and cells
@@ -147,17 +147,17 @@ namespace EthKZG.Native
         ///  - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
         ///    If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
         /// </summary>
-        [DllImport(__DllName, EntryPoint = "recover_cells_and_proofs", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        internal static extern CResult recover_cells_and_proofs(DASContext* ctx, ulong cells_length, byte** cells, ulong cell_indices_length, ulong* cell_indices, byte** out_cells, byte** out_proofs);
+        [DllImport(__DllName, EntryPoint = "eth_kzg_recover_cells_and_proofs", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern CResult eth_kzg_recover_cells_and_proofs(DASContext* ctx, ulong cells_length, byte** cells, ulong cell_indices_length, ulong* cell_indices, byte** out_cells, byte** out_proofs);
 
-        [DllImport(__DllName, EntryPoint = "constant_bytes_per_cell", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        internal static extern ulong constant_bytes_per_cell();
+        [DllImport(__DllName, EntryPoint = "eth_kzg_constant_bytes_per_cell", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern ulong eth_kzg_constant_bytes_per_cell();
 
-        [DllImport(__DllName, EntryPoint = "constant_bytes_per_proof", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        internal static extern ulong constant_bytes_per_proof();
+        [DllImport(__DllName, EntryPoint = "eth_kzg_constant_bytes_per_proof", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern ulong eth_kzg_constant_bytes_per_proof();
 
-        [DllImport(__DllName, EntryPoint = "constant_cells_per_ext_blob", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        internal static extern ulong constant_cells_per_ext_blob();
+        [DllImport(__DllName, EntryPoint = "eth_kzg_constant_cells_per_ext_blob", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern ulong eth_kzg_constant_cells_per_ext_blob();
 
 
     }
