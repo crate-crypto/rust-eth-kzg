@@ -63,11 +63,6 @@ pub enum VerifierError {
         num_cells_received: usize,
         max_cells_needed: usize,
     },
-    CellDoesNotContainEnoughBytes {
-        cell_index: CellIndex,
-        num_bytes: usize,
-        expected_num_bytes: usize,
-    },
     CellIndexOutOfRange {
         cell_index: CellIndex,
         max_number_of_cells: u64,

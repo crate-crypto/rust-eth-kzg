@@ -271,15 +271,10 @@ mod validation {
         }
 
         // Check that each cell has the right amount of bytes
+        //
+        // This should be infallible.
         for (i, cell) in cells.iter().enumerate() {
-            if cell.len() != BYTES_PER_CELL {
-                // TODO: This check should always be true
-                return Err(VerifierError::CellDoesNotContainEnoughBytes {
-                    cell_index: cell_indices[i],
-                    num_bytes: cell.len(),
-                    expected_num_bytes: BYTES_PER_CELL,
-                });
-            }
+            assert_eq!(cell.len(), BYTES_PER_CELL, "the number of bytes in a cell should always equal {} since the type is a reference to an array. Check cell at index {}", BYTES_PER_CELL, i);
         }
 
         // Check that we have no duplicate cell indices
