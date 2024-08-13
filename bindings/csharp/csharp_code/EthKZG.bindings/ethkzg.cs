@@ -30,7 +30,7 @@ public sealed unsafe class EthKZG : IDisposable
 
     public EthKZG()
     {
-        _context = das_context_new();
+        _context = eth_kzg_das_context_new();
     }
 
     public void Dispose()
