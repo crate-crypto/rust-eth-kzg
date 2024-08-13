@@ -10,6 +10,36 @@ A cryptographic library that is compatible with the KZG commitment scheme used i
 
 The cryptography implemented in this library is the prerequisite needed for Ethereum's version of Data Availability Sampling(DAS). The library has been implemented in a modular way, so one can also use the underlying polynomial commitment scheme, for a different purpose.
 
+## Installation
+
+### Rust
+
+```
+cargo add rust_eth_kzg
+```
+
+### Node
+
+```
+npm i @crate-crypto/node-eth-kzg
+```
+
+### Java
+
+```
+pkg:maven/io.github.crate-crypto/java-eth-kzg@X.Y.Z
+```
+
+### CSharp
+
+```
+dotnet add package EthKZG.Bindings
+```
+
+### Nim
+
+> Use the github URL for Nim.
+
 ## Building the source
 
 This library is written in Rust and offers bindings to C, C#, node.js, golang, Java and Nim. These bindings can be found in the `bindings` folder. The bindings expose an API that is compatible with the API needed for Ethereum.
