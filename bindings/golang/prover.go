@@ -46,10 +46,10 @@ type DASContext struct {
 }
 
 func NewProverContext() *DASContext {
-	self := &DASContext{_inner: C.das_context_new()}
+	self := &DASContext{_inner: C.eth_kzg_das_context_new()}
 
 	runtime.SetFinalizer(self, func(self *DASContext) {
-		C.das_context_free(self.inner())
+		C.eth_kzg_das_context_free(self.inner())
 	})
 
 	return self
@@ -60,7 +60,7 @@ func (prover *DASContext) BlobToKZGCommitment(blob []byte) ([]byte, error) {
 		return nil, errors.New("invalid blob size")
 	}
 	out := make([]byte, 48)
-	C.blob_to_kzg_commitment(prover.inner(), (*C.uint8_t)(&blob[0]), (*C.uint8_t)(&out[0]))
+	C.eth_kzg_blob_to_kzg_commitment(prover.inner(), (*C.uint8_t)(&blob[0]), (*C.uint8_t)(&out[0]))
 	return out, nil
 }
 
