@@ -13,7 +13,7 @@ use crate::{
         deserialize_blob_to_scalars, serialize_cells_and_proofs, serialize_g1_compressed,
     },
     trusted_setup::TrustedSetup,
-    BlobRef, Cell, CellIndex, CellRef, KZGCommitment, KZGProof, DASContext,
+    BlobRef, Cell, CellIndex, CellRef, DASContext, KZGCommitment, KZGProof,
 };
 
 /// Context object that is used to call functions in the prover API.
