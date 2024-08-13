@@ -38,3 +38,6 @@ rayon = "1.10.0"
 
 [profile.release]
 lto = true
+
+[badges]
+maintenance = { status = "actively-developed" }
