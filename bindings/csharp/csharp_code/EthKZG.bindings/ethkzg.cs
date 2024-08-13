@@ -261,7 +261,7 @@ public sealed unsafe class EthKZG : IDisposable
                 if (errorMessage != null)
                 {
                     // Free the error message that we allocated on the rust side
-                    free_error_message(result.error_msg);
+                    eth_kzg_free_error_message(result.error_msg);
                     throw new ArgumentException($"an error occurred from the bindings: {errorMessage}");
                 }
                 else
