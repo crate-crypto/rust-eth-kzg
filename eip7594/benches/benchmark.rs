@@ -2,8 +2,7 @@ use bls12_381::Scalar;
 use criterion::{criterion_group, criterion_main, Criterion};
 use rust_eth_kzg::{
     constants::{BYTES_PER_BLOB, CELLS_PER_EXT_BLOB},
-    Bytes48Ref, Cell, CellIndex, CellRef, DASContext, KZGCommitment, KZGProof, RowIndex,
-    TrustedSetup,
+    Bytes48Ref, Cell, CellIndex, CellRef, DASContext, KZGCommitment, KZGProof, TrustedSetup,
 };
 
 const POLYNOMIAL_LEN: usize = 4096;
