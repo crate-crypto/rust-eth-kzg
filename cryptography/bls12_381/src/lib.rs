@@ -71,6 +71,13 @@ mod tests {
         0x00, 0x01,
     ];
 
+    // 2^256 - 1 mod r
+    const TWO_256_MINUS_ONE_MOD_R: [u8; 32] = [
+        0x18, 0x24, 0xB1, 0x59, 0xAC, 0xC5, 0x05, 0x6F, 0x99, 0x8C, 0x4F, 0xEF, 0xEC, 0xBC, 0x4F,
+        0xF5, 0x58, 0x84, 0xB7, 0xFA, 0x00, 0x03, 0x48, 0x02, 0x00, 0x00, 0x00, 0x01, 0xFF, 0xFF,
+        0xFF, 0xFD,
+    ];
+
     #[test]
     fn test_reduce_bytes_to_scalar_edge_cases() {
         // Test case 1: Zero
@@ -96,6 +103,7 @@ mod tests {
             0xD8, 0x05, 0x53, 0xBD, 0xA4, 0x02, 0xFF, 0xFE, 0x5B, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF,
             0x00, 0x00, 0x00, 0x00,
         ];
+
         let result = reduce_bytes_to_scalar_bias(max_bytes);
         assert_ne!(result, Scalar::ZERO, "r - 1 should not reduce to zero");
         assert_eq!(result, -Scalar::ONE, "r - 1 should equal -1 in the field");
@@ -114,23 +122,10 @@ mod tests {
         // Test case 6: 2^256 - 1 (maximum 32-byte value)
         let max_32_bytes = [0xFF; 32];
         let result = reduce_bytes_to_scalar_bias(max_32_bytes);
-        assert_ne!(result, Scalar::ZERO, "2^256 - 1 should not reduce to zero");
-        // The exact result will depend on the implementation, but it should be less than r
-    }
-
-    #[test]
-    fn test_reduce_bytes_to_scalar_consistency() {
-        // Test that the function produces consistent results
-        let input = [
-            0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66,
-            0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF, 0x00, 0x11, 0x22, 0x33, 0x44,
-            0x55, 0x66, 0x77, 0x88,
-        ];
-        let result1 = reduce_bytes_to_scalar_bias(input);
-        let result2 = reduce_bytes_to_scalar_bias(input);
+        let expected = Scalar::from_bytes_be(&TWO_256_MINUS_ONE_MOD_R).unwrap();
         assert_eq!(
-            result1, result2,
-            "Function should produce consistent results"
+            result, expected,
+            "2^256 - 1 should reduce to (2^256 - 1) mod r"
         );
     }
 
