@@ -10,6 +10,8 @@ use polynomial::{domain::Domain, monomial::poly_add};
 use sha2::{Digest, Sha256};
 use std::mem::size_of;
 
+use super::errors::VerifierError;
+
 /// FK20Verifier initializes all of the components needed to verify KZG multi point
 /// proofs that were created using the FK20Prover.
 ///
@@ -81,6 +83,16 @@ impl FK20Verifier {
 
     /// Verify multiple multi-opening proofs.
     ///
+    /// Panics if the following slices do not have the same length:
+    ///
+    /// - commitment_indices
+    /// - bit_reversed_coset_indices
+    /// - bit_reversed_coset_evals
+    /// - bit_reversed_proofs
+    ///
+    /// This corresponds to the guarantee that every opening should have an `input_point` and an `output_point`
+    /// with a corresponding proof attesting to `f(input_point) = output_point` and a commitment to the polynomial `f`.  
+    ///
     /// The matching function in the spec is: https://github.com/ethereum/consensus-specs/blob/b9e7b031b5f2c18d76143007ea779a32b5505155/specs/_features/eip7594/polynomial-commitments-sampling.md#verify_cell_kzg_proof_batch_impl
     pub fn verify_multi_opening(
         &self,
@@ -88,13 +100,28 @@ impl FK20Verifier {
         deduplicated_commitments: &[G1Point],
         commitment_indices: &[u64],
 
-        // These are bit-reversed.
-        coset_indices: &[u64],
-        // These are bit-reversed.
-        coset_evals: &[Vec<Scalar>],
-        // These are bit-reversed.
-        proofs: &[G1Point],
-    ) -> bool {
+        bit_reversed_coset_indices: &[u64],
+        bit_reversed_coset_evals: &[Vec<Scalar>],
+        bit_reversed_proofs: &[G1Point],
+    ) -> Result<(), VerifierError> {
+        assert_eq!(
+            commitment_indices.len(),
+            bit_reversed_proofs.len(),
+            "Expected to have a proof for each commitment opening"
+        );
+        assert_eq!(
+            bit_reversed_coset_indices.len(),
+            bit_reversed_proofs.len(),
+            "Expected to have a proof for each index we want to open at"
+        );
+        assert_eq!(
+            bit_reversed_coset_evals.len(),
+            bit_reversed_proofs.len(),
+            "Expected to have a proof for each evaluation we want to prove an opening for"
+        );
+        // The batch size corresponds to how many openings, we ultimately want to be verifying.
+        let batch_size = bit_reversed_coset_indices.len();
+
         // Compute random challenges for batching the opening together.
         //
         // We compute one challenge `r` using fiat-shamir and the rest are powers of `r`
@@ -106,48 +133,56 @@ impl FK20Verifier {
             &self.opening_key,
             deduplicated_commitments,
             commitment_indices,
-            coset_indices,
-            coset_evals,
-            proofs,
+            bit_reversed_coset_indices,
+            bit_reversed_coset_evals,
+            bit_reversed_proofs,
         );
-        let r_powers = compute_powers(r, commitment_indices.len());
-
-        let num_cosets = coset_indices.len();
+        let r_powers = compute_powers(r, batch_size);
         let num_unique_commitments = deduplicated_commitments.len();
 
         // First compute a random linear combination of the proofs
-        let comm_random_sum_proofs = g1_lincomb(proofs, &r_powers)
+        //
+        // Safety: This unwrap can never trigger because `r_powers.len()` is `batch_size`
+        // and `bit_reversed_proofs.len()` will equal `batch_size` since we must have a proof for each item in the batch.
+        let comm_random_sum_proofs = g1_lincomb(bit_reversed_proofs, &r_powers)
             .expect("number of proofs and number of r_powers should be the same");
 
         // Now compute a random linear combination of the commitments
         //
-        // We know that many of the commitments are duplicated, so we optimize for this
-        // use case.
+        // For each commitment_index/commitment, we add its contribution of `r` to
+        // the associated weight for that commitment.
         //
-        // For example, imagine we wanted to do r_1 * G_1 + r_2 * G_1
-        // This would be equivalent to doing (r_1 + r_2) * G_1
-        // The (r_1 + r_2) is what is being referred to as the `weight`
+        // This is essentially taking advantage of the fact that commitments may be
+        // duplicated., so instead of calculating C = r_0 * C_0 + r_1 * C_0 naively
+        // which would require a size 2 MSM, we compute C = (r_0 + r_1) * C_0
+        // which would require a size 1 MSM and some extra field additions.
+        //
+        // One can view this as trading a scalar multiplication for a field addition.
+        //
+        // The extra field additions are being calculated in the for loop below.
         let mut weights = vec![Scalar::from(0); num_unique_commitments];
-        for k in 0..num_cosets {
-            // For each row index, we get its commitment index `i`.
-            // ie, `i` just means we are looking at G_i
-            let commitment_index = commitment_indices[k];
-            // We then add the contribution of `r` as a part of that commitments weight.
-            weights[commitment_index as usize] += r_powers[k];
+        for (commitment_index, r_power) in commitment_indices.iter().zip(r_powers.iter()) {
+            weights[*commitment_index as usize] += r_power;
         }
+
+        // Safety: This unwrap will never trigger because the length of `weights` has been initialized
+        // to be `deduplicated_commitments.len()`.
+        //
+        // This only panics, if `deduplicated_commitments.len()` != `weights.len()`
         let comm_random_sum_commitments = g1_lincomb(deduplicated_commitments, &weights)
             .expect("number of row_commitments and number of weights should be the same");
 
         // Compute a random linear combination of the interpolation polynomials
         let mut random_sum_interpolation_poly = Vec::new();
-        let coset_evals = coset_evals.to_vec();
+        let coset_evals = bit_reversed_coset_evals.to_vec();
         for (k, mut coset_eval) in coset_evals.into_iter().enumerate() {
             // Reverse the order, so it matches the fft domain
             reverse_bit_order(&mut coset_eval);
 
             // Compute the interpolation polynomial
             let ifft_scalars = self.coset_domain.ifft_scalars(coset_eval);
-            let inv_coset_shift_pow_n = &self.inv_coset_shifts_pow_n[coset_indices[k] as usize];
+            let inv_coset_shift_pow_n =
+                &self.inv_coset_shifts_pow_n[bit_reversed_coset_indices[k] as usize];
             let ifft_scalars: Vec<_> = ifft_scalars
                 .into_iter()
                 .zip(inv_coset_shift_pow_n)
@@ -167,12 +202,14 @@ impl FK20Verifier {
         let comm_random_sum_interpolation_poly =
             self.opening_key.commit_g1(&random_sum_interpolation_poly);
 
-        let mut weighted_r_powers = Vec::with_capacity(num_cosets);
-        for (coset_index, r_power) in coset_indices.iter().zip(r_powers) {
+        let mut weighted_r_powers = Vec::with_capacity(batch_size);
+        for (coset_index, r_power) in bit_reversed_coset_indices.iter().zip(r_powers) {
             let coset_shift_pow_n = self.coset_shifts_pow_n[*coset_index as usize];
             weighted_r_powers.push(r_power * coset_shift_pow_n);
         }
-        let random_weighted_sum_proofs = g1_lincomb(proofs, &weighted_r_powers)
+
+        // Safety: This should never panic since `bit_reversed_proofs.len()` is equal to the batch_size.
+        let random_weighted_sum_proofs = g1_lincomb(bit_reversed_proofs, &weighted_r_powers)
             .expect("number of proofs and number of weighted_r_powers should be the same");
 
         // TODO: Find a better name for this (use it from specs)
@@ -183,7 +220,13 @@ impl FK20Verifier {
         let random_sum_proofs = normalized_vectors[0];
         let rl = normalized_vectors[1];
 
-        multi_pairings(&[(&random_sum_proofs, &self.s_pow_n), (&rl, &self.neg_g2_gen)])
+        let proof_valid =
+            multi_pairings(&[(&random_sum_proofs, &self.s_pow_n), (&rl, &self.neg_g2_gen)]);
+        if proof_valid {
+            Ok(())
+        } else {
+            Err(VerifierError::InvalidProof)
+        }
     }
 }
 

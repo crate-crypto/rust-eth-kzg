@@ -1,6 +1,5 @@
-use erasure_codes::errors::RSError;
-
 use crate::CellIndex;
+use erasure_codes::errors::RSError;
 
 /// Errors that can occur either during proving or verification.
 #[derive(Debug)]
@@ -12,7 +11,11 @@ pub enum Error {
 
 impl Error {
     pub fn invalid_proof(&self) -> bool {
-        matches!(self, Error::Verifier(VerifierError::InvalidProof))
+        let verifier_error = match self {
+            Error::Verifier(verifier_err) => verifier_err,
+            _ => return false,
+        };
+        matches!(verifier_error, VerifierError::FK20(_))
     }
 }
 
@@ -81,6 +84,7 @@ pub enum VerifierError {
         proofs_len: usize,
     },
     ReedSolomon(RSError),
+    FK20(kzg_multi_open::VerifierError),
     PolynomialHasInvalidLength {
         num_coefficients: usize,
         expected_num_coefficients: usize,
@@ -90,6 +94,12 @@ pub enum VerifierError {
 impl From<RSError> for VerifierError {
     fn from(value: RSError) -> Self {
         VerifierError::ReedSolomon(value)
+    }
+}
+
+impl From<kzg_multi_open::VerifierError> for VerifierError {
+    fn from(value: kzg_multi_open::VerifierError) -> Self {
+        VerifierError::FK20(value)
     }
 }
 
