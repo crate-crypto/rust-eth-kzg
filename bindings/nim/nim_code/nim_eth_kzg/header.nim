@@ -7,7 +7,6 @@ type CResultStatus* = enum
   Ok
   Err
 
-##  * Note: All methods in this file have been prefixed with `eth_kzg`.  * This is so that when they are imported into languages such as nim,  * they will have a separate namespace to other c libraries.  *  * ie Nim will take two c libraries and put their methods in the same  * namespace.
 type DASContext* {.incompleteStruct.} = object
 
 ## A C-style struct to represent the success result of a function call.
