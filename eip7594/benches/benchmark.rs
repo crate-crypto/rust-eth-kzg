@@ -119,7 +119,7 @@ pub fn bench_init_context(c: &mut Criterion) {
 
 criterion_group!(
     benches,
-    bench_init_context
+    bench_init_context,
     bench_compute_cells_and_kzg_proofs,
     bench_recover_cells_and_compute_kzg_proofs,
     bench_verify_cell_kzg_proof_batch
