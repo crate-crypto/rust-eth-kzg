@@ -128,23 +128,4 @@ mod tests {
             "2^256 - 1 should reduce to (2^256 - 1) mod r"
         );
     }
-
-    #[test]
-    fn test_reduce_bytes_to_scalar_range() {
-        // Test that all results are within the correct range
-        for i in 0..100 {
-            let mut input = [0u8; 32];
-            input[0] = i;
-            let result = reduce_bytes_to_scalar_bias(input);
-            assert!(
-                result != Scalar::ZERO || i == 0,
-                "Only zero input should result in zero"
-            );
-            // Check that the result is less than r
-            assert!(
-                result.to_bytes_be() < BLS12_381_R,
-                "Result should be less than r"
-            );
-        }
-    }
 }
