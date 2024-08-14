@@ -34,7 +34,6 @@ pub fn g2_batch_normalize(projective_points: &[G2Projective]) -> Vec<G2Point> {
     batch_normalize_points(projective_points)
 }
 
-// TODO: Use batch_inversion trick to speed this up
 pub fn batch_normalize_points<T: PrimeCurveAffine>(points: &[T::Curve]) -> Vec<T>
 where
     T::Curve: Curve<AffineRepr = T>,
