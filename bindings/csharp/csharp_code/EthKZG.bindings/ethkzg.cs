@@ -7,9 +7,7 @@ namespace EthKZG;
 public sealed unsafe class EthKZG : IDisposable
 {
     // These constants are copied from the c-kzg csharp bindings file.
-    // TODO: This is not ideal, since we want the Rust code to be the single source of truth
-    // TODO: Generally, we want the c code to return functions that define these constants
-    // TODO: At the very least, we can have code to sanity check these constants
+    //
     // The number of bytes in a KZG commitment.
     public const int BytesPerCommitment = 48;
     // The number of bytes in a KZG Proof
