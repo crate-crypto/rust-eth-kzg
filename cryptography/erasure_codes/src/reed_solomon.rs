@@ -96,8 +96,9 @@ impl ReedSolomon {
     }
     /// Returns the maximum number of block erasures indices that can be missing
     /// before we are not able to recover the message.
+    ///
+    /// Note: This can also be computed by doing block_size / expansion_factor
     pub fn acceptable_num_block_erasures(&self) -> usize {
-        // TODO Note: We could compute this as self.block_size / expansion_factor
         self.acceptable_num_random_erasures() / self.num_blocks
     }
 
