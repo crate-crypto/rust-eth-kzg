@@ -67,7 +67,6 @@ template toPtrPtr(cells: openArray[untyped]): ptr pointer =
 
 template verify_result(res: CResult, ret: untyped): untyped =
   if res.xstatus != CResultStatus.Ok:
-    # TODO: get error message then free the pointer
     return err($res)
   ok(ret)
 
