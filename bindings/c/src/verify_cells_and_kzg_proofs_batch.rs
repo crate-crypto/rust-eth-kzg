@@ -40,7 +40,7 @@ pub(crate) fn _verify_cell_kzg_proof_batch(
 
     // Dereference the input pointers
     //
-    let ctx = deref_const(ctx).inner();
+    let ctx = deref_const(ctx);
     let commitments = ptr_ptr_to_vec_slice_const::<BYTES_PER_COMMITMENT>(
         commitments,
         commitments_length as usize,

@@ -17,6 +17,7 @@ pub use rust_eth_kzg::constants::{
     CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB,
 };
 pub use rust_eth_kzg::Error;
+use std::ops::Deref;
 
 /*
  * Note: All methods in this file have been prefixed with `eth_kzg`.
@@ -37,6 +38,14 @@ pub struct DASContext {
 
 impl DASContext {
     pub fn inner(&self) -> &rust_eth_kzg::DASContext {
+        &self.inner
+    }
+}
+
+impl Deref for DASContext {
+    type Target = rust_eth_kzg::DASContext;
+
+    fn deref(&self) -> &Self::Target {
         &self.inner
     }
 }
