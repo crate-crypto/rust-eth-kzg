@@ -38,7 +38,6 @@ dependencies {
     testFixturesImplementation("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}")
 }
 
-// TODO: Re-evaluate whether we should keep this
 test {
     useJUnitPlatform()
     dependsOn cleanTest
@@ -109,8 +108,8 @@ jreleaser {
   }
 }
 
-// TODO: Find out why jreleaser does not just create this
-// Directory.
+// JReleaser does not create this directory, so we manually create it 
+// ourselves.
 tasks.register('createJReleaserOutputDir') {
   doLast {
     mkdir 'build/jreleaser'
