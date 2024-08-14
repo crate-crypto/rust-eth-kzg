@@ -298,8 +298,7 @@ fn compute_fiat_shamir_challenge(
     // This is noted because when we convert a 256 bit hash to a scalar, a bias will be introduced.
     // This however does not affect our security guarantees because the bias is negligible given we
     // want a uniformly random 128 bit integer.
-
-    // TODO: computing powers will remove the 128 bit structure, consider generating `n` 128 bit scalars
+    //
     // Also there is a negligible probably that the scalar is zero, so we do not handle this case here.
     reduce_bytes_to_scalar_bias(result)
 }
