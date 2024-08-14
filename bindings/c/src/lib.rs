@@ -16,7 +16,7 @@ pub use rust_eth_kzg::constants::{
     BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT,
     CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB,
 };
-use rust_eth_kzg::Error;
+pub use rust_eth_kzg::Error;
 
 /*
  * Note: All methods in this file have been prefixed with `eth_kzg`.

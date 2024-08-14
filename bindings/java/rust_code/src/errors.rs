@@ -1,4 +1,4 @@
-use rust_eth_kzg::Error as KZGError;
+use c_eth_kzg::Error as KZGError;
 
 #[derive(Debug)]
 pub enum Error {
