@@ -44,11 +44,19 @@ where
     affine_points
 }
 
-// TODO: instead of truncation, we can use blst's api to
-// convert 32 bytes to a blst scalar and then convert from a scalar to an Fr
-pub fn reduce_bytes_to_scalar_bias(mut bytes: [u8; 32]) -> Scalar {
-    bytes[0] = (bytes[0] << 2) >> 2;
-    Scalar::from_bytes_be(&bytes).expect("254 bit integer should have been reducible to a scalar")
+// Reduces bytes to be a value less than the scalar modulus.
+pub fn reduce_bytes_to_scalar_bias(bytes: [u8; 32]) -> Scalar {
+    let mut out = blst::blst_fr::default();
+
+    unsafe {
+        // Convert byte array into a scalar
+        let mut s = blst::blst_scalar::default();
+        blst::blst_scalar_from_bendian(&mut s, &bytes as *const u8);
+        // Convert scalar into a `blst_fr` reducing the value along the way
+        blst::blst_fr_from_scalar(&mut out, &s as *const blst::blst_scalar);
+    }
+
+    Scalar::from(out)
 }
 
 #[cfg(test)]
@@ -56,43 +64,68 @@ mod tests {
     use super::*;
     use crate::ff::Field;
 
+    // BLS12-381 scalar field modulus (r)
+    const BLS12_381_R: [u8; 32] = [
+        0x73, 0xED, 0xA7, 0x53, 0x29, 0x9D, 0x7D, 0x48, 0x33, 0x39, 0xD8, 0x08, 0x09, 0xA1, 0xD8,
+        0x05, 0x53, 0xBD, 0xA4, 0x02, 0xFF, 0xFE, 0x5B, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00,
+        0x00, 0x01,
+    ];
+
+    // 2^256 - 1 mod r
+    const TWO_256_MINUS_ONE_MOD_R: [u8; 32] = [
+        0x18, 0x24, 0xB1, 0x59, 0xAC, 0xC5, 0x05, 0x6F, 0x99, 0x8C, 0x4F, 0xEF, 0xEC, 0xBC, 0x4F,
+        0xF5, 0x58, 0x84, 0xB7, 0xFA, 0x00, 0x03, 0x48, 0x02, 0x00, 0x00, 0x00, 0x01, 0xFF, 0xFF,
+        0xFF, 0xFD,
+    ];
+
     #[test]
     fn test_reduce_bytes_to_scalar_edge_cases() {
-        // We essentially are testing edge cases to ensure that the reduction works.
+        // Test case 1: Zero
+        let zero_bytes = [0u8; 32];
+        let result = reduce_bytes_to_scalar_bias(zero_bytes);
+        assert_eq!(
+            result,
+            Scalar::ZERO,
+            "Zero input should result in zero scalar"
+        );
 
-        // Test case 1: Normal case
-        let input_bytes = [
-            0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        // Test case 2: One
+        let one_bytes = [
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 1,
+        ];
+        let result = reduce_bytes_to_scalar_bias(one_bytes);
+        assert_eq!(result, Scalar::ONE, "One input should result in one scalar");
+
+        // Test case 3: r - 1 (maximum value in the field)
+        let max_bytes = [
+            0x73, 0xED, 0xA7, 0x53, 0x29, 0x9D, 0x7D, 0x48, 0x33, 0x39, 0xD8, 0x08, 0x09, 0xA1,
+            0xD8, 0x05, 0x53, 0xBD, 0xA4, 0x02, 0xFF, 0xFE, 0x5B, 0xFE, 0xFF, 0xFF, 0xFF, 0xFF,
             0x00, 0x00, 0x00, 0x00,
         ];
-        let result = reduce_bytes_to_scalar_bias(input_bytes);
-        let expected = Scalar::from_bytes_be(&[
-            0x3F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00,
-        ])
-        .unwrap();
-        assert_eq!(result, expected);
 
-        // Test case 2: All zeros
-        let input_bytes = [0u8; 32];
-        let result = reduce_bytes_to_scalar_bias(input_bytes);
-        assert_eq!(result, Scalar::ZERO);
+        let result = reduce_bytes_to_scalar_bias(max_bytes);
+        assert_ne!(result, Scalar::ZERO, "r - 1 should not reduce to zero");
+        assert_eq!(result, -Scalar::ONE, "r - 1 should equal -1 in the field");
 
-        // Test case 3: Maximum value after reduction
-        let input_bytes = [
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-            0xFF, 0xFF, 0xFF, 0xFF,
-        ];
-        let result = reduce_bytes_to_scalar_bias(input_bytes);
-        let expected = Scalar::from_bytes_be(&[
-            0x3F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-            0xFF, 0xFF, 0xFF, 0xFF,
-        ])
-        .unwrap();
-        assert_eq!(result, expected);
+        // Test case 4: r (should reduce to zero)
+        let r_bytes = BLS12_381_R;
+        let result = reduce_bytes_to_scalar_bias(r_bytes);
+        assert_eq!(result, Scalar::ZERO, "r should reduce to zero");
+
+        // Test case 5: r + 1 (should reduce to 1)
+        let mut r_plus_one = BLS12_381_R;
+        r_plus_one[31] += 1;
+        let result = reduce_bytes_to_scalar_bias(r_plus_one);
+        assert_eq!(result, Scalar::ONE, "r + 1 should reduce to 1");
+
+        // Test case 6: 2^256 - 1 (maximum 32-byte value)
+        let max_32_bytes = [0xFF; 32];
+        let result = reduce_bytes_to_scalar_bias(max_32_bytes);
+        let expected = Scalar::from_bytes_be(&TWO_256_MINUS_ONE_MOD_R).unwrap();
+        assert_eq!(
+            result, expected,
+            "2^256 - 1 should reduce to (2^256 - 1) mod r"
+        );
     }
 }
