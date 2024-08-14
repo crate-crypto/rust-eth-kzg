@@ -1,6 +1,5 @@
 use c_eth_kzg::DASContext;
-use jni::objects::JObjectArray;
-use jni::objects::{JByteArray, JClass, JLongArray, JObject, JValue};
+use jni::objects::{JByteArray, JClass, JLongArray, JObject, JObjectArray, JValue};
 use jni::sys::{jboolean, jlong};
 use jni::JNIEnv;
 
@@ -12,7 +11,6 @@ pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_DASContextNew(
     _env: JNIEnv,
     _class: JClass,
 ) -> jlong {
-    // TODO: Switch to using the Rust DASContext object
     c_eth_kzg::eth_kzg_das_context_new() as jlong
 }
 
@@ -22,7 +20,6 @@ pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_DASContextDestroy(
     _class: JClass,
     ctx_ptr: jlong,
 ) {
-    // TODO: Switch to using the Rust DASContext object
     c_eth_kzg::eth_kzg_das_context_free(ctx_ptr as *mut DASContext);
 }
 
