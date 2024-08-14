@@ -172,7 +172,11 @@ impl DASContext {
                 cell_indices,
                 coset_evaluations,
             )
-            .expect("could not recover evaluations in domain order"); // TODO: We could make this an error instead of panic
+            // This should never trigger since:
+            // - cell_indices is non-empty
+            // - all coset evaluations are checked to have the same size
+            // - all coset indices are checked to be valid
+            .expect("infallible: could not recover evaluations in domain order");
 
         // Find all of the missing cell indices. This is needed for recovery.
         let missing_cell_indices = find_missing_cell_indices(&cell_indices_normal_order);
