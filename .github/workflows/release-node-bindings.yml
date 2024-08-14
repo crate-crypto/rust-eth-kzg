@@ -211,8 +211,6 @@ jobs:
       - name: Publish
         if: ${{ inputs.release-type != 'none' && github.event_name == 'workflow_dispatch' }}
         run: |
-          # TODO: We could remove the yarnpkg registry and set the npmregistry
-          # TODO: globally, by doing: yarn config set registry <registry-url>
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
           echo "//registry.yarnpkg.com/:_authToken=$NPM_TOKEN" >> ~/.npmrc
           
