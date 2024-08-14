@@ -25,7 +25,6 @@ fn main() {
     }
     let output = command.output().unwrap();
 
-    // TODO: check if we need this in other build.rs scripts
     if !output.status.success() {
         let output = std::str::from_utf8(&output.stderr).unwrap();
         panic!("{}", output)
