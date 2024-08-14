@@ -60,7 +60,6 @@ impl FK20Verifier {
             .map(|&coset_shift| coset_shift.pow_vartime([n as u64]))
             .collect();
 
-        // TODO: We might be able to remove this if we modify the API for fft to take arbitrary cosets
         let inv_coset_shifts_pow_n: Vec<_> = coset_shifts
             .iter()
             .map(|&coset_shift| {
