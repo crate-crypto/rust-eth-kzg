@@ -8,7 +8,7 @@ on:
         required: true
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && 'manual' || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -21,6 +21,6 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
 
-      - name: TODO nim bindings code
+      - name: nim bindings code
         run: |
                echo "Code to publish nim bindings needs to be setup reference input: ${{ inputs.ref }}"

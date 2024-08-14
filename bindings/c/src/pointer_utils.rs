@@ -50,7 +50,6 @@ pub(crate) fn write_to_slice<T: Copy>(ptr: *mut T, data: &[T]) {
 }
 
 /// Write `data` to a 2D slice starting at `ptr`
-// TODO: the data parameter might be too complicated, investigate simplifying it
 pub(crate) fn write_to_2d_slice<T: Copy, const N: usize>(
     ptr: *mut *mut T,
     data: [impl AsRef<[T]>; N],

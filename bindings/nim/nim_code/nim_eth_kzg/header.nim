@@ -22,7 +22,7 @@ type CResult* = object
 #
 # To avoid memory leaks, one should ensure that the pointer is freed after use
 # by calling `das_context_free`.
-proc das_context_new*(): ptr DASContext {.importc: "das_context_new".}
+proc eth_kzg_das_context_new*(): ptr DASContext {.importc: "eth_kzg_das_context_new".}
 
 ## # Safety
 #
@@ -37,7 +37,7 @@ proc das_context_new*(): ptr DASContext {.importc: "das_context_new".}
 #
 # - Since the `ctx` is created in Rust, we can only get undefined behavior, if the caller passes in
 # a pointer that was not created by `das_context_new`.
-proc das_context_free*(ctx: ptr DASContext): void {.importc: "das_context_free".}
+proc eth_kzg_das_context_free*(ctx: ptr DASContext): void {.importc: "eth_kzg_das_context_free".}
 
 ## Free the memory allocated for the error message.
 #
@@ -45,7 +45,7 @@ proc das_context_free*(ctx: ptr DASContext): void {.importc: "das_context_free".
 #
 # - The caller must ensure that the pointer is valid. If the pointer is null, this method will return early.
 # - The caller should also avoid a double-free by setting the pointer to null after calling this method.
-proc free_error_message*(c_message: pointer): void {.importc: "free_error_message".}
+proc eth_kzg_free_error_message*(c_message: pointer): void {.importc: "eth_kzg_free_error_message".}
 
 ## Compute a commitment from a Blob
 #
@@ -59,9 +59,9 @@ proc free_error_message*(c_message: pointer): void {.importc: "free_error_messag
 #
 # - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
 #   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
-proc blob_to_kzg_commitment*(ctx: ptr DASContext,
-                             blob: pointer,
-                             outx: pointer): CResult {.importc: "blob_to_kzg_commitment".}
+proc eth_kzg_blob_to_kzg_commitment*(ctx: ptr DASContext,
+                                     blob: pointer,
+                                     outx: pointer): CResult {.importc: "eth_kzg_blob_to_kzg_commitment".}
 
 ## Computes the cells and KZG proofs for a given blob.
 #
@@ -78,10 +78,10 @@ proc blob_to_kzg_commitment*(ctx: ptr DASContext,
 #
 # - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
 #   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
-proc compute_cells_and_kzg_proofs*(ctx: ptr DASContext,
-                                   blob: pointer,
-                                   out_cells: ptr pointer,
-                                   out_proofs: ptr pointer): CResult {.importc: "compute_cells_and_kzg_proofs".}
+proc eth_kzg_compute_cells_and_kzg_proofs*(ctx: ptr DASContext,
+                                           blob: pointer,
+                                           out_cells: ptr pointer,
+                                           out_proofs: ptr pointer): CResult {.importc: "eth_kzg_compute_cells_and_kzg_proofs".}
 
 ## Verifies a batch of cells and their KZG proofs.
 #
@@ -108,16 +108,16 @@ proc compute_cells_and_kzg_proofs*(ctx: ptr DASContext,
 #
 # - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
 #   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
-proc verify_cell_kzg_proof_batch*(ctx: ptr DASContext,
-                                  commitments_length: uint64,
-                                  commitments: ptr pointer,
-                                  cell_indices_length: uint64,
-                                  cell_indices: pointer,
-                                  cells_length: uint64,
-                                  cells: ptr pointer,
-                                  proofs_length: uint64,
-                                  proofs: ptr pointer,
-                                  verified: pointer): CResult {.importc: "verify_cell_kzg_proof_batch".}
+proc eth_kzg_verify_cell_kzg_proof_batch*(ctx: ptr DASContext,
+                                          commitments_length: uint64,
+                                          commitments: ptr pointer,
+                                          cell_indices_length: uint64,
+                                          cell_indices: pointer,
+                                          cells_length: uint64,
+                                          cells: ptr pointer,
+                                          proofs_length: uint64,
+                                          proofs: ptr pointer,
+                                          verified: pointer): CResult {.importc: "eth_kzg_verify_cell_kzg_proof_batch".}
 
 ## Recovers all cells and their KZG proofs from the given cell indices and cells
 #
@@ -141,16 +141,16 @@ proc verify_cell_kzg_proof_batch*(ctx: ptr DASContext,
 #
 # - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
 #   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
-proc recover_cells_and_proofs*(ctx: ptr DASContext,
-                               cells_length: uint64,
-                               cells: ptr pointer,
-                               cell_indices_length: uint64,
-                               cell_indices: pointer,
-                               out_cells: ptr pointer,
-                               out_proofs: ptr pointer): CResult {.importc: "recover_cells_and_proofs".}
+proc eth_kzg_recover_cells_and_proofs*(ctx: ptr DASContext,
+                                       cells_length: uint64,
+                                       cells: ptr pointer,
+                                       cell_indices_length: uint64,
+                                       cell_indices: pointer,
+                                       out_cells: ptr pointer,
+                                       out_proofs: ptr pointer): CResult {.importc: "eth_kzg_recover_cells_and_proofs".}
 
-proc constant_bytes_per_cell*(): uint64 {.importc: "constant_bytes_per_cell".}
+proc eth_kzg_constant_bytes_per_cell*(): uint64 {.importc: "eth_kzg_constant_bytes_per_cell".}
 
-proc constant_bytes_per_proof*(): uint64 {.importc: "constant_bytes_per_proof".}
+proc eth_kzg_constant_bytes_per_proof*(): uint64 {.importc: "eth_kzg_constant_bytes_per_proof".}
 
-proc constant_cells_per_ext_blob*(): uint64 {.importc: "constant_cells_per_ext_blob".}
+proc eth_kzg_constant_cells_per_ext_blob*(): uint64 {.importc: "eth_kzg_constant_cells_per_ext_blob".}

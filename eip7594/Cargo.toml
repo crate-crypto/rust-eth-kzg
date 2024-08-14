@@ -21,7 +21,8 @@ serde_json = "1"
 criterion = "0.5.1"
 rand = "0.8.4"
 hex = "0.4.3"
-#TODO: note that serde_yaml is now deprecated
+# Serde-yaml has been deprecated, however since we only 
+# use it for tests, we will not update it.
 serde_yaml = "0.9.34"
 
 [[bench]]

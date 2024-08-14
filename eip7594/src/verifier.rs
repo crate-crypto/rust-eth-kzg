@@ -13,10 +13,7 @@ use crate::{
 };
 use bls12_381::Scalar;
 use erasure_codes::{BlockErasureIndices, ReedSolomon};
-use kzg_multi_open::{
-    opening_key::OpeningKey,
-    {Prover, Verifier},
-};
+use kzg_multi_open::{opening_key::OpeningKey, recover_evaluations_in_domain_order, Verifier};
 
 /// The context object that is used to call functions in the verifier API.
 #[derive(Debug)]
@@ -170,12 +167,16 @@ impl DASContext {
         // This comment does leak the fact that the cells are not in the "correct" order,
         // which the API tries to hide.
         let (cell_indices_normal_order, flattened_coset_evaluations_normal_order) =
-            Prover::recover_evaluations_in_domain_order(
+            recover_evaluations_in_domain_order(
                 FIELD_ELEMENTS_PER_EXT_BLOB,
                 cell_indices,
                 coset_evaluations,
             )
-            .expect("could not recover evaluations in domain order"); // TODO: We could make this an error instead of panic
+            // This should never trigger since:
+            // - cell_indices is non-empty
+            // - all coset evaluations are checked to have the same size
+            // - all coset indices are checked to be valid
+            .expect("infallible: could not recover evaluations in domain order");
 
         // Find all of the missing cell indices. This is needed for recovery.
         let missing_cell_indices = find_missing_cell_indices(&cell_indices_normal_order);
@@ -271,15 +272,10 @@ mod validation {
         }
 
         // Check that each cell has the right amount of bytes
+        //
+        // This should be infallible.
         for (i, cell) in cells.iter().enumerate() {
-            if cell.len() != BYTES_PER_CELL {
-                // TODO: This check should always be true
-                return Err(VerifierError::CellDoesNotContainEnoughBytes {
-                    cell_index: cell_indices[i],
-                    num_bytes: cell.len(),
-                    expected_num_bytes: BYTES_PER_CELL,
-                });
-            }
+            assert_eq!(cell.len(), BYTES_PER_CELL, "the number of bytes in a cell should always equal {} since the type is a reference to an array. Check cell at index {}", BYTES_PER_CELL, i);
         }
 
         // Check that we have no duplicate cell indices

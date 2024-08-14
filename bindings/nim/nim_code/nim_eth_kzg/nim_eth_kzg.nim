@@ -67,7 +67,6 @@ template toPtrPtr(cells: openArray[untyped]): ptr pointer =
 
 template verify_result(res: CResult, ret: untyped): untyped =
   if res.xstatus != CResultStatus.Ok:
-    # TODO: get error message then free the pointer
     return err($res)
   ok(ret)
 
@@ -83,18 +82,18 @@ type
 # https://forum.nim-lang.org/t/11229
 proc `=destroy`(x: typeof KZGCtx()[]) =
   if x.ctx_ptr != nil:
-    das_context_free(x.ctx_ptr)
+    eth_kzg_das_context_free(x.ctx_ptr)
 
 proc newKZGCtx*(): KZGCtx =
   var kzgCtx = KZGCtx()
-  kzgCtx.ctx_ptr = das_context_new()
+  kzgCtx.ctx_ptr = eth_kzg_das_context_new()
   return kzgCtx
 
 
 proc blobToKZGCommitment*(ctx: KZGCtx, blob : Blob): Result[KZGCommitment, string] {.gcsafe.} =
   var ret: KZGCommitment
 
-  let res = blob_to_kzg_commitment(
+  let res = eth_kzg_blob_to_kzg_commitment(
     ctx.ctx_ptr,
 
     blob.bytes.getPtr,
@@ -109,7 +108,7 @@ proc computeCellsAndProofs*(ctx: KZGCtx, blob : Blob): Result[CellsAndProofs, st
   let outCellsPtr = toPtrPtr(ret.cells)
   let outProofsPtr = toPtrPtr(ret.proofs)
 
-  let res = compute_cells_and_kzg_proofs(
+  let res = eth_kzg_compute_cells_and_kzg_proofs(
     ctx.ctx_ptr,
 
     blob.bytes.getPtr,
@@ -129,7 +128,7 @@ proc verifyCellKZGProofBatch*(ctx: KZGCtx, commitments: openArray[Bytes48],
   let proofsPtr = toPtrPtr(proofs)
   let commitmentsPtr = toPtrPtr(commitments)
 
-  let res = verify_cell_kzg_proof_batch(
+  let res = eth_kzg_verify_cell_kzg_proof_batch(
     ctx.ctx_ptr,
 
     uint64(len(commitments)),
@@ -158,7 +157,7 @@ proc recoverCellsAndProofs*(ctx: KZGCtx,
   let outProofsPtr = toPtrPtr(ret.proofs)
   let inputCellsPtr = toPtrPtr(cells)
 
-  let res = recover_cells_and_proofs(
+  let res = eth_kzg_recover_cells_and_proofs(
     ctx.ctx_ptr,
 
     uint64(len(cells)),

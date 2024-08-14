@@ -60,7 +60,6 @@ impl FK20Verifier {
             .map(|&coset_shift| coset_shift.pow_vartime([n as u64]))
             .collect();
 
-        // TODO: We might be able to remove this if we modify the API for fft to take arbitrary cosets
         let inv_coset_shifts_pow_n: Vec<_> = coset_shifts
             .iter()
             .map(|&coset_shift| {
@@ -92,6 +91,12 @@ impl FK20Verifier {
     ///
     /// This corresponds to the guarantee that every opening should have an `input_point` and an `output_point`
     /// with a corresponding proof attesting to `f(input_point) = output_point` and a commitment to the polynomial `f`.  
+    ///
+    /// Note: Although this method is on the `FK20Verifier` structure, it is possible to verify methods that are not
+    /// created by the `FK20Prover`. FK20Prover generates multi-proofs efficiently using the FK20 strategy, but we
+    /// could just as well generate those proofs using the naive strategy that we test FK20 against. We leave this
+    /// naming as is since it conveys a meaningful difference between the other internal provers which do not use FK20.
+    /// On the API level, we however export this as Verifier.
     ///
     /// The matching function in the spec is: https://github.com/ethereum/consensus-specs/blob/b9e7b031b5f2c18d76143007ea779a32b5505155/specs/_features/eip7594/polynomial-commitments-sampling.md#verify_cell_kzg_proof_batch_impl
     pub fn verify_multi_opening(
@@ -126,9 +131,6 @@ impl FK20Verifier {
         //
         // We compute one challenge `r` using fiat-shamir and the rest are powers of `r`
         // This is safe since 1, X, X^2, ..., X^n of a variable X are linearly independent (ie there is no non-trivial linear combination that equals zero)
-        //
-        // TODO: Because this method takes in G1Points and not their serialized form, there is a roundtrip that happens
-        // TODO: when we serialize the point for fiat shamir. (I'm leaving this TOOD here until we benchmark the diff)
         let r = compute_fiat_shamir_challenge(
             &self.opening_key,
             deduplicated_commitments,
@@ -212,16 +214,18 @@ impl FK20Verifier {
         let random_weighted_sum_proofs = g1_lincomb(bit_reversed_proofs, &weighted_r_powers)
             .expect("number of proofs and number of weighted_r_powers should be the same");
 
-        // TODO: Find a better name for this (use it from specs)
-        let rl = (comm_random_sum_commitments - comm_random_sum_interpolation_poly)
+        // This is `rl` in the specs.
+        let pairing_input_g1 = (comm_random_sum_commitments - comm_random_sum_interpolation_poly)
             + random_weighted_sum_proofs;
 
-        let normalized_vectors = g1_batch_normalize(&[comm_random_sum_proofs, rl]);
+        let normalized_vectors = g1_batch_normalize(&[comm_random_sum_proofs, pairing_input_g1]);
         let random_sum_proofs = normalized_vectors[0];
-        let rl = normalized_vectors[1];
+        let pairing_input_g1 = normalized_vectors[1];
 
-        let proof_valid =
-            multi_pairings(&[(&random_sum_proofs, &self.s_pow_n), (&rl, &self.neg_g2_gen)]);
+        let proof_valid = multi_pairings(&[
+            (&random_sum_proofs, &self.s_pow_n),
+            (&pairing_input_g1, &self.neg_g2_gen),
+        ]);
         if proof_valid {
             Ok(())
         } else {
@@ -292,8 +296,7 @@ fn compute_fiat_shamir_challenge(
     // This is noted because when we convert a 256 bit hash to a scalar, a bias will be introduced.
     // This however does not affect our security guarantees because the bias is negligible given we
     // want a uniformly random 128 bit integer.
-
-    // TODO: computing powers will remove the 128 bit structure, consider generating `n` 128 bit scalars
+    //
     // Also there is a negligible probably that the scalar is zero, so we do not handle this case here.
     reduce_bytes_to_scalar_bias(result)
 }

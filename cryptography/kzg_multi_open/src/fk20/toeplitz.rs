@@ -237,8 +237,6 @@ impl DenseMatrix {
     ///
     /// This method allows for matrix-vector multiplication with custom types and
     /// inner product operations.
-    ///
-    /// This is useful for multiplying G1 points TODO: Check if we need this generalize version
     fn vector_mul<T>(
         self,
         vector: Vec<T>,

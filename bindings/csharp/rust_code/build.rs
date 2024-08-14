@@ -25,7 +25,7 @@ fn main() {
         .csharp_class_name("NativeMethods")
         .csharp_use_nint_types(false)
         .generate_csharp_file(path_to_output_file)
-        .unwrap();
+        .expect("csharp bindgen failed to generate bindgen file");
 }
 
 fn path_to_bindings_folder() -> PathBuf {

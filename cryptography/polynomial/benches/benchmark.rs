@@ -1,12 +1,11 @@
 use bls12_381::Scalar;
 use bls12_381::{ff::Field, group::Group, G1Projective};
-use crate_crypto_internal_eth_kzg_polynomial::monomial::lagrange_interpolate;
 use crate_crypto_internal_eth_kzg_polynomial::{domain::Domain, monomial::poly_eval};
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 
-pub fn bench_poly_eval(c: &mut Criterion) {
+pub fn bench_polynomial_evaluation(c: &mut Criterion) {
     const NUM_ELEMENTS: usize = 8192;
-    let polynomial = vec![black_box(Scalar::random(&mut rand::thread_rng())); NUM_ELEMENTS];
+    let polynomial = random_scalars(NUM_ELEMENTS);
     let value = Scalar::random(&mut rand::thread_rng());
 
     c.bench_function("poly_eval", |b| {
@@ -15,9 +14,10 @@ pub fn bench_poly_eval(c: &mut Criterion) {
         })
     });
 }
+
 pub fn bench_fft(c: &mut Criterion) {
     const NUM_ELEMENTS: usize = 8192;
-    let polynomial = vec![black_box(Scalar::random(&mut rand::thread_rng())); NUM_ELEMENTS];
+    let polynomial = random_scalars(NUM_ELEMENTS);
     let domain = Domain::new(NUM_ELEMENTS);
 
     c.bench_function(&format!("fft_scalars of size {}", NUM_ELEMENTS), |b| {
@@ -26,7 +26,7 @@ pub fn bench_fft(c: &mut Criterion) {
         })
     });
 
-    let points = vec![black_box(G1Projective::random(&mut rand::thread_rng())); NUM_ELEMENTS];
+    let points = random_g1_points(NUM_ELEMENTS);
     c.bench_function(
         &format!("fft_group_elements of size {}", NUM_ELEMENTS),
         |b| {
@@ -37,28 +37,20 @@ pub fn bench_fft(c: &mut Criterion) {
     );
 }
 
-pub fn bench_lagrange_interpolation(c: &mut Criterion) {
-    // Note: We have commented out 4096 as it takes too much time in the benchmarks
-    // and this usecase is not needed.
-    for size in [65 /*4096*/] {
-        let domain = Domain::new(size);
-        let polynomial = vec![black_box(Scalar::random(&mut rand::thread_rng())); size];
-        let roots = domain.roots.clone();
-        let points = roots
-            .into_iter()
-            .zip(polynomial.clone().into_iter())
-            .collect::<Vec<_>>();
-
-        c.bench_function(&format!("lagrange_interpolate of size {}", size), |b| {
-            b.iter(|| lagrange_interpolate(&points))
-        });
+fn random_scalars(size: usize) -> Vec<Scalar> {
+    let mut scalars = Vec::with_capacity(size);
+    for _ in 0..size {
+        scalars.push(Scalar::random(&mut rand::thread_rng()))
     }
+    scalars
+}
+fn random_g1_points(size: usize) -> Vec<G1Projective> {
+    let mut points = Vec::with_capacity(size);
+    for _ in 0..size {
+        points.push(G1Projective::random(&mut rand::thread_rng()))
+    }
+    points
 }
 
-criterion_group!(
-    benches,
-    bench_poly_eval,
-    bench_fft,
-    bench_lagrange_interpolation
-);
+criterion_group!(benches, bench_polynomial_evaluation, bench_fft,);
 criterion_main!(benches);

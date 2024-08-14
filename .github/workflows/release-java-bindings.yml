@@ -22,6 +22,10 @@ on:
 env:
   CARGO_TERM_COLOR: always
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && 'manual' || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build - ${{ matrix.target }}
@@ -125,12 +129,6 @@ jobs:
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY_JAVA_PUBLISHING }}
           passphrase: ${{ secrets.GPG_PASSPHRASE_JAVA_PUBLISHING }}
-
-      # TODO: check if python is needed
-      - name: Setup Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
 
       - name: Publish Java package to Maven Central
         working-directory: bindings/java/java_code

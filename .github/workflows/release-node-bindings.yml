@@ -8,7 +8,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && 'manual' || github.ref }}
   cancel-in-progress: true
 
 on:
@@ -182,28 +182,7 @@ jobs:
         if: matrix.settings.target == 'x86_64-pc-windows-msvc'
         run: yarn test
         working-directory: bindings/node
-      # TODO: Its kind of hard to test windows on arm64 w yarn
-      # The approach of using linaro/wine-arm64 is the most promising
-      # We can add it back after some debugging 
-      # - name: Test bindings (Windows ARM64)
-      #   if: matrix.settings.target == 'aarch64-pc-windows-msvc'
-      #   uses: addnab/docker-run-action@v3
-      #   with:
-      #     image: linaro/wine-arm64
-      #     options: '-v ${{ github.workspace }}:/build -w /build'
-      #     run: |            
-      #       echo "Download node windows-arm64"
-      #       NODE_VERSION=20.0.0
-      #       wget -q https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-win-arm64.zip
-      #       unzip -q node-*.zip
-      #       mv node-*-win-arm64 /node
-            
-      #       cd bindings/node
-      #       echo "Run tests"
-      #       wine-arm64 /node/node.exe --version
-      #       wine-arm64 /node/npm.cmd install -g yarn
-      #       wine-arm64 /node/yarn.cmd install
-      #       wine-arm64 /node/yarn.cmd test
+      # ARM on windows is not tested
 
   publish:
     name: Publish
@@ -232,8 +211,6 @@ jobs:
       - name: Publish
         if: ${{ inputs.release-type != 'none' && github.event_name == 'workflow_dispatch' }}
         run: |
-          # TODO: We could remove the yarnpkg registry and set the npmregistry
-          # TODO: globally, by doing: yarn config set registry <registry-url>
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
           echo "//registry.yarnpkg.com/:_authToken=$NPM_TOKEN" >> ~/.npmrc
           
@@ -254,7 +231,7 @@ jobs:
             yarn prepareAndPublishAddons
             # Publish the base package, setting provenance
             # to true as it's recommended. The platform specific packages
-            # don't need to have it, TODO but we could edit them to pass provenance.
+            # don't need to have it, but we could edit them to pass provenance.
             npm config set provenance true
             npm publish --access public
           fi

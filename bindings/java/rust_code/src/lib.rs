@@ -1,6 +1,5 @@
 use c_eth_kzg::DASContext;
-use jni::objects::JObjectArray;
-use jni::objects::{JByteArray, JClass, JLongArray, JObject, JValue};
+use jni::objects::{JByteArray, JClass, JLongArray, JObject, JObjectArray, JValue};
 use jni::sys::{jboolean, jlong};
 use jni::JNIEnv;
 
@@ -12,8 +11,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_DASContextNew(
     _env: JNIEnv,
     _class: JClass,
 ) -> jlong {
-    // TODO: Switch to using the Rust DASContext object
-    c_eth_kzg::das_context_new() as jlong
+    c_eth_kzg::eth_kzg_das_context_new() as jlong
 }
 
 #[no_mangle]
@@ -22,8 +20,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_DASContextDestroy(
     _class: JClass,
     ctx_ptr: jlong,
 ) {
-    // TODO: Switch to using the Rust DASContext object
-    c_eth_kzg::das_context_free(ctx_ptr as *mut DASContext);
+    c_eth_kzg::eth_kzg_das_context_free(ctx_ptr as *mut DASContext);
 }
 
 #[no_mangle]
@@ -50,7 +47,7 @@ fn compute_cells_and_kzg_proofs<'local>(
     let blob = env.convert_byte_array(blob)?;
     let blob = slice_to_array_ref(&blob, "blob")?;
 
-    let (cells, proofs) = ctx.inner().compute_cells_and_kzg_proofs(blob)?;
+    let (cells, proofs) = ctx.compute_cells_and_kzg_proofs(blob)?;
     let cells = cells.map(|cell| *cell);
     cells_and_proofs_to_jobject(env, &cells, &proofs).map_err(Error::from)
 }
@@ -79,7 +76,7 @@ fn blob_to_kzg_commitment<'local>(
     let blob = env.convert_byte_array(blob)?;
     let blob = slice_to_array_ref(&blob, "blob")?;
 
-    let commitment = ctx.inner().blob_to_kzg_commitment(blob)?;
+    let commitment = ctx.blob_to_kzg_commitment(blob)?;
     env.byte_array_from_slice(&commitment).map_err(Error::from)
 }
 
@@ -129,10 +126,7 @@ fn verify_cell_kzg_proof_batch<'local>(
         .map(|proof| slice_to_array_ref(proof, "proof"))
         .collect::<Result<_, _>>()?;
 
-    match ctx
-        .inner()
-        .verify_cell_kzg_proof_batch(commitments, cell_indices, cells, proofs)
-    {
+    match ctx.verify_cell_kzg_proof_batch(commitments, cell_indices, cells, proofs) {
         Ok(_) => Ok(jboolean::from(true)),
         Err(x) if x.invalid_proof() => Ok(jboolean::from(false)),
         Err(err) => Err(Error::Cryptography(err)),
@@ -170,8 +164,7 @@ fn recover_cells_and_kzg_proofs<'local>(
         .map(|cell| slice_to_array_ref(cell, "cell"))
         .collect::<Result<_, _>>()?;
 
-    let (recovered_cells, recovered_proofs) =
-        ctx.inner().recover_cells_and_proofs(cell_ids, cells)?;
+    let (recovered_cells, recovered_proofs) = ctx.recover_cells_and_proofs(cell_ids, cells)?;
     let recovered_cells = recovered_cells.map(|cell| *cell);
     cells_and_proofs_to_jobject(env, &recovered_cells, &recovered_proofs).map_err(Error::from)
 }

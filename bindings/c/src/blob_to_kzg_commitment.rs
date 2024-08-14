@@ -12,7 +12,7 @@ pub(crate) fn _blob_to_kzg_commitment(
 
     // Dereference the input pointers
     //
-    let ctx = deref_const(ctx).inner();
+    let ctx = deref_const(ctx);
     let blob = create_array_ref::<BYTES_PER_BLOB, _>(blob);
 
     // Computation
