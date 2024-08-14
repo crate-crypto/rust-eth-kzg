@@ -43,7 +43,9 @@ pub fn coset_gens(num_points: usize, num_cosets: usize, bit_reversed: bool) -> V
     use bls12_381::ff::Field;
 
     // Compute the generator for the group containing all of the points.
-    // TODO: generating the whole group, just to get the generator is inefficient
+    //
+    // Note: generating the whole group, just to get the generator is inefficient
+    // However, this code is not on the hot path, so we don't optimize it.
     let domain = Domain::new(num_points);
     let coset_gen = domain.generator;
 
@@ -52,7 +54,8 @@ pub fn coset_gens(num_points: usize, num_cosets: usize, bit_reversed: bool) -> V
     let mut coset_gens = Vec::new();
     for i in 0..num_cosets {
         let generator = if bit_reversed {
-            // TODO: We could just bit-reverse the `coset_gens` method instead
+            // Note: We could bit-reverse the `coset_gens` vector instead
+            // instead of bit-reversing the exponent.
             let rev_i = reverse_bits(i, log2(num_cosets as u32)) as u64;
             coset_gen.pow_vartime([rev_i])
         } else {
