@@ -16,8 +16,6 @@ pub struct OpeningKey {
     pub g2s: Vec<G2Point>,
     /// The degree-0 term in the powers of tau G2 elements.
     pub g2_gen: G2Point,
-    // TODO: We could possibly remove these fields below and
-    // TODO: create a new structure called ProtocolDescription.
     /// This is the number of points that will be a
     /// opened at any one time. Another way to think
     /// of this, is that its the number of points a
