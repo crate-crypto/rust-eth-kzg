@@ -132,9 +132,6 @@ impl FK20Verifier {
         //
         // We compute one challenge `r` using fiat-shamir and the rest are powers of `r`
         // This is safe since 1, X, X^2, ..., X^n of a variable X are linearly independent (ie there is no non-trivial linear combination that equals zero)
-        //
-        // TODO: Because this method takes in G1Points and not their serialized form, there is a roundtrip that happens
-        // TODO: when we serialize the point for fiat shamir. (I'm leaving this TOOD here until we benchmark the diff)
         let r = compute_fiat_shamir_challenge(
             &self.opening_key,
             deduplicated_commitments,
