@@ -7,8 +7,6 @@ export results
 # Note: there are no length checks in the nim code before calling the rust library's c api
 # because the types are are sized at compile time.
 
-# TODO: If the underlying c library changes and we recompile the static lib
-# TODO: nim will not recompile the tests. see test_yaml does not change for example
 const
   BYTES_PER_FIELD_ELEMENT* = 32
   CELLS_PER_EXT_BLOB = 128
