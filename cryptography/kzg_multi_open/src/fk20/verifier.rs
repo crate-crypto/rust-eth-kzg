@@ -214,16 +214,18 @@ impl FK20Verifier {
         let random_weighted_sum_proofs = g1_lincomb(bit_reversed_proofs, &weighted_r_powers)
             .expect("number of proofs and number of weighted_r_powers should be the same");
 
-        // TODO: Find a better name for this (use it from specs)
-        let rl = (comm_random_sum_commitments - comm_random_sum_interpolation_poly)
+        // This is `rl` in the specs.
+        let pairing_input_g1 = (comm_random_sum_commitments - comm_random_sum_interpolation_poly)
             + random_weighted_sum_proofs;
 
-        let normalized_vectors = g1_batch_normalize(&[comm_random_sum_proofs, rl]);
+        let normalized_vectors = g1_batch_normalize(&[comm_random_sum_proofs, pairing_input_g1]);
         let random_sum_proofs = normalized_vectors[0];
-        let rl = normalized_vectors[1];
+        let pairing_input_g1 = normalized_vectors[1];
 
-        let proof_valid =
-            multi_pairings(&[(&random_sum_proofs, &self.s_pow_n), (&rl, &self.neg_g2_gen)]);
+        let proof_valid = multi_pairings(&[
+            (&random_sum_proofs, &self.s_pow_n),
+            (&pairing_input_g1, &self.neg_g2_gen),
+        ]);
         if proof_valid {
             Ok(())
         } else {
