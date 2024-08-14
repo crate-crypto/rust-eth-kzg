@@ -13,10 +13,7 @@ use crate::{
 };
 use bls12_381::Scalar;
 use erasure_codes::{BlockErasureIndices, ReedSolomon};
-use kzg_multi_open::{
-    opening_key::OpeningKey,
-    {Prover, Verifier},
-};
+use kzg_multi_open::{opening_key::OpeningKey, recover_evaluations_in_domain_order, Verifier};
 
 /// The context object that is used to call functions in the verifier API.
 #[derive(Debug)]
@@ -170,7 +167,7 @@ impl DASContext {
         // This comment does leak the fact that the cells are not in the "correct" order,
         // which the API tries to hide.
         let (cell_indices_normal_order, flattened_coset_evaluations_normal_order) =
-            Prover::recover_evaluations_in_domain_order(
+            recover_evaluations_in_domain_order(
                 FIELD_ELEMENTS_PER_EXT_BLOB,
                 cell_indices,
                 coset_evaluations,
