@@ -7,8 +7,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
 public class LibEthKZG implements AutoCloseable{
-    // TODO: Add equality tests
-    //
     /** The number of bytes in a KZG commitment. */
     public static final int BYTES_PER_COMMITMENT = 48;
     /** The number of bytes in a KZG proof. */
@@ -44,9 +42,6 @@ public class LibEthKZG implements AutoCloseable{
         }
     }
 
-    // TODO: Finalization was deprecated, we should find a method that does
-    // TODO: not require a lot of code. Possibly separate the wrapper from the
-    // TODO: bindings code too.
     @Override
     public void close() {
         destroy();
@@ -59,8 +54,6 @@ public class LibEthKZG implements AutoCloseable{
         }
     }
 
-    // TODO: we could move this to the rust code but it requires a double pointer
-    // TODO: add this code to all bindings
     private void checkContextHasNotBeenFreed() {
         if (contextPtr == 0) {
             throw new IllegalStateException("KZG context context has been destroyed");
@@ -134,13 +127,7 @@ public class LibEthKZG implements AutoCloseable{
             } else if (osArch.contains("x86")) {
                 // We do not support 32 bit windows
             } else if (osArch.contains("aarch64")) {
-                // Current version of c-kzg does not support arm windows either
-                // TODO: Rust has support for msvc with arm64, but it also has:
-                // aarch64-pc-windows-gnullvm -- we probably want to stick to one
-                // toolchain for now.
-                // If we do switch to msvc, nethermind had an issue with windows server 2022
-                // that we should check works with an msvc build.
-                // libraryResourcePath = "/aarch64-pc-windows-gnullvm/" + PLATFORM_NATIVE_LIBRARY_NAME;
+                // We currently do not support arm on windows
             }
         } else if (osName.contains("mac")) {
             if (osArch.contains("x86_64")) {

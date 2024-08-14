@@ -16,7 +16,7 @@ public class ReferenceTests
 
         _context = new EthKZG();
         _deserializer = new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
-        // TODO(Note): On some systems, this is needed as the normal deserializer has trouble deserializing
+        // Note: On some systems, this is needed as the normal deserializer has trouble deserializing
         // `cell_id` to `CellId` ie the underscore is not being parsed correctly.
         _deserializerUnderscoreNaming = new DeserializerBuilder().WithNamingConvention(UnderscoredNamingConvention.Instance).Build();
     }
