@@ -38,3 +38,5 @@ Given that we have successfully built the static lib and installed all of the de
 ```
 nimble test
 ```
+
+> Note: If the underlying static lib changes, you need to manually recompile the tests. This is because nimble will not recompile the test binary.
