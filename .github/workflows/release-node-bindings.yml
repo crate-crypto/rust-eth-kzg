@@ -231,7 +231,7 @@ jobs:
             yarn prepareAndPublishAddons
             # Publish the base package, setting provenance
             # to true as it's recommended. The platform specific packages
-            # don't need to have it, TODO but we could edit them to pass provenance.
+            # don't need to have it, but we could edit them to pass provenance.
             npm config set provenance true
             npm publish --access public
           fi
