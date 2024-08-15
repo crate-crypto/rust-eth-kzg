@@ -5,6 +5,7 @@ mod compute_cells_and_kzg_proofs;
 use compute_cells_and_kzg_proofs::_compute_cells_and_kzg_proofs;
 
 mod verify_cells_and_kzg_proofs_batch;
+use rust_eth_kzg::constants::RECOMMENDED_PRECOMP_WIDTH;
 use verify_cells_and_kzg_proofs_batch::_verify_cell_kzg_proof_batch;
 
 mod recover_cells_and_kzg_proofs;
@@ -58,7 +59,15 @@ impl Deref for DASContext {
 /// by calling `eth_kzg_das_context_free`.
 #[no_mangle]
 pub extern "C" fn eth_kzg_das_context_new() -> *mut DASContext {
-    let ctx = Box::<DASContext>::default();
+    let ctx = Box::new(DASContext {
+        inner: rust_eth_kzg::DASContext::with_threads(
+            &rust_eth_kzg::TrustedSetup::default(),
+            1,
+            rust_eth_kzg::UsePrecomp::Yes {
+                width: RECOMMENDED_PRECOMP_WIDTH,
+            },
+        ),
+    });
     Box::into_raw(ctx)
 }
 
