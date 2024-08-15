@@ -1,5 +1,8 @@
 use crate::fk20::toeplitz::{CirculantMatrix, ToeplitzMatrix};
-use bls12_381::{fixed_base_msm::FixedBaseMSM, g1_batch_normalize, G1Point, G1Projective};
+use bls12_381::{
+    fixed_base_msm::{FixedBaseMSM, UsePrecomp},
+    g1_batch_normalize, G1Point, G1Projective,
+};
 use polynomial::domain::Domain;
 use rayon::prelude::*;
 
@@ -60,7 +63,7 @@ impl BatchToeplitzMatrixVecMul {
         const TABLE_BITS: usize = 8;
         let precomputed_table: Vec<_> = transposed_msm_vectors
             .into_par_iter()
-            .map(|v| FixedBaseMSM::new(v, TABLE_BITS))
+            .map(|v| FixedBaseMSM::new(v, UsePrecomp::Yes { width: TABLE_BITS }))
             .collect();
 
         BatchToeplitzMatrixVecMul {
