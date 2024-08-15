@@ -12,6 +12,21 @@ use std::mem::size_of;
 
 use super::errors::VerifierError;
 
+/// CosetIndex is a reference to a coset.
+///
+/// Note: We are able to use CosetIndex instead of the coset because
+/// the prover and verifier both know what the cosets are that
+/// we will be making and verifying opening proofs for.
+pub type CosetIndex = u64;
+
+/// CommitmentIndex is a reference to a commitment.
+///
+/// In order to make verification cheaper, the verifier will
+/// deduplicate the list of commitments that are needed in order to verify opening proofs.
+/// They will then refer to a commitment via its position in an array of deduplicated commitments
+/// with the CommitmentIndex.
+pub type CommitmentIndex = u64;
+
 /// FK20Verifier initializes all of the components needed to verify KZG multi point
 /// proofs that were created using the FK20Prover.
 ///
@@ -103,9 +118,9 @@ impl FK20Verifier {
         &self,
 
         deduplicated_commitments: &[G1Point],
-        commitment_indices: &[u64],
+        commitment_indices: &[CommitmentIndex],
 
-        bit_reversed_coset_indices: &[u64],
+        bit_reversed_coset_indices: &[CosetIndex],
         bit_reversed_coset_evals: &[Vec<Scalar>],
         bit_reversed_proofs: &[G1Point],
     ) -> Result<(), VerifierError> {

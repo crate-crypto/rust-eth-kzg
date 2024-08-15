@@ -200,10 +200,12 @@ impl DASContext {
 mod validation {
     use std::collections::HashSet;
 
+    use kzg_multi_open::CommitmentIndex;
+
     use crate::{
         constants::{BYTES_PER_CELL, CELLS_PER_EXT_BLOB, EXTENSION_FACTOR},
         verifier::VerifierError,
-        Bytes48Ref, CellIndex, CellRef, CommitmentIndex,
+        Bytes48Ref, CellIndex, CellRef,
     };
 
     /// Validation logic for `verify_cell_kzg_proof_batch`

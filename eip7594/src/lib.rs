@@ -43,22 +43,13 @@ pub type KZGProof = [u8; BYTES_PER_COMMITMENT];
 /// that we would like to make and verify opening proofs about.
 pub type KZGCommitment = [u8; BYTES_PER_COMMITMENT];
 
-/// CellIndex is reference to a Coset.
+/// CellIndex is reference to the coset/set of points that were used to create that Cell,
+/// on a particular polynomial, f(x).
 ///
-/// We are able to use CellIndex instead of the coset because
-/// the prover and verifier both know what the cosets are that
-/// we will be making and verifying opening proofs for.
-pub type CellIndex = u64;
-
-/// CommitmentIndex is a reference to a commitment.
-///
-/// In order to make verification cheaper, the verifier will
-/// deduplicate the list of commitments that they need to verify opening proofs for.
-/// They will then refer to a commitment via its position in an array of deduplicated commitments
-/// with the CommitmentIndex.
-///
-/// Note: This is not exposed in the public API.
-pub(crate) type CommitmentIndex = u64;
+/// Note: Since the verifier and prover both know what cosets will be used
+/// to evaluate the polynomials being used in opening proofs, the protocol
+/// only requires an index to reference them.
+pub type CellIndex = kzg_multi_open::CosetIndex;
 
 use constants::{BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT};
 use prover::ProverContext;

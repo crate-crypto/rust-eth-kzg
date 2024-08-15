@@ -2,7 +2,10 @@ pub mod commit_key;
 mod fk20;
 pub mod opening_key;
 
-pub use fk20::{recover_evaluations_in_domain_order, Prover, ProverInput, Verifier, VerifierError};
+pub use fk20::{
+    recover_evaluations_in_domain_order, CommitmentIndex, CosetIndex, Prover, ProverInput,
+    Verifier, VerifierError,
+};
 
 #[cfg(test)]
 mod naive;
