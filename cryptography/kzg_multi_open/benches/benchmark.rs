@@ -1,3 +1,4 @@
+use bls12_381::fixed_base_msm::UsePrecomp;
 use bls12_381::{ff::Field, G1Projective};
 use bls12_381::{g1_batch_normalize, g2_batch_normalize, G2Projective, Scalar};
 use crate_crypto_kzg_multi_open_fk20::Verifier;
@@ -19,6 +20,7 @@ pub fn bench_compute_proof_fk20(c: &mut Criterion) {
         POLYNOMIAL_LEN,
         NUMBER_OF_POINTS_PER_PROOF,
         NUMBER_OF_POINTS_TO_EVALUATE,
+        UsePrecomp::Yes { width: 8 },
     );
 
     let num_proofs = prover.num_proofs();
@@ -48,6 +50,7 @@ pub fn bench_verify_proof_fk20(c: &mut Criterion) {
         POLYNOMIAL_LEN,
         NUMBER_OF_POINTS_PER_PROOF,
         NUMBER_OF_POINTS_TO_EVALUATE,
+        UsePrecomp::Yes { width: 8 },
     );
     let num_proofs = prover.num_proofs();
     let commitment = prover.commit(ProverInput::PolyCoeff(polynomial_4096.clone()));

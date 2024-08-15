@@ -5,6 +5,7 @@ mod serialization;
 mod trusted_setup;
 mod verifier;
 
+pub use bls12_381::fixed_base_msm::UsePrecomp;
 // Exported types
 //
 pub use errors::Error;
@@ -78,12 +79,16 @@ impl Default for DASContext {
     fn default() -> Self {
         let trusted_setup = TrustedSetup::default();
         const DEFAULT_NUM_THREADS: usize = 1;
-        DASContext::with_threads(&trusted_setup, DEFAULT_NUM_THREADS)
+        DASContext::with_threads(&trusted_setup, DEFAULT_NUM_THREADS, UsePrecomp::No)
     }
 }
 
 impl DASContext {
-    pub fn with_threads(trusted_setup: &TrustedSetup, num_threads: usize) -> Self {
+    pub fn with_threads(
+        trusted_setup: &TrustedSetup,
+        num_threads: usize,
+        use_precomp: UsePrecomp,
+    ) -> Self {
         let thread_pool = std::sync::Arc::new(
             rayon::ThreadPoolBuilder::new()
                 .num_threads(num_threads)
@@ -93,7 +98,7 @@ impl DASContext {
 
         DASContext {
             thread_pool,
-            prover_ctx: ProverContext::new(trusted_setup),
+            prover_ctx: ProverContext::new(trusted_setup, use_precomp),
             verifier_ctx: VerifierContext::new(trusted_setup),
         }
     }

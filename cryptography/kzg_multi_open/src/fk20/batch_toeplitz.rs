@@ -27,7 +27,7 @@ pub struct BatchToeplitzMatrixVecMul {
 }
 
 impl BatchToeplitzMatrixVecMul {
-    pub fn new(vectors: Vec<Vec<G1Point>>) -> Self {
+    pub fn new(vectors: Vec<Vec<G1Point>>, use_precomp: UsePrecomp) -> Self {
         let size_of_vector = vectors[0].len();
         let vectors_all_same_length = vectors.iter().all(|v| v.len() == size_of_vector);
         assert!(
@@ -60,10 +60,9 @@ impl BatchToeplitzMatrixVecMul {
         // for the fixed base multi-scalar multiplication.
         //
         // This is a trade-off between storage and computation, where storage grows exponentially.
-        const TABLE_BITS: usize = 8;
         let precomputed_table: Vec<_> = transposed_msm_vectors
             .into_par_iter()
-            .map(|v| FixedBaseMSM::new(v, UsePrecomp::Yes { width: TABLE_BITS }))
+            .map(|v| FixedBaseMSM::new(v, use_precomp))
             .collect();
 
         BatchToeplitzMatrixVecMul {
@@ -159,6 +158,7 @@ pub(crate) fn transpose<T: Clone>(v: Vec<Vec<T>>) -> Vec<Vec<T>> {
 mod tests {
     use crate::fk20::batch_toeplitz::BatchToeplitzMatrixVecMul;
     use crate::fk20::toeplitz::ToeplitzMatrix;
+    use bls12_381::fixed_base_msm::UsePrecomp;
     use bls12_381::group::Group;
     use bls12_381::{g1_batch_normalize, G1Projective, Scalar};
 
@@ -195,7 +195,7 @@ mod tests {
             toeplitz_matrices.push(ToeplitzMatrix::new(row, col));
         }
 
-        let bm = BatchToeplitzMatrixVecMul::new(vectors_affine);
+        let bm = BatchToeplitzMatrixVecMul::new(vectors_affine, UsePrecomp::Yes { width: 8 });
         let got_result = bm.sum_matrix_vector_mul(toeplitz_matrices.clone());
 
         let mut expected_result = vec![G1Projective::identity(); got_result.len()];

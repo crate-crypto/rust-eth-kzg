@@ -37,7 +37,11 @@ pub fn bench_compute_cells_and_kzg_proofs(c: &mut Criterion) {
     let blob = dummy_blob();
 
     for num_threads in THREAD_COUNTS {
-        let ctx = DASContext::with_threads(&trusted_setup, num_threads);
+        let ctx = DASContext::with_threads(
+            &trusted_setup,
+            num_threads,
+            bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 },
+        );
         c.bench_function(
             &format!(
                 "computing cells_and_kzg_proofs - NUM_THREADS: {}",
@@ -63,7 +67,11 @@ pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
         .collect::<Vec<_>>();
 
     for num_threads in THREAD_COUNTS {
-        let ctx = DASContext::with_threads(&trusted_setup, num_threads);
+        let ctx = DASContext::with_threads(
+            &trusted_setup,
+            num_threads,
+            bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 },
+        );
         c.bench_function(
             &format!(
                 "worse-case recover_cells_and_kzg_proofs - NUM_THREADS: {}",
@@ -92,7 +100,11 @@ pub fn bench_verify_cell_kzg_proof_batch(c: &mut Criterion) {
     let proof_refs: Vec<Bytes48Ref> = proofs.iter().map(|proof| proof).collect();
 
     for num_threads in THREAD_COUNTS {
-        let ctx = DASContext::with_threads(&trusted_setup, num_threads);
+        let ctx = DASContext::with_threads(
+            &trusted_setup,
+            num_threads,
+            bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 },
+        );
         c.bench_function(
             &format!("verify_cell_kzg_proof_batch - NUM_THREADS: {}", num_threads),
             |b| {
@@ -114,7 +126,11 @@ pub fn bench_init_context(c: &mut Criterion) {
     c.bench_function(&format!("Initialize context"), |b| {
         b.iter(|| {
             let trusted_setup = TrustedSetup::default();
-            DASContext::with_threads(&trusted_setup, NUM_THREADS)
+            DASContext::with_threads(
+                &trusted_setup,
+                NUM_THREADS,
+                bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 },
+            )
         })
     });
 }

@@ -13,6 +13,8 @@ pub struct FixedBaseMSMPrecomp {
 }
 
 /// UsePrecomp indicates whether we should use pre-computations to speed up the MSM
+/// and the level of precomputation to perform.
+#[derive(Debug, Copy, Clone)]
 pub enum UsePrecomp {
     Yes { width: usize },
     No,
