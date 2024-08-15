@@ -120,14 +120,13 @@ impl FixedBaseMSMPrecomp {
 
 #[cfg(test)]
 mod tests {
-    use super::FixedBaseMSMPrecomp;
-    use crate::{lincomb::g1_lincomb, G1Projective, Scalar};
+    use super::{FixedBaseMSMPrecomp, UsePrecomp};
+    use crate::{fixed_base_msm::FixedBaseMSM, G1Projective, Scalar};
     use ff::Field;
     use group::Group;
     use rand::thread_rng;
 
-    #[test]
-    fn smoke_test_fixed_base_msm() {
+    fn test_fixed_base_msm_with_precomp(use_precomp: UsePrecomp) {
         let length = 64;
         let generators: Vec<_> = (0..length)
             .map(|_| G1Projective::random(&mut rand::thread_rng()).into())
@@ -136,12 +135,20 @@ mod tests {
             .map(|_| Scalar::random(&mut thread_rng()))
             .collect();
 
-        let res = g1_lincomb(&generators, &scalars)
+        let res = crate::lincomb::g1_lincomb(&generators, &scalars)
             .expect("number of generators and number of scalars is equal");
-        let fbm = FixedBaseMSMPrecomp::new(generators, 8);
 
+        let fbm = FixedBaseMSM::new(generators.clone(), use_precomp);
         let result = fbm.msm(scalars);
+
         assert_eq!(res, result);
+    }
+
+    #[test]
+    fn smoke_test_fixed_base_msm() {
+        test_fixed_base_msm_with_precomp(UsePrecomp::No);
+        test_fixed_base_msm_with_precomp(UsePrecomp::Yes { width: 4 });
+        test_fixed_base_msm_with_precomp(UsePrecomp::Yes { width: 8 });
     }
 
     #[test]
