@@ -134,7 +134,7 @@ impl DASContextJs {
       .collect::<Result<_, _>>()?;
 
     let (cells, proofs) = ctx
-      .recover_cells_and_proofs(cell_indices, cells)
+      .recover_cells_and_kzg_proofs(cell_indices, cells)
       .map_err(|err| {
         Error::from_reason(format!(
           "failed to compute recover_cells_and_kzg_proofs: {:?}",
