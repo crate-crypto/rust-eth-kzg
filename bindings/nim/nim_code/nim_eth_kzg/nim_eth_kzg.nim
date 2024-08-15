@@ -65,7 +65,9 @@ template toPtrPtr(cells: openArray[untyped]): ptr pointer =
 
 template verify_result(res: CResult, ret: untyped): untyped =
   if res.xstatus != CResultStatus.Ok:
-    return err($res)
+    let errorMsg = $res
+    eth_kzg_free_error_message(res.xerror_msg)
+    return err(errorMsg)
   ok(ret)
 
 
