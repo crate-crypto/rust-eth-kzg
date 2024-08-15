@@ -53,3 +53,9 @@ pub(crate) const BYTES_PER_G1_POINT: usize = 48;
 ///
 /// Note: commitments are G1 elements.
 pub const BYTES_PER_COMMITMENT: usize = BYTES_PER_G1_POINT;
+
+/// The recommended precomputation width to use if UsePrecomp
+/// is set to Yes.
+///
+/// This is based off of heuristics.
+pub const RECOMMENDED_PRECOMP_WIDTH: usize = 8;

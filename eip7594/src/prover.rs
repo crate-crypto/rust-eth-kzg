@@ -1,3 +1,4 @@
+use bls12_381::fixed_base_msm::UsePrecomp;
 use kzg_multi_open::{
     commit_key::CommitKey,
     {Prover, ProverInput},
@@ -26,12 +27,12 @@ pub struct ProverContext {
 impl Default for ProverContext {
     fn default() -> Self {
         let trusted_setup = TrustedSetup::default();
-        Self::new(&trusted_setup)
+        Self::new(&trusted_setup, UsePrecomp::No)
     }
 }
 
 impl ProverContext {
-    pub fn new(trusted_setup: &TrustedSetup) -> Self {
+    pub fn new(trusted_setup: &TrustedSetup, use_precomp: UsePrecomp) -> Self {
         let commit_key = CommitKey::from(trusted_setup);
 
         // The number of points that we will make an opening proof for,
@@ -49,6 +50,7 @@ impl ProverContext {
             FIELD_ELEMENTS_PER_BLOB,
             point_set_size,
             number_of_points_to_open,
+            use_precomp,
         );
 
         ProverContext {

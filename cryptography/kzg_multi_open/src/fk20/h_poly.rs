@@ -78,7 +78,7 @@ mod tests {
             prover::FK20Prover,
         },
     };
-    use bls12_381::Scalar;
+    use bls12_381::{fixed_base_msm::UsePrecomp, Scalar};
 
     #[test]
     fn smoke_test_downsample() {
@@ -104,7 +104,7 @@ mod tests {
 
         // Compute the commitment to the h_polynomials using the method noted in the FK20 paper
         //
-        let fk20 = FK20Prover::new(commit_key, 4096, coset_size, 2 * 4096);
+        let fk20 = FK20Prover::new(commit_key, 4096, coset_size, 2 * 4096, UsePrecomp::No);
         let got_comm_h_polys =
             compute_h_poly_commitments(fk20.batch_toeplitz_matrix(), poly, coset_size);
 

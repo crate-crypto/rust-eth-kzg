@@ -2,6 +2,7 @@ use crate::commit_key::CommitKey;
 use crate::fk20::batch_toeplitz::BatchToeplitzMatrixVecMul;
 use crate::fk20::cosets::reverse_bit_order;
 use crate::fk20::h_poly::take_every_nth;
+use bls12_381::fixed_base_msm::UsePrecomp;
 use bls12_381::group::prime::PrimeCurveAffine;
 use bls12_381::{g1_batch_normalize, G1Point, Scalar};
 use polynomial::{domain::Domain, monomial::PolyCoeff};
@@ -64,6 +65,7 @@ impl FK20Prover {
         polynomial_bound: usize,
         points_per_proof: usize,
         number_of_points_to_open: usize,
+        use_precomp: UsePrecomp,
     ) -> FK20Prover {
         assert!(points_per_proof.is_power_of_two());
         assert!(number_of_points_to_open.is_power_of_two());
@@ -100,7 +102,7 @@ impl FK20Prover {
 
         // Initialize structure that will allow us to do efficient sum of multiple toeplitz matrix
         // vector multiplication, where the vector is fixed.
-        let batch_toeplitz = BatchToeplitzMatrixVecMul::new(srs_vectors);
+        let batch_toeplitz = BatchToeplitzMatrixVecMul::new(srs_vectors, use_precomp);
 
         // 2. Compute the domains needed to produce the proofs and the evaluations
         //
@@ -220,7 +222,7 @@ mod tests {
         fk20::{cosets::generate_cosets, naive as fk20naive, verifier::FK20Verifier},
         naive as kzgnaive,
     };
-    use bls12_381::Scalar;
+    use bls12_381::{fixed_base_msm::UsePrecomp, Scalar};
 
     #[test]
     fn data_is_contained_in_the_first_section_of_cells() {
@@ -233,7 +235,13 @@ mod tests {
         let num_points_to_open = 2 * poly_len;
         let coset_size = 64;
 
-        let fk20 = FK20Prover::new(commit_key, poly_len, coset_size, num_points_to_open);
+        let fk20 = FK20Prover::new(
+            commit_key,
+            poly_len,
+            coset_size,
+            num_points_to_open,
+            UsePrecomp::No,
+        );
 
         let data: Vec<_> = (0..poly_len).map(|i| Scalar::from(i as u64)).collect();
         let (_, cells) = fk20.compute_multi_opening_proofs(Input::Data(data.clone()));
@@ -252,7 +260,13 @@ mod tests {
         let coset_size = 64;
         let num_cosets = num_points_to_open / coset_size;
 
-        let fk20 = FK20Prover::new(commit_key, poly_len, coset_size, num_points_to_open);
+        let fk20 = FK20Prover::new(
+            commit_key,
+            poly_len,
+            coset_size,
+            num_points_to_open,
+            UsePrecomp::No,
+        );
         let fk20_verifier = FK20Verifier::new(opening_key, num_points_to_open, num_cosets);
 
         let data: Vec<_> = (0..poly_len).map(|i| Scalar::from(i as u64)).collect();
@@ -284,7 +298,13 @@ mod tests {
             fk20naive::open_multi_point(&commit_key, &poly, coset_size, 2 * poly_len);
 
         // Compute proofs using optimized FK20 implementation
-        let fk20 = FK20Prover::new(commit_key, poly_len, coset_size, 2 * poly_len);
+        let fk20 = FK20Prover::new(
+            commit_key,
+            poly_len,
+            coset_size,
+            2 * poly_len,
+            UsePrecomp::No,
+        );
         let (got_proofs, got_evaluations) =
             fk20.compute_multi_opening_proofs_poly_coeff(poly.clone());
 
