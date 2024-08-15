@@ -12,7 +12,7 @@
   <PropertyGroup>
     <Authors>Kevaundray Wedderburn</Authors>
     <Copyright>Kevaundray Wedderburn</Copyright>
-    <Description>C# Bindings for KZG functionality that Ethereum needs for Data Availability Sampling</Description>
+    <Description>A library that implements the cryptography needed for the Data Availability Sampling scheme used in Ethereum</Description>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IncludeSymbols>true</IncludeSymbols>
     <PackageId>EthKZG.Bindings</PackageId>

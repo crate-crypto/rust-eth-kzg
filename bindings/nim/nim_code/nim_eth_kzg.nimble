@@ -5,7 +5,7 @@ version       = "0.3.0"
 # x-release-please-end
 
 author        = "Kevaundray Wedderburn"
-description   = "KZG bindings for DAS functionality"
+description   = "A library that implements the cryptography needed for the Data Availability Sampling scheme used in Ethereum"
 license       = "MIT"
 
 import nim_eth_kzg/build_utils
