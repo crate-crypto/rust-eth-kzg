@@ -203,13 +203,13 @@ mod validation {
     use crate::{
         constants::{BYTES_PER_CELL, CELLS_PER_EXT_BLOB, EXTENSION_FACTOR},
         verifier::VerifierError,
-        Bytes48Ref, CellIndex, CellRef, RowIndex,
+        Bytes48Ref, CellIndex, CellRef, CommitmentIndex,
     };
 
     /// Validation logic for `verify_cell_kzg_proof_batch`
     pub fn verify_cell_kzg_proof_batch(
         deduplicated_commitments_bytes: &[Bytes48Ref],
-        commitment_indices: &[RowIndex],
+        commitment_indices: &[CommitmentIndex],
         cell_indices: &[CellIndex],
         cells: &[CellRef],
         proofs_bytes: &[Bytes48Ref],
