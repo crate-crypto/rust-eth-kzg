@@ -69,6 +69,10 @@ pub fn coset_gens(num_points: usize, num_cosets: usize, bit_reversed: bool) -> V
 
 /// Given a group of coset evaluations, this method will return/reorder the evaluations as if
 /// we evaluated them on the relevant extended domain.
+///
+/// Note: `domain_order` refers to the order that the evaluations would be in, if they were evaluated on
+/// the roots of unity. This is different to the order that we return them in; bit-reversed order.
+///
 /// The coset indices returned can be used to locate the coset_evaluations in the new flattened order:
 ///   - The idea is that a particular coset evaluation is evenly distributed across the set of flattened
 ///     evaluations.
