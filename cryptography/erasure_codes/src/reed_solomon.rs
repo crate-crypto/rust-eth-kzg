@@ -122,6 +122,8 @@ impl ReedSolomon {
     /// Given a codeword and a list of its erasures,
     /// This method will return the polynomial in coefficient form
     /// that is able to generate the codeword with the erasures recovered.
+    ///
+    /// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/13ac373a2c284dc66b48ddd2ef0a10537e4e0de6/specs/_features/eip7594/polynomial-commitments-sampling.md#recover_polynomialcoeff
     pub fn recover_polynomial_coefficient(
         &self,
         codeword_with_erasures: Vec<Scalar>,
@@ -160,6 +162,8 @@ impl ReedSolomon {
     ///   would be Z(x) = x^{2n} - 1.
     ///   We explicitly do not handle this case because this is an internal function
     ///   and recovery would fail if all of the blocks were missing.
+    ///
+    /// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/13ac373a2c284dc66b48ddd2ef0a10537e4e0de6/specs/_features/eip7594/polynomial-commitments-sampling.md#construct_vanishing_polynomial
     fn construct_vanishing_poly_from_block_erasures(
         &self,
         block_indices: BlockErasureIndices,

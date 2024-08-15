@@ -59,6 +59,8 @@ impl ProverContext {
 
 impl DASContext {
     /// Computes the KZG commitment to the polynomial represented by the blob.
+    ///
+    /// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/13ac373a2c284dc66b48ddd2ef0a10537e4e0de6/specs/deneb/polynomial-commitments.md#blob_to_kzg_commitment
     pub fn blob_to_kzg_commitment(&self, blob: BlobRef) -> Result<KZGCommitment, Error> {
         self.thread_pool.install(|| {
             // Deserialize the blob into scalars.
@@ -76,6 +78,8 @@ impl DASContext {
     }
 
     /// Computes the cells and the KZG proofs for the given blob.
+    ///
+    /// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/13ac373a2c284dc66b48ddd2ef0a10537e4e0de6/specs/_features/eip7594/polynomial-commitments-sampling.md#compute_cells_and_kzg_proofs
     pub fn compute_cells_and_kzg_proofs(
         &self,
         blob: BlobRef,
@@ -100,6 +104,8 @@ impl DASContext {
     ///
     /// Use erasure decoding to recover the polynomial corresponding to the cells
     /// that were generated from KZG multi point prover.
+    ///
+    /// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/13ac373a2c284dc66b48ddd2ef0a10537e4e0de6/specs/_features/eip7594/polynomial-commitments-sampling.md#recover_cells_and_kzg_proofs
     ///
     // Note: The fact that we recover the polynomial for the bit-reversed version of the blob
     // is irrelevant.

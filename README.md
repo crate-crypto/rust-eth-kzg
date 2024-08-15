@@ -72,6 +72,10 @@ cargo bench
 calling the library via a particular language.
 An example of this is the CGO overhead when calling a foreign language from Golang; in our case, this overhead is negligible compared to the actual computations being performed.
 
+## Consensus Specs
+
+This library conforms and is tested against commit `13ac373a2c284dc66b48ddd2ef0a10537e4e0de6`.
+
 ## License
 
 Licensed and distributed under either of
