@@ -7,8 +7,7 @@ use crate_crypto_internal_eth_kzg_bls12_381::{
     lincomb::{g1_lincomb, g1_lincomb_unsafe, g2_lincomb, g2_lincomb_unsafe},
     G1Projective, G2Projective, Scalar,
 };
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use rand::thread_rng;
+use criterion::{criterion_group, criterion_main, Criterion};
 
 pub fn batch_inversion(c: &mut Criterion) {
     const NUM_ELEMENTS: usize = 8192;
@@ -17,8 +16,7 @@ pub fn batch_inversion(c: &mut Criterion) {
         &format!("bls12_381 batch_inversion size: {}", NUM_ELEMENTS),
         |b| {
             b.iter(|| {
-                let mut elements =
-                    vec![black_box(Scalar::random(&mut rand::thread_rng())); NUM_ELEMENTS];
+                let mut elements = random_scalars(NUM_ELEMENTS);
                 batch_inversion::batch_inverse(&mut elements);
             })
         },
@@ -26,13 +24,12 @@ pub fn batch_inversion(c: &mut Criterion) {
 }
 pub fn fixed_base_msm(c: &mut Criterion) {
     let length = 64;
-    let generators: Vec<_> = (0..length)
-        .map(|_| G1Projective::random(&mut rand::thread_rng()).into())
+    let generators: Vec<_> = random_g1_points(length)
+        .into_iter()
+        .map(|p| p.into())
         .collect();
     let fbm = FixedBaseMSM::new(generators, 8);
-    let scalars: Vec<_> = (0..length)
-        .map(|_| Scalar::random(&mut thread_rng()))
-        .collect();
+    let scalars: Vec<_> = random_scalars(length);
 
     c.bench_function("bls12_381 fixed_base_msm length=64 width=8", |b| {
         b.iter(|| fbm.msm(scalars.clone()))
