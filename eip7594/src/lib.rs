@@ -87,6 +87,10 @@ impl DASContext {
     pub fn with_threads(
         trusted_setup: &TrustedSetup,
         num_threads: usize,
+        // This parameter indicates whether we should allocate memory
+        // in order to speed up proof creation. Heuristics show that
+        // if pre-computations are desired, one should set the
+        // width value to `8` for optimal storage and performance tradeoffs.
         use_precomp: UsePrecomp,
     ) -> Self {
         let thread_pool = std::sync::Arc::new(
