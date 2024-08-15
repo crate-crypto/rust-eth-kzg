@@ -13,4 +13,4 @@ mod verifier;
 pub use cosets::recover_evaluations_in_domain_order;
 pub use errors::VerifierError;
 pub use prover::{FK20Prover as Prover, Input as ProverInput};
-pub use verifier::FK20Verifier as Verifier;
+pub use verifier::{CommitmentIndex, CosetIndex, FK20Verifier as Verifier};
