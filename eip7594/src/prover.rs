@@ -109,7 +109,7 @@ impl DASContext {
     ///
     // Note: The fact that we recover the polynomial for the bit-reversed version of the blob
     // is irrelevant.
-    pub fn recover_cells_and_proofs(
+    pub fn recover_cells_and_kzg_proofs(
         &self,
         cell_indices: Vec<CellIndex>,
         cells: Vec<CellRef>,
