@@ -55,7 +55,7 @@ impl Deref for DASContext {
 /// # Memory faults
 ///
 /// To avoid memory leaks, one should ensure that the pointer is freed after use
-/// by calling `das_context_free`.
+/// by calling `eth_kzg_das_context_free`.
 #[no_mangle]
 pub extern "C" fn eth_kzg_das_context_new() -> *mut DASContext {
     let ctx = Box::<DASContext>::default();
@@ -74,7 +74,7 @@ pub extern "C" fn eth_kzg_das_context_new() -> *mut DASContext {
 /// # Undefined behavior
 ///
 /// - Since the `ctx` is created in Rust, we can only get undefined behavior, if the caller passes in
-/// a pointer that was not created by `das_context_new`.
+/// a pointer that was not created by `eth_kzg_das_context_new`.
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[no_mangle]
 pub extern "C" fn eth_kzg_das_context_free(ctx: *mut DASContext) {
@@ -109,7 +109,7 @@ impl CResult {
     ///
     /// - Ownership of the error message is transferred to the caller.
     ///   The caller is responsible for freeing the memory allocated for the error message.
-    ///   This can be done by calling `free_error_message`.
+    ///   This can be done by calling `eth_kzg_free_error_message`.
     ///
     /// # Memory faults
     ///

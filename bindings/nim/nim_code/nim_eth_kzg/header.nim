@@ -21,7 +21,7 @@ type CResult* = object
 # # Memory faults
 #
 # To avoid memory leaks, one should ensure that the pointer is freed after use
-# by calling `das_context_free`.
+# by calling `eth_kzg_das_context_free`.
 proc eth_kzg_das_context_new*(): ptr DASContext {.importc: "eth_kzg_das_context_new".}
 
 ## # Safety
@@ -36,7 +36,7 @@ proc eth_kzg_das_context_new*(): ptr DASContext {.importc: "eth_kzg_das_context_
 # # Undefined behavior
 #
 # - Since the `ctx` is created in Rust, we can only get undefined behavior, if the caller passes in
-# a pointer that was not created by `das_context_new`.
+# a pointer that was not created by `eth_kzg_das_context_new`.
 proc eth_kzg_das_context_free*(ctx: ptr DASContext): void {.importc: "eth_kzg_das_context_free".}
 
 ## Free the memory allocated for the error message.
