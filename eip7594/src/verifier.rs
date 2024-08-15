@@ -91,6 +91,8 @@ fn deduplicate_with_indices<T: Eq + std::hash::Hash + Clone>(input: Vec<T>) -> (
 impl DASContext {
     /// Given a collection of commitments, cells and proofs, this functions verifies that
     /// the cells are consistent with the commitments using their respective KZG proofs.
+    ///
+    /// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/13ac373a2c284dc66b48ddd2ef0a10537e4e0de6/specs/_features/eip7594/polynomial-commitments-sampling.md#verify_cell_kzg_proof_batch
     pub fn verify_cell_kzg_proof_batch(
         &self,
         // This is a deduplicated list of row commitments
