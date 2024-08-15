@@ -6,7 +6,10 @@ use napi::{
 };
 use napi_derive::napi;
 
-use rust_eth_kzg::{constants, DASContext};
+use rust_eth_kzg::{
+  constants::{self, RECOMMENDED_PRECOMP_WIDTH},
+  DASContext, TrustedSetup, UsePrecomp,
+};
 
 #[napi]
 pub const BYTES_PER_COMMITMENT: u32 = constants::BYTES_PER_COMMITMENT as u32;
@@ -43,7 +46,13 @@ impl DASContextJs {
   #[napi(constructor)]
   pub fn new() -> Self {
     DASContextJs {
-      inner: Arc::new(DASContext::default()),
+      inner: Arc::new(DASContext::with_threads(
+        &TrustedSetup::default(),
+        1,
+        UsePrecomp::Yes {
+          width: RECOMMENDED_PRECOMP_WIDTH,
+        },
+      )),
     }
   }
 
