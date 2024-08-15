@@ -78,7 +78,7 @@ mod serde_ {
 
 const TEST_DIR: &str = "../test_vectors/recover_cells_and_kzg_proofs";
 #[test]
-fn test_recover_cells_and_proofs() {
+fn test_recover_cells_and_kzg_proofs() {
     let test_files = collect_test_files(TEST_DIR).unwrap();
 
     let ctx = rust_eth_kzg::DASContext::default();
@@ -102,7 +102,7 @@ fn test_recover_cells_and_proofs() {
             }
         };
 
-        match ctx.recover_cells_and_proofs(test.input_cell_indices, input_cells) {
+        match ctx.recover_cells_and_kzg_proofs(test.input_cell_indices, input_cells) {
             Ok((cells, proofs)) => {
                 let expected_proofs_and_cells = test.proofs_and_cells.unwrap();
 

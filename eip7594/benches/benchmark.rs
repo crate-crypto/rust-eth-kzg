@@ -66,12 +66,12 @@ pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
         let ctx = DASContext::with_threads(&trusted_setup, num_threads);
         c.bench_function(
             &format!(
-                "worse-case recover_cells_and_compute_proofs - NUM_THREADS: {}",
+                "worse-case recover_cells_and_kzg_proofs - NUM_THREADS: {}",
                 num_threads
             ),
             |b| {
                 b.iter(|| {
-                    ctx.recover_cells_and_proofs(
+                    ctx.recover_cells_and_kzg_proofs(
                         half_cell_indices.to_vec(),
                         half_cells.to_vec(),
                     )
