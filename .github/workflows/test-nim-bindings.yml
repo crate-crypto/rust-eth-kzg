@@ -1,4 +1,4 @@
-name: Test Nim bindings
+name: Nim bindings
 
 on:
   push:
