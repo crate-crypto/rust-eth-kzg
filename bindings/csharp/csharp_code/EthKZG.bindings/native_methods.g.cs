@@ -22,7 +22,7 @@ namespace EthKZG.Native
         ///  # Memory faults
         ///
         ///  To avoid memory leaks, one should ensure that the pointer is freed after use
-        ///  by calling `das_context_free`.
+        ///  by calling `eth_kzg_das_context_free`.
         /// </summary>
         [DllImport(__DllName, EntryPoint = "eth_kzg_das_context_new", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         internal static extern DASContext* eth_kzg_das_context_new();
@@ -40,7 +40,7 @@ namespace EthKZG.Native
         ///  # Undefined behavior
         ///
         ///  - Since the `ctx` is created in Rust, we can only get undefined behavior, if the caller passes in
-        ///  a pointer that was not created by `das_context_new`.
+        ///  a pointer that was not created by `eth_kzg_das_context_new`.
         /// </summary>
         [DllImport(__DllName, EntryPoint = "eth_kzg_das_context_free", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         internal static extern void eth_kzg_das_context_free(DASContext* ctx);
