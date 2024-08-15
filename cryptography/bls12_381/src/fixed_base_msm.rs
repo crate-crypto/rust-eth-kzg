@@ -1,18 +1,57 @@
 use crate::{G1Projective, Scalar};
 use blstrs::{Fp, G1Affine};
 
-/// FixedBasedMSM computes a multi scalar multiplication using pre-computations.
+/// FixedBaseMSMPrecomp computes a multi scalar multiplication using pre-computations.
 ///
 /// It uses batch addition to amortize the cost of adding multiple points together.
 #[derive(Debug)]
-pub struct FixedBaseMSM {
+pub struct FixedBaseMSMPrecomp {
     table: Vec<blst::blst_p1_affine>,
     wbits: usize,
     num_points: usize,
     scratch_space_size: usize,
 }
 
+/// UsePrecomp indicates whether we should use pre-computations to speed up the MSM
+pub enum UsePrecomp {
+    Yes { width: usize },
+    No,
+}
+
+/// FixedBaseMSM computes a multi scalar multiplication where the points are known beforehand.
+///
+/// Since the points are known, one can choose to precompute multiple of the points
+/// in order to reduce the amount of work needed to compute the MSM, at the cost
+/// of memory.
+#[derive(Debug)]
+pub enum FixedBaseMSM {
+    Precomp(FixedBaseMSMPrecomp),
+    NoPrecomp(Vec<G1Affine>),
+}
+
 impl FixedBaseMSM {
+    pub fn new(generators: Vec<G1Affine>, use_precomp: UsePrecomp) -> Self {
+        match use_precomp {
+            UsePrecomp::Yes { width } => {
+                FixedBaseMSM::Precomp(FixedBaseMSMPrecomp::new(generators, width))
+            }
+            UsePrecomp::No => FixedBaseMSM::NoPrecomp(generators),
+        }
+    }
+
+    pub fn msm(&self, scalars: Vec<Scalar>) -> G1Projective {
+        match self {
+            FixedBaseMSM::Precomp(precomp) => precomp.msm(scalars),
+            FixedBaseMSM::NoPrecomp(generators) => {
+                use crate::lincomb::g1_lincomb;
+                g1_lincomb(generators, &scalars)
+                    .expect("number of generators and scalars should be equal")
+            }
+        }
+    }
+}
+
+impl FixedBaseMSMPrecomp {
     pub fn new(generators_affine: Vec<G1Affine>, wbits: usize) -> Self {
         let num_points = generators_affine.len();
         let table_size_bytes =
@@ -33,7 +72,7 @@ impl FixedBaseMSM {
 
         let scratch_space_size = unsafe { blst::blst_p1s_mult_wbits_scratch_sizeof(num_points) };
 
-        FixedBaseMSM {
+        FixedBaseMSMPrecomp {
             table,
             wbits,
             num_points,
@@ -79,7 +118,7 @@ impl FixedBaseMSM {
 
 #[cfg(test)]
 mod tests {
-    use super::FixedBaseMSM;
+    use super::FixedBaseMSMPrecomp;
     use crate::{lincomb::g1_lincomb, G1Projective, Scalar};
     use ff::Field;
     use group::Group;
@@ -97,7 +136,7 @@ mod tests {
 
         let res = g1_lincomb(&generators, &scalars)
             .expect("number of generators and number of scalars is equal");
-        let fbm = FixedBaseMSM::new(generators, 8);
+        let fbm = FixedBaseMSMPrecomp::new(generators, 8);
 
         let result = fbm.msm(scalars);
         assert_eq!(res, result);
@@ -110,7 +149,7 @@ mod tests {
         let generators: Vec<_> = (0..length)
             .map(|_| G1Projective::random(&mut rand::thread_rng()).into())
             .collect();
-        let fbm = FixedBaseMSM::new(generators, 8);
+        let fbm = FixedBaseMSMPrecomp::new(generators, 8);
         for val in fbm.table.into_iter() {
             let is_inf =
                 unsafe { blst::blst_p1_affine_is_inf(&val as *const blst::blst_p1_affine) };
