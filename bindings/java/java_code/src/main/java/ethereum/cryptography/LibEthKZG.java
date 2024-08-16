@@ -28,7 +28,14 @@ public class LibEthKZG implements AutoCloseable{
 
     public LibEthKZG() {
         ensureLibraryLoaded();
-        this.contextPtr = DASContextNew();
+        boolean usePrecomp = true;
+        long numThreads = 1;
+        this.contextPtr = DASContextNew(usePrecomp, numThreads);
+    }
+
+    public LibEthKZG(boolean usePrecomp, long numThreads) {
+        ensureLibraryLoaded();
+        this.contextPtr = DASContextNew(usePrecomp, numThreads);
     }
 
     private static void ensureLibraryLoaded() {
@@ -87,7 +94,7 @@ public class LibEthKZG implements AutoCloseable{
      * library
      */
 
-    private static native long DASContextNew();
+    private static native long DASContextNew(boolean usePrecomp, long numThreads);
 
     private static native void DASContextDestroy(long ctx_ptr);
 

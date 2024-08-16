@@ -54,19 +54,27 @@ impl Deref for DASContext {
 
 /// Create a new DASContext and return a pointer to it.
 ///
+/// `num_threads`: set to `0`` to indicate that the library should pick a sensible default.
+///
 /// # Memory faults
 ///
 /// To avoid memory leaks, one should ensure that the pointer is freed after use
 /// by calling `eth_kzg_das_context_free`.
 #[no_mangle]
-pub extern "C" fn eth_kzg_das_context_new() -> *mut DASContext {
+pub extern "C" fn eth_kzg_das_context_new(use_precomp: bool, num_threads: u32) -> *mut DASContext {
+    let use_precomp = if use_precomp {
+        rust_eth_kzg::UsePrecomp::Yes {
+            width: RECOMMENDED_PRECOMP_WIDTH,
+        }
+    } else {
+        rust_eth_kzg::UsePrecomp::No
+    };
+
     let ctx = Box::new(DASContext {
         inner: rust_eth_kzg::DASContext::with_threads(
             &rust_eth_kzg::TrustedSetup::default(),
-            ThreadCount::Multi(1),
-            rust_eth_kzg::UsePrecomp::Yes {
-                width: RECOMMENDED_PRECOMP_WIDTH,
-            },
+            ThreadCount::Multi(num_threads as usize),
+            use_precomp,
         ),
     });
     Box::into_raw(ctx)

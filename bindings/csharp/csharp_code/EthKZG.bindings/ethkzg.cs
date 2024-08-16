@@ -26,9 +26,9 @@ public sealed unsafe class EthKZG : IDisposable
 
     private DASContext* _context;
 
-    public EthKZG()
+    public EthKZG(bool usePrecomp = true, uint numThreads = 1)
     {
-        _context = eth_kzg_das_context_new();
+        _context = eth_kzg_das_context_new(usePrecomp, numThreads);
     }
 
     public void Dispose()
