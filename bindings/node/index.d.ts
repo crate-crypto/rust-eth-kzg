@@ -9,6 +9,10 @@ export const BYTES_PER_FIELD_ELEMENT: number
 export const BYTES_PER_BLOB: number
 export const MAX_NUM_COLUMNS: number
 export const BYTES_PER_CELL: number
+export interface DasContextOptions {
+  usePrecomp: boolean
+  numThreads: number
+}
 export class CellsAndProofs {
   cells: Array<Uint8Array>
   proofs: Array<Uint8Array>
@@ -16,6 +20,7 @@ export class CellsAndProofs {
 export type DASContextJs = DasContextJs
 export class DasContextJs {
   constructor()
+  static create(options: DasContextOptions): DasContextJs
   blobToKzgCommitment(blob: Uint8Array): Uint8Array
   asyncBlobToKzgCommitment(blob: Uint8Array): Promise<Uint8Array>
   computeCellsAndKzgProofs(blob: Uint8Array): CellsAndProofs
