@@ -1,0 +1,30 @@
+[package]
+name = "crate_crypto_kzg_single_open"
+description = "This crate provides an implementation for KZG10 suited for DAS in Ethereum"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+rust-version = { workspace = true }
+repository = { workspace = true }
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bls12_381 = { workspace = true }
+polynomial = { workspace = true }
+hex = { workspace = true }
+rayon = { workspace = true }
+# We should not be importing this library here
+# We need it for the CommitKey
+kzg_multi_open = { workspace = true }
+pairing = { version = "0.23" }
+
+
+[dev-dependencies]
+criterion = "0.5.1"
+rand = "0.8.4"
+
+[[bench]]
+name = "benchmark"
+harness = false

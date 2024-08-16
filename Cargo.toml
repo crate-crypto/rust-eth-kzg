@@ -9,6 +9,7 @@ members = [
     "eip7594",
     "cryptography/bls12_381",
     "cryptography/kzg_multi_open",
+    "cryptography/kzg_single_open",
     "cryptography/polynomial",
     "cryptography/erasure_codes",
 ]
@@ -32,6 +33,7 @@ polynomial = { package = "crate_crypto_internal_eth_kzg_polynomial", version = "
 erasure_codes = { package = "crate_crypto_internal_eth_kzg_erasure_codes", version = "0.4.1", path = "cryptography/erasure_codes" }
 rust_eth_kzg = { version = "0.4.1", path = "eip7594" }
 kzg_multi_open = { package = "crate_crypto_kzg_multi_open_fk20", version = "0.4.1", path = "cryptography/kzg_multi_open" }
+kzg_single_open = { package = "crate_crypto_kzg_single_open_fk20", version = "0.4.1", path = "cryptography/kzg_single_open" }
 c_eth_kzg = { version = "0.4.1", path = "bindings/c" }
 hex = "0.4.3"
 rayon = "1.10.0"
