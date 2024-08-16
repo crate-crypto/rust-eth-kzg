@@ -25,7 +25,7 @@ type CResult* = object
 # To avoid memory leaks, one should ensure that the pointer is freed after use
 # by calling `eth_kzg_das_context_free`.
 proc eth_kzg_das_context_new*(use_precomp: bool,
-                              num_threads: uint): ptr DASContext {.importc: "eth_kzg_das_context_new".}
+                              num_threads: uint32): ptr DASContext {.importc: "eth_kzg_das_context_new".}
 
 ## # Safety
 #
