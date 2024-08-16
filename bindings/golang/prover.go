@@ -46,7 +46,7 @@ type DASContext struct {
 }
 
 func NewProverContext() *DASContext {
-	self := &DASContext{_inner: C.eth_kzg_das_context_new()}
+	self := &DASContext{_inner: C.eth_kzg_das_context_new(C._Bool(true), C.ulong(1))}
 
 	runtime.SetFinalizer(self, func(self *DASContext) {
 		C.eth_kzg_das_context_free(self.inner())
