@@ -18,11 +18,14 @@ type CResult* = object
 
 ## Create a new DASContext and return a pointer to it.
 #
+# `num_threads`: set to `0`` to indicate that the library should pick a sensible default.
+#
 # # Memory faults
 #
 # To avoid memory leaks, one should ensure that the pointer is freed after use
 # by calling `eth_kzg_das_context_free`.
-proc eth_kzg_das_context_new*(): ptr DASContext {.importc: "eth_kzg_das_context_new".}
+proc eth_kzg_das_context_new*(use_precomp: bool,
+                              num_threads: uint): ptr DASContext {.importc: "eth_kzg_das_context_new".}
 
 ## # Safety
 #
