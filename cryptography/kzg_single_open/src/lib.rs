@@ -27,7 +27,7 @@ pub fn compute_proof(
     let polynomial_coeff = domain.ifft_scalars(poly_lagrange);
 
     let quotient_poly = divide_by_linear(&polynomial_coeff, input_point);
-    let quotient_commitment = commit_key.commit_g1(quotient_poly.as_slice());
+    let quotient_commitment = commit_key.commit_g1(&quotient_poly);
     let claimed_evaluation = poly_eval(&polynomial_coeff, &input_point);
 
     Proof {
@@ -77,7 +77,6 @@ pub fn verify(
     poly_comm: G1Point,
     witness_comm: G1Point,
 ) -> bool {
-    // For scalar muls could also do precomputations
     let inner_a: G1Point = (poly_comm - (opening_key.g1s[0] * output_point)).into();
     let inner_b: G2Point = (opening_key.g2s[1] - (opening_key.g2s[0] * input_point)).into();
     let prepared_inner_b = G2Prepared::from(-inner_b);
