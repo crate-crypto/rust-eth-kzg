@@ -41,17 +41,46 @@ impl Default for DASContextJs {
   }
 }
 
+#[napi(object)]
+pub struct DASContextOptions {
+  pub use_precomp: bool,
+  pub num_threads: u32,
+}
+
+impl Default for DASContextOptions {
+  fn default() -> Self {
+    Self {
+      use_precomp: true,
+      num_threads: 1,
+    }
+  }
+}
+
 #[napi]
 impl DASContextJs {
   #[napi(constructor)]
   pub fn new() -> Self {
+    Self::create(DASContextOptions::default())
+  }
+
+  #[napi(factory)]
+  pub fn create(options: DASContextOptions) -> Self {
+    let use_precomp = options.use_precomp;
+    let num_threads = options.num_threads;
+
+    let precomp = if use_precomp {
+      UsePrecomp::Yes {
+        width: RECOMMENDED_PRECOMP_WIDTH,
+      }
+    } else {
+      UsePrecomp::No
+    };
+
     DASContextJs {
       inner: Arc::new(DASContext::with_threads(
         &TrustedSetup::default(),
-        1,
-        UsePrecomp::Yes {
-          width: RECOMMENDED_PRECOMP_WIDTH,
-        },
+        num_threads as usize,
+        precomp,
       )),
     }
   }

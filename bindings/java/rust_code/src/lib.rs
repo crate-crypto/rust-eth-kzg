@@ -10,8 +10,12 @@ use errors::Error;
 pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_DASContextNew(
     _env: JNIEnv,
     _class: JClass,
+    use_precomp: jboolean,
+    num_threads: jlong,
 ) -> jlong {
-    c_eth_kzg::eth_kzg_das_context_new() as jlong
+    let use_precomp = use_precomp != 0;
+    let num_threads = (num_threads as u64) as u32;
+    c_eth_kzg::eth_kzg_das_context_new(use_precomp, num_threads) as jlong
 }
 
 #[no_mangle]
