@@ -19,13 +19,15 @@ namespace EthKZG.Native
         /// <summary>
         ///  Create a new DASContext and return a pointer to it.
         ///
+        ///  `num_threads`: set to `0`` to indicate that the library should pick a sensible default.
+        ///
         ///  # Memory faults
         ///
         ///  To avoid memory leaks, one should ensure that the pointer is freed after use
         ///  by calling `eth_kzg_das_context_free`.
         /// </summary>
         [DllImport(__DllName, EntryPoint = "eth_kzg_das_context_new", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        internal static extern DASContext* eth_kzg_das_context_new();
+        internal static extern DASContext* eth_kzg_das_context_new([MarshalAs(UnmanagedType.U1)] bool use_precomp, System.UIntPtr num_threads);
 
         /// <summary>
         ///  # Safety
