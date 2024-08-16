@@ -6,6 +6,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
+/**
+ * This class handles the loading of native libraries and provides methods for
+ * Ethereum's DAS related cryptography.
+ */
 public class LibEthKZG implements AutoCloseable{
     /** The number of bytes in a KZG commitment. */
     public static final int BYTES_PER_COMMITMENT = 48;
@@ -25,7 +29,10 @@ public class LibEthKZG implements AutoCloseable{
     private static volatile boolean libraryLoaded = false;
     private static final Object libraryLock = new Object();
 
-
+    /**
+     * Constructs a LibEthKZG instance with default parameters.
+     * Uses pre-computation and a single thread.
+     */
     public LibEthKZG() {
         ensureLibraryLoaded();
         boolean usePrecomp = true;
@@ -33,6 +40,12 @@ public class LibEthKZG implements AutoCloseable{
         this.contextPtr = DASContextNew(usePrecomp, numThreads);
     }
 
+    /**
+     * Constructs a LibEthKZG instance with specified parameters.
+     *
+     * @param usePrecomp Whether to use pre-computation.
+     * @param numThreads Number of threads to use.
+     */
     public LibEthKZG(boolean usePrecomp, long numThreads) {
         ensureLibraryLoaded();
         this.contextPtr = DASContextNew(usePrecomp, numThreads);
@@ -54,6 +67,10 @@ public class LibEthKZG implements AutoCloseable{
         destroy();
     }
 
+    /**
+     * Destroys the KZG context and frees associated resources.
+     * This method should be called when the LibEthKZG instance is no longer needed.
+     */
     public void destroy() {
         if (contextPtr != 0) {
             DASContextDestroy(contextPtr);
@@ -67,23 +84,51 @@ public class LibEthKZG implements AutoCloseable{
         }
     }
 
+    /**
+     * Computes the KZG commitment for a given blob.
+     *
+     * @param blob The input blob.
+     * @return The KZG commitment as a byte array.
+     */
     public byte[] blobToKZGCommitment(byte[] blob) {
         checkContextHasNotBeenFreed();
         return blobToKZGCommitment(contextPtr, blob);
     }
 
+    /**
+     * Computes cells and KZG proofs for a given blob.
+     *
+     * @param blob The input blob.
+     * @return CellsAndProofs object containing the computed cells and proofs.
+     */
     public CellsAndProofs computeCellsAndKZGProofs(byte[] blob) {
         checkContextHasNotBeenFreed();
         CellsAndProofs cellsAndProofs = computeCellsAndKZGProofs(contextPtr, blob);
         return cellsAndProofs;
     }
 
+    /**
+     * Verifies a batch of cell KZG proofs.
+     *
+     * @param commitmentsArr Array of commitments.
+     * @param cellIndices    Array of cell indices.
+     * @param cellsArr       Array of cells.
+     * @param proofsArr      Array of proofs.
+     * @return true if the batch verification succeeds, false otherwise.
+     */
     public boolean verifyCellKZGProofBatch(byte[][] commitmentsArr,  long[] cellIndices, byte[][] cellsArr,
             byte[][] proofsArr) {
                 checkContextHasNotBeenFreed();
         return verifyCellKZGProofBatch(contextPtr, commitmentsArr, cellIndices, cellsArr, proofsArr);
     }
 
+    /**
+     * Recovers cells and computes KZG proofs from given cell IDs and cells.
+     *
+     * @param cellIDs  Array of cell IDs.
+     * @param cellsArr Array of cells.
+     * @return CellsAndProofs object containing the recovered cells and proofs.
+     */
     public CellsAndProofs recoverCellsAndProofs(long[] cellIDs, byte[][] cellsArr) {
         checkContextHasNotBeenFreed();
         return recoverCellsAndProof(contextPtr, cellIDs, cellsArr);
