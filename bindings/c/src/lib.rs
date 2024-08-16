@@ -6,6 +6,7 @@ use compute_cells_and_kzg_proofs::_compute_cells_and_kzg_proofs;
 
 mod verify_cells_and_kzg_proofs_batch;
 use rust_eth_kzg::constants::RECOMMENDED_PRECOMP_WIDTH;
+use rust_eth_kzg::ThreadCount;
 use verify_cells_and_kzg_proofs_batch::_verify_cell_kzg_proof_batch;
 
 mod recover_cells_and_kzg_proofs;
@@ -72,7 +73,7 @@ pub extern "C" fn eth_kzg_das_context_new(use_precomp: bool, num_threads: u32) -
     let ctx = Box::new(DASContext {
         inner: rust_eth_kzg::DASContext::with_threads(
             &rust_eth_kzg::TrustedSetup::default(),
-            num_threads as usize,
+            ThreadCount::Multi(num_threads as usize),
             use_precomp,
         ),
     });

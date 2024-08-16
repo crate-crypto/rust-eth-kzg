@@ -2,7 +2,8 @@ use bls12_381::Scalar;
 use criterion::{criterion_group, criterion_main, Criterion};
 use rust_eth_kzg::{
     constants::{BYTES_PER_BLOB, CELLS_PER_EXT_BLOB},
-    Bytes48Ref, Cell, CellIndex, CellRef, DASContext, KZGCommitment, KZGProof, TrustedSetup,
+    Bytes48Ref, Cell, CellIndex, CellRef, DASContext, KZGCommitment, KZGProof, ThreadCount,
+    TrustedSetup,
 };
 
 const POLYNOMIAL_LEN: usize = 4096;
@@ -29,7 +30,13 @@ fn dummy_commitment_cells_and_proofs() -> (
     (commitment, ctx.compute_cells_and_kzg_proofs(&blob).unwrap())
 }
 
-const THREAD_COUNTS: [usize; 5] = [1, 4, 8, 16, 32];
+const THREAD_COUNTS: [ThreadCount; 5] = [
+    ThreadCount::Single,
+    ThreadCount::Multi(4),
+    ThreadCount::Multi(8),
+    ThreadCount::Multi(16),
+    ThreadCount::Multi(32),
+];
 
 pub fn bench_compute_cells_and_kzg_proofs(c: &mut Criterion) {
     let trusted_setup = TrustedSetup::default();
@@ -44,7 +51,7 @@ pub fn bench_compute_cells_and_kzg_proofs(c: &mut Criterion) {
         );
         c.bench_function(
             &format!(
-                "computing cells_and_kzg_proofs - NUM_THREADS: {}",
+                "computing cells_and_kzg_proofs - NUM_THREADS: {:?}",
                 num_threads
             ),
             |b| b.iter(|| ctx.compute_cells_and_kzg_proofs(&blob)),
@@ -74,7 +81,7 @@ pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
         );
         c.bench_function(
             &format!(
-                "worse-case recover_cells_and_kzg_proofs - NUM_THREADS: {}",
+                "worse-case recover_cells_and_kzg_proofs - NUM_THREADS: {:?}",
                 num_threads
             ),
             |b| {
@@ -106,7 +113,10 @@ pub fn bench_verify_cell_kzg_proof_batch(c: &mut Criterion) {
             bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 },
         );
         c.bench_function(
-            &format!("verify_cell_kzg_proof_batch - NUM_THREADS: {}", num_threads),
+            &format!(
+                "verify_cell_kzg_proof_batch - NUM_THREADS: {:?}",
+                num_threads
+            ),
             |b| {
                 b.iter(|| {
                     ctx.verify_cell_kzg_proof_batch(
@@ -122,7 +132,7 @@ pub fn bench_verify_cell_kzg_proof_batch(c: &mut Criterion) {
 }
 
 pub fn bench_init_context(c: &mut Criterion) {
-    const NUM_THREADS: usize = 1;
+    const NUM_THREADS: ThreadCount = ThreadCount::Single;
     c.bench_function(&format!("Initialize context"), |b| {
         b.iter(|| {
             let trusted_setup = TrustedSetup::default();
