@@ -138,7 +138,7 @@ fn verify_cell_kzg_proof_batch<'local>(
 }
 
 #[no_mangle]
-pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_recoverCellsAndKZGProof<'local>(
+pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_recoverCellsAndKZGProofs<'local>(
     mut env: JNIEnv<'local>,
     _class: JClass,
     ctx_ptr: jlong,
@@ -150,7 +150,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_recoverCellsAndKZGPr
     match recover_cells_and_kzg_proofs(&mut env, ctx, cell_ids, cells) {
         Ok(cells_and_proofs) => cells_and_proofs,
         Err(err) => {
-            throw_on_error(&mut env, err, "recoverCellsAndKZGProof");
+            throw_on_error(&mut env, err, "recoverCellsAndKZGProofs");
             JObject::default()
         }
     }
