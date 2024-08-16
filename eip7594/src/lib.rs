@@ -94,7 +94,7 @@ pub struct DASContext {
 impl Default for DASContext {
     fn default() -> Self {
         let trusted_setup = TrustedSetup::default();
-        const DEFAULT_NUM_THREADS: ThreadCount = ThreadCount::Single;
+        const DEFAULT_NUM_THREADS: ThreadCount = ThreadCount::SensibleDefault;
         DASContext::with_threads(&trusted_setup, DEFAULT_NUM_THREADS, UsePrecomp::No)
     }
 }

@@ -31,12 +31,12 @@ public class LibEthKZG implements AutoCloseable{
 
     /**
      * Constructs a LibEthKZG instance with default parameters.
-     * Uses pre-computation and a single thread.
+     * Uses pre-computation and however many threads are recommended by the OS.
      */
     public LibEthKZG() {
         ensureLibraryLoaded();
         boolean usePrecomp = true;
-        long numThreads = 1;
+        long numThreads = 0;
         this.contextPtr = DASContextNew(usePrecomp, numThreads);
     }
 
