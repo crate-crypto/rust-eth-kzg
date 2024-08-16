@@ -58,7 +58,7 @@ use rayon::ThreadPool;
 use std::sync::Arc;
 use verifier::VerifierContext;
 
-/// Threads indicates whether we want to use a single thread or multiple threads
+/// ThreadCount indicates whether we want to use a single thread or multiple threads
 #[derive(Debug, Copy, Clone)]
 pub enum ThreadCount {
     /// Initializes the threadpool with a single thread
