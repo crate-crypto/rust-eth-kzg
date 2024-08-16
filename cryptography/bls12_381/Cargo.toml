@@ -13,7 +13,7 @@ repository = { workspace = true }
 [dependencies]
 rayon = { workspace = true }
 
-blst = { version = "0.3", default-features = false }
+blst = { version = "0.3", default-features = false, features = ["no-threads"] }
 
 # __private_bench feature is used to allow us to access the base field
 blstrs = { version = "0.7.1", features = ["__private_bench"] }
