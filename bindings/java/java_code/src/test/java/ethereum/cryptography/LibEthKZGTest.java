@@ -82,7 +82,7 @@ public class LibEthKZGTest {
     public void recoverCellsAndKzgProofsTests(final RecoverCellsAndKzgProofsTest test) {
       try {
         final CellsAndProofs recoveredCellsAndProofs =
-            context.recoverCellsAndProofs(
+            context.recoverCellsAndKZGProofs(
                 test.getInput().getCellIndices(), test.getInput().getCells());
         assertArrayEquals(test.getOutput().getCells(), recoveredCellsAndProofs.getCells());
         assertArrayEquals(test.getOutput().getProofs(), recoveredCellsAndProofs.getProofs());

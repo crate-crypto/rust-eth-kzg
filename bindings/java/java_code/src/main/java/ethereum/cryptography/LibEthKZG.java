@@ -84,9 +84,9 @@ public class LibEthKZG implements AutoCloseable{
         return verifyCellKZGProofBatch(contextPtr, commitmentsArr, cellIndices, cellsArr, proofsArr);
     }
 
-    public CellsAndProofs recoverCellsAndProofs(long[] cellIDs, byte[][] cellsArr) {
+    public CellsAndProofs recoverCellsAndKZGProofs(long[] cellIDs, byte[][] cellsArr) {
         checkContextHasNotBeenFreed();
-        return recoverCellsAndProof(contextPtr, cellIDs, cellsArr);
+        return recoverCellsAndKZGProof(contextPtr, cellIDs, cellsArr);
     }
 
     /*
@@ -105,7 +105,7 @@ public class LibEthKZG implements AutoCloseable{
     private static native boolean verifyCellKZGProofBatch(
             long context_ptr, byte[][] commitments, long[] cellIndices, byte[][] cells, byte[][] proofs);
 
-    private static native CellsAndProofs recoverCellsAndProof(long context_ptr, long[] cellIDs, byte[][] cells);
+    private static native CellsAndProofs recoverCellsAndKZGProof(long context_ptr, long[] cellIDs, byte[][] cells);
 
     private static final String LIBRARY_NAME = "java_eth_kzg";
     private static final String PLATFORM_NATIVE_LIBRARY_NAME = System.mapLibraryName(LIBRARY_NAME);

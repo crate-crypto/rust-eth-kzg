@@ -61,10 +61,10 @@ JNIEXPORT jboolean JNICALL Java_ethereum_cryptography_LibEthKZG_verifyCellKZGPro
 
 /*
  * Class:     ethereum_cryptography_LibEthKZG
- * Method:    recoverCellsAndProof
+ * Method:    recoverCellsAndKZGProof
  * Signature: (J[J[[B)Lethereum/cryptography/CellsAndProofs;
  */
-JNIEXPORT jobject JNICALL Java_ethereum_cryptography_LibEthKZG_recoverCellsAndProof
+JNIEXPORT jobject JNICALL Java_ethereum_cryptography_LibEthKZG_recoverCellsAndKZGProof
   (JNIEnv *, jclass, jlong, jlongArray, jobjectArray);
 
 #ifdef __cplusplus
