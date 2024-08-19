@@ -36,5 +36,9 @@ c_eth_kzg = { version = "0.4.1", path = "bindings/c" }
 hex = "0.4.3"
 rayon = "1.10.0"
 
+# Transitively, we depend on subtle version >=2.5.0
+# Adding it as a dependency here, codifies this in this repository.
+subtle = { version = ">=2.5.0, <3.0" }
+
 [profile.release]
 lto = true
