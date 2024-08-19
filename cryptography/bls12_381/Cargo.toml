@@ -20,6 +20,7 @@ blstrs = { version = "0.7.1", features = ["__private_bench"] }
 ff = "0.13.0"
 group = "0.13"
 pairing = { version = "0.23" }
+subtle = { workspace = true }
 
 [dev-dependencies]
 criterion = "0.5.1"
