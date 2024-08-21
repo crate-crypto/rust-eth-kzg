@@ -12,6 +12,7 @@ repository = { workspace = true }
 
 [dependencies]
 bls12_381 = { workspace = true }
+rayon = { workspace = true }
 
 [dev-dependencies]
 criterion = "0.5.1"
