@@ -87,7 +87,7 @@ impl BatchToeplitzMatrixVecMul {
         );
 
         // Embed Toeplitz matrices into circulant matrices
-        let circulant_matrices = matrices.into_iter().map(CirculantMatrix::from_toeplitz);
+        let circulant_matrices = matrices.into_par_iter().map(CirculantMatrix::from_toeplitz);
 
         // Perform circulant matrix-vector multiplication between all of the matrices and vectors
         // and sum them together.
@@ -95,14 +95,14 @@ impl BatchToeplitzMatrixVecMul {
         // Transpose the circulant matrices so that we convert a group of hadamard products into a group of
         // inner products.
         let col_ffts: Vec<_> = circulant_matrices
-            .into_iter()
+            .into_par_iter()
             .map(|matrix| self.circulant_domain.fft_scalars(matrix.row))
             .collect();
         let msm_scalars = transpose(col_ffts);
 
         let result: Vec<_> = self
             .precomputed_fft_vectors
-            .iter()
+            .par_iter()
             .zip(msm_scalars)
             .map(|(points, scalars)| points.msm(scalars))
             .collect();
