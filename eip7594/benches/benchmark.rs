@@ -2,8 +2,7 @@ use bls12_381::Scalar;
 use criterion::{criterion_group, criterion_main, Criterion};
 use rust_eth_kzg::{
     constants::{BYTES_PER_BLOB, CELLS_PER_EXT_BLOB},
-    Bytes48Ref, Cell, CellIndex, CellRef, DASContext, KZGCommitment, KZGProof, ThreadCount,
-    TrustedSetup,
+    Bytes48Ref, Cell, CellIndex, CellRef, DASContext, KZGCommitment, KZGProof, TrustedSetup,
 };
 
 const POLYNOMIAL_LEN: usize = 4096;
@@ -30,13 +29,7 @@ fn dummy_commitment_cells_and_proofs() -> (
     (commitment, ctx.compute_cells_and_kzg_proofs(&blob).unwrap())
 }
 
-const THREAD_COUNTS: [ThreadCount; 5] = [
-    ThreadCount::Single,
-    ThreadCount::Multi(4),
-    ThreadCount::Multi(8),
-    ThreadCount::Multi(16),
-    ThreadCount::Multi(32),
-];
+const THREAD_COUNTS: [u64; 5] = [0, 0, 0, 0, 0];
 
 pub fn bench_compute_cells_and_kzg_proofs(c: &mut Criterion) {
     let trusted_setup = TrustedSetup::default();
@@ -44,9 +37,8 @@ pub fn bench_compute_cells_and_kzg_proofs(c: &mut Criterion) {
     let blob = dummy_blob();
 
     for num_threads in THREAD_COUNTS {
-        let ctx = DASContext::with_threads(
+        let ctx = DASContext::new(
             &trusted_setup,
-            num_threads,
             bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 },
         );
         c.bench_function(
@@ -74,9 +66,8 @@ pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
         .collect::<Vec<_>>();
 
     for num_threads in THREAD_COUNTS {
-        let ctx = DASContext::with_threads(
+        let ctx = DASContext::new(
             &trusted_setup,
-            num_threads,
             bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 },
         );
         c.bench_function(
@@ -107,9 +98,8 @@ pub fn bench_verify_cell_kzg_proof_batch(c: &mut Criterion) {
     let proof_refs: Vec<Bytes48Ref> = proofs.iter().map(|proof| proof).collect();
 
     for num_threads in THREAD_COUNTS {
-        let ctx = DASContext::with_threads(
+        let ctx = DASContext::new(
             &trusted_setup,
-            num_threads,
             bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 },
         );
         c.bench_function(
@@ -132,13 +122,11 @@ pub fn bench_verify_cell_kzg_proof_batch(c: &mut Criterion) {
 }
 
 pub fn bench_init_context(c: &mut Criterion) {
-    const NUM_THREADS: ThreadCount = ThreadCount::Single;
     c.bench_function(&format!("Initialize context"), |b| {
         b.iter(|| {
             let trusted_setup = TrustedSetup::default();
-            DASContext::with_threads(
+            DASContext::new(
                 &trusted_setup,
-                NUM_THREADS,
                 bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 },
             )
         })

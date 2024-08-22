@@ -8,7 +8,7 @@ use napi_derive::napi;
 
 use rust_eth_kzg::{
   constants::{self, RECOMMENDED_PRECOMP_WIDTH},
-  DASContext, ThreadCount, TrustedSetup, UsePrecomp,
+  DASContext, TrustedSetup, UsePrecomp,
 };
 
 #[napi]
@@ -77,11 +77,7 @@ impl DASContextJs {
     };
 
     DASContextJs {
-      inner: Arc::new(DASContext::with_threads(
-        &TrustedSetup::default(),
-        ThreadCount::Multi(num_threads as usize),
-        precomp,
-      )),
+      inner: Arc::new(DASContext::new(&TrustedSetup::default(), precomp)),
     }
   }
 

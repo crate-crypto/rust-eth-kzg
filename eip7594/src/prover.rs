@@ -64,19 +64,17 @@ impl DASContext {
     ///
     /// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/13ac373a2c284dc66b48ddd2ef0a10537e4e0de6/specs/deneb/polynomial-commitments.md#blob_to_kzg_commitment
     pub fn blob_to_kzg_commitment(&self, blob: BlobRef) -> Result<KZGCommitment, Error> {
-        self.thread_pool.install(|| {
-            // Deserialize the blob into scalars.
-            let scalars = deserialize_blob_to_scalars(blob)?;
+        // Deserialize the blob into scalars.
+        let scalars = deserialize_blob_to_scalars(blob)?;
 
-            // Compute commitment
-            let commitment = self
-                .prover_ctx
-                .kzg_multipoint_prover
-                .commit(ProverInput::Data(scalars));
+        // Compute commitment
+        let commitment = self
+            .prover_ctx
+            .kzg_multipoint_prover
+            .commit(ProverInput::Data(scalars));
 
-            // Serialize the commitment.
-            Ok(serialize_g1_compressed(&commitment))
-        })
+        // Serialize the commitment.
+        Ok(serialize_g1_compressed(&commitment))
     }
 
     /// Computes the cells and the KZG proofs for the given blob.
@@ -86,20 +84,18 @@ impl DASContext {
         &self,
         blob: BlobRef,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), Error> {
-        self.thread_pool.install(|| {
-            // Deserialization
-            //
-            let scalars = deserialize_blob_to_scalars(blob)?;
+        // Deserialization
+        //
+        let scalars = deserialize_blob_to_scalars(blob)?;
 
-            // Computation
-            //
-            let (proofs, cells) = self
-                .prover_ctx
-                .kzg_multipoint_prover
-                .compute_multi_opening_proofs(ProverInput::Data(scalars));
+        // Computation
+        //
+        let (proofs, cells) = self
+            .prover_ctx
+            .kzg_multipoint_prover
+            .compute_multi_opening_proofs(ProverInput::Data(scalars));
 
-            Ok(serialize_cells_and_proofs(cells, proofs))
-        })
+        Ok(serialize_cells_and_proofs(cells, proofs))
     }
 
     /// Recovers the cells and computes the KZG proofs, given a subset of cells.
@@ -116,19 +112,17 @@ impl DASContext {
         cell_indices: Vec<CellIndex>,
         cells: Vec<CellRef>,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), Error> {
-        self.thread_pool.install(|| {
-            // Recover polynomial
-            //
-            let poly_coeff = self.recover_polynomial_coeff(cell_indices, cells)?;
+        // Recover polynomial
+        //
+        let poly_coeff = self.recover_polynomial_coeff(cell_indices, cells)?;
 
-            // Compute proofs and evaluation sets
-            //
-            let (proofs, coset_evaluations) = self
-                .prover_ctx
-                .kzg_multipoint_prover
-                .compute_multi_opening_proofs(ProverInput::PolyCoeff(poly_coeff));
+        // Compute proofs and evaluation sets
+        //
+        let (proofs, coset_evaluations) = self
+            .prover_ctx
+            .kzg_multipoint_prover
+            .compute_multi_opening_proofs(ProverInput::PolyCoeff(poly_coeff));
 
-            Ok(serialize_cells_and_proofs(coset_evaluations, proofs))
-        })
+        Ok(serialize_cells_and_proofs(coset_evaluations, proofs))
     }
 }

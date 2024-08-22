@@ -54,39 +54,11 @@ pub type CellIndex = kzg_multi_open::CosetIndex;
 
 use constants::{BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT};
 use prover::ProverContext;
-use rayon::ThreadPool;
-use std::sync::Arc;
 use verifier::VerifierContext;
-
-/// ThreadCount indicates whether we want to use a single thread or multiple threads
-#[derive(Debug, Copy, Clone)]
-pub enum ThreadCount {
-    /// Initializes the threadpool with a single thread
-    Single,
-    /// Initializes the threadpool with the number of threads
-    /// denoted by this enum variant.
-    Multi(usize),
-    /// Initializes the threadpool with a sensible default number of
-    /// threads. This is currently set to `RAYON_NUM_THREADS`.
-    SensibleDefault,
-}
-
-impl From<ThreadCount> for usize {
-    fn from(value: ThreadCount) -> Self {
-        match value {
-            ThreadCount::Single => 1,
-            ThreadCount::Multi(num_threads) => num_threads,
-            // Setting this to `0` will tell ThreadPool to use
-            // `RAYON_NUM_THREADS`.
-            ThreadCount::SensibleDefault => 0,
-        }
-    }
-}
 
 /// The context that will be used to create and verify opening proofs.
 #[derive(Debug)]
 pub struct DASContext {
-    thread_pool: Arc<ThreadPool>,
     pub prover_ctx: ProverContext,
     pub verifier_ctx: VerifierContext,
 }
@@ -94,30 +66,21 @@ pub struct DASContext {
 impl Default for DASContext {
     fn default() -> Self {
         let trusted_setup = TrustedSetup::default();
-        const DEFAULT_NUM_THREADS: ThreadCount = ThreadCount::Single;
-        DASContext::with_threads(&trusted_setup, DEFAULT_NUM_THREADS, UsePrecomp::No)
+
+        DASContext::new(&trusted_setup, UsePrecomp::No)
     }
 }
 
 impl DASContext {
-    pub fn with_threads(
+    pub fn new(
         trusted_setup: &TrustedSetup,
-        num_threads: ThreadCount,
         // This parameter indicates whether we should allocate memory
         // in order to speed up proof creation. Heuristics show that
         // if pre-computations are desired, one should set the
         // width value to `8` for optimal storage and performance tradeoffs.
         use_precomp: UsePrecomp,
     ) -> Self {
-        let thread_pool = std::sync::Arc::new(
-            rayon::ThreadPoolBuilder::new()
-                .num_threads(num_threads.into())
-                .build()
-                .unwrap(),
-        );
-
         DASContext {
-            thread_pool,
             prover_ctx: ProverContext::new(trusted_setup, use_precomp),
             verifier_ctx: VerifierContext::new(trusted_setup),
         }
