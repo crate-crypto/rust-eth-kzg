@@ -14,7 +14,8 @@ use crate::{
         deserialize_blob_to_scalars, serialize_cells_and_proofs, serialize_g1_compressed,
     },
     trusted_setup::TrustedSetup,
-    BlobRef, Cell, CellIndex, CellRef, DASContext, KZGCommitment, KZGProof,
+    with_optional_threadpool, BlobRef, Cell, CellIndex, CellRef, DASContext, KZGCommitment,
+    KZGProof,
 };
 
 /// Context object that is used to call functions in the prover API.
@@ -64,7 +65,7 @@ impl DASContext {
     ///
     /// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/13ac373a2c284dc66b48ddd2ef0a10537e4e0de6/specs/deneb/polynomial-commitments.md#blob_to_kzg_commitment
     pub fn blob_to_kzg_commitment(&self, blob: BlobRef) -> Result<KZGCommitment, Error> {
-        self.thread_pool.install(|| {
+        with_optional_threadpool!(self, {
             // Deserialize the blob into scalars.
             let scalars = deserialize_blob_to_scalars(blob)?;
 
@@ -86,7 +87,7 @@ impl DASContext {
         &self,
         blob: BlobRef,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), Error> {
-        self.thread_pool.install(|| {
+        with_optional_threadpool!(self, {
             // Deserialization
             //
             let scalars = deserialize_blob_to_scalars(blob)?;
@@ -116,7 +117,7 @@ impl DASContext {
         cell_indices: Vec<CellIndex>,
         cells: Vec<CellRef>,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), Error> {
-        self.thread_pool.install(|| {
+        with_optional_threadpool!(self, {
             // Recover polynomial
             //
             let poly_coeff = self.recover_polynomial_coeff(cell_indices, cells)?;
