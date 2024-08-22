@@ -12,5 +12,4 @@ repository = { workspace = true }
 rayon = { workspace = true, optional = true }
 
 [features]
-default = []
 multithreading = ["rayon"]
