@@ -101,6 +101,7 @@ pub struct DASContext {
     pub verifier_ctx: VerifierContext,
 }
 
+#[cfg(feature = "multithreading")]
 impl Default for DASContext {
     fn default() -> Self {
         let trusted_setup = TrustedSetup::default();
@@ -108,15 +109,20 @@ impl Default for DASContext {
         DASContext::with_threads(&trusted_setup, DEFAULT_NUM_THREADS, UsePrecomp::No)
     }
 }
+#[cfg(not(feature = "multithreading"))]
+impl Default for DASContext {
+    fn default() -> Self {
+        let trusted_setup = TrustedSetup::default();
+
+        DASContext::new(&trusted_setup, UsePrecomp::No)
+    }
+}
 
 impl DASContext {
+    #[cfg(feature = "multithreading")]
     pub fn with_threads(
         trusted_setup: &TrustedSetup,
         num_threads: ThreadCount,
-        // This parameter indicates whether we should allocate memory
-        // in order to speed up proof creation. Heuristics show that
-        // if pre-computations are desired, one should set the
-        // width value to `8` for optimal storage and performance tradeoffs.
         use_precomp: UsePrecomp,
     ) -> Self {
         #[cfg(feature = "multithreading")]
@@ -130,6 +136,21 @@ impl DASContext {
         DASContext {
             #[cfg(feature = "multithreading")]
             thread_pool,
+            prover_ctx: ProverContext::new(trusted_setup, use_precomp),
+            verifier_ctx: VerifierContext::new(trusted_setup),
+        }
+    }
+
+    #[cfg(not(feature = "multithreading"))]
+    pub fn new(
+        trusted_setup: &TrustedSetup,
+        // This parameter indicates whether we should allocate memory
+        // in order to speed up proof creation. Heuristics show that
+        // if pre-computations are desired, one should set the
+        // width value to `8` for optimal storage and performance tradeoffs.
+        use_precomp: UsePrecomp,
+    ) -> Self {
+        DASContext {
             prover_ctx: ProverContext::new(trusted_setup, use_precomp),
             verifier_ctx: VerifierContext::new(trusted_setup),
         }
