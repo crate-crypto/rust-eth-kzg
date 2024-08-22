@@ -15,7 +15,6 @@ bls12_381 = { workspace = true }
 polynomial = { workspace = true }
 maybe_rayon = { workspace = true }
 hex = { workspace = true }
-rayon = { workspace = true, optional = true }
 sha2 = "0.10.8"
 
 [dev-dependencies]
@@ -23,8 +22,8 @@ criterion = "0.5.1"
 rand = "0.8.4"
 
 [features]
-default = []
-multithreading = ["rayon", "maybe_rayon/multithreading"]
+singlethreading = ["bls12_381/blst-no-threads"]
+multithreading = ["maybe_rayon/multithreading"]
 
 [[bench]]
 name = "benchmark"
