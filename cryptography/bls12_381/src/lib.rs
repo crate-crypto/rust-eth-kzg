@@ -28,8 +28,25 @@ pub fn multi_pairings(pairs: &[(&G1Point, &blstrs::G2Prepared)]) -> bool {
 }
 
 pub fn g1_batch_normalize(projective_points: &[G1Projective]) -> Vec<G1Point> {
-    batch_normalize_points(projective_points)
+    use blst::{blst_p1, blst_p1_affine};
+
+    let p: [*const blst_p1; 2] = [
+        projective_points.as_ptr() as *const blst_p1,
+        std::ptr::null(),
+    ];
+    let mut out = vec![G1Point::default(); projective_points.len()];
+
+    unsafe {
+        blst::blst_p1s_to_affine(
+            out.as_mut_ptr() as *mut blst_p1_affine,
+            &p[0],
+            projective_points.len(),
+        )
+    }
+
+    out
 }
+
 pub fn g2_batch_normalize(projective_points: &[G2Projective]) -> Vec<G2Point> {
     batch_normalize_points(projective_points)
 }
