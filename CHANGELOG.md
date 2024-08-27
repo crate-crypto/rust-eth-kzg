@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.5.0...v0.5.1) (2024-08-27)
+
+
+### Bug Fixes
+
+* Publish maybe_rayon when releasing crates ([#244](https://github.com/crate-crypto/rust-eth-kzg/issues/244)) ([ad9f273](https://github.com/crate-crypto/rust-eth-kzg/commit/ad9f273a26d32b29b5b6969632e8aaa99f0549b7))
+
 ## [0.5.0](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.4.1...v0.5.0) (2024-08-27)
 
 
