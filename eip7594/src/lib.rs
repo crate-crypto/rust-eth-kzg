@@ -58,9 +58,9 @@ use constants::{BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT};
 use prover::ProverContext;
 use verifier::VerifierContext;
 
-#[cfg(feature = "multithreading")]
+#[cfg(feature = "multithreaded")]
 use rayon::ThreadPool;
-#[cfg(feature = "multithreading")]
+#[cfg(feature = "multithreaded")]
 use std::sync::Arc;
 
 /// ThreadCount indicates whether we want to use a single thread or multiple threads
@@ -70,11 +70,11 @@ pub enum ThreadCount {
     Single,
     /// Initializes the threadpool with the number of threads
     /// denoted by this enum variant.
-    #[cfg(feature = "multithreading")]
+    #[cfg(feature = "multithreaded")]
     Multi(usize),
     /// Initializes the threadpool with a sensible default number of
     /// threads. This is currently set to `RAYON_NUM_THREADS`.
-    #[cfg(feature = "multithreading")]
+    #[cfg(feature = "multithreaded")]
     SensibleDefault,
 }
 
@@ -82,11 +82,11 @@ impl From<ThreadCount> for usize {
     fn from(value: ThreadCount) -> Self {
         match value {
             ThreadCount::Single => 1,
-            #[cfg(feature = "multithreading")]
+            #[cfg(feature = "multithreaded")]
             ThreadCount::Multi(num_threads) => num_threads,
             // Setting this to `0` will tell ThreadPool to use
             // `RAYON_NUM_THREADS`.
-            #[cfg(feature = "multithreading")]
+            #[cfg(feature = "multithreaded")]
             ThreadCount::SensibleDefault => 0,
         }
     }
@@ -95,13 +95,13 @@ impl From<ThreadCount> for usize {
 /// The context that will be used to create and verify opening proofs.
 #[derive(Debug)]
 pub struct DASContext {
-    #[cfg(feature = "multithreading")]
+    #[cfg(feature = "multithreaded")]
     thread_pool: Arc<ThreadPool>,
     pub prover_ctx: ProverContext,
     pub verifier_ctx: VerifierContext,
 }
 
-#[cfg(feature = "multithreading")]
+#[cfg(feature = "multithreaded")]
 impl Default for DASContext {
     fn default() -> Self {
         let trusted_setup = TrustedSetup::default();
@@ -109,7 +109,7 @@ impl Default for DASContext {
         DASContext::with_threads(&trusted_setup, DEFAULT_NUM_THREADS, UsePrecomp::No)
     }
 }
-#[cfg(not(feature = "multithreading"))]
+#[cfg(not(feature = "multithreaded"))]
 impl Default for DASContext {
     fn default() -> Self {
         let trusted_setup = TrustedSetup::default();
@@ -119,13 +119,13 @@ impl Default for DASContext {
 }
 
 impl DASContext {
-    #[cfg(feature = "multithreading")]
+    #[cfg(feature = "multithreaded")]
     pub fn with_threads(
         trusted_setup: &TrustedSetup,
         num_threads: ThreadCount,
         use_precomp: UsePrecomp,
     ) -> Self {
-        #[cfg(feature = "multithreading")]
+        #[cfg(feature = "multithreaded")]
         let thread_pool = std::sync::Arc::new(
             rayon::ThreadPoolBuilder::new()
                 .num_threads(num_threads.into())
@@ -134,14 +134,14 @@ impl DASContext {
         );
 
         DASContext {
-            #[cfg(feature = "multithreading")]
+            #[cfg(feature = "multithreaded")]
             thread_pool,
             prover_ctx: ProverContext::new(trusted_setup, use_precomp),
             verifier_ctx: VerifierContext::new(trusted_setup),
         }
     }
 
-    #[cfg(not(feature = "multithreading"))]
+    #[cfg(not(feature = "multithreaded"))]
     pub fn new(
         trusted_setup: &TrustedSetup,
         // This parameter indicates whether we should allocate memory

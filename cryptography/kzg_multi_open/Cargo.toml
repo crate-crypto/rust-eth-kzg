@@ -22,8 +22,8 @@ criterion = "0.5.1"
 rand = "0.8.4"
 
 [features]
-singlethreading = ["bls12_381/blst-no-threads"]
-multithreading = ["maybe_rayon/multithreading"]
+singlethreaded = ["bls12_381/blst-no-threads"]
+multithreaded = ["maybe_rayon/multithreaded"]
 
 [[bench]]
 name = "benchmark"
