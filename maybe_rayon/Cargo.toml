@@ -1,0 +1,15 @@
+[package]
+name = "crate_crypto_internal_eth_kzg_maybe_rayon"
+description = "This crate provides an implementation of a wrapper around the rayon crate"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+license = { workspace = true }
+rust-version = { workspace = true }
+repository = { workspace = true }
+
+[dependencies]
+rayon = { workspace = true, optional = true }
+
+[features]
+multithreaded = ["rayon"]

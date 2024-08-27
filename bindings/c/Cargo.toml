@@ -13,7 +13,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 
 [dependencies]
 libc = "0.2.2"
-rust_eth_kzg = { workspace = true }
+rust_eth_kzg = { workspace = true, features = ["multithreaded"] }
 
 [build-dependencies]
 cbindgen = "0.26.0"

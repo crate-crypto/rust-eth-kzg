@@ -7,6 +7,7 @@ members = [
     "bindings/nim/rust_code",
     "bindings/csharp/rust_code",
     "eip7594",
+    "maybe_rayon",
     "cryptography/bls12_381",
     "cryptography/kzg_multi_open",
     "cryptography/polynomial",
@@ -31,6 +32,7 @@ bls12_381 = { package = "crate_crypto_internal_eth_kzg_bls12_381", version = "0.
 polynomial = { package = "crate_crypto_internal_eth_kzg_polynomial", version = "0.4.1", path = "cryptography/polynomial" }
 erasure_codes = { package = "crate_crypto_internal_eth_kzg_erasure_codes", version = "0.4.1", path = "cryptography/erasure_codes" }
 rust_eth_kzg = { version = "0.4.1", path = "eip7594" }
+maybe_rayon = { package = "crate_crypto_internal_eth_kzg_maybe_rayon", version = "0.4.1", path = "maybe_rayon" }
 kzg_multi_open = { package = "crate_crypto_kzg_multi_open_fk20", version = "0.4.1", path = "cryptography/kzg_multi_open" }
 c_eth_kzg = { version = "0.4.1", path = "bindings/c" }
 hex = "0.4.3"

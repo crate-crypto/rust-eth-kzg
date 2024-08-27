@@ -31,6 +31,9 @@ subtle = { version = ">=2.5.0, <3.0" }
 criterion = "0.5.1"
 rand = "0.8.4"
 
+[features]
+blst-no-threads = ["blst/no-threads"]
+
 [[bench]]
 name = "benchmark"
 harness = false
