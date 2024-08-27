@@ -79,6 +79,11 @@ jobs:
           toolchain: stable
 
       # These steps are in a specific order so crate dependencies are updated first
+      - name: Publish maybe_rayon
+        run: cargo publish --package crate_crypto_internal_eth_kzg_maybe_rayon
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_RELEASE_TOKEN }}
+
       - name: Publish bls12_381
         run: cargo publish --package crate_crypto_internal_eth_kzg_bls12_381
         env:
