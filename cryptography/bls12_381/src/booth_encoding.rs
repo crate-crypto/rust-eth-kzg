@@ -1,9 +1,5 @@
 use std::ops::Neg;
 
-use blstrs::{G1Projective, Scalar};
-use ff::{Field, PrimeField};
-
-use crate::G1Point;
 // TODO: Link to halo2 file + docs + comments
 pub fn get_booth_index(window_index: usize, window_size: usize, el: &[u8]) -> i32 {
     // Booth encoding:
@@ -49,42 +45,52 @@ pub fn get_booth_index(window_index: usize, window_size: usize, el: &[u8]) -> i3
     }
 }
 
-#[test]
-fn smoke_scalar_mul() {
-    use group::prime::PrimeCurveAffine;
-    let gen = G1Point::generator();
-    let s = -Scalar::ONE;
+#[cfg(test)]
+mod tests {
+    use std::ops::Neg;
 
-    let res = gen * s;
+    use super::get_booth_index;
+    use crate::G1Point;
+    use blstrs::{G1Projective, Scalar};
+    use ff::{Field, PrimeField};
 
-    let got = mul(&s, &gen, 4);
+    #[test]
+    fn smoke_scalar_mul() {
+        use group::prime::PrimeCurveAffine;
+        let gen = G1Point::generator();
+        let s = -Scalar::ONE;
 
-    assert_eq!(G1Point::from(res), got)
-}
+        let res = gen * s;
 
-fn mul(scalar: &Scalar, point: &G1Point, window: usize) -> G1Point {
-    let u = scalar.to_bytes_le();
-    let n = Scalar::NUM_BITS as usize / window + 1;
+        let got = mul(&s, &gen, 4);
 
-    let table = (0..=1 << (window - 1))
-        .map(|i| point * Scalar::from(i as u64))
-        .collect::<Vec<_>>();
-
-    let mut acc: G1Projective = G1Point::default().into();
-    for i in (0..n).rev() {
-        for _ in 0..window {
-            acc = acc + acc;
-        }
-
-        let idx = get_booth_index(i as usize, window, u.as_ref());
-
-        if idx.is_negative() {
-            acc += table[idx.unsigned_abs() as usize].neg();
-        }
-        if idx.is_positive() {
-            acc += table[idx.unsigned_abs() as usize];
-        }
+        assert_eq!(G1Point::from(res), got)
     }
 
-    acc.into()
+    fn mul(scalar: &Scalar, point: &G1Point, window: usize) -> G1Point {
+        let u = scalar.to_bytes_le();
+        let n = Scalar::NUM_BITS as usize / window + 1;
+
+        let table = (0..=1 << (window - 1))
+            .map(|i| point * Scalar::from(i as u64))
+            .collect::<Vec<_>>();
+
+        let mut acc: G1Projective = G1Point::default().into();
+        for i in (0..n).rev() {
+            for _ in 0..window {
+                acc = acc + acc;
+            }
+
+            let idx = get_booth_index(i as usize, window, u.as_ref());
+
+            if idx.is_negative() {
+                acc += table[idx.unsigned_abs() as usize].neg();
+            }
+            if idx.is_positive() {
+                acc += table[idx.unsigned_abs() as usize];
+            }
+        }
+
+        acc.into()
+    }
 }
