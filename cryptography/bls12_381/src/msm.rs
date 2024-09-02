@@ -203,12 +203,11 @@ pub fn msm_best2_noinfo(
     // or use the optimized formulas
     // let mut all_points = Vec::new();
     // let mut bucket_indices = Vec::new();
-    // TODO: This should return the points too, ie skip the empty buckets
-    let bucket_indices: Vec<_> = all_information
-        .iter()
+    let (bucket_indices, all_information): (Vec<_>, Vec<_>) = all_information
+        .into_iter()
         .enumerate()
         .filter(|(_, points)| !points.is_empty())
-        .map(|(index, _)| (index + 1) as u64)
+        .map(|(index, points)| (((index + 1) as u64), points))
         .collect();
 
     let buckets_added = crate::batch_add::multi_batch_addition(all_information);
