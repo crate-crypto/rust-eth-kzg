@@ -1,7 +1,7 @@
 use std::ops::Neg;
 
 use blstrs::{G1Projective, Scalar};
-use ff::PrimeField;
+use ff::{Field, PrimeField};
 
 use crate::G1Point;
 // TODO: Link to halo2 file + docs + comments
