@@ -1,4 +1,4 @@
-use crate::batch_inversion::batch_inverse;
+use crate::batch_inversion::{batch_inverse, batch_inverse_scratch_pad};
 use blstrs::{Fp, G1Affine};
 
 /// Adds multiple points together in affine representation, batching the inversions
@@ -121,7 +121,7 @@ pub fn multi_batch_addition(mut multi_points: Vec<Vec<G1Affine>>) -> Vec<G1Affin
         }
     }
     let total_num_points: usize = multi_points.iter().map(|p| p.len()).sum();
-    // let mut scratchpad = Vec::with_capacity(total_num_points);
+    let mut scratchpad = Vec::with_capacity(total_num_points);
 
     // Find the largest buckets, this will be the bottleneck for the number of iterations
     let mut max_bucket_length = 0;
@@ -167,7 +167,7 @@ pub fn multi_batch_addition(mut multi_points: Vec<Vec<G1Affine>>) -> Vec<G1Affin
         }
 
         // We have iterated over each bucket, so now we need to do a batch inversion
-        batch_inverse(&mut new_differences);
+        batch_inverse_scratch_pad(&mut new_differences, &mut scratchpad);
         // Now we update each bucket using the batch inversion we have computed and the collected points
         for i in 0..multi_points.len() {
             if bucket_complete[i] {
