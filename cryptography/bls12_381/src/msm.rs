@@ -1,0 +1,445 @@
+use blstrs::G1Affine;
+use blstrs::G1Projective;
+use blstrs::Scalar;
+use ff::PrimeField;
+use group::Group;
+
+use crate::booth_encoding::get_booth_index;
+use crate::g1_batch_normalize;
+use crate::G1Point;
+
+#[derive(Debug, Clone, Copy)]
+pub struct Info {
+    base_idx: u64,
+    bucket_idx: u64,
+    // We use precomputations which removes the window_idx
+    // window_idx: u64,
+    sign: bool,
+}
+
+pub fn precompute(
+    window_size: usize,
+    number_of_windows: usize,
+    points: &[G1Point],
+) -> Vec<G1Point> {
+    // For each point, we compute number_of_windows-1 points
+    let mut results = Vec::new();
+    for point in points {
+        // First add the original point
+        results.push(point.into());
+
+        // Then scale each successive point by 2^window_size
+        for _ in 0..number_of_windows - 1 {
+            let mut last_point_scaled_window_size: G1Projective = *results.last().unwrap();
+            for _ in 0..window_size {
+                last_point_scaled_window_size = last_point_scaled_window_size.double()
+            }
+            results.push(last_point_scaled_window_size)
+        }
+    }
+    g1_batch_normalize(&results)
+}
+
+// Note: This does not work if the input points are [P, -P] for example
+// We could iterate for that case, but its unlikely given the points are random
+pub fn msm_best2(
+    coeffs: &[Scalar],
+    bases_precomputed: &[G1Point],
+    window_size: usize,
+) -> G1Projective {
+    // assert_eq!(coeffs.len(), bases.len());
+
+    let c = window_size;
+
+    // coeffs to byte representation
+    let coeffs: Vec<_> = coeffs.iter().map(|a| a.to_bytes_le()).collect();
+
+    // Information on the points we want to add
+    let mut all_information = vec![vec![]; 1 << (c - 1)];
+
+    // number of windows
+    let number_of_windows = Scalar::NUM_BITS as usize / c + 1;
+
+    for window_idx in 0..number_of_windows {
+        for (base_idx, coeff) in coeffs.iter().enumerate() {
+            let buck_idx = get_booth_index(window_idx, c, coeff.as_ref());
+
+            if buck_idx != 0 {
+                // parse bucket index
+                let sign = buck_idx.is_positive();
+                let buck_idx = buck_idx.unsigned_abs() as usize - 1;
+                //
+                // Since we are using precomputed points, the base_idx is augmented
+                //
+                // We need to modify the base index to take into account:
+                // - The window, so we fetch the precomputed base for that window
+                // - The position of the point in the precomputed bases,
+                // relative to the original bases vector
+                //
+                // If you imagine we had:
+                // [P1, P2, P3]
+                // precomp = [P1, c*P1,..., (num_window-1)*c*P1, P2,...]
+                //
+                // The index of P1, P2, etc can be computed by:
+                // augmented_base_idx = base_idx * num_windows
+                // Then in order to get the correct point, we do:
+                // augmented_base_idx += window_idx
+                let base_idx = (base_idx * number_of_windows) + window_idx;
+
+                let info = Info {
+                    bucket_idx: buck_idx as u64,
+                    sign,
+                    base_idx: base_idx as u64,
+                };
+
+                all_information[buck_idx].push(info);
+            }
+        }
+    }
+
+    // All of the above costs about 200 microseconds on 64 points.
+    // Using a vector is about 3 times faster, but the points are not ordered by bucket index
+    // so we could try and do a second pass on the vector to see if thats quicker for small numPoints
+    //
+    // Note: for duplicate points, we could either put them in the running sum
+    // or use the optimized formulas
+    let mut all_points = Vec::new();
+    let mut bucket_indices = Vec::new();
+    for (bucket_idx, points) in all_information.into_iter().enumerate() {
+        if points.is_empty() {
+            continue;
+        }
+
+        // batch add each bucket
+        let res: Vec<_> = points
+            .into_iter()
+            .map(|point_info| {
+                let mut p = bases_precomputed[point_info.base_idx as usize];
+                if !point_info.sign {
+                    p = -p;
+                }
+                p
+            })
+            .collect();
+        // TODO: We should make sure that we cannot get two points being added together or
+        // TODO: have the formula deal with it
+        all_points.push(res);
+        bucket_indices.push((bucket_idx + 1) as u64); // Add one here since the zeroth bucket will bucket_1, bucket_K eventually translates to K * sum_of_bucket
+    }
+
+    let buckets_added = crate::batch_add::multi_batch_addition(all_points);
+
+    subsum_accumulation(&bucket_indices, &buckets_added)
+    // Now we have all of the information needed
+    // The precomputations that we did, effectively allowed us
+    // to remove the notion of a "window" -- there is only
+    // one window, effectively.
+    //
+    // Note: For 64 points, this is about 3200 elements.
+    //
+    // Do some more preprocessing to reduce the work needed
+}
+
+pub fn msm_best2_noinfo(
+    coeffs: &[Scalar],
+    bases_precomputed: &[G1Point],
+    window_size: usize,
+) -> G1Projective {
+    // assert_eq!(coeffs.len(), bases.len());
+
+    let c = window_size;
+
+    // coeffs to byte representation
+    let coeffs: Vec<_> = coeffs.iter().map(|a| a.to_bytes_le()).collect();
+
+    // Information on the points we want to add
+    let mut all_information = vec![vec![]; 1 << (c - 1)];
+
+    // number of windows
+    let number_of_windows = Scalar::NUM_BITS as usize / c + 1;
+
+    for window_idx in 0..number_of_windows {
+        for (base_idx, coeff) in coeffs.iter().enumerate() {
+            let buck_idx = get_booth_index(window_idx, c, coeff.as_ref());
+
+            if buck_idx != 0 {
+                // parse bucket index
+                let sign = buck_idx.is_positive();
+                let buck_idx = buck_idx.unsigned_abs() as usize - 1;
+                //
+                // Since we are using precomputed points, the base_idx is augmented
+                //
+                // We need to modify the base index to take into account:
+                // - The window, so we fetch the precomputed base for that window
+                // - The position of the point in the precomputed bases,
+                // relative to the original bases vector
+                //
+                // If you imagine we had:
+                // [P1, P2, P3]
+                // precomp = [P1, c*P1,..., (num_window-1)*c*P1, P2,...]
+                //
+                // The index of P1, P2, etc can be computed by:
+                // augmented_base_idx = base_idx * num_windows
+                // Then in order to get the correct point, we do:
+                // augmented_base_idx += window_idx
+                let base_idx = (base_idx * number_of_windows) + window_idx;
+
+                let point = if sign {
+                    bases_precomputed[base_idx as usize]
+                } else {
+                    -bases_precomputed[base_idx as usize]
+                };
+
+                all_information[buck_idx].push(point);
+            }
+        }
+    }
+
+    // All of the above costs about 200 microseconds on 64 points.
+    // Using a vector is about 3 times faster, but the points are not ordered by bucket index
+    // so we could try and do a second pass on the vector to see if thats quicker for small numPoints
+    //
+    // Note: for duplicate points, we could either put them in the running sum
+    // or use the optimized formulas
+    // let mut all_points = Vec::new();
+    // let mut bucket_indices = Vec::new();
+    // TODO: This should return the points too, ie skip the empty buckets
+    let bucket_indices: Vec<_> = all_information
+        .iter()
+        .enumerate()
+        .filter(|(_, points)| !points.is_empty())
+        .map(|(index, _)| (index + 1) as u64)
+        .collect();
+
+    let buckets_added = crate::batch_add::multi_batch_addition(all_information);
+
+    subsum_accumulation(&bucket_indices, &buckets_added)
+}
+
+// Algorithm1 from the LFG paper
+// TODO: Fix later, this algorithm is broken in the POC and the paper
+// fn subsum_accumulation(b: &[u64], s: &[G1Affine]) -> G1Projective {
+//     assert_eq!(b.len(), s.len(), "Input arrays must have the same length");
+//     let d = *b.iter().max().unwrap() as usize;
+
+//     // Define a length-(d + 1) array tmp = [0] × (d + 1)
+//     let mut tmp_d = vec![G1Projective::identity(); d + 1];
+//     let mut tmp = G1Projective::identity();
+
+//     // Iterate from |B| to 1 by -1
+//     for i in (1..b.len()).rev() {
+//         // tmp[0] = tmp[0] + S_i
+//         tmp += s[i];
+
+//         // k = b_i - b_{i-1}
+//         let k = (b[i] - b[i - 1]) as usize;
+
+//         // if k >= 1 then tmp[k] = tmp[k] + tmp[0]
+//         // if k >= 1 {
+//         //     let t0 = tmp_d[0];
+//         //     tmp_d[k] += t0;
+//         // }
+//         tmp_d[k] += tmp;
+//     }
+
+//     // The original paper has a bug and does not deal with the case
+//     // when there is only 1 point
+//     if b.len() == 1 {
+//         tmp_d[(b[0] - 1) as usize] = s[0].into()
+//     }
+
+//     // Now do running sum stuff
+//     // summation by parts
+//     // e.g. 3a + 2b + 1c = a +
+//     //                    (a) + b +
+//     //                    ((a) + b) + c
+//     let mut running_sum = G1Projective::identity();
+//     let mut res = G1Projective::identity();
+//     // for i in (0..d).rev() {
+//     //     running_sum += &tmp_d[i];
+//     //     res += &running_sum;
+//     // }
+//     // We can use d to skip top buckets that are empty (done above)
+//     tmp_d.into_iter().rev().for_each(|b| {
+//         running_sum += &b;
+//         res += &running_sum;
+//     });
+//     res
+// }
+
+// This is poormans version of Algorithm 1 from LFG
+//
+// It seems to be faster, but thats likely because the actual one is not implemented
+// correctly and does not have the short cuts for bucket sizes 0 and 1
+fn subsum_accumulation(b: &[u64], s: &[G1Affine]) -> G1Projective {
+    // If we only have one, then we can return the scalar multiplication
+    // This is an assumption that LFG was making too.
+    if b.len() == 0 {
+        return G1Projective::identity();
+    }
+    if b.len() == 1 {
+        return s[0] * Scalar::from(b[0]);
+    }
+
+    // Now do running sum stuff
+    // summation by parts but it does not need to be continuos
+    let mut running_sum = G1Projective::identity();
+    let mut res = G1Projective::identity();
+
+    s.into_iter().enumerate().rev().for_each(|(index, point)| {
+        running_sum += point;
+        res += &running_sum;
+
+        // Check that we are not at the last point
+        if index > 0 {
+            // We cannot fail here since we know the length of b is atleast 2
+            let diff = b[index] - b[index - 1] - 1; // Note the -1 because if we have 2a + 1b, the diff will be 0 and the for loop will be skipped
+                                                    // Before going to the next point, we need to account
+                                                    // for the possible difference in scalars.
+                                                    // ie we could be doing 3 * a + 1 * b
+            for _ in 0..diff {
+                res += running_sum
+            }
+        }
+    });
+    res
+}
+
+// summation by parts
+// e.g. 3a + 2b + 1c = a +
+//                    (a) + b +
+//                    ((a) + b) + c
+//
+// Note: This assumes the points are in ascending order.
+// ie 1 * points[0] + 2 * points[1] + ... + n * points[n-1]
+#[inline(always)]
+fn horners_rule_sum(points: &[G1Point]) -> G1Projective {
+    let mut running_sum = G1Projective::identity();
+    let mut res = G1Projective::identity();
+    points.into_iter().rev().for_each(|b| {
+        running_sum += b;
+        res += &running_sum;
+    });
+    res
+}
+
+#[cfg(test)]
+mod test {
+
+    use crate::{
+        msm::{horners_rule_sum, msm_best2, precompute},
+        G1Point, G1Projective, Scalar,
+    };
+
+    use blstrs::G1Affine;
+    use group::{prime::PrimeCurveAffine, Group};
+
+    use super::subsum_accumulation;
+
+    #[test]
+    fn subsum_smoke_test() {
+        let result = subsum_accumulation(&[1], &[G1Affine::generator()]);
+        assert_eq!(G1Projective::generator(), result);
+
+        let result = subsum_accumulation(&[2], &[G1Affine::generator()]);
+        assert_eq!(G1Projective::generator() * Scalar::from(2u64), result);
+
+        let result = subsum_accumulation(&[1, 2], &[G1Affine::generator(), G1Affine::generator()]);
+        assert_eq!(G1Projective::generator() * Scalar::from(3u64), result);
+
+        let result = subsum_accumulation(&[1, 3], &[G1Affine::generator(), G1Affine::generator()]);
+        assert_eq!(G1Projective::generator() * Scalar::from(4u64), result);
+
+        let result =
+            subsum_accumulation(&[1, 300], &[-G1Affine::generator(), G1Affine::generator()]);
+        assert_eq!(G1Projective::generator() * Scalar::from(299u64), result);
+
+        let result = subsum_accumulation(
+            &[1, 2, 3, 4, 10, 22, 100],
+            &[
+                G1Affine::generator(),
+                G1Affine::generator(),
+                G1Affine::generator(),
+                G1Affine::generator(),
+                G1Affine::generator(),
+                G1Affine::generator(),
+                G1Affine::generator(),
+            ],
+        );
+        assert_eq!(
+            G1Projective::generator() * Scalar::from(1 + 2 + 3 + 4 + 10 + 22 + 100),
+            result
+        );
+    }
+
+    #[test]
+    fn horners_sum_smoke_test() {
+        let result = horners_rule_sum(&[G1Affine::generator()]);
+        assert_eq!(G1Projective::generator(), result);
+
+        let result = horners_rule_sum(&[
+            -G1Affine::generator(),
+            G1Affine::generator(),
+            G1Affine::generator(),
+        ]);
+        assert_eq!(
+            G1Projective::generator() * Scalar::from(3u64)
+                + G1Projective::generator() * Scalar::from(2u64)
+                + -G1Projective::generator(),
+            result
+        );
+    }
+
+    #[test]
+    fn smoke_test_msm_best2() {
+        use crate::ff::PrimeField;
+        let window_size = 7;
+        let number_of_windows = Scalar::NUM_BITS as usize / window_size + 1;
+
+        let precomp_bases = precompute(window_size, number_of_windows, &[G1Point::generator()]);
+        let scalar = -Scalar::from(2);
+
+        let res = msm_best2(&[scalar], &precomp_bases, window_size);
+        assert_eq!(res, G1Projective::generator() * scalar);
+    }
+
+    #[test]
+    fn smoke_test_msm_best2_neg() {
+        use crate::ff::PrimeField;
+        let window_size = 7;
+        let number_of_windows = Scalar::NUM_BITS as usize / window_size + 1;
+
+        let input_points = vec![G1Point::generator(), G1Point::generator()];
+        let input_scalars = vec![-Scalar::from(1), -Scalar::from(2)];
+        let precomp_bases = precompute(window_size, number_of_windows, &input_points);
+
+        let res = msm_best2(&input_scalars, &precomp_bases, window_size);
+        assert_eq!(res, naive_msm(&input_points, &input_scalars));
+    }
+
+    #[test]
+    fn smoke_test_msm_best2_double_scalar() {
+        use crate::ff::PrimeField;
+        let window_size = 7;
+        let number_of_windows = Scalar::NUM_BITS as usize / window_size + 1;
+
+        let point_b: G1Affine = (G1Projective::generator() + G1Projective::generator()).into();
+        let point_c: G1Affine =
+            (G1Projective::generator().double() + G1Projective::generator().double()).into();
+        let input_points = vec![G1Point::generator(), point_b, point_c];
+        let input_scalars = vec![Scalar::from(1), Scalar::from(2), Scalar::from(3u64)];
+        let precomp_bases = precompute(window_size, number_of_windows, &input_points);
+
+        let res = msm_best2(&input_scalars, &precomp_bases, window_size);
+        assert_eq!(res, naive_msm(&input_points, &input_scalars));
+    }
+
+    fn naive_msm(points: &[G1Point], scalars: &[Scalar]) -> G1Projective {
+        assert!(points.len() == scalars.len());
+        let mut result = G1Projective::identity();
+        for (scalar, point) in scalars.into_iter().zip(points) {
+            result += point * scalar
+        }
+        result
+    }
+}

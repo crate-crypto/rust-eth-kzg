@@ -3,7 +3,7 @@ pub mod batch_inversion;
 mod booth_encoding;
 pub mod fixed_base_msm;
 pub mod lincomb;
-
+mod msm;
 // Re-exporting the blstrs crate
 
 // Re-export ff and group, so other crates do not need to directly import(and independently version) them
