@@ -103,29 +103,28 @@ pub fn msm_best2(
     //
     // Note: for duplicate points, we could either put them in the running sum
     // or use the optimized formulas
-    let mut all_points = Vec::new();
-    let mut bucket_indices = Vec::new();
-    for (bucket_idx, points) in all_information.into_iter().enumerate() {
-        if points.is_empty() {
-            continue;
-        }
+    let (all_points, bucket_indices): (Vec<Vec<_>>, Vec<u64>) = all_information
+        .into_iter()
+        .enumerate()
+        .filter_map(|(bucket_idx, points)| {
+            if points.is_empty() {
+                None
+            } else {
+                let res: Vec<_> = points
+                    .into_iter()
+                    .map(|point_info| {
+                        let mut p = bases_precomputed[point_info.base_idx as usize];
+                        if !point_info.sign {
+                            p = -p;
+                        }
+                        p
+                    })
+                    .collect();
 
-        // batch add each bucket
-        let res: Vec<_> = points
-            .into_iter()
-            .map(|point_info| {
-                let mut p = bases_precomputed[point_info.base_idx as usize];
-                if !point_info.sign {
-                    p = -p;
-                }
-                p
-            })
-            .collect();
-        // TODO: We should make sure that we cannot get two points being added together or
-        // TODO: have the formula deal with it
-        all_points.push(res);
-        bucket_indices.push((bucket_idx + 1) as u64); // Add one here since the zeroth bucket will bucket_1, bucket_K eventually translates to K * sum_of_bucket
-    }
+                Some((res, (bucket_idx + 1) as u64))
+            }
+        })
+        .unzip();
 
     let buckets_added = crate::batch_add::multi_batch_addition(all_points);
 
