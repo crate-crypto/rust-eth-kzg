@@ -146,7 +146,6 @@ pub fn multi_batch_addition(mut multi_points: Vec<Vec<G1Affine>>) -> Vec<G1Affin
                 for k in (0..points.len()).step_by(stride * 2) {
                     if k + stride < points.len() {
                         new_differences.push(choose_add_or_double(points[k + stride], points[k]));
-                        // new_differences.push(points[k + stride].x() - points[k].x());
                     }
                 }
 
