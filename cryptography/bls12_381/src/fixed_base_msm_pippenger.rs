@@ -8,6 +8,31 @@ use crate::booth_encoding::get_booth_index;
 use crate::g1_batch_normalize;
 use crate::G1Point;
 
+pub struct FixedBaseMSMPippenger {
+    precomputed_points: Vec<G1Affine>,
+    number_of_windows: usize,
+    window_size: usize,
+}
+
+impl FixedBaseMSMPippenger {
+    pub fn new(points: &[G1Affine]) -> FixedBaseMSMPippenger {
+        // The +2 was empirically seen to give better results
+        let window_size = (f64::from(points.len() as u32)).ln().ceil() as usize + 2;
+        let number_of_windows = Scalar::NUM_BITS as usize / window_size + 1;
+        let precomputed_points = precompute(window_size, number_of_windows, points);
+
+        FixedBaseMSMPippenger {
+            precomputed_points,
+            number_of_windows,
+            window_size,
+        }
+    }
+
+    pub fn msm(&self, scalars: &[Scalar]) -> G1Projective {
+        msm_best2_noinfo(scalars, &self.precomputed_points, self.window_size)
+    }
+}
+
 pub fn precompute(
     window_size: usize,
     number_of_windows: usize,
