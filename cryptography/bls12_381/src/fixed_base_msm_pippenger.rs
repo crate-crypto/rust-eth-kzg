@@ -8,15 +8,6 @@ use crate::booth_encoding::get_booth_index;
 use crate::g1_batch_normalize;
 use crate::G1Point;
 
-#[derive(Debug, Clone, Copy)]
-pub struct Info {
-    base_idx: u64,
-    bucket_idx: u64,
-    // We use precomputations which removes the window_idx
-    // window_idx: u64,
-    sign: bool,
-}
-
 pub fn precompute(
     window_size: usize,
     number_of_windows: usize,
@@ -38,105 +29,6 @@ pub fn precompute(
         }
     }
     g1_batch_normalize(&results)
-}
-
-// Note: This does not work if the input points are [P, -P] for example
-// We could iterate for that case, but its unlikely given the points are random
-pub fn msm_best2(
-    coeffs: &[Scalar],
-    bases_precomputed: &[G1Point],
-    window_size: usize,
-) -> G1Projective {
-    // assert_eq!(coeffs.len(), bases.len());
-
-    let c = window_size;
-
-    // coeffs to byte representation
-    let coeffs: Vec<_> = coeffs.iter().map(|a| a.to_bytes_le()).collect();
-
-    // Information on the points we want to add
-    let mut all_information = vec![vec![]; 1 << (c - 1)];
-
-    // number of windows
-    let number_of_windows = Scalar::NUM_BITS as usize / c + 1;
-
-    for window_idx in 0..number_of_windows {
-        for (base_idx, coeff) in coeffs.iter().enumerate() {
-            let buck_idx = get_booth_index(window_idx, c, coeff.as_ref());
-
-            if buck_idx != 0 {
-                // parse bucket index
-                let sign = buck_idx.is_positive();
-                let buck_idx = buck_idx.unsigned_abs() as usize - 1;
-                //
-                // Since we are using precomputed points, the base_idx is augmented
-                //
-                // We need to modify the base index to take into account:
-                // - The window, so we fetch the precomputed base for that window
-                // - The position of the point in the precomputed bases,
-                // relative to the original bases vector
-                //
-                // If you imagine we had:
-                // [P1, P2, P3]
-                // precomp = [P1, c*P1,..., (num_window-1)*c*P1, P2,...]
-                //
-                // The index of P1, P2, etc can be computed by:
-                // augmented_base_idx = base_idx * num_windows
-                // Then in order to get the correct point, we do:
-                // augmented_base_idx += window_idx
-                let base_idx = (base_idx * number_of_windows) + window_idx;
-
-                let info = Info {
-                    bucket_idx: buck_idx as u64,
-                    sign,
-                    base_idx: base_idx as u64,
-                };
-
-                all_information[buck_idx].push(info);
-            }
-        }
-    }
-
-    // All of the above costs about 200 microseconds on 64 points.
-    // Using a vector is about 3 times faster, but the points are not ordered by bucket index
-    // so we could try and do a second pass on the vector to see if thats quicker for small numPoints
-    //
-    // Note: for duplicate points, we could either put them in the running sum
-    // or use the optimized formulas
-    let (all_points, bucket_indices): (Vec<Vec<_>>, Vec<u64>) = all_information
-        .into_iter()
-        .enumerate()
-        .filter_map(|(bucket_idx, points)| {
-            if points.is_empty() {
-                None
-            } else {
-                let res: Vec<_> = points
-                    .into_iter()
-                    .map(|point_info| {
-                        let mut p = bases_precomputed[point_info.base_idx as usize];
-                        if !point_info.sign {
-                            p = -p;
-                        }
-                        p
-                    })
-                    .collect();
-
-                Some((res, (bucket_idx + 1) as u64))
-            }
-        })
-        .unzip();
-
-    let buckets_added = crate::batch_add::multi_batch_addition(all_points);
-
-    subsum_accumulation(&bucket_indices, &buckets_added)
-    // Now we have all of the information needed
-    // The precomputations that we did, effectively allowed us
-    // to remove the notion of a "window" -- there is only
-    // one window, effectively.
-    //
-    // Note: For 64 points, this is about 3200 elements.
-    //
-    // Do some more preprocessing to reduce the work needed
 }
 
 pub fn msm_best2_noinfo(
@@ -325,7 +217,7 @@ fn horners_rule_sum(points: &[G1Point]) -> G1Projective {
 mod test {
 
     use crate::{
-        msm::{horners_rule_sum, msm_best2, precompute},
+        fixed_base_msm_pippenger::{horners_rule_sum, msm_best2_noinfo as msm_best2, precompute},
         G1Point, G1Projective, Scalar,
     };
 
