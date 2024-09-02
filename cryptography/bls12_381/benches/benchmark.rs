@@ -2,10 +2,10 @@ use crate_crypto_internal_eth_kzg_bls12_381::{
     batch_inversion,
     ff::Field,
     fixed_base_msm::{FixedBaseMSM, UsePrecomp},
+    fixed_base_msm_pippenger::FixedBaseMSMPippenger,
     g1_batch_normalize, g2_batch_normalize,
     group::Group,
     lincomb::{g1_lincomb, g1_lincomb_unsafe, g2_lincomb, g2_lincomb_unsafe},
-    msm::{msm_best2, msm_best2_noinfo, precompute},
     G1Projective, G2Projective, Scalar,
 };
 use criterion::{criterion_group, criterion_main, Criterion};
@@ -36,18 +36,12 @@ pub fn fixed_base_msm(c: &mut Criterion) {
         b.iter(|| fbm.msm(scalars.clone()))
     });
 
-    use crate_crypto_internal_eth_kzg_bls12_381::ff::PrimeField;
-    let window_size = (f64::from(length as u32)).ln().ceil() as usize + 2;
-    let number_of_windows = Scalar::NUM_BITS as usize / window_size + 1;
+    let fixed_base_pip = FixedBaseMSMPippenger::new(&generators);
 
-    let precomp_bases = precompute(window_size, number_of_windows, &generators);
-
-    c.bench_function("bls12_381 fixed_base_msm best2 no info", |b| {
-        b.iter(|| msm_best2_noinfo(&scalars, &precomp_bases, window_size))
-    });
-    c.bench_function("bls12_381 fixed_base_msm using pippenger bes32", |b| {
-        b.iter(|| msm_best2(&scalars, &precomp_bases, window_size))
-    });
+    c.bench_function(
+        "bls12_381 fixed_base_msm best2 no info (fixed base pip)",
+        |b| b.iter(|| fixed_base_pip.msm(&scalars)),
+    );
 }
 
 pub fn bench_msm(c: &mut Criterion) {
