@@ -83,14 +83,6 @@ pub fn batch_addition_mut(points: &mut [G1Affine]) -> G1Affine {
     points[0]
 }
 
-pub fn naive_multi_batch_addition(mut multi_points: Vec<Vec<G1Affine>>) -> Vec<G1Affine> {
-    // TODO: Try using a scratch pad here
-    multi_points
-        .into_iter()
-        .map(|points| batch_addition(points))
-        .collect()
-}
-
 // Similar to batch addition, however we amortize across different batches
 // TODO: Clean up -- This has a greater complexity than the regular algorithm
 // TODO so we want to check if it makes a difference in our usecase.
