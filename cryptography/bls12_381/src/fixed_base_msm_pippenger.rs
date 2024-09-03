@@ -1,7 +1,6 @@
 use blstrs::G1Affine;
 use blstrs::G1Projective;
 use blstrs::Scalar;
-use ff::Field;
 use ff::PrimeField;
 use group::Group;
 
@@ -11,7 +10,6 @@ use crate::G1Point;
 #[derive(Debug, Clone)]
 pub struct FixedBaseMSMPippenger {
     precomputed_points: Vec<G1Affine>,
-    number_of_windows: usize,
     window_size: usize,
 }
 
@@ -24,7 +22,6 @@ impl FixedBaseMSMPippenger {
 
         FixedBaseMSMPippenger {
             precomputed_points,
-            number_of_windows,
             window_size,
         }
     }
