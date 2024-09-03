@@ -39,10 +39,9 @@ pub fn fixed_base_msm(c: &mut Criterion) {
 
     let fixed_base_pip = FixedBaseMSMPippenger::new(&generators);
 
-    c.bench_function(
-        "bls12_381 fixed_base_msm best2 no info (fixed base pip)",
-        |b| b.iter(|| fixed_base_pip.msm(&scalars)),
-    );
+    c.bench_function("bls12_381 fixed based pippenger algorithm", |b| {
+        b.iter(|| fixed_base_pip.msm(&scalars))
+    });
 }
 
 pub fn bench_msm(c: &mut Criterion) {
@@ -96,5 +95,11 @@ fn random_g2_points(size: usize) -> Vec<G2Projective> {
     points
 }
 
-criterion_group!(benches, /*batch_inversion, fixed_base_msm, fixed_base_msm */ bench_msm);
+criterion_group!(
+    benches,
+    batch_inversion,
+    fixed_base_msm,
+    bench_msm,
+    fixed_base_msm
+);
 criterion_main!(benches);
