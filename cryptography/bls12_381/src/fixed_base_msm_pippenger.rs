@@ -30,7 +30,7 @@ impl FixedBaseMSMPippenger {
     }
 
     pub fn msm(&self, scalars: &[Scalar]) -> G1Projective {
-        msm_best2_noinfo(scalars, &self.precomputed_points, self.window_size)
+        pippenger_fixed_base_msm(scalars, &self.precomputed_points, self.window_size)
     }
 }
 
@@ -57,7 +57,7 @@ pub fn precompute(
     g1_batch_normalize(&results)
 }
 
-pub fn msm_best2_noinfo(
+pub fn pippenger_fixed_base_msm(
     coeffs: &[Scalar],
     bases_precomputed: &[G1Point],
     window_size: usize,
@@ -348,7 +348,9 @@ fn horners_rule_sum(points: &[G1Point]) -> G1Projective {
 mod test {
 
     use crate::{
-        fixed_base_msm_pippenger::{horners_rule_sum, msm_best2_noinfo as msm_best2, precompute},
+        fixed_base_msm_pippenger::{
+            horners_rule_sum, pippenger_fixed_base_msm as msm_best2, precompute,
+        },
         G1Point, G1Projective, Scalar,
     };
 
