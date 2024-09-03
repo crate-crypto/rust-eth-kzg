@@ -8,7 +8,7 @@ use group::Group;
 use crate::booth_encoding::get_booth_index;
 use crate::g1_batch_normalize;
 use crate::G1Point;
-
+#[derive(Debug, Clone)]
 pub struct FixedBaseMSMPippenger {
     precomputed_points: Vec<G1Affine>,
     number_of_windows: usize,
@@ -293,6 +293,8 @@ pub fn multi_msm(
 // It seems to be faster, but thats likely because the actual one is not implemented
 // correctly and does not have the short cuts for bucket sizes 0 and 1
 fn subsum_accumulation(b: &[u64], s: &[G1Affine]) -> G1Projective {
+    assert_eq!(b.len(), s.len());
+
     // If we only have one, then we can return the scalar multiplication
     // This is an assumption that LFG was making too.
     if b.len() == 0 {
@@ -318,6 +320,14 @@ fn subsum_accumulation(b: &[u64], s: &[G1Affine]) -> G1Projective {
                                                     // Before going to the next point, we need to account
                                                     // for the possible difference in scalars.
                                                     // ie we could be doing 3 * a + 1 * b
+            for _ in 0..diff {
+                res += running_sum
+            }
+        } else {
+            //Check the diff between the last scalar and 1
+            // This is so that we "finish" the horner sum.
+
+            let diff = b[index] - 1;
             for _ in 0..diff {
                 res += running_sum
             }
@@ -393,6 +403,23 @@ mod test {
             G1Projective::generator() * Scalar::from(1 + 2 + 3 + 4 + 10 + 22 + 100),
             result
         );
+    }
+
+    fn naive_subsum_accumulation(b: &[u64], s: &[G1Affine]) -> G1Projective {
+        let mut res = G1Projective::identity();
+        for (scalar, point) in b.iter().zip(s) {
+            res += G1Projective::from(point) * Scalar::from(*scalar)
+        }
+        res
+    }
+
+    #[test]
+    fn subsum_regression_test() {
+        let indices = [2, 3];
+        let points = vec![G1Affine::generator(); 2];
+        let got = subsum_accumulation(&indices, &points);
+        let expected = naive_subsum_accumulation(&indices, &points);
+        assert_eq!(got, expected);
     }
 
     #[test]
