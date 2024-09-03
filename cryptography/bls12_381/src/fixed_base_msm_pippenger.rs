@@ -237,88 +237,6 @@ pub fn multi_msm(
     result
 }
 
-use ruint::aliases::*;
-use ruint::Uint;
-use std::cmp::Reverse;
-use std::collections::BinaryHeap;
-
-#[derive(Debug, Clone, Copy)]
-struct PointScalar {
-    scalar: U256,
-    point: G1Projective,
-}
-
-impl PartialEq for PointScalar {
-    fn eq(&self, other: &Self) -> bool {
-        self.scalar == other.scalar && self.point == other.point
-    }
-}
-
-impl Eq for PointScalar {}
-
-impl PartialOrd for PointScalar {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl Ord for PointScalar {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.scalar.cmp(&other.scalar)
-    }
-}
-
-pub fn bos_coster(scalars: &[U256], points: &[G1Projective]) -> G1Projective {
-    if scalars.len() != points.len() {
-        panic!("Mismatch between number of scalars and points");
-    }
-
-    let mut heap = BinaryHeap::new();
-    for (scalar, point) in scalars.into_iter().zip(points.iter()) {
-        if *scalar != U256::ZERO {
-            heap.push(PointScalar {
-                scalar: *scalar,
-                point: *point,
-            });
-        }
-    }
-
-    while heap.len() > 1 {
-        let PointScalar {
-            scalar: n1,
-            point: p1,
-        } = heap.pop().unwrap();
-        let PointScalar {
-            scalar: n2,
-            point: p2,
-        } = heap.pop().unwrap();
-
-        let p_sum = p1 + &p2;
-        let n_diff = n1 - n2;
-
-        if n_diff > U256::ZERO {
-            heap.push(PointScalar {
-                scalar: n_diff,
-                point: p1.clone(),
-            });
-        }
-        heap.push(PointScalar {
-            scalar: n2,
-            point: p_sum,
-        });
-    }
-
-    if let Some(PointScalar {
-        scalar: n,
-        point: p,
-    }) = heap.pop()
-    {
-        p * Scalar::from_bytes_be(&n.to_be_bytes()).unwrap()
-    } else {
-        G1Projective::identity() // Identity point
-    }
-}
-
 // Algorithm1 from the LFG paper
 // TODO: Fix later, this algorithm is broken in the POC and the paper
 // fn subsum_accumulation(b: &[u64], s: &[G1Affine]) -> G1Projective {
@@ -436,9 +354,8 @@ mod test {
 
     use blstrs::G1Affine;
     use group::{prime::PrimeCurveAffine, Group};
-    use ruint::aliases::U256;
 
-    use super::{bos_coster, subsum_accumulation, DebugPoint};
+    use super::subsum_accumulation;
 
     #[test]
     fn subsum_smoke_test() {
@@ -518,21 +435,6 @@ mod test {
         let precomp_bases = precompute(window_size, number_of_windows, &input_points);
 
         let res = msm_best2(&input_scalars, &precomp_bases, window_size);
-        assert_eq!(res, naive_msm(&input_points, &input_scalars));
-    }
-
-    #[test]
-    fn smoke_test_bos_coster() {
-        let input_points = vec![G1Point::generator(), G1Point::generator()];
-
-        // let input_scalars = vec![Scalar::from(1), Scalar::from(2)];
-        let input_scalars = vec![U256::from(100), U256::from(200)];
-
-        let res = crate::fixed_base_msm_pippenger::bos_coster(
-            &input_scalars,
-            &[G1Projective::generator(), G1Projective::generator()],
-        );
-        let input_scalars = vec![Scalar::from(100), Scalar::from(200)];
         assert_eq!(res, naive_msm(&input_points, &input_scalars));
     }
 
