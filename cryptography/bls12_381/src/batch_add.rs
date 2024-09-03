@@ -179,8 +179,6 @@ pub fn multi_batch_addition(mut multi_points: Vec<Vec<G1Affine>>) -> Vec<G1Affin
         }
     }
 
-    // multi_points.into_iter().map(|points| points[0]).collect()
-    // TODO: using this incase we have empty vectors passed in
     multi_points
         .into_iter()
         .map(|points| points.get(0).copied().unwrap_or(G1Affine::default()))
