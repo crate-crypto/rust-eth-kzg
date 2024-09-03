@@ -1,3 +1,4 @@
+use blstrs::Scalar;
 use crate_crypto_internal_eth_kzg_bls12_381::{
     batch_inversion,
     ff::Field,
@@ -6,9 +7,10 @@ use crate_crypto_internal_eth_kzg_bls12_381::{
     g1_batch_normalize, g2_batch_normalize,
     group::Group,
     lincomb::{g1_lincomb, g1_lincomb_unsafe, g2_lincomb, g2_lincomb_unsafe},
-    G1Projective, G2Projective, Scalar,
+    G1Projective, G2Projective,
 };
 use criterion::{criterion_group, criterion_main, Criterion};
+use ruint::aliases::U256;
 
 pub fn batch_inversion(c: &mut Criterion) {
     const NUM_ELEMENTS: usize = 8192;
@@ -45,15 +47,26 @@ pub fn fixed_base_msm(c: &mut Criterion) {
 }
 
 pub fn bench_msm(c: &mut Criterion) {
-    const NUM_G1_ELEMENTS: usize = 4096;
+    const NUM_G1_ELEMENTS: usize = 64;
 
     let polynomial_4096 = random_scalars(NUM_G1_ELEMENTS);
-    let g1_elements = random_g1_points(NUM_G1_ELEMENTS);
-    let g1_elements = g1_batch_normalize(&g1_elements);
+    let g1_elements_proj = random_g1_points(NUM_G1_ELEMENTS);
+    let g1_elements = g1_batch_normalize(&g1_elements_proj);
 
     c.bench_function(&format!("g1 msm of size {}", NUM_G1_ELEMENTS), |b| {
         b.iter(|| g1_lincomb_unsafe(&g1_elements, &polynomial_4096))
     });
+
+    let scalars_u256: Vec<_> = polynomial_4096
+        .iter()
+        .map(|p| U256::from_be_bytes(p.to_bytes_be()))
+        .collect();
+
+    c.bench_function(
+        &format!("bos-coster msm of size {}", NUM_G1_ELEMENTS),
+        |b| b.iter(|| bos_coster(&scalars_u256, &g1_elements_proj)),
+    );
+
     c.bench_function(&format!("g1 (safe) msm of size {}", NUM_G1_ELEMENTS), |b| {
         b.iter(|| g1_lincomb(&g1_elements, &polynomial_4096))
     });
@@ -94,5 +107,5 @@ fn random_g2_points(size: usize) -> Vec<G2Projective> {
     points
 }
 
-criterion_group!(benches, batch_inversion, fixed_base_msm, bench_msm);
+criterion_group!(benches, /*batch_inversion, fixed_base_msm, fixed_base_msm */ bench_msm);
 criterion_main!(benches);
