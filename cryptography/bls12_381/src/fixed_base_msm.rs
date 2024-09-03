@@ -1,4 +1,4 @@
-use crate::{G1Projective, Scalar};
+use crate::{fixed_base_msm_pippenger::FixedBaseMSMPippenger, G1Projective, Scalar};
 use blstrs::{Fp, G1Affine};
 
 /// FixedBaseMSMPrecomp computes a multi scalar multiplication using pre-computations.
@@ -28,7 +28,9 @@ pub enum UsePrecomp {
 #[derive(Debug)]
 pub enum FixedBaseMSM {
     Precomp(FixedBaseMSMPrecomp),
-    NoPrecomp(Vec<G1Affine>),
+    // TODO: We are hijacking the NoPrecomp variant to store the
+    // TODO: new pippenger algorithm.
+    NoPrecomp(FixedBaseMSMPippenger),
 }
 
 impl FixedBaseMSM {
@@ -37,18 +39,14 @@ impl FixedBaseMSM {
             UsePrecomp::Yes { width } => {
                 FixedBaseMSM::Precomp(FixedBaseMSMPrecomp::new(generators, width))
             }
-            UsePrecomp::No => FixedBaseMSM::NoPrecomp(generators),
+            UsePrecomp::No => FixedBaseMSM::NoPrecomp(FixedBaseMSMPippenger::new(&generators)),
         }
     }
 
     pub fn msm(&self, scalars: Vec<Scalar>) -> G1Projective {
         match self {
             FixedBaseMSM::Precomp(precomp) => precomp.msm(scalars),
-            FixedBaseMSM::NoPrecomp(generators) => {
-                use crate::lincomb::g1_lincomb;
-                g1_lincomb(generators, &scalars)
-                    .expect("number of generators and scalars should be equal")
-            }
+            FixedBaseMSM::NoPrecomp(precomp) => precomp.msm(&scalars),
         }
     }
 }
