@@ -1,14 +1,16 @@
+mod batch_add;
 pub mod batch_inversion;
+mod booth_encoding;
 pub mod fixed_base_msm;
+pub mod fixed_base_msm_pippenger;
 pub mod lincomb;
-
-// Re-exporting the blstrs crate
 
 // Re-export ff and group, so other crates do not need to directly import(and independently version) them
 pub use ff;
 pub use group;
 use group::{prime::PrimeCurveAffine, Curve};
 
+// Re-exporting the blstrs crate
 pub type G1Point = blstrs::G1Affine;
 pub type G1Projective = blstrs::G1Projective;
 

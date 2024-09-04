@@ -1,11 +1,13 @@
+use blstrs::Scalar;
 use crate_crypto_internal_eth_kzg_bls12_381::{
     batch_inversion,
     ff::Field,
     fixed_base_msm::{FixedBaseMSM, UsePrecomp},
+    fixed_base_msm_pippenger::FixedBaseMSMPippenger,
     g1_batch_normalize, g2_batch_normalize,
     group::Group,
     lincomb::{g1_lincomb, g1_lincomb_unsafe, g2_lincomb, g2_lincomb_unsafe},
-    G1Projective, G2Projective, Scalar,
+    G1Projective, G2Projective,
 };
 use criterion::{criterion_group, criterion_main, Criterion};
 
@@ -28,24 +30,31 @@ pub fn fixed_base_msm(c: &mut Criterion) {
         .into_iter()
         .map(|p| p.into())
         .collect();
-    let fbm = FixedBaseMSM::new(generators, UsePrecomp::Yes { width: 8 });
+    let fbm = FixedBaseMSM::new(generators.clone(), UsePrecomp::Yes { width: 8 });
     let scalars: Vec<_> = random_scalars(length);
 
     c.bench_function("bls12_381 fixed_base_msm length=64 width=8", |b| {
         b.iter(|| fbm.msm(scalars.clone()))
     });
+
+    let fixed_base_pip = FixedBaseMSMPippenger::new(&generators);
+
+    c.bench_function("bls12_381 fixed based pippenger algorithm", |b| {
+        b.iter(|| fixed_base_pip.msm(&scalars))
+    });
 }
 
 pub fn bench_msm(c: &mut Criterion) {
-    const NUM_G1_ELEMENTS: usize = 4096;
+    const NUM_G1_ELEMENTS: usize = 64;
 
     let polynomial_4096 = random_scalars(NUM_G1_ELEMENTS);
-    let g1_elements = random_g1_points(NUM_G1_ELEMENTS);
-    let g1_elements = g1_batch_normalize(&g1_elements);
+    let g1_elements_proj = random_g1_points(NUM_G1_ELEMENTS);
+    let g1_elements = g1_batch_normalize(&g1_elements_proj);
 
     c.bench_function(&format!("g1 msm of size {}", NUM_G1_ELEMENTS), |b| {
         b.iter(|| g1_lincomb_unsafe(&g1_elements, &polynomial_4096))
     });
+
     c.bench_function(&format!("g1 (safe) msm of size {}", NUM_G1_ELEMENTS), |b| {
         b.iter(|| g1_lincomb(&g1_elements, &polynomial_4096))
     });
@@ -86,5 +95,11 @@ fn random_g2_points(size: usize) -> Vec<G2Projective> {
     points
 }
 
-criterion_group!(benches, batch_inversion, fixed_base_msm, bench_msm);
+criterion_group!(
+    benches,
+    batch_inversion,
+    fixed_base_msm,
+    bench_msm,
+    fixed_base_msm
+);
 criterion_main!(benches);

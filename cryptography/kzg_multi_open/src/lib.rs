@@ -28,7 +28,7 @@ pub(crate) fn create_insecure_commit_opening_keys(
     let g1_gen = G1Projective::generator();
 
     let mut g1_points = Vec::new();
-    let secret = -Scalar::from(1 as u64);
+    let secret = -Scalar::from(3 as u64);
     let mut current_secret_pow = Scalar::ONE;
     for _ in 0..num_coefficients_in_polynomial {
         g1_points.push(g1_gen * current_secret_pow);
@@ -39,7 +39,7 @@ pub(crate) fn create_insecure_commit_opening_keys(
     let ck = CommitKey::new(g1_points.clone());
 
     let mut g2_points = Vec::new();
-    let secret = -Scalar::from(1 as u64);
+    let secret = -Scalar::from(3 as u64);
     let mut current_secret_pow = Scalar::ONE;
     let g2_gen = G2Projective::generator();
     // The setup needs 65 g1 elements for the opening key, in order
