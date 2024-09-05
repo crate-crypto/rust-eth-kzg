@@ -8,7 +8,7 @@ const TRUSTED_SETUP_JSON: &str = include_str!("../data/trusted_setup_4096.json")
 
 #[derive(Deserialize, Debug, PartialEq, Eq)]
 pub struct TrustedSetup {
-    /// G1_Monomial represents a list of uncompressed
+    /// G1 Monomial represents a list of uncompressed
     /// hex encoded group elements in the G1 group on the bls12-381 curve.
     ///
     /// Ethereum has multiple trusted setups, however the one being
