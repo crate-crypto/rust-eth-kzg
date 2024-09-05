@@ -1,6 +1,12 @@
 use bls12_381::Scalar;
 use polynomial::domain::Domain;
 
+/// Reverses the least significant `bits` of the given number `n`.
+///
+/// `n` - The input number whose bits are to be reversed.
+/// `bits` - The number of least significant bits to reverse.
+///
+/// Returns a new `usize` with the specified number of bits reversed.
 pub(crate) fn reverse_bits(n: usize, bits: u32) -> usize {
     let mut n = n;
     let mut r = 0;
@@ -38,7 +44,9 @@ pub fn reverse_bit_order<T>(a: &mut [T]) {
 /// - num_points denotes how many points we want to open the polynomial at.
 /// - num_cosets denotes how many cosets we want to generate, analogously how many proofs we want to produce.
 ///
-/// Setting bit_reversed to true will generate the cosets in bit-reversed order.
+/// Returns a `Vec<Scalar>` containing the generated coset elements with length `num_cosets`
+///
+/// Note: Setting bit_reversed to true will generate the cosets in bit-reversed order.
 pub fn coset_gens(num_points: usize, num_cosets: usize, bit_reversed: bool) -> Vec<Scalar> {
     use bls12_381::ff::Field;
 

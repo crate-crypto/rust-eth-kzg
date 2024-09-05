@@ -53,13 +53,11 @@ pub fn poly_eval(poly: &PolyCoeff, value: &Scalar) -> Scalar {
 /// the result of `f(x) * g(x)` and returns the result.
 pub fn poly_mul(a: PolyCoeff, b: PolyCoeff) -> PolyCoeff {
     let mut result = vec![Scalar::ZERO; a.len() + b.len() - 1];
-
     for (i, a_coeff) in a.iter().enumerate() {
         for (j, b_coeff) in b.iter().enumerate() {
             result[i + j] += a_coeff * b_coeff;
         }
     }
-
     result
 }
 
@@ -67,7 +65,7 @@ pub fn poly_mul(a: PolyCoeff, b: PolyCoeff) -> PolyCoeff {
 /// Z(x) which is equal to zero when evaluated at each point.
 ///
 /// Example: vanishing_poly([1, 2, 3]) = (x - 1)(x - 2)(x - 3)
-pub fn vanishing_poly(roots: &[Scalar]) -> Vec<Scalar> {
+pub fn vanishing_poly(roots: &[Scalar]) -> PolyCoeff {
     let mut poly = vec![Scalar::from(1u64)];
     for root in roots {
         poly = poly_mul(poly, vec![-root, Scalar::from(1u64)]);

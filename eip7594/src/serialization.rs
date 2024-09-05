@@ -22,7 +22,7 @@ fn deserialize_bytes_to_scalars(bytes: &[u8]) -> Result<Vec<Scalar>, Serializati
 
     let mut scalars = Vec::with_capacity(bytes32s.len());
     for bytes32 in bytes32s {
-        scalars.push(deserialize_scalar(bytes32)?)
+        scalars.push(deserialize_bytes_to_scalar(bytes32)?)
     }
     Ok(scalars)
 }
@@ -44,7 +44,9 @@ pub(crate) fn deserialize_cell_to_scalars(
     deserialize_bytes_to_scalars(cell_bytes)
 }
 
-pub(crate) fn deserialize_scalar(scalar_bytes: &[u8]) -> Result<Scalar, SerializationError> {
+pub(crate) fn deserialize_bytes_to_scalar(
+    scalar_bytes: &[u8],
+) -> Result<Scalar, SerializationError> {
     let bytes32 = scalar_bytes.try_into().expect("infallible: expected blob chunks to be exactly {SCALAR_SERIALIZED_SIZE} bytes, since blob was a multiple of {SCALAR_SERIALIZED_SIZE");
 
     // Convert the CtOption into Option
