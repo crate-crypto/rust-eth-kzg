@@ -22,7 +22,7 @@ pub struct TrustedSetup {
     ///
     /// The length of this vector is equal to the length of G1_Monomial.
     pub g1_lagrange: Vec<String>,
-    /// G1_Monomial represents a list of uncompressed hex encoded
+    /// G2 Monomial represents a list of uncompressed hex encoded
     /// group elements in the G2 group on the bls12-381 curve.
     ///
     /// The length of this vector is 65.
