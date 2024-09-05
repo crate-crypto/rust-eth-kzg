@@ -42,6 +42,7 @@ pub fn reverse_bit_order<T>(a: &mut [T]) {
 /// Generate all of the field elements needed to generate the cosets.
 ///
 /// - num_points denotes how many points we want to open the polynomial at.
+///   `num_points` can also be seen as the size of the domain.
 /// - num_cosets denotes how many cosets we want to generate, analogously how many proofs we want to produce.
 ///
 /// Returns a `Vec<Scalar>` containing the generated coset elements with length `num_cosets`
