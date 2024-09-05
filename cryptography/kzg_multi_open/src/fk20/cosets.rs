@@ -483,11 +483,7 @@ mod tests {
         fn naive_bit_reverse(n: u32, l: u32) -> u32 {
             assert!(l.is_power_of_two());
             let num_bits = l.trailing_zeros();
-            if num_bits == 32 {
-                n.reverse_bits()
-            } else {
-                n.reverse_bits() >> (32 - num_bits)
-            }
+            n.reverse_bits() >> (32 - num_bits)
         }
 
         for i in 0..10 {
