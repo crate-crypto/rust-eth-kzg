@@ -77,7 +77,6 @@ impl FixedBaseMSMPrecompBLST {
                     point = -point;
                 }
 
-                // Time pushing to windows_of_points
                 windows_of_points[window_idx].push(point);
             }
         }
