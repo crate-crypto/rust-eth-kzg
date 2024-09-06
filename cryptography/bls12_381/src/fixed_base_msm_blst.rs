@@ -22,12 +22,11 @@ pub struct FixedBaseMSMPrecompBLST {
 impl FixedBaseMSMPrecompBLST {
     pub fn new(points: &[G1Affine], wbits: usize) -> Self {
         // For every point `P`, wbits indicates that we should compute
-        // 0 * P, 1 * P, ..., (2^{wbits} - 1) * P
+        // 1 * P, ..., (2^{wbits} - 1) * P
         //
         // The total amount of memory is roughly (numPoints * 2^{wbits} - 1)
         // where each point is 64 bytes.
         //
-        // TODO: I say roughly because we do not need to store 0 * P, update description with that
         //
         let mut precomputed_points: Vec<_> = points
             .into_iter()
@@ -147,7 +146,7 @@ fn bench_window_sizes_msm() {
         .collect();
 
     for i in 2..=14 {
-        let fbm = FixedBaseMSMPrecompBLST::new( &generators, i);
+        let fbm = FixedBaseMSMPrecompBLST::new(&generators, i);
         fbm.msm(&scalars);
     }
 }
