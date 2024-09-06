@@ -3,13 +3,14 @@ use crate_crypto_internal_eth_kzg_bls12_381::{
     batch_inversion,
     ff::Field,
     fixed_base_msm::{FixedBaseMSM, UsePrecomp},
+    fixed_base_msm_blst::FixedBaseMSMPrecompBLST,
     fixed_base_msm_pippenger::FixedBaseMSMPippenger,
     g1_batch_normalize, g2_batch_normalize,
     group::Group,
     lincomb::{g1_lincomb, g1_lincomb_unsafe, g2_lincomb, g2_lincomb_unsafe},
-    G1Projective, G2Projective,
+    G1Point, G1Projective, G2Projective,
 };
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 
 pub fn batch_inversion(c: &mut Criterion) {
     const NUM_ELEMENTS: usize = 8192;
@@ -30,18 +31,33 @@ pub fn fixed_base_msm(c: &mut Criterion) {
         .into_iter()
         .map(|p| p.into())
         .collect();
-    let fbm = FixedBaseMSM::new(generators.clone(), UsePrecomp::Yes { width: 8 });
     let scalars: Vec<_> = random_scalars(length);
+    // let fbm = FixedBaseMSM::new(generators.clone(), UsePrecomp::Yes { width: 8 });
 
-    c.bench_function("bls12_381 fixed_base_msm length=64 width=8", |b| {
-        b.iter(|| fbm.msm(scalars.clone()))
-    });
+    // c.bench_function("bls12_381 fixed_base_msm length=64 width=8", |b| {
+    //     b.iter(|| fbm.msm(scalars.clone()))
+    // });
 
-    let fixed_base_pip = FixedBaseMSMPippenger::new(&generators);
+    // let fixed_base_pip = FixedBaseMSMPippenger::new(&generators);
 
-    c.bench_function("bls12_381 fixed based pippenger algorithm", |b| {
-        b.iter(|| fixed_base_pip.msm(&scalars))
-    });
+    // c.bench_function("bls12_381 fixed based pippenger algorithm", |b| {
+    //     b.iter(|| fixed_base_pip.msm(&scalars))
+    // });
+
+    let mut group = c.benchmark_group("bls12_381 fixed base windowed algorithm");
+
+    for window_size in 2..=14 {
+        // Test window sizes from 2 to 10
+        // Create the FixedBaseMSMPrecompBLST instance outside the benchmarked portion
+        let fixed_base = FixedBaseMSMPrecompBLST::new(&generators, window_size);
+
+        group.bench_with_input(
+            BenchmarkId::new("window_size", window_size),
+            &window_size,
+            |b, &_| b.iter(|| black_box(fixed_base.msm(black_box(&scalars)))),
+        );
+    }
+    group.finish();
 }
 
 pub fn bench_msm(c: &mut Criterion) {
@@ -97,9 +113,9 @@ fn random_g2_points(size: usize) -> Vec<G2Projective> {
 
 criterion_group!(
     benches,
-    batch_inversion,
-    fixed_base_msm,
-    bench_msm,
+    // batch_inversion,
+    // fixed_base_msm,
+    // bench_msm,
     fixed_base_msm
 );
 criterion_main!(benches);
