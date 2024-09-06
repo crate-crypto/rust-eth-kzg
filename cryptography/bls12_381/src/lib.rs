@@ -1,7 +1,8 @@
-mod batch_add;
+pub mod batch_add;
 pub mod batch_inversion;
 mod booth_encoding;
 pub mod fixed_base_msm;
+pub mod fixed_base_msm_blst;
 pub mod fixed_base_msm_pippenger;
 pub mod lincomb;
 
