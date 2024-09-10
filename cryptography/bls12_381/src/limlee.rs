@@ -39,7 +39,10 @@ impl LimLee {
         let a = l.div_ceil(h);
 
         assert!(v <= a);
-        assert!(a % v == 0, "v must be a factor of a");
+        assert!(
+            a % v == 0,
+            "v must be a factor of a, so that b can be equally sized"
+        );
         // Compute `b`
         let b = a.div_ceil(v);
 
@@ -101,7 +104,7 @@ impl LimLee {
     pub fn scalar_mul_eq3(&self, scalar: Scalar) -> G1Projective {
         let mut scalar_bits = scalar_to_bits(scalar).to_vec();
 
-        // Pad the scalar, if the value of `l` necesitates it
+        // Pad the scalar, if the value of `l` necessitates it
         scalar_bits.extend(vec![0u8; self.l as usize - 256]); // 256 here because we convert to bytes and then bits
 
         // Group the scalar bits into `a` chunks
@@ -138,11 +141,55 @@ impl LimLee {
 
         result
     }
+
+    pub fn scalar_mul_eq4(&self, scalar: Scalar) -> G1Projective {
+        let mut scalar_bits = scalar_to_bits(scalar).to_vec();
+
+        // Pad the scalar, if the value of `l` necessitates it
+        scalar_bits.extend(vec![0u8; self.l as usize - 256]); // 256 here because we convert to bytes and then bits
+
+        // Precomputations
+        let mut precomputations = Vec::new();
+        precomputations.push(G1Projective::generator());
+        for i in 0..self.h {
+            let two_pow_a = Scalar::from(2u64).pow(&[self.a as u64]);
+            precomputations.push(precomputations.last().unwrap() * two_pow_a);
+        }
+
+        let mut result = G1Projective::identity();
+        // For the columns
+
+        for t in 0..self.b {
+            let mut double_inner_sum = G1Projective::identity();
+            for j in 0..self.v {
+                for i in 0..self.h {
+                    // We use a flat array, but the algorithm
+                    // is based off of a matrix, so compute the flattened index
+                    let index = i * self.v * self.b + j * self.b + t;
+                    let digit = scalar_bits[index as usize];
+
+                    let exponent = j * self.b;
+                    let mut tmp = precomputations[i as usize];
+                    for _ in 0..exponent {
+                        tmp = tmp.double();
+                    }
+                    double_inner_sum += tmp * Scalar::from(digit as u64);
+                }
+            }
+
+            for _ in 0..t {
+                double_inner_sum = double_inner_sum.double()
+            }
+            result += double_inner_sum;
+        }
+
+        result
+    }
 }
 
 #[test]
 fn smoke_test_generator_scalar_mul() {
-    let ll = LimLee::new(5, 26);
+    let ll = LimLee::new(32, 8);
     let scalar = -Scalar::from(2u64);
 
     let expected = G1Projective::generator() * scalar;
@@ -150,8 +197,11 @@ fn smoke_test_generator_scalar_mul() {
     let result = ll.scalar_mul_naive(scalar);
     assert!(result == expected);
 
-    // let got = ll.scalar_mul_eq3(scalar);
-    // assert_eq!(got, result)
+    let got = ll.scalar_mul_eq3(scalar);
+    assert_eq!(got, result);
+
+    let got = ll.scalar_mul_eq4(scalar);
+    assert_eq!(got, result)
 }
 
 fn scalar_to_bits(s: Scalar) -> [u8; 256] {
