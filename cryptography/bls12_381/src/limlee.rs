@@ -2,6 +2,8 @@ use blstrs::{G1Affine, G1Projective, Scalar};
 use ff::{Field, PrimeField};
 use group::Group;
 
+use crate::g1_batch_normalize;
+
 // Reference: http://mhutter.org/papers/Mohammed2012ImprovedFixedBase.pdf
 //
 // For now I will use the variables used in the paper, and then we can
@@ -142,6 +144,7 @@ impl LimLee {
         result
     }
 
+    // This corresponds to eq4 on page 347
     pub fn scalar_mul_eq4(&self, scalar: Scalar) -> G1Projective {
         let mut scalar_bits = scalar_to_bits(scalar).to_vec();
 
@@ -185,11 +188,83 @@ impl LimLee {
 
         result
     }
+
+    // This corresponds to eq5 on page 347
+    pub fn scalar_mul_eq5(&self, scalar: Scalar) -> G1Projective {
+        let mut scalar_bits = scalar_to_bits(scalar).to_vec();
+
+        // Pad the scalar, if the value of `l` necessitates it
+        scalar_bits.extend(vec![0u8; self.l as usize - 256]); // 256 here because we convert to bytes and then bits
+
+        // Precomputations
+        let mut precomputations = Vec::new();
+        precomputations.push(G1Projective::generator());
+        for i in 0..self.h {
+            let two_pow_a = Scalar::from(2u64).pow(&[self.a as u64]);
+            precomputations.push(precomputations.last().unwrap() * two_pow_a);
+        }
+
+        let mut g_s =
+            vec![vec![G1Projective::identity(); (1 << self.h) as usize]; (self.v as usize)];
+
+        // Initialize the j==0 case
+        // Compute G[0][s] for all s
+        for s in 1..(1 << self.h) {
+            let mut g0s = G1Projective::identity();
+            for i in 0..self.h {
+                if (s & (1 << i)) != 0 {
+                    g0s += precomputations[i as usize];
+                }
+            }
+            g_s[0][s] = g0s;
+        }
+
+        // Compute G[j][s] for j > 0
+        let two_pow_b = Scalar::from(2u64).pow(&[self.b as u64]);
+        for j in 1..self.v as usize {
+            for s in 1..(1 << self.h) as usize {
+                g_s[j][s] = g_s[j - 1][s] * two_pow_b;
+            }
+        }
+
+        let g_s: Vec<_> = g_s
+            .into_iter()
+            .map(|g_s_i| g1_batch_normalize(&g_s_i))
+            .collect();
+
+        let mut result = G1Projective::identity();
+
+        for t in 0..self.b {
+            let mut double_inner_sum = G1Projective::identity();
+            for j in 0..self.v {
+                let i_jt = self.compute_i_jt(&scalar_bits, j, t);
+                double_inner_sum += g_s[j as usize][i_jt];
+            }
+
+            for _ in 0..t {
+                double_inner_sum = double_inner_sum.double()
+            }
+            result += double_inner_sum;
+        }
+        result
+    }
+
+    fn compute_i_jt(&self, k: &[u8], j: u32, t: u32) -> usize {
+        let mut i_jt = 0;
+        for i in 0..self.h {
+            let bit_index = (i * self.v * self.b + j * self.b + t) as usize;
+            if bit_index < k.len() && (k[bit_index] == 1) {
+                i_jt |= 1 << i;
+            }
+        }
+        i_jt as usize
+    }
 }
 
 #[test]
 fn smoke_test_generator_scalar_mul() {
-    let ll = LimLee::new(32, 8);
+    let ll = LimLee::new(8, 8);
+    dbg!(&ll);
     let scalar = -Scalar::from(2u64);
 
     let expected = G1Projective::generator() * scalar;
@@ -201,6 +276,9 @@ fn smoke_test_generator_scalar_mul() {
     assert_eq!(got, result);
 
     let got = ll.scalar_mul_eq4(scalar);
+    assert_eq!(got, result);
+
+    let got = ll.scalar_mul_eq5(scalar);
     assert_eq!(got, result)
 }
 
