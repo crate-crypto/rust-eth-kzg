@@ -233,12 +233,13 @@ impl LimLee {
             .collect();
 
         let mut result = G1Projective::identity();
-
         for t in 0..self.b {
             let mut double_inner_sum = G1Projective::identity();
             for j in 0..self.v {
                 let i_jt = self.compute_i_jt(&scalar_bits, j, t);
-                double_inner_sum += g_s[j as usize][i_jt];
+                if i_jt != 0 {
+                    double_inner_sum += g_s[j as usize][i_jt];
+                }
             }
 
             for _ in 0..t {
