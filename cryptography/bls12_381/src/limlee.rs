@@ -4,7 +4,7 @@ use blstrs::{Fp, G1Affine, G1Projective, Scalar};
 use ff::{Field, PrimeField};
 use group::{prime::PrimeCurveAffine, Group, WnafScalar};
 
-use crate::{g1_batch_normalize, wnaf::wnaf_form};
+use crate::{batch_add::batch_addition, g1_batch_normalize, wnaf::wnaf_form};
 
 // Reference: http://mhutter.org/papers/Mohammed2012ImprovedFixedBase.pdf
 //
@@ -445,49 +445,19 @@ impl TsaurChou {
         scalar_bytes.extend(vec![0u8; self.num_bits / 8 + 1 - scalar_bytes.len()]); // TODO: double check for rounding error
         wnaf_form(&mut wnaf_digits, scalar_bytes, self.omega);
         // let wnaf_digits = scalar_to_bits(*scalar);
-        let point = G1Projective::generator();
+        let point = G1Affine::generator();
         let mut result = G1Projective::identity();
         // TODO: I think we need to pad here after wnaf
 
         // 1. Compute the precomputations
         // Precomputation
-        let inner_size = self.omega * (1 << (self.omega - 2));
-        let mut precomp = vec![vec![G1Projective::identity(); inner_size]; self.v];
-
-        fn sd_to_index(s_exp: usize, d: usize, w: u32) -> usize {
-            s_exp * (1 << (w - 2)) + (d - 1) / 2
-        }
-
-        for s in 0..self.omega {
-            for d in (1..1 << (self.omega - 1)).step_by(2) {
-                let index = s * (1 << (self.omega - 2)) + (d - 1) / 2;
-                let sd = (1 << s) * d;
-                precomp[0][index] = point * (&Scalar::from(sd as u64));
-            }
-        }
-
-        for j in 1..self.v {
-            let factor = Scalar::from(2u64).pow(&[(j * self.omega * self.b) as u64]);
-            for index in 0..inner_size {
-                precomp[j][index] = precomp[0][index] * (&factor);
-            }
-        }
-
-        let precomp: Vec<_> = precomp
-            .into_iter()
-            .map(|points| g1_batch_normalize(&points))
-            .collect();
-
-        let precomp_size: usize = precomp.iter().map(|pc| pc.len()).sum();
-        dbg!(precomp_size);
+        let precomp = Self::precompute_point(point, self.omega, self.b, self.v);
 
         let now = std::time::Instant::now();
 
-        let mut windows = vec![G1Projective::identity(); self.b];
+        let mut windows = vec![vec![]; self.b];
         // 2. iterate `w` bits and compute the scalar_mul
         for t in 0..self.b {
-            let mut inner_sum = G1Projective::identity();
-
             for j in 0..self.v {
                 let start_index = (j * self.b + t) * self.omega;
                 let end_index = start_index + self.omega;
@@ -507,37 +477,83 @@ impl TsaurChou {
 
                 if digit != 0 {
                     let abs_digit = digit.unsigned_abs() as u64;
-                    if digit > 0 {
-                        inner_sum += precomp[j]
-                            [sd_to_index(s_exponent, abs_digit as usize, self.omega as u32)];
-                    } else {
-                        inner_sum -= precomp[j]
-                            [sd_to_index(s_exponent, abs_digit as usize, self.omega as u32)];
+                    let mut chosen_point = precomp[j]
+                        [Self::sd_to_index(s_exponent, abs_digit as usize, self.omega as u32)];
+                    if digit < 0 {
+                        chosen_point = -chosen_point;
                     }
+                    windows[t].push(chosen_point);
                 }
             }
-
-            windows[t] = inner_sum;
         }
 
+        // Combine each sum in each window
+        let windows: Vec<_> = windows
+            .into_iter()
+            .map(|window| batch_addition(window))
+            .collect();
+
         // Combine windows
-        for (t, window) in windows.into_iter().enumerate() {
-            if t * self.omega == 0 {
-                result += window
-            } else if t * self.omega == 1 {
-                result += window.double();
-            } else {
-                let inner_sum: G1Affine = window.into();
+        // for (t, window) in windows.into_iter().enumerate() {
+        //     if t * self.omega == 0 {
+        //         result += window
+        //     } else if t * self.omega == 1 {
+        //         result += G1Projective::from(window).double();
+        //     } else {
+        //         // let inner_sum: G1Affine = window.into();
 
-                let inner_sum = direct_doubling(t * self.omega, inner_sum);
+        //         let inner_sum = direct_doubling(t * self.omega, window);
 
-                result += inner_sum;
+        //         result += inner_sum;
+        //     }
+        // }
+
+        for window in windows.into_iter().rev() {
+            for _ in 0..self.omega {
+                result = result.double()
             }
+
+            result += window;
         }
 
         dbg!(now.elapsed().as_micros());
 
         result
+    }
+
+    fn sd_to_index(s_exp: usize, d: usize, w: u32) -> usize {
+        s_exp * (1 << (w - 2)) + (d - 1) / 2
+    }
+
+    fn precompute_point(point: G1Affine, omega: usize, b: usize, v: usize) -> Vec<Vec<G1Affine>> {
+        let point = G1Projective::from(point);
+
+        let inner_size = omega * (1 << (omega - 2));
+        let mut precomp = vec![vec![G1Projective::identity(); inner_size]; v];
+
+        for s in 0..omega {
+            for d in (1..1 << (omega - 1)).step_by(2) {
+                let index = s * (1 << (omega - 2)) + (d - 1) / 2;
+                let sd = (1 << s) * d;
+                precomp[0][index] = point * (&Scalar::from(sd as u64));
+            }
+        }
+
+        for j in 1..v {
+            let factor = Scalar::from(2u64).pow(&[(j * omega * b) as u64]);
+            for index in 0..inner_size {
+                precomp[j][index] = precomp[0][index] * (&factor);
+            }
+        }
+
+        let precomp: Vec<_> = precomp
+            .into_iter()
+            .map(|points| g1_batch_normalize(&points))
+            .collect();
+
+        let precomp_size: usize = precomp.iter().map(|pc| pc.len()).sum();
+        dbg!(precomp_size);
+        precomp
     }
 }
 
