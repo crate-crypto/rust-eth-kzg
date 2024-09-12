@@ -458,16 +458,6 @@ impl TsaurChou {
             s_exp * (1 << (w - 2)) + (d - 1) / 2
         }
 
-        // s_exp is the exponent for s
-        // for s_exp in 0..self.omega {
-        //     let s = Scalar::from(2u64).pow(&[s_exp as u64]);
-        //     for d in (1..1 << (self.omega - 1)).step_by(2) {
-        //         // Compute sd
-        //         let index = sd_to_index(2usize.pow(s_exp as u32), d, self.omega as u32);
-        //         precomp[0][index] = point * (s * Scalar::from(d as u64))
-        //     }
-        // }
-
         for s in 0..self.omega {
             for d in (1..1 << (self.omega - 1)).step_by(2) {
                 let index = s * (1 << (self.omega - 2)) + (d - 1) / 2;
@@ -476,13 +466,6 @@ impl TsaurChou {
             }
         }
 
-        // Compute G[j][sd] for j > 0
-        // let first_preomp = precomp[0].clone();
-        // for j in 1..self.v {
-        //     let factor = Scalar::from(2u64).pow(&[(j * self.omega * self.b) as u64]);
-        //     let jth_precomp: Vec<_> = first_preomp.iter().map(|point| point * factor).collect();
-        //     precomp[j] = jth_precomp;
-        // }
         for j in 1..self.v {
             let factor = Scalar::from(2u64).pow(&[(j * self.omega * self.b) as u64]);
             for index in 0..inner_size {
@@ -499,9 +482,10 @@ impl TsaurChou {
         dbg!(precomp_size);
 
         let now = std::time::Instant::now();
+
+        let mut windows = vec![G1Projective::identity(); self.b];
         // 2. iterate `w` bits and compute the scalar_mul
         for t in 0..self.b {
-            // let two_pow_tw = Scalar::from(2u64).pow(&[(t * self.omega) as u64]);
             let mut inner_sum = G1Projective::identity();
 
             for j in 0..self.v {
@@ -533,18 +517,24 @@ impl TsaurChou {
                 }
             }
 
+            windows[t] = inner_sum;
+        }
+
+        // Combine windows
+        for (t, window) in windows.into_iter().enumerate() {
             if t * self.omega == 0 {
-                result += inner_sum
+                result += window
             } else if t * self.omega == 1 {
-                result += inner_sum.double();
+                result += window.double();
             } else {
-                let inner_sum: G1Affine = inner_sum.into();
+                let inner_sum: G1Affine = window.into();
 
                 let inner_sum = direct_doubling(t * self.omega, inner_sum);
 
                 result += inner_sum;
             }
         }
+
         dbg!(now.elapsed().as_micros());
 
         result
