@@ -533,11 +533,17 @@ impl TsaurChou {
                 }
             }
 
-            for _ in 0..t * self.omega {
-                inner_sum = inner_sum.double();
-            }
+            if t * self.omega == 0 {
+                result += inner_sum
+            } else if t * self.omega == 1 {
+                result += inner_sum.double();
+            } else {
+                let inner_sum: G1Affine = inner_sum.into();
 
-            result += inner_sum;
+                let inner_sum = direct_doubling(t * self.omega, inner_sum);
+
+                result += inner_sum;
+            }
         }
         dbg!(now.elapsed().as_micros());
 
@@ -550,20 +556,23 @@ fn direct_doubling(r: usize, point: G1Affine) -> G1Affine {
         return G1Affine::identity();
     }
 
-    let mut a_i = vec![Fp::ZERO; r];
-    let mut b_i = vec![Fp::ZERO; r];
-    let mut c_i = vec![Fp::ZERO; r];
+    // The below algorithm assumes r > 0
+    // We could simply disallow it and panic
+    // I chose to return the the point since 2^0 * P = P
+    if r == 0 {
+        return point;
+    }
 
-    // For now we conform to the indexing in the paper
-    a_i[0] = point.x();
-    b_i[0] = point.x().square().mul3();
-    c_i[0] = -point.y();
-
-    let mut c_prod = c_i[0];
+    // This is just a optimization, the algorithm, does
+    // allow this.
+    if r == 1 {
+        return G1Projective::from(point).double().into();
+    }
 
     let mut previous_a_i = point.x();
     let mut previous_b_i = point.x().square().mul3();
     let mut previous_c_i = -point.y();
+    let mut c_prod = previous_c_i;
 
     let mut current_a_i = Fp::ZERO;
     let mut current_b_i = Fp::ZERO;
@@ -585,21 +594,10 @@ fn direct_doubling(r: usize, point: G1Affine) -> G1Affine {
     let b_r = current_b_i;
     let c_r = current_c_i;
 
-    // for i in 1..r {
-    //     a_i[i] = b_i[i - 1].square() - a_i[i - 1].mul8() * c_i[i - 1].square();
-    //     b_i[i] = a_i[i].square().mul3();
-    //     c_i[i] = -c_i[i - 1].square().square().mul8()
-    //         - b_i[i - 1] * (a_i[i] - a_i[i - 1] * c_i[i - 1].square() * Fp::from(4u64));
-    //     c_prod *= c_i[i];
-    // }
-
-    // let a_r = a_i[r - 1];
-    // let b_r = b_i[r - 1];
-    // let c_r = c_i[r - 1];
+    // TODO: We square the same values etc below multiple times
+    // TODO: we could optimize and remove these, see for example c_r.square
 
     let d_r = a_r.mul3() * Fp::from(4u64) * c_r.square() - b_r.square();
-
-    // Compute denom
 
     let mut denom_prod = c_prod;
     let denom = Fp::from(2u64).pow(&[r as u64]) * denom_prod;
