@@ -1,8 +1,10 @@
-use blstrs::{G1Affine, G1Projective, Scalar};
-use ff::{Field, PrimeField};
-use group::Group;
+use core::num;
 
-use crate::g1_batch_normalize;
+use blstrs::{Fp, G1Affine, G1Projective, Scalar};
+use ff::{Field, PrimeField};
+use group::{prime::PrimeCurveAffine, Group, WnafScalar};
+
+use crate::{g1_batch_normalize, wnaf::wnaf_form};
 
 // Reference: http://mhutter.org/papers/Mohammed2012ImprovedFixedBase.pdf
 //
@@ -262,10 +264,395 @@ impl LimLee {
     }
 }
 
+struct TsaurChou {
+    // These are not the same as LimLee
+    //
+    //
+    omega: usize,
+    v: usize,
+    a: usize,
+    b: usize,
+    num_bits: usize,
+}
+
+impl TsaurChou {
+    pub fn new(omega: usize, v: usize) -> TsaurChou {
+        let num_bits = Scalar::NUM_BITS + 1;
+
+        // This is the padded number of bits needed to make sure division
+        // by omega is exact.
+        let num_bits = Self::calculate_padded_size(num_bits as usize, omega);
+
+        let a = num_bits / omega;
+
+        let b = a.div_ceil(v);
+
+        Self {
+            omega,
+            v,
+            a,
+            b,
+            num_bits,
+        }
+    }
+
+    fn calculate_padded_size(l: usize, w: usize) -> usize {
+        let a = (l + w - 1) / w; // This is ⌈l/ω⌉
+        let padded_size = a * w;
+        // TODO: if statement not needed, if we do div_ceil
+        let padding_zeros = if l % w == 0 { 0 } else { padded_size - l };
+        padding_zeros + l
+    }
+
+    // On page350, this is the first double summation
+    pub fn mul_naive(&self, scalar: &Scalar) -> G1Projective {
+        // Convert scalar to wnaf
+        // let mut wnaf_digits = vec![];
+        // wnaf_form(&mut wnaf_digits, scalar.to_repr(), self.omega);
+        let mut wnaf_digits = scalar_to_bits(*scalar).to_vec();
+        wnaf_digits.extend(vec![0u8; self.num_bits - wnaf_digits.len()]);
+        let point = G1Projective::generator();
+        let mut result = G1Projective::identity();
+        // TODO: I think we need to pad here after wnaf
+
+        // 1. Compute the precomputations
+
+        // 2. iterate `w` bits and compute the scalar_mul
+        for j in 0..self.v {
+            for t in 0..self.b {
+                // Choose K_jb+t
+                let exponent = t * self.omega + j * self.b * self.omega;
+                let two_pow_exponent = Scalar::from(2u64).pow(&[exponent as u64]);
+
+                // Index K_jb+t
+                let start_index = (j * self.b + t) * self.omega;
+                let end_index = start_index + self.omega;
+                let k_jbt = &wnaf_digits[start_index..end_index];
+                // Convert K_jb+t from NAF to scalar
+                let mut digit = Scalar::ZERO;
+                for (i, &bit) in k_jbt.iter().enumerate() {
+                    if bit > 0 {
+                        digit += Scalar::from(bit as u64) * Scalar::from(2u64).pow(&[i as u64]);
+                    } else if bit < 0 {
+                        digit += -Scalar::from(bit as u64) * Scalar::from(2u64).pow(&[i as u64]);
+                    }
+                }
+
+                result += point * digit * two_pow_exponent;
+            }
+        }
+
+        result
+    }
+
+    // On page 350, this is the second summation. next to the first one
+    // under the matrix. Where we pull out a 2^tw
+    pub fn mul_naive_better(&self, scalar: &Scalar) -> G1Projective {
+        // Convert scalar to wnaf
+        // let mut wnaf_digits = vec![];
+        // wnaf_form(&mut wnaf_digits, scalar.to_repr(), self.omega);
+        let mut wnaf_digits = scalar_to_bits(*scalar).to_vec();
+        wnaf_digits.extend(vec![0u8; self.num_bits - wnaf_digits.len()]);
+        let point = G1Projective::generator();
+        let mut result = G1Projective::identity();
+        // TODO: I think we need to pad here after wnaf
+
+        // 1. Compute the precomputations
+
+        // 2. iterate `w` bits and compute the scalar_mul
+        for t in 0..self.b {
+            let two_pow_tw = Scalar::from(2u64).pow(&[(t * self.omega) as u64]);
+            let mut inner_sum = G1Projective::identity();
+            for j in 0..self.v {
+                // Choose K_jb+t
+                let exponent = j * self.b * self.omega;
+                let two_pow_exponent = Scalar::from(2u64).pow(&[exponent as u64]);
+
+                // Index K_jb+t
+                let start_index = (j * self.b + t) * self.omega;
+                let end_index = start_index + self.omega;
+                let k_jbt = &wnaf_digits[start_index..end_index];
+                // Convert K_jb+t from NAF to scalar
+                let mut digit = Scalar::ZERO;
+                for (i, &bit) in k_jbt.iter().enumerate() {
+                    if bit > 0 {
+                        digit += Scalar::from(bit as u64) * Scalar::from(2u64).pow(&[i as u64]);
+                    } else if bit < 0 {
+                        digit += -Scalar::from(bit as u64) * Scalar::from(2u64).pow(&[i as u64]);
+                    }
+                }
+
+                inner_sum += point * digit * two_pow_exponent;
+            }
+
+            result += inner_sum * two_pow_tw;
+        }
+
+        result
+    }
+
+    // This is just the same method but it uses wnaf instead of bits
+    pub fn mul_naive_better_wnaf(&self, scalar: &Scalar) -> G1Projective {
+        // Convert scalar to wnaf
+        let mut wnaf_digits = vec![];
+        let mut scalar_bytes = scalar.to_bytes_le().to_vec();
+        scalar_bytes.extend(vec![0u8; self.num_bits / 8 + 1 - scalar_bytes.len()]); // TODO: double check for rounding error
+        wnaf_form(&mut wnaf_digits, scalar_bytes, self.omega);
+        // let wnaf_digits = scalar_to_bits(*scalar);
+        let point = G1Projective::generator();
+        let mut result = G1Projective::identity();
+        // TODO: I think we need to pad here after wnaf
+
+        // 1. Compute the precomputations
+
+        // 2. iterate `w` bits and compute the scalar_mul
+        for t in 0..self.b {
+            let two_pow_tw = Scalar::from(2u64).pow(&[(t * self.omega) as u64]);
+            let mut inner_sum = G1Projective::identity();
+            for j in 0..self.v {
+                // Choose K_jb+t
+                let exponent = j * self.b * self.omega;
+                let two_pow_exponent = Scalar::from(2u64).pow(&[exponent as u64]);
+
+                // Index K_jb+t
+                let start_index = (j * self.b + t) * self.omega;
+                let end_index = start_index + self.omega;
+                let k_jbt = &wnaf_digits[start_index..end_index];
+                // Convert K_jb+t from NAF to scalar
+                let mut digit = Scalar::ZERO;
+                for (i, &bit) in k_jbt.iter().enumerate() {
+                    if bit > 0 {
+                        digit +=
+                            Scalar::from(bit.abs() as u64) * Scalar::from(2u64).pow(&[(i) as u64]);
+                    } else if bit < 0 {
+                        digit +=
+                            -Scalar::from(bit.abs() as u64) * Scalar::from(2u64).pow(&[(i) as u64]);
+                    }
+                }
+                inner_sum += point * digit * two_pow_exponent;
+            }
+
+            result += inner_sum * two_pow_tw;
+        }
+
+        result
+    }
+
+    pub fn mul_naive_better_wnaf_precomputations(&self, scalar: &Scalar) -> G1Projective {
+        // Convert scalar to wnaf
+        let mut wnaf_digits = vec![];
+        let mut scalar_bytes = scalar.to_bytes_le().to_vec();
+        scalar_bytes.extend(vec![0u8; self.num_bits / 8 + 1 - scalar_bytes.len()]); // TODO: double check for rounding error
+        wnaf_form(&mut wnaf_digits, scalar_bytes, self.omega);
+        // let wnaf_digits = scalar_to_bits(*scalar);
+        let point = G1Projective::generator();
+        let mut result = G1Projective::identity();
+        // TODO: I think we need to pad here after wnaf
+
+        // 1. Compute the precomputations
+        // Precomputation
+        let inner_size = self.omega * (1 << (self.omega - 2));
+        let mut precomp = vec![vec![G1Projective::identity(); inner_size]; self.v];
+
+        fn sd_to_index(s_exp: usize, d: usize, w: u32) -> usize {
+            s_exp * (1 << (w - 2)) + (d - 1) / 2
+        }
+
+        // s_exp is the exponent for s
+        // for s_exp in 0..self.omega {
+        //     let s = Scalar::from(2u64).pow(&[s_exp as u64]);
+        //     for d in (1..1 << (self.omega - 1)).step_by(2) {
+        //         // Compute sd
+        //         let index = sd_to_index(2usize.pow(s_exp as u32), d, self.omega as u32);
+        //         precomp[0][index] = point * (s * Scalar::from(d as u64))
+        //     }
+        // }
+
+        for s in 0..self.omega {
+            for d in (1..1 << (self.omega - 1)).step_by(2) {
+                let index = s * (1 << (self.omega - 2)) + (d - 1) / 2;
+                let sd = (1 << s) * d;
+                precomp[0][index] = point * (&Scalar::from(sd as u64));
+            }
+        }
+
+        // Compute G[j][sd] for j > 0
+        // let first_preomp = precomp[0].clone();
+        // for j in 1..self.v {
+        //     let factor = Scalar::from(2u64).pow(&[(j * self.omega * self.b) as u64]);
+        //     let jth_precomp: Vec<_> = first_preomp.iter().map(|point| point * factor).collect();
+        //     precomp[j] = jth_precomp;
+        // }
+        for j in 1..self.v {
+            let factor = Scalar::from(2u64).pow(&[(j * self.omega * self.b) as u64]);
+            for index in 0..inner_size {
+                precomp[j][index] = precomp[0][index] * (&factor);
+            }
+        }
+
+        let precomp: Vec<_> = precomp
+            .into_iter()
+            .map(|points| g1_batch_normalize(&points))
+            .collect();
+
+        let precomp_size: usize = precomp.iter().map(|pc| pc.len()).sum();
+        dbg!(precomp_size);
+
+        let now = std::time::Instant::now();
+        // 2. iterate `w` bits and compute the scalar_mul
+        for t in 0..self.b {
+            // let two_pow_tw = Scalar::from(2u64).pow(&[(t * self.omega) as u64]);
+            let mut inner_sum = G1Projective::identity();
+
+            for j in 0..self.v {
+                let start_index = (j * self.b + t) * self.omega;
+                let end_index = start_index + self.omega;
+                let k_jbt = &wnaf_digits[start_index..end_index.min(wnaf_digits.len())]; // TODO: check if min is needed here
+
+                let mut s_exponent = 0;
+                let mut digit = 0;
+
+                for (i, &bit) in k_jbt.iter().enumerate() {
+                    if bit != 0 {
+                        // Use bit shifting for 2^i
+                        s_exponent = i;
+                        digit = bit;
+                        break; // In ω-NAF, only one non-zero digit per window
+                    }
+                }
+
+                if digit != 0 {
+                    let abs_digit = digit.unsigned_abs() as u64;
+                    if digit > 0 {
+                        inner_sum += precomp[j]
+                            [sd_to_index(s_exponent, abs_digit as usize, self.omega as u32)];
+                    } else {
+                        inner_sum -= precomp[j]
+                            [sd_to_index(s_exponent, abs_digit as usize, self.omega as u32)];
+                    }
+                }
+            }
+
+            for _ in 0..t * self.omega {
+                inner_sum = inner_sum.double();
+            }
+
+            result += inner_sum;
+        }
+        dbg!(now.elapsed().as_micros());
+
+        result
+    }
+}
+
+fn direct_doubling(r: usize, point: G1Affine) -> G1Affine {
+    if point.is_identity().into() {
+        return G1Affine::identity();
+    }
+
+    let mut a_i = vec![Fp::ZERO; r];
+    let mut b_i = vec![Fp::ZERO; r];
+    let mut c_i = vec![Fp::ZERO; r];
+
+    // For now we conform to the indexing in the paper
+    a_i[0] = point.x();
+    b_i[0] = point.x().square().mul3();
+    c_i[0] = -point.y();
+
+    for i in 1..r {
+        a_i[i] = b_i[i - 1].square() - a_i[i - 1].mul8() * c_i[i - 1].square();
+        b_i[i] = a_i[i].square().mul3();
+        c_i[i] = -c_i[i - 1].square().square().mul8()
+            - b_i[i - 1] * (a_i[i] - a_i[i - 1] * c_i[i - 1].square() * Fp::from(4u64))
+    }
+
+    let a_r = a_i[r - 1];
+    let b_r = b_i[r - 1];
+    let c_r = c_i[r - 1];
+
+    let d_r = a_r.mul3() * Fp::from(4u64) * c_r.square() - b_r.square();
+
+    // Compute denom
+
+    let mut denom_prod = Fp::ONE;
+    for i in 0..r {
+        denom_prod *= c_i[i]
+    }
+    let denom = Fp::from(2u64).pow(&[r as u64]) * denom_prod;
+    let denom = denom.invert().unwrap();
+
+    let denom_sq = denom.square();
+    let denom_cu = denom_sq * denom;
+
+    // Compute x_2r
+    let numerator = b_r.square() - c_r.square().mul8() * a_r;
+    let x2r = numerator * denom_sq;
+
+    // Compute y_2r
+    let numerator = c_r.square().square().mul8() - b_r * d_r;
+    let y2r = numerator * denom_cu;
+
+    G1Affine::from_raw_unchecked(x2r, y2r, false)
+}
+
+#[test]
+fn direct_double() {
+    let point = G1Affine::generator();
+
+    for r in 2..10 {
+        // let r = 2;
+        let expected = (point * Scalar::from(2u64).pow(&[r as u64])).into();
+
+        let got = direct_doubling(r, point);
+
+        assert_eq!(got, expected);
+    }
+}
+#[test]
+fn tsaur_chau() {
+    let ts = TsaurChou::new(8, 4);
+    let scalar = -Scalar::from(1u64);
+
+    let expected = G1Projective::generator() * scalar;
+
+    let result = ts.mul_naive(&scalar);
+    assert!(result == expected);
+    let result = ts.mul_naive_better(&scalar);
+    assert!(result == expected);
+
+    let result = ts.mul_naive_better_wnaf(&scalar);
+    assert!(result == expected);
+
+    let result = ts.mul_naive_better_wnaf_precomputations(&scalar);
+    assert!(result == expected);
+}
+
+#[test]
+fn wnaf_smoke_test() {
+    let s = Scalar::from(1065142573068u64);
+    let mut wnaf = vec![];
+    // let mut wnaf_digits = vec![];
+    let mut scalar_bytes = s.to_bytes_le().to_vec();
+    scalar_bytes.extend(vec![0u8; 258 / 8 + 1 - scalar_bytes.len()]);
+    // wnaf_form(&mut wnaf_digits, scalar_bytes, self.omega);
+    wnaf_form(&mut wnaf, scalar_bytes, 3);
+
+    dbg!(wnaf.chunks_exact(3).collect::<Vec<_>>());
+
+    let mut result = Scalar::ZERO;
+    for (i, digit) in wnaf.into_iter().enumerate() {
+        if digit > 0 {
+            result += Scalar::from(digit.abs() as u64) * Scalar::from(2u64).pow(&[(i) as u64]);
+        } else if digit < 0 {
+            result += -Scalar::from(digit.abs() as u64) * Scalar::from(2u64).pow(&[(i) as u64]);
+        }
+    }
+    assert_eq!(result, s);
+}
+
 #[test]
 fn smoke_test_generator_scalar_mul() {
     let ll = LimLee::new(8, 8);
-    dbg!(&ll);
     let scalar = -Scalar::from(2u64);
 
     let expected = G1Projective::generator() * scalar;
