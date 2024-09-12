@@ -559,25 +559,49 @@ fn direct_doubling(r: usize, point: G1Affine) -> G1Affine {
     b_i[0] = point.x().square().mul3();
     c_i[0] = -point.y();
 
+    let mut c_prod = c_i[0];
+
+    let mut previous_a_i = point.x();
+    let mut previous_b_i = point.x().square().mul3();
+    let mut previous_c_i = -point.y();
+
+    let mut current_a_i = Fp::ZERO;
+    let mut current_b_i = Fp::ZERO;
+    let mut current_c_i = Fp::ZERO;
+
     for i in 1..r {
-        a_i[i] = b_i[i - 1].square() - a_i[i - 1].mul8() * c_i[i - 1].square();
-        b_i[i] = a_i[i].square().mul3();
-        c_i[i] = -c_i[i - 1].square().square().mul8()
-            - b_i[i - 1] * (a_i[i] - a_i[i - 1] * c_i[i - 1].square() * Fp::from(4u64))
+        current_a_i = previous_b_i.square() - previous_a_i.mul8() * previous_c_i.square();
+        current_b_i = current_a_i.square().mul3();
+        current_c_i = -previous_c_i.square().square().mul8()
+            - previous_b_i * (current_a_i - previous_a_i * previous_c_i.square() * Fp::from(4u64));
+        c_prod *= current_c_i;
+
+        previous_a_i = current_a_i;
+        previous_b_i = current_b_i;
+        previous_c_i = current_c_i;
     }
 
-    let a_r = a_i[r - 1];
-    let b_r = b_i[r - 1];
-    let c_r = c_i[r - 1];
+    let a_r = current_a_i;
+    let b_r = current_b_i;
+    let c_r = current_c_i;
+
+    // for i in 1..r {
+    //     a_i[i] = b_i[i - 1].square() - a_i[i - 1].mul8() * c_i[i - 1].square();
+    //     b_i[i] = a_i[i].square().mul3();
+    //     c_i[i] = -c_i[i - 1].square().square().mul8()
+    //         - b_i[i - 1] * (a_i[i] - a_i[i - 1] * c_i[i - 1].square() * Fp::from(4u64));
+    //     c_prod *= c_i[i];
+    // }
+
+    // let a_r = a_i[r - 1];
+    // let b_r = b_i[r - 1];
+    // let c_r = c_i[r - 1];
 
     let d_r = a_r.mul3() * Fp::from(4u64) * c_r.square() - b_r.square();
 
     // Compute denom
 
-    let mut denom_prod = Fp::ONE;
-    for i in 0..r {
-        denom_prod *= c_i[i]
-    }
+    let mut denom_prod = c_prod;
     let denom = Fp::from(2u64).pow(&[r as u64]) * denom_prod;
     let denom = denom.invert().unwrap();
 
