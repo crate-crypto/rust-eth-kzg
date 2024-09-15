@@ -246,21 +246,24 @@ impl SeoKim {
                 }
 
                 let is_negative = total_value.is_negative();
-                let two_pow_offset = Scalar::from(2u64).pow(&[square_offset as u64]);
-                let two_pow_i = Scalar::from(2u64).pow(&[i as u64]);
+                // let two_pow_offset = Scalar::from(2u64).pow(&[square_offset as u64]);
+                // let two_pow_i = Scalar::from(2u64).pow(&[i as u64]);
+
+                let mut chosen_point = precomputations[total_value.unsigned_abs() as usize];
+
+                for _ in 0..i {
+                    chosen_point = chosen_point.double()
+                }
+                for _ in 0..square_offset {
+                    chosen_point = chosen_point.double()
+                }
 
                 if is_negative {
-                    result -= precomputations[total_value.unsigned_abs() as usize]
-                        * two_pow_offset
-                        * two_pow_i;
+                    result -= chosen_point;
                 } else {
-                    result += precomputations[total_value.unsigned_abs() as usize]
-                        * two_pow_offset
-                        * two_pow_i;
+                    result += chosen_point;
                 }
             }
-
-            result = result * Scalar::from(2u64).pow(&[i as u64]);
         }
         result
     }
