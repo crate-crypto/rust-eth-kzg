@@ -227,7 +227,7 @@ impl SeoKim {
         square_precomputations.push(precomputations);
 
         // Precompute the values across rows, across the square
-        for k in 0..self.w {
+        for k in 0..self.z {
             // Take the last
             let last_square = square_precomputations.last().unwrap().clone();
             // double all elements in the last square w*w times
@@ -270,14 +270,14 @@ impl SeoKim {
                 // let two_pow_i = Scalar::from(2u64).pow(&[i as u64]);
 
                 let mut chosen_point =
-                    square_precomputations[0][total_value.unsigned_abs() as usize - 1];
+                    square_precomputations[t][(total_value.unsigned_abs() as usize - 1)];
 
                 for _ in 0..i {
                     chosen_point = chosen_point.double()
                 }
-                for _ in 0..square_offset {
-                    chosen_point = chosen_point.double()
-                }
+                // for _ in 0..square_offset {
+                //     chosen_point = chosen_point.double()
+                // }
 
                 if is_negative {
                     result -= chosen_point;
