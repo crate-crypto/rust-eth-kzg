@@ -245,10 +245,11 @@ impl SeoKim {
         }
 
         let mut wnaf_digits = scalar_to_wnaf(*scalar, self.l, self.w);
-        for t in 0..self.z {
-            // t is used to scan a square
-            let square_offset = t * self.w * self.w;
-            for i in 0..self.w {
+        for i in (0..self.w).rev() {
+            result = result.double();
+
+            for t in (0..self.z) {
+                // t is used to scan a square
                 // i is used to scan a particular row
                 //
                 //
@@ -272,9 +273,9 @@ impl SeoKim {
                 let mut chosen_point =
                     square_precomputations[t][(total_value.unsigned_abs() as usize - 1)];
 
-                for _ in 0..i {
-                    chosen_point = chosen_point.double()
-                }
+                // for _ in 0..i {
+                //     chosen_point = chosen_point.double()
+                // }
                 // for _ in 0..square_offset {
                 //     chosen_point = chosen_point.double()
                 // }
