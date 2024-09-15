@@ -220,7 +220,7 @@ impl SeoKim {
 
         let mut precomputations = Vec::new();
         // numbers are of the form a_0 + 2^w a_1 + 2^2w a_2 +... a_w 2^w*w
-        for i in 0..(1 << self.w * self.w) {
+        for i in 1..(1 << self.w * self.w) {
             precomputations.push(point * Scalar::from(i as u64));
         }
 
@@ -249,7 +249,7 @@ impl SeoKim {
                 // let two_pow_offset = Scalar::from(2u64).pow(&[square_offset as u64]);
                 // let two_pow_i = Scalar::from(2u64).pow(&[i as u64]);
 
-                let mut chosen_point = precomputations[total_value.unsigned_abs() as usize];
+                let mut chosen_point = precomputations[total_value.unsigned_abs() as usize - 1];
 
                 for _ in 0..i {
                     chosen_point = chosen_point.double()
