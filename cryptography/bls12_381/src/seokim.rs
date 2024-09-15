@@ -1,12 +1,12 @@
 // Implements https://www.mdpi.com/1424-8220/13/7/9483
 
+use crate::limlee::scalar_to_bits;
+use crate::wnaf::wnaf_form;
 use blstrs::{G1Projective, Scalar};
 use ff::Field;
 use ff::PrimeField;
 use group::Group;
-
-use crate::limlee::scalar_to_bits;
-use crate::wnaf::wnaf_form;
+use rayon::prelude::*;
 
 pub struct SeoKim {
     w: usize,
@@ -218,10 +218,30 @@ impl SeoKim {
         let mut result = G1Projective::identity();
         let point = G1Projective::generator();
 
+        let mut square_precomputations = Vec::new();
         let mut precomputations = Vec::new();
         // numbers are of the form a_0 + 2^w a_1 + 2^2w a_2 +... a_w 2^w*w
         for i in 1..(1 << self.w * self.w) {
             precomputations.push(point * Scalar::from(i as u64));
+        }
+        square_precomputations.push(precomputations);
+
+        // Precompute the values across rows, across the square
+        for k in 0..self.w {
+            // Take the last
+            let last_square = square_precomputations.last().unwrap().clone();
+            // double all elements in the last square w*w times
+            let shifted_square: Vec<_> = last_square
+                .into_par_iter()
+                .map(|mut point| {
+                    for _ in 0..(self.w * self.w) {
+                        point = point.double();
+                    }
+                    point
+                })
+                .collect();
+
+            square_precomputations.push(shifted_square);
         }
 
         let mut wnaf_digits = scalar_to_wnaf(*scalar, self.l, self.w);
@@ -249,7 +269,8 @@ impl SeoKim {
                 // let two_pow_offset = Scalar::from(2u64).pow(&[square_offset as u64]);
                 // let two_pow_i = Scalar::from(2u64).pow(&[i as u64]);
 
-                let mut chosen_point = precomputations[total_value.unsigned_abs() as usize - 1];
+                let mut chosen_point =
+                    square_precomputations[0][total_value.unsigned_abs() as usize - 1];
 
                 for _ in 0..i {
                     chosen_point = chosen_point.double()
