@@ -1,19 +1,33 @@
 /// Given a vector of field elements {v_i}, compute the vector {v_i^(-1)}
+///
+/// Panics if any of the elements are zero
 pub fn batch_inverse<F: ff::Field>(v: &mut [F]) {
-    // Montgomery’s Trick and Fast Implementation of Masked AES
+    let mut scratch_pad = Vec::with_capacity(v.len());
+    batch_inverse_scratch_pad(v, &mut scratch_pad);
+}
+
+/// Given a vector of field elements {v_i}, compute the vector {v_i^(-1)}
+///
+/// A scratchpad is used to avoid excessive allocations in the case that this method is
+/// called repeatedly.
+///
+/// Panics if any of the elements are zero
+pub fn batch_inverse_scratch_pad<F: ff::Field>(v: &mut [F], scratchpad: &mut Vec<F>) {
+    // Montgomery's Trick and Fast Implementation of Masked AES
     // Genelle, Prouff and Quisquater
     // Section 3.2
     // but with an optimization to multiply every element in the returned vector by coeff
 
-    // First pass: compute [a, ab, abc, ...]
-    let mut prod = Vec::with_capacity(v.len());
-    let mut tmp = F::ONE;
-    for f in v.iter().filter(|f| !f.is_zero_vartime()) {
-        tmp.mul_assign(f);
-        prod.push(tmp);
-    }
+    // Clear the scratchpad and ensure it has enough capacity
+    scratchpad.clear();
+    scratchpad.reserve(v.len());
 
-    assert_eq!(prod.len(), v.len(), "inversion by zero is not allowed");
+    // First pass: compute [a, ab, abc, ...]
+    let mut tmp = F::ONE;
+    for f in v.iter() {
+        tmp.mul_assign(f);
+        scratchpad.push(tmp);
+    }
 
     // Invert `tmp`.
     tmp = tmp
@@ -25,14 +39,12 @@ pub fn batch_inverse<F: ff::Field>(v: &mut [F]) {
         .iter_mut()
         // Backwards
         .rev()
-        // Ignore normalized elements
-        .filter(|f| !f.is_zero_vartime())
         // Backwards, skip last element, fill in one for last term.
-        .zip(prod.into_iter().rev().skip(1).chain(Some(F::ONE)))
+        .zip(scratchpad.iter().rev().skip(1).chain(Some(&F::ONE)))
     {
         // tmp := tmp * f; f := tmp * s = 1/f
         let new_tmp = tmp * *f;
-        *f = tmp * s;
+        *f = tmp * *s;
         tmp = new_tmp;
     }
 }
