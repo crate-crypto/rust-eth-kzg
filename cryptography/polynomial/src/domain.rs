@@ -108,7 +108,7 @@ impl Domain {
         // domain.
         polynomial.resize(self.size(), Scalar::ZERO);
 
-        fft_scalar(self.generator, &polynomial)
+        fft_scalar_new(self.generator, &polynomial)
     }
 
     /// Evaluates a polynomial at the points in the domain multiplied by a coset
@@ -123,7 +123,7 @@ impl Domain {
             *point *= coset_scale;
             coset_scale *= self.coset_generator;
         }
-        fft_scalar(self.generator, &points)
+        fft_scalar_new(self.generator, &points)
     }
 
     /// Computes a DFT for the group elements(elliptic curve points) using the roots in the domain.
@@ -135,6 +135,12 @@ impl Domain {
         // domain.
         points.resize(self.size(), G1Projective::identity());
         fft_g1(self.generator, &points)
+    }
+    pub fn fft_g1_new(&self, mut points: Vec<G1Projective>) -> Vec<G1Projective> {
+        // Pad the vector of points with zeroes, so that it is the same size as the
+        // domain.
+        points.resize(self.size(), G1Projective::identity());
+        fft_g1_new(self.generator, &points)
     }
 
     /// Computes an IDFT for the group elements(elliptic curve points) using the roots in the domain.
@@ -158,7 +164,7 @@ impl Domain {
         // domain.
         points.resize(self.size(), G1Projective::identity());
 
-        let ifft_g1 = fft_g1(self.generator_inv, &points);
+        let ifft_g1 = fft_g1_new(self.generator_inv, &points);
 
         // Truncate the result if a value of `n` was supplied.
         let mut ifft_g1 = match n {
@@ -183,7 +189,7 @@ impl Domain {
         // domain.
         points.resize(self.size(), Scalar::ZERO);
 
-        let mut ifft_scalar = fft_scalar(self.generator_inv, &points);
+        let mut ifft_scalar = fft_scalar_new(self.generator_inv, &points);
 
         for element in ifft_scalar.iter_mut() {
             *element *= self.domain_size_inv
@@ -234,6 +240,63 @@ fn fft_scalar(nth_root_of_unity: Scalar, points: &[Scalar]) -> Vec<Scalar> {
     evaluations
 }
 
+pub fn fft_scalar_inplace(a: &mut [Scalar], nth_root_of_unity: Scalar) {
+    let n = a.len();
+    let log_n = log2_pow2(n);
+    assert_eq!(n, 1 << log_n);
+
+    // Bit-reversal permutation
+    for k in 0..n {
+        let rk = bitreverse(k as u32, log_n) as usize;
+        if k < rk {
+            a.swap(rk, k);
+        }
+    }
+
+    // Main FFT computation
+    let mut m = 1;
+    for s in 0..log_n {
+        let w_m = nth_root_of_unity.pow(&[(n / (2 * m)) as u64]);
+        for k in (0..n).step_by(2 * m) {
+            let mut w = Scalar::ONE;
+            for j in 0..m {
+                let t = if w == Scalar::ONE {
+                    a[k + j + m]
+                } else if w == -Scalar::ONE {
+                    -a[k + j + m]
+                } else {
+                    a[k + j + m] * w
+                };
+                let u = a[k + j];
+                a[k + j] = u + t;
+                a[k + j + m] = u - t;
+                w *= w_m;
+            }
+        }
+        m *= 2;
+    }
+}
+
+fn bitreverse(mut n: u32, l: u32) -> u32 {
+    let mut r = 0;
+    for _ in 0..l {
+        r = (r << 1) | (n & 1);
+        n >>= 1;
+    }
+    r
+}
+
+fn log2_pow2(n: usize) -> u32 {
+    n.trailing_zeros()
+}
+
+// Helper function to create a new vector and perform FFT
+pub fn fft_scalar_new(nth_root_of_unity: Scalar, points: &[Scalar]) -> Vec<Scalar> {
+    let mut a = points.to_vec();
+    fft_scalar_inplace(&mut a, nth_root_of_unity);
+    a
+}
+
 /// Computes a DFT of the group elements(points) using powers of the roots of unity.
 ///
 /// Note: This is essentially multiple multi-scalar multiplications.
@@ -264,6 +327,66 @@ fn fft_g1(nth_root_of_unity: Scalar, points: &[G1Projective]) -> Vec<G1Projectiv
 
     evaluations
 }
+pub fn fft_g1_inplace(a: &mut [G1Projective], nth_root_of_unity: Scalar) {
+    let n = a.len();
+    let log_n = log2_pow2(n);
+    assert_eq!(n, 1 << log_n);
+
+    // Bit-reversal permutation
+    for k in 0..n {
+        let rk = bitreverse(k as u32, log_n) as usize;
+        if k < rk {
+            a.swap(rk, k);
+        }
+    }
+
+    // TODO: can be done once at startup, but not a performance bottleneck right now
+    let twiddle_factors = precompute_twiddle_factors(&nth_root_of_unity, n);
+    // Main FFT computation
+    let mut m = 1;
+    for s in 0..log_n {
+        // let w_m = nth_root_of_unity.pow(&[(n / (2 * m)) as u64]);
+        let w_m = twiddle_factors[s as usize];
+        for k in (0..n).step_by(2 * m) {
+            let mut num_scalar_muls = 0;
+            let mut w = Scalar::ONE;
+            for j in 0..m {
+                let t = if w == Scalar::ONE {
+                    a[k + j + m]
+                } else if w == -Scalar::ONE {
+                    -a[k + j + m]
+                } else if a[k + j + m].is_identity().into() {
+                    G1Projective::identity()
+                } else {
+                    a[k + j + m] * w
+                };
+                num_scalar_muls += 1;
+                let u = a[k + j];
+                a[k + j] = u + t;
+                a[k + j + m] = u - t;
+                w *= w_m;
+            }
+            dbg!(num_scalar_muls);
+        }
+        m *= 2;
+    }
+}
+
+// Helper function to create a new vector and perform FFT
+fn fft_g1_new(nth_root_of_unity: Scalar, points: &[G1Projective]) -> Vec<G1Projective> {
+    let mut a = points.to_vec();
+    // let now = std::time::Instant::now();
+    fft_g1_inplace(&mut a, nth_root_of_unity);
+    // dbg!(now.elapsed().as_micros());
+    a
+}
+
+fn precompute_twiddle_factors<F: Field>(omega: &F, n: usize) -> Vec<F> {
+    let log_n = log2_pow2(n);
+    (0..log_n)
+        .map(|s| omega.pow(&[(n / (1 << (s + 1))) as u64]))
+        .collect()
+}
 
 /// Splits the list into two lists, one containing the even indexed elements
 /// and the other containing the odd indexed elements.
@@ -284,6 +407,8 @@ fn take_even_odd<T: Clone>(list: &[T]) -> (Vec<T>, Vec<T>) {
 
 #[cfg(test)]
 mod tests {
+    use bls12_381::G1Point;
+
     use crate::monomial::poly_eval;
 
     use super::*;
@@ -344,6 +469,323 @@ mod tests {
         let got_poly = domain.coset_ifft_scalars(coset_evals);
 
         assert_eq!(got_poly, polynomial);
+    }
+
+    #[test]
+    fn test_fft_g1_bench() {
+        let domain = Domain::new(64);
+
+        let points: Vec<_> = (0..64)
+            .map(|_| G1Projective::random(&mut rand::thread_rng()))
+            .collect();
+        let now = std::time::Instant::now();
+        let res = domain.fft_g1(points.clone());
+        dbg!(now.elapsed().as_millis());
+        let now = std::time::Instant::now();
+        let res2 = domain.fft_g1_new(points);
+        dbg!(now.elapsed().as_millis());
+        assert_eq!(res, res2)
+    }
+
+    #[test]
+    fn test_fft_twiddle_factor_hamming_weight() {
+        let domain = Domain::new(64);
+
+        let twiddle_factors = precompute_twiddle_factors(&domain.generator, 64);
+        let mut scaled_twiddles = Vec::new();
+        let log_n = 6;
+        // Main FFT computation
+        let mut m = 1;
+        let n = 64;
+        for s in 0..log_n {
+            let w_m = twiddle_factors[s as usize];
+            for k in (0..n).step_by(2 * m) {
+                let mut w = Scalar::ONE;
+                for j in 0..m {
+                    w *= w_m;
+                    scaled_twiddles.push(w);
+                }
+            }
+            m *= 2;
+        }
+
+        dbg!(&domain.roots);
+
+        let root = domain.roots.last().unwrap();
+        let now = std::time::Instant::now();
+        let res = G1Projective::generator() * root;
+        dbg!(now.elapsed().as_micros());
+        let resAff = G1Point::from(res);
+        dbg!(hex::encode(resAff.to_compressed()));
+        let now = std::time::Instant::now();
+        g1_projective_operations(G1Projective::generator());
+        dbg!(now.elapsed().as_micros());
+    }
+    fn g1_projective_operations(point: G1Projective) -> G1Projective {
+        let _1 = point;
+        let _10 = _1.double();
+        let _11 = _1 + _10;
+        let _101 = _10 + _11;
+        let _110 = _1 + _101;
+        let _111 = _1 + _110;
+        let _1001 = _10 + _111;
+        let _1011 = _10 + _1001;
+        let _1101 = _10 + _1011;
+        let _1111 = _10 + _1101;
+        let _10001 = _10 + _1111;
+        let _10111 = _110 + _10001;
+        let _11001 = _10 + _10111;
+        let _11011 = _10 + _11001;
+        let _11101 = _10 + _11011;
+        let _110010 = _10111 + _11011;
+
+        let i40 = ((_110010
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            + _1101)
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            + _1001)
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double();
+        let i56 = ((_11101 + i40).double().double().double().double().double() + _11)
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            + _1101;
+        let i78 = ((i56
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            + _10111)
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            + _11101)
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double();
+        let i91 = ((_10111 + i78).double().double().double() + _101)
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            + _11101;
+        let i110 = ((i91
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            + _1001)
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            + _11001)
+            .double()
+            .double()
+            .double();
+        let i125 = ((_111 + i110)
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            + _1101)
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            + _11101;
+        let i140 = ((_10 + i125).double().double().double().double() + _111)
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            + _11101;
+        let i160 = ((i140.double().double().double().double().double().double() + _11011)
+            .double()
+            .double()
+            .double()
+            + _11)
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double();
+        let i175 = ((_11101 + i160).double().double().double().double().double() + _10111)
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            + _111;
+        let i195 = ((i175
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            + _10111)
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            + _1111)
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double();
+        let i207 = ((_1111 + i195).double().double().double().double() + _111)
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            + _111;
+        let i227 = ((i207.double().double().double().double().double().double() + _101)
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            + _111)
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double();
+        let i241 = ((_1111 + i227)
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            + _10001)
+            .double()
+            .double()
+            .double()
+            + _101;
+        let i261 = ((i241.double().double().double().double().double() + _101)
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            + _11)
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double();
+        let i277 = ((_101 + i261)
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            + _11)
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            + _1011;
+        let i295 = ((i277.double().double().double().double().double().double() + _10001)
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            + _11101)
+            .double()
+            .double()
+            .double()
+            .double();
+
+        ((_1101 + i295)
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            .double()
+            + _1011)
+            .double()
+            .double()
     }
 
     #[test]

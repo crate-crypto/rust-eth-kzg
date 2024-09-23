@@ -4,7 +4,11 @@ use blstrs::{Fp, G1Affine, G1Projective, Scalar};
 use ff::{Field, PrimeField};
 use group::{prime::PrimeCurveAffine, Group, WnafScalar};
 
-use crate::{batch_add::batch_addition, g1_batch_normalize, wnaf::wnaf_form};
+use crate::{
+    batch_add::{batch_addition, multi_batch_addition, multi_batch_addition_diff_stride},
+    g1_batch_normalize,
+    wnaf::wnaf_form,
+};
 
 // Reference: http://mhutter.org/papers/Mohammed2012ImprovedFixedBase.pdf
 //
@@ -27,11 +31,11 @@ pub struct LimLee {
     //
     b: u32,
     //
-    points: Vec<G1Affine>,
+    precomputed_points: Vec<Vec<Vec<G1Affine>>>,
 }
 
 impl LimLee {
-    pub fn new(h: u32, v: u32) -> LimLee {
+    pub fn new(h: u32, v: u32, points: &[G1Affine]) -> LimLee {
         // Compute `a`.
 
         // TODO: Add one so that we view all scalars as 256 bit numbers.
@@ -45,19 +49,27 @@ impl LimLee {
         assert!(v <= a);
         assert!(
             a % v == 0,
-            "v must be a factor of a, so that b can be equally sized"
+            "v must be a factor of a, so that b can be equally sized v={v}, a={a}",
         );
         // Compute `b`
         let b = a.div_ceil(v);
 
-        LimLee {
+        let mut ll = LimLee {
             h,
             a,
             v,
             b,
-            points: Vec::new(),
+            precomputed_points: Vec::new(),
             l,
-        }
+        };
+        use rayon::prelude::*;
+        let precomputed = points
+            .into_par_iter()
+            .map(|point| ll.precompute_point(*point))
+            .collect();
+        ll.precomputed_points = precomputed;
+
+        ll
     }
 
     // we want to compute scalar_size / divider but pad by zeroes
@@ -234,6 +246,12 @@ impl LimLee {
             .map(|g_s_i| g1_batch_normalize(&g_s_i))
             .collect();
 
+        let mut total_len = 0;
+        for g in &g_s {
+            total_len += g.len()
+        }
+        dbg!(total_len);
+
         let mut result = G1Projective::identity();
         for t in 0..self.b {
             let mut double_inner_sum = G1Projective::identity();
@@ -252,6 +270,95 @@ impl LimLee {
         result
     }
 
+    pub fn msm(&self, scalars: &[Scalar]) -> G1Projective {
+        // Convert scalars to bits
+        // let now = std::time::Instant::now();
+        let scalars_bits: Vec<_> = scalars
+            .into_iter()
+            .map(|scalar| {
+                let mut scalar_bits = scalar_to_bits(*scalar).to_vec();
+                scalar_bits.extend(vec![0u8; self.l as usize - scalar_bits.len()]);
+                scalar_bits
+            })
+            .collect();
+        // dbg!("scalar conversion", now.elapsed().as_micros());
+        let mut window: Vec<Vec<G1Affine>> = vec![vec![]; self.b as usize];
+
+        // let now = std::time::Instant::now();
+        for (scalar_index, scalar_bits) in scalars_bits.iter().enumerate() {
+            for t in (0..self.b) {
+                for j in 0..self.v {
+                    let i_jt = self.compute_i_jt(&scalar_bits, j, t);
+                    if i_jt != 0 {
+                        window[t as usize]
+                            .push(self.precomputed_points[scalar_index][j as usize][i_jt]);
+                    }
+                }
+            }
+        }
+
+        let mut result = G1Projective::identity();
+        let summed_windows = multi_batch_addition_diff_stride(window);
+
+        for (window) in summed_windows.into_iter().rev() {
+            result = result.double();
+            result += window;
+        }
+
+        // dbg!(now.elapsed().as_micros());
+        result
+    }
+
+    fn num_precomputed_points(&self) -> usize {
+        let mut total = 0;
+        for set_of_points in &self.precomputed_points {
+            for row in set_of_points {
+                total += row.len();
+            }
+        }
+        total
+    }
+
+    fn precompute_point(&self, point: G1Affine) -> Vec<Vec<G1Affine>> {
+        let point = G1Projective::from(point);
+        // Precomputations
+        let mut precomputations = Vec::new();
+        precomputations.push(point);
+        for i in 0..self.h {
+            let two_pow_a = Scalar::from(2u64).pow(&[self.a as u64]);
+            precomputations.push(precomputations.last().unwrap() * two_pow_a);
+        }
+
+        let mut g_s =
+            vec![vec![G1Projective::identity(); (1 << self.h) as usize]; (self.v as usize)];
+
+        // Initialize the j==0 case
+        // Compute G[0][s] for all s
+        for s in 1..(1 << self.h) {
+            let mut g0s = G1Projective::identity();
+            for i in 0..self.h {
+                if (s & (1 << i)) != 0 {
+                    g0s += precomputations[i as usize];
+                }
+            }
+            g_s[0][s] = g0s;
+        }
+
+        // Compute G[j][s] for j > 0
+        let two_pow_b = Scalar::from(2u64).pow(&[self.b as u64]);
+        for j in 1..self.v as usize {
+            for s in 1..(1 << self.h) as usize {
+                g_s[j][s] = g_s[j - 1][s] * two_pow_b;
+            }
+        }
+
+        let g_s: Vec<_> = g_s
+            .into_iter()
+            .map(|g_s_i| g1_batch_normalize(&g_s_i))
+            .collect();
+        g_s
+    }
+
     fn compute_i_jt(&self, k: &[u8], j: u32, t: u32) -> usize {
         let mut i_jt = 0;
         for i in 0..self.h {
@@ -264,7 +371,10 @@ impl LimLee {
     }
 }
 
-struct TsaurChou {
+type PrecomputedPoints = Vec<Vec<G1Affine>>;
+
+#[derive(Debug)]
+pub struct TsaurChou {
     // These are not the same as LimLee
     //
     //
@@ -273,10 +383,12 @@ struct TsaurChou {
     a: usize,
     b: usize,
     num_bits: usize,
+
+    precomputed_points: Vec<PrecomputedPoints>,
 }
 
 impl TsaurChou {
-    pub fn new(omega: usize, v: usize) -> TsaurChou {
+    pub fn new(omega: usize, v: usize, points: &[G1Affine]) -> TsaurChou {
         let num_bits = Scalar::NUM_BITS + 1;
 
         // This is the padded number of bits needed to make sure division
@@ -285,7 +397,13 @@ impl TsaurChou {
 
         let a = num_bits / omega;
 
+        // assert!(a % v == 0, "a={} v={}", a, v);
         let b = a.div_ceil(v);
+
+        let mut precomputed_points = Vec::new();
+        for point in points {
+            precomputed_points.push(Self::precompute_point(*point, omega, b, v))
+        }
 
         Self {
             omega,
@@ -293,6 +411,7 @@ impl TsaurChou {
             a,
             b,
             num_bits,
+            precomputed_points,
         }
     }
 
@@ -304,6 +423,16 @@ impl TsaurChou {
         padding_zeros + l
     }
 
+    fn num_precomputed_points(&self) -> usize {
+        let mut result = 0;
+        for points in &self.precomputed_points {
+            for p in points.iter() {
+                result += p.len()
+            }
+        }
+        result
+    }
+
     // On page350, this is the first double summation
     pub fn mul_naive(&self, scalar: &Scalar) -> G1Projective {
         // Convert scalar to wnaf
@@ -313,7 +442,6 @@ impl TsaurChou {
         wnaf_digits.extend(vec![0u8; self.num_bits - wnaf_digits.len()]);
         let point = G1Projective::generator();
         let mut result = G1Projective::identity();
-        // TODO: I think we need to pad here after wnaf
 
         // 1. Compute the precomputations
 
@@ -327,7 +455,7 @@ impl TsaurChou {
                 // Index K_jb+t
                 let start_index = (j * self.b + t) * self.omega;
                 let end_index = start_index + self.omega;
-                let k_jbt = &wnaf_digits[start_index..end_index];
+                let k_jbt = &wnaf_digits[start_index..end_index.min(wnaf_digits.len())];
                 // Convert K_jb+t from NAF to scalar
                 let mut digit = Scalar::ZERO;
                 for (i, &bit) in k_jbt.iter().enumerate() {
@@ -461,7 +589,7 @@ impl TsaurChou {
             for j in 0..self.v {
                 let start_index = (j * self.b + t) * self.omega;
                 let end_index = start_index + self.omega;
-                let k_jbt = &wnaf_digits[start_index..end_index.min(wnaf_digits.len())]; // TODO: check if min is needed here
+                let k_jbt = &wnaf_digits[start_index..end_index];
 
                 let mut s_exponent = 0;
                 let mut digit = 0;
@@ -521,11 +649,117 @@ impl TsaurChou {
         result
     }
 
+    // This is closer to the cleaned up version that does not have
+    // the precomps being done internally.
+    //
+    // These are computed in the constructor
+    pub fn mul_naive_better_wnaf_precomputations_final_msm(
+        &self,
+        scalars: &[Scalar],
+    ) -> G1Projective {
+        fn scalar_to_wnaf(scalar: Scalar, num_bits: usize, omega: usize) -> Vec<i64> {
+            let mut wnaf_digits = vec![];
+            let mut scalar_bytes = scalar.to_bytes_le();
+            // scalar_bytes.extend(vec![0u8; num_bits / 8 + 1 - scalar_bytes.len()]); // TODO: double check for rounding error
+            wnaf_form(&mut wnaf_digits, scalar_bytes, omega);
+            wnaf_digits
+        }
+        // let now = std::time::Instant::now();
+        let scalars_wnaf_digits: Vec<_> = scalars
+            .into_iter()
+            .map(|scalar| scalar_to_wnaf(*scalar, self.num_bits, self.omega))
+            .collect();
+        // dbg!(now.elapsed().as_micros());
+        // let wnaf_digits = scalar_to_wnaf(scalars[0], self.num_bits, self.omega);
+        // Convert scalar to wnaf
+        // let wnaf_digits = scalar_to_bits(*scalar);
+        let mut result = G1Projective::identity();
+
+        // let now = std::time::Instant::now();
+
+        let mut windows = vec![vec![]; self.b];
+        // 2. iterate `w` bits and compute the scalar_mul
+        for t in 0..self.b {
+            for j in 0..self.v {
+                for (scalar_index, wnaf_digits) in scalars_wnaf_digits.iter().enumerate() {
+                    let start_index = (j * self.b + t) * self.omega;
+                    let end_index = start_index + self.omega;
+                    if start_index > wnaf_digits.len() {
+                        continue;
+                    }
+
+                    let k_jbt = &wnaf_digits[start_index..end_index.min(wnaf_digits.len())];
+
+                    let mut s_exponent = 0;
+                    let mut digit = 0;
+
+                    for (i, &bit) in k_jbt.iter().enumerate() {
+                        if bit != 0 {
+                            // Use bit shifting for 2^i
+                            s_exponent = i;
+                            digit = bit;
+                            break; // In ω-NAF, only one non-zero digit per window
+                        }
+                    }
+
+                    if digit != 0 {
+                        let abs_digit = digit.unsigned_abs() as u64;
+                        let mut chosen_point = self.precomputed_points[scalar_index][j]
+                            [Self::sd_to_index(s_exponent, abs_digit as usize, self.omega as u32)];
+                        if digit < 0 {
+                            chosen_point = -chosen_point;
+                        }
+                        windows[t].push(chosen_point);
+                    }
+                }
+            }
+        }
+
+        // Combine each sum in each window
+        // let windows: Vec<_> = windows
+        //     .into_iter()
+        //     .map(|window| batch_addition(window))
+        //     .collect();
+        // let now = std::time::Instant::now();
+        let windows = multi_batch_addition_diff_stride(windows);
+        // dbg!(now.elapsed().as_micros());
+        // Combine windows
+        // for (t, window) in windows.into_iter().enumerate() {
+        //     if t * self.omega == 0 {
+        //         result += window
+        //     } else if t * self.omega == 1 {
+        //         result += G1Projective::from(window).double();
+        //     } else {
+        //         // let inner_sum: G1Affine = window.into();
+
+        //         let inner_sum = direct_doubling(t * self.omega, window);
+
+        //         result += inner_sum;
+        //     }
+        // }
+        for window in windows.into_iter().rev() {
+            for _ in 0..self.omega {
+                result = result.double()
+            }
+
+            result += window;
+        }
+
+        // dbg!(now.elapsed().as_micros());
+
+        result
+    }
+
     fn sd_to_index(s_exp: usize, d: usize, w: u32) -> usize {
         s_exp * (1 << (w - 2)) + (d - 1) / 2
     }
 
-    fn precompute_point(point: G1Affine, omega: usize, b: usize, v: usize) -> Vec<Vec<G1Affine>> {
+    fn precompute_point_old(
+        point: G1Affine,
+        omega: usize,
+        b: usize,
+        v: usize,
+    ) -> Vec<Vec<G1Affine>> {
         let point = G1Projective::from(point);
 
         let inner_size = omega * (1 << (omega - 2));
@@ -551,8 +785,72 @@ impl TsaurChou {
             .map(|points| g1_batch_normalize(&points))
             .collect();
 
-        let precomp_size: usize = precomp.iter().map(|pc| pc.len()).sum();
-        dbg!(precomp_size);
+        precomp
+    }
+
+    fn precompute_point(point: G1Affine, omega: usize, b: usize, v: usize) -> Vec<Vec<G1Affine>> {
+        // d in the paper is just odd multiples
+        fn precompute_odd_multiples(base: G1Affine, w: usize) -> Vec<G1Projective> {
+            let base = G1Projective::from(base);
+            let num_points = (1 << (w - 1)) / 2; // (2^(w-1)) / 2 points to compute
+            let mut results = vec![G1Projective::identity(); num_points];
+
+            // Compute 2P
+            let double_base = base.double();
+
+            // 1P is just the base point
+            results[0] = base;
+
+            // Compute odd multiples: 3P, 5P, ..., (2^(w-1) - 1)P
+            for i in 1..num_points {
+                results[i] = results[i - 1] + double_base;
+            }
+
+            results
+        }
+
+        // let inner_size = omega * (1 << (omega - 2));
+        let mut precomp = Vec::new();
+
+        let d_vec = precompute_odd_multiples(point, omega);
+        use rayon::prelude::*;
+        // Compute G_0
+        let mut inner = Vec::new();
+        inner.push(d_vec.clone());
+        for s_exp in 1..omega {
+            let doubled = inner
+                .last()
+                .unwrap()
+                .par_iter()
+                .map(|p| p.double())
+                .collect();
+            inner.push(doubled)
+        }
+        precomp.push(inner.into_iter().flatten().collect::<Vec<_>>());
+
+        // Now scale those G_j
+        for j in 1..v {
+            let mut scaled_inner: Vec<_> = precomp
+                .last()
+                .unwrap()
+                .par_iter()
+                .map(|inner| {
+                    let mut res = *inner;
+                    for _ in 0..omega * b {
+                        res = res.double();
+                    }
+                    res
+                })
+                .collect();
+
+            precomp.push(scaled_inner.into_iter().collect::<Vec<_>>())
+        }
+
+        let precomp: Vec<_> = precomp
+            .into_iter()
+            .map(|points| g1_batch_normalize(&points))
+            .collect();
+
         precomp
     }
 }
@@ -636,9 +934,17 @@ fn direct_double() {
         assert_eq!(got, expected);
     }
 }
+
+fn random_points(num_points: usize) -> Vec<G1Affine> {
+    (0..num_points)
+        .into_iter()
+        .map(|_| G1Projective::random(&mut rand::thread_rng()).into())
+        .collect()
+}
+
 #[test]
 fn tsaur_chau() {
-    let ts = TsaurChou::new(8, 4);
+    let ts = TsaurChou::new(5, 26, &[G1Affine::generator()]);
     let scalar = -Scalar::from(1u64);
 
     let expected = G1Projective::generator() * scalar;
@@ -652,6 +958,31 @@ fn tsaur_chau() {
     assert!(result == expected);
 
     let result = ts.mul_naive_better_wnaf_precomputations(&scalar);
+    assert!(result == expected);
+
+    let result = ts.mul_naive_better_wnaf_precomputations_final_msm(&[scalar]);
+    assert!(result == expected);
+}
+
+#[test]
+fn tsaur_chau_msm() {
+    let num_points = 64;
+    let points = random_points(num_points);
+    let ts = TsaurChou::new(5, 7, &points); // (5,7), (5,4), (4,12), (6,3), (8,2), (8,4), (8,1)
+    dbg!(ts.num_precomputed_points());
+
+    let scalars: Vec<_> = (0..num_points)
+        .into_iter()
+        .map(|_| Scalar::random(&mut rand::thread_rng()))
+        .collect();
+
+    let mut expected = G1Projective::identity();
+    for (scalar, point) in scalars.iter().zip(points.iter()) {
+        expected += G1Projective::from(*point) * scalar
+    }
+    let now = std::time::Instant::now();
+    let result = ts.mul_naive_better_wnaf_precomputations_final_msm(&scalars);
+    dbg!(now.elapsed().as_micros());
     assert!(result == expected);
 }
 
@@ -680,7 +1011,7 @@ fn wnaf_smoke_test() {
 
 #[test]
 fn smoke_test_generator_scalar_mul() {
-    let ll = LimLee::new(8, 8);
+    let ll = LimLee::new(8, 8, &[]);
     let scalar = -Scalar::from(2u64);
 
     let expected = G1Projective::generator() * scalar;
@@ -698,7 +1029,30 @@ fn smoke_test_generator_scalar_mul() {
     assert_eq!(got, result)
 }
 
-fn scalar_to_bits(s: Scalar) -> [u8; 256] {
+#[test]
+fn smoke_test_lim_lee_msm() {
+    let num_points = 1;
+    let points = random_points(num_points);
+    let ll = LimLee::new(8, 2, &points); // (8,2), (4,16), (5,4)
+
+    let scalars: Vec<_> = (0..num_points)
+        .into_iter()
+        .map(|i| Scalar::from(i as u64))
+        // .map(|i| Scalar::random(&mut rand::thread_rng()))
+        .collect();
+
+    let mut expected = G1Projective::identity();
+    for (scalar, point) in scalars.iter().zip(points.iter()) {
+        expected += G1Projective::from(*point) * scalar
+    }
+    let now = std::time::Instant::now();
+    let got = ll.msm(&scalars);
+    dbg!(now.elapsed().as_micros());
+    dbg!(ll.num_precomputed_points());
+    assert_eq!(got, expected);
+}
+
+pub fn scalar_to_bits(s: Scalar) -> [u8; 256] {
     let scalar_bytes = s.to_bytes_le();
     bytes_to_bits(scalar_bytes)
 }
