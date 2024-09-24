@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.2](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.5.1...v0.5.2) (2024-09-24)
+
+
+### Features
+
+* Allow batch_inverse to take a scratchpad as input ([#268](https://github.com/crate-crypto/rust-eth-kzg/issues/268)) ([b47387b](https://github.com/crate-crypto/rust-eth-kzg/commit/b47387b45a851ddc75d9e5de8dbdd3cd95df8b8d))
+* Pin Rust CI to 1.80.0 ([#270](https://github.com/crate-crypto/rust-eth-kzg/issues/270)) ([8a76c5c](https://github.com/crate-crypto/rust-eth-kzg/commit/8a76c5c3495db61734d852e0ac09d77045c467cd))
+* Replace blst msm method with a Rust native method ([#273](https://github.com/crate-crypto/rust-eth-kzg/issues/273)) ([b4ef4af](https://github.com/crate-crypto/rust-eth-kzg/commit/b4ef4afa16ebba2b1e071eda1c6f70542d7b7989))
+
 ## [0.5.1](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.5.0...v0.5.1) (2024-08-27)
 
 
