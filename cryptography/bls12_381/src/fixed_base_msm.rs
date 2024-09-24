@@ -1,5 +1,6 @@
 use crate::{
     fixed_base_msm_blst::FixedBaseMSMPrecompBLST,
+    fixed_base_msm_blst_all_windows::FixedBaseMSMPrecompAllWindow,
     fixed_base_msm_pippenger::FixedBaseMSMPippenger,
     limlee::{LimLee, TsaurChou},
     G1Projective, Scalar,
@@ -32,7 +33,7 @@ pub enum UsePrecomp {
 /// of memory.
 #[derive(Debug)]
 pub enum FixedBaseMSM {
-    Precomp(FixedBaseMSMPrecompBLST),
+    Precomp(FixedBaseMSMPrecompAllWindow),
     // Precomp(LimLee),
     // TODO: We are hijacking the NoPrecomp variant to store the
     // TODO: new pippenger algorithm.
@@ -43,7 +44,8 @@ impl FixedBaseMSM {
     pub fn new(generators: Vec<G1Affine>, use_precomp: UsePrecomp) -> Self {
         match use_precomp {
             UsePrecomp::Yes { width } => {
-                FixedBaseMSM::Precomp(FixedBaseMSMPrecompBLST::new(&generators, width))
+                FixedBaseMSM::Precomp(FixedBaseMSMPrecompAllWindow::new(&generators, width))
+                // FixedBaseMSM::Precomp(FixedBaseMSMPrecompBLST::new(&generators, width))
                 // FixedBaseMSM::Precomp(TsaurChou::new(8, 4, &generators))
                 // FixedBaseMSM::Precomp(LimLee::new(8, 1, &generators))
             }

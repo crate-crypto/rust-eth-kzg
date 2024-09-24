@@ -19,7 +19,6 @@ blstrs = { version = "0.7.1", features = ["__private_bench"] }
 ff = "0.13.0"
 group = "0.13"
 pairing = { version = "0.23" }
-
 # Transitively, we depend on subtle version >=2.5.0
 # Adding the restrictions here codify it in rust-eth-kzg.
 # 

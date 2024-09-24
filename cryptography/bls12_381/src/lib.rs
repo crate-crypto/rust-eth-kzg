@@ -4,6 +4,7 @@ pub mod batch_inversion;
 mod booth_encoding;
 pub mod fixed_base_msm;
 pub mod fixed_base_msm_blst;
+pub mod fixed_base_msm_blst_all_windows;
 pub mod fixed_base_msm_pippenger;
 pub mod limlee;
 pub mod lincomb;
