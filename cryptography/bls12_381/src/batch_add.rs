@@ -66,7 +66,7 @@ pub fn batch_addition(mut points: Vec<G1Affine>) -> G1Affine {
 
 // top down balanced tree idea - benedikt
 // search tree for sorted array
-pub fn batch_addition_diff_stride(mut points: Vec<G1Affine>) -> G1Projective {
+pub fn batch_addition_binary_tree_stride(mut points: Vec<G1Affine>) -> G1Projective {
     if points.is_empty() {
         use group::prime::PrimeCurveAffine;
         use group::Group;
@@ -190,7 +190,9 @@ pub fn multi_batch_addition(mut multi_points: Vec<Vec<G1Affine>>) -> Vec<G1Affin
         .collect()
 }
 
-pub fn multi_batch_addition_diff_stride(mut multi_points: Vec<Vec<G1Affine>>) -> Vec<G1Projective> {
+pub fn multi_batch_addition_binary_tree_stride(
+    mut multi_points: Vec<Vec<G1Affine>>,
+) -> Vec<G1Projective> {
     let total_num_points: usize = multi_points.iter().map(|p| p.len()).sum();
     let mut scratchpad = Vec::with_capacity(total_num_points);
 
@@ -243,13 +245,11 @@ pub fn multi_batch_addition_diff_stride(mut multi_points: Vec<Vec<G1Affine>>) ->
                 continue;
             }
             for i in (0..=points.len() - 2).step_by(2) {
-                // new_differences.push(points[i + 1].x() - points[i].x());
                 new_differences.push(choose_add_or_double(points[i], points[i + 1]));
             }
         }
 
         batch_inverse_scratch_pad(&mut new_differences, &mut scratchpad);
-        // new_differences.reverse();
 
         let mut new_differences_offset = 0;
 
@@ -259,7 +259,6 @@ pub fn multi_batch_addition_diff_stride(mut multi_points: Vec<Vec<G1Affine>>) ->
             }
             for (i, inv) in (0..=points.len() - 2)
                 .step_by(2)
-                // .zip(new_differences.iter().rev())
                 .zip(&new_differences[new_differences_offset..])
             {
                 let p1 = points[i];
@@ -271,7 +270,6 @@ pub fn multi_batch_addition_diff_stride(mut multi_points: Vec<Vec<G1Affine>>) ->
             // The latter half of the vector is now unused,
             // all results are stored in the former half.
             points.truncate(num_points);
-            // new_differences = new_differences[num_points..].to_vec();
             new_differences_offset += num_points
         }
 
@@ -290,7 +288,9 @@ pub fn multi_batch_addition_diff_stride(mut multi_points: Vec<Vec<G1Affine>>) ->
 #[cfg(test)]
 mod tests {
 
-    use crate::batch_add::{batch_addition_diff_stride, multi_batch_addition_diff_stride};
+    use crate::batch_add::{
+        batch_addition_binary_tree_stride, multi_batch_addition_binary_tree_stride,
+    };
 
     use super::{batch_addition, multi_batch_addition};
     use blstrs::{G1Affine, G1Projective};
@@ -308,7 +308,7 @@ mod tests {
             .fold(G1Projective::identity(), |acc, p| acc + p)
             .into();
 
-        let got_result = batch_addition_diff_stride(points.clone());
+        let got_result = batch_addition_binary_tree_stride(points.clone());
         assert_eq!(expected_result, got_result.into());
     }
 
@@ -352,7 +352,7 @@ mod tests {
             .map(|points| batch_addition(points).into())
             .collect();
 
-        let got_results = multi_batch_addition_diff_stride(random_sets_of_points_clone);
+        let got_results = multi_batch_addition_binary_tree_stride(random_sets_of_points_clone);
         assert_eq!(got_results, expected_results);
     }
 }
