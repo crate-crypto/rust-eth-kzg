@@ -4,18 +4,36 @@ use ff::Field;
 use blstrs::{Fp, G1Affine, G1Projective};
 use group::Group;
 
+#[inline(always)]
+fn point_add_double(p1: G1Affine, p2: G1Affine, inv: &blstrs::Fp) -> G1Affine {
+    use ff::Field;
+
+    let lambda = if p1 == p2 {
+        p1.x().square().mul3() * inv
+    } else {
+        (p2.y() - p1.y()) * inv
+    };
+
+    let x = lambda.square() - p1.x() - p2.x();
+    let y = lambda * (p1.x() - x) - p1.y();
+
+    G1Affine::from_raw_unchecked(x, y, false)
+}
+
+#[inline(always)]
+// Note: We do not handle the case where p1 == -p2
+fn choose_add_or_double(p1: G1Affine, p2: G1Affine) -> Fp {
+    use ff::Field;
+
+    if p1 == p2 {
+        p2.y().double()
+    } else {
+        p2.x() - p1.x()
+    }
+}
+
 /// Adds multiple points together in affine representation, batching the inversions
 pub fn batch_addition(mut points: Vec<G1Affine>) -> G1Affine {
-    #[inline(always)]
-    fn point_add(p1: G1Affine, p2: G1Affine, inv: &blstrs::Fp) -> G1Affine {
-        use ff::Field;
-
-        let lambda = (p2.y() - p1.y()) * inv;
-        let x = lambda.square() - p1.x() - p2.x();
-        let y = lambda * (p1.x() - x) - p1.y();
-        G1Affine::from_raw_unchecked(x, y, false)
-    }
-
     if points.is_empty() {
         use group::prime::PrimeCurveAffine;
         return G1Affine::identity();
@@ -30,14 +48,14 @@ pub fn batch_addition(mut points: Vec<G1Affine>) -> G1Affine {
 
         for i in (0..points.len()).step_by(stride * 2) {
             if i + stride < points.len() {
-                new_differences.push(points[i + stride].x() - points[i].x());
+                new_differences.push(choose_add_or_double(points[i], points[i + stride]));
             }
         }
         batch_inverse(&mut new_differences);
         for (i, inv) in new_differences.iter().enumerate() {
             let p1 = points[i * stride * 2];
             let p2 = points[i * stride * 2 + stride];
-            points[i * stride * 2] = point_add(p1, p2, inv);
+            points[i * stride * 2] = point_add_double(p1, p2, inv);
         }
 
         stride *= 2;
@@ -49,15 +67,6 @@ pub fn batch_addition(mut points: Vec<G1Affine>) -> G1Affine {
 // top down balanced tree idea - benedikt
 // search tree for sorted array
 pub fn batch_addition_diff_stride(mut points: Vec<G1Affine>) -> G1Projective {
-    #[inline(always)]
-    fn point_add(p1: G1Affine, p2: G1Affine, inv: &blstrs::Fp) -> G1Affine {
-        use ff::Field;
-
-        let lambda = (p2.y() - p1.y()) * inv;
-        let x = lambda.square() - p1.x() - p2.x();
-        let y = lambda * (p1.x() - x) - p1.y();
-        G1Affine::from_raw_unchecked(x, y, false)
-    }
     if points.is_empty() {
         use group::prime::PrimeCurveAffine;
         use group::Group;
@@ -81,7 +90,9 @@ pub fn batch_addition_diff_stride(mut points: Vec<G1Affine>) -> G1Projective {
         new_differences.clear();
 
         for i in (0..=points.len() - 2).step_by(2) {
-            new_differences.push(points[i + 1].x() - points[i].x());
+            let p1 = points[i];
+            let p2 = points[i + 1];
+            new_differences.push(choose_add_or_double(p1, p2));
         }
 
         batch_inverse(&mut new_differences);
@@ -89,7 +100,7 @@ pub fn batch_addition_diff_stride(mut points: Vec<G1Affine>) -> G1Projective {
         for (i, inv) in (0..=points.len() - 2).step_by(2).zip(&new_differences) {
             let p1 = points[i];
             let p2 = points[i + 1];
-            points[i / 2] = point_add(p1, p2, inv);
+            points[i / 2] = point_add_double(p1, p2, inv);
         }
 
         // The latter half of the vector is now unused,
@@ -104,77 +115,8 @@ pub fn batch_addition_diff_stride(mut points: Vec<G1Affine>) -> G1Projective {
     sum
 }
 
-// This method assumes that adjacent points are not the same
-// This will lead to an inversion by zero
-pub fn batch_addition_mut(points: &mut [G1Affine]) -> G1Affine {
-    fn point_add(p1: G1Affine, p2: G1Affine, inv: &blstrs::Fp) -> G1Affine {
-        use ff::Field;
-
-        let lambda = (p2.y() - p1.y()) * inv;
-        let x = lambda.square() - p1.x() - p2.x();
-        let y = lambda * (p1.x() - x) - p1.y();
-        G1Affine::from_raw_unchecked(x, y, false)
-    }
-
-    if points.is_empty() {
-        use group::prime::PrimeCurveAffine;
-        return G1Affine::identity();
-    }
-
-    let mut stride = 1;
-
-    let mut new_differences = Vec::with_capacity(points.len());
-    while stride < points.len() {
-        new_differences.clear();
-
-        for i in (0..points.len()).step_by(stride * 2) {
-            if i + stride < points.len() {
-                new_differences.push(points[i + stride].x() - points[i].x());
-            }
-        }
-        batch_inverse(&mut new_differences);
-        for (i, inv) in new_differences.iter().enumerate() {
-            let p1 = points[i * stride * 2];
-            let p2 = points[i * stride * 2 + stride];
-            points[i * stride * 2] = point_add(p1, p2, inv);
-        }
-
-        stride *= 2;
-    }
-
-    points[0]
-}
-
 // Similar to batch addition, however we amortize across different batches
-// TODO: Clean up -- This has a greater complexity than the regular algorithm
-// TODO so we want to check if it makes a difference in our usecase.
 pub fn multi_batch_addition(mut multi_points: Vec<Vec<G1Affine>>) -> Vec<G1Affine> {
-    #[inline(always)]
-    fn point_add_double(p1: &mut G1Affine, p2: G1Affine, inv: &blstrs::Fp) {
-        use ff::Field;
-
-        let lambda = if *p1 == p2 {
-            p1.x().square().mul3() * inv
-        } else {
-            (p2.y() - p1.y()) * inv
-        };
-
-        let x = lambda.square() - p1.x() - p2.x();
-        let y = lambda * (p1.x() - x) - p1.y();
-
-        *p1 = G1Affine::from_raw_unchecked(x, y, false);
-    }
-    #[inline(always)]
-    // Note: We do not handle the case where p1 == -p2
-    fn choose_add_or_double(p1: G1Affine, p2: G1Affine) -> Fp {
-        use ff::Field;
-
-        if p1 == p2 {
-            p2.y().double()
-        } else {
-            p1.x() - p2.x()
-        }
-    }
     let total_num_points: usize = multi_points.iter().map(|p| p.len()).sum();
     let mut scratchpad = Vec::with_capacity(total_num_points);
 
@@ -208,7 +150,7 @@ pub fn multi_batch_addition(mut multi_points: Vec<Vec<G1Affine>>) -> Vec<G1Affin
             if stride < points.len() {
                 for k in (0..points.len()).step_by(stride * 2) {
                     if k + stride < points.len() {
-                        new_differences.push(choose_add_or_double(points[k + stride], points[k]));
+                        new_differences.push(choose_add_or_double(points[k], points[k + stride]));
                     }
                 }
 
@@ -233,8 +175,8 @@ pub fn multi_batch_addition(mut multi_points: Vec<Vec<G1Affine>>) -> Vec<G1Affin
             for (k, new_difference_offset) in (start..end).enumerate() {
                 let inv = &new_differences[new_difference_offset];
                 let p2 = points[k * stride * 2 + stride];
-                let p1 = &mut points[k * stride * 2];
-                point_add_double(p1, p2, inv);
+                let p1 = points[k * stride * 2];
+                points[k * stride * 2] = point_add_double(p1, p2, inv);
             }
 
             // Update the stride for this bucket
@@ -249,34 +191,6 @@ pub fn multi_batch_addition(mut multi_points: Vec<Vec<G1Affine>>) -> Vec<G1Affin
 }
 
 pub fn multi_batch_addition_diff_stride(mut multi_points: Vec<Vec<G1Affine>>) -> Vec<G1Projective> {
-    #[inline(always)]
-    fn point_add_double(p1: G1Affine, p2: G1Affine, inv: &blstrs::Fp) -> G1Affine {
-        use ff::Field;
-
-        let lambda = if p1 == p2 {
-            p1.x().square().mul3() * inv
-        } else {
-            (p2.y() - p1.y()) * inv
-        };
-
-        let x = lambda.square() - p1.x() - p2.x();
-        let y = lambda * (p1.x() - x) - p1.y();
-
-        G1Affine::from_raw_unchecked(x, y, false)
-    }
-
-    #[inline(always)]
-    // Note: We do not handle the case where p1 == -p2
-    fn choose_add_or_double(p1: G1Affine, p2: G1Affine) -> Fp {
-        use ff::Field;
-
-        if p1 == p2 {
-            p2.y().double()
-        } else {
-            p2.x() - p1.x()
-        }
-    }
-
     let total_num_points: usize = multi_points.iter().map(|p| p.len()).sum();
     let mut scratchpad = Vec::with_capacity(total_num_points);
 
