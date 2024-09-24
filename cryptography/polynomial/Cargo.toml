@@ -12,7 +12,7 @@ repository = { workspace = true }
 
 [dependencies]
 bls12_381 = { workspace = true }
-
+hex = "*"
 [dev-dependencies]
 criterion = "0.5.1"
 rand = "0.8.4"

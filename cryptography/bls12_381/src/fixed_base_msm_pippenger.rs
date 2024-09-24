@@ -1,9 +1,11 @@
 use std::collections::HashSet;
+use std::thread::current;
 
 use blstrs::G1Affine;
 use blstrs::G1Projective;
 use blstrs::Scalar;
 use ff::PrimeField;
+use group::prime::PrimeCurveAffine;
 use group::Group;
 
 use crate::booth_encoding::get_booth_index;
@@ -18,7 +20,7 @@ pub struct FixedBaseMSMPippenger {
 impl FixedBaseMSMPippenger {
     pub fn new(points: &[G1Affine]) -> FixedBaseMSMPippenger {
         // The +2 was empirically seen to give better results
-        let window_size = (f64::from(points.len() as u32)).ln().ceil() as usize + 2;
+        let window_size = 8;
         let number_of_windows = Scalar::NUM_BITS as usize / window_size + 1;
         let precomputed_points = precompute(window_size, number_of_windows, points);
 

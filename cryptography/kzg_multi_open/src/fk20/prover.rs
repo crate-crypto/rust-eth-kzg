@@ -195,7 +195,6 @@ impl FK20Prover {
         let h_poly_commitments =
             compute_h_poly_commitments(&self.batch_toeplitz, polynomial.clone(), self.coset_size);
         let mut proofs = self.proof_domain.fft_g1(h_poly_commitments);
-
         // Reverse bit order the set of proofs, so that the proofs line up with the
         // coset evaluations.
         reverse_bit_order(&mut proofs);

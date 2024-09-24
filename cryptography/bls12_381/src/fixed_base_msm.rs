@@ -1,4 +1,10 @@
-use crate::{fixed_base_msm_pippenger::FixedBaseMSMPippenger, G1Projective, Scalar};
+use crate::{
+    fixed_base_msm_blst::FixedBaseMSMPrecompBLST,
+    fixed_base_msm_blst_all_windows::FixedBaseMSMPrecompAllWindow,
+    fixed_base_msm_pippenger::FixedBaseMSMPippenger,
+    limlee::{LimLee, TsaurChou},
+    G1Projective, Scalar,
+};
 use blstrs::{Fp, G1Affine};
 
 /// FixedBaseMSMPrecomp computes a multi scalar multiplication using pre-computations.
@@ -27,7 +33,8 @@ pub enum UsePrecomp {
 /// of memory.
 #[derive(Debug)]
 pub enum FixedBaseMSM {
-    Precomp(FixedBaseMSMPrecomp),
+    Precomp(FixedBaseMSMPrecompAllWindow),
+    // Precomp(LimLee),
     // TODO: We are hijacking the NoPrecomp variant to store the
     // TODO: new pippenger algorithm.
     NoPrecomp(FixedBaseMSMPippenger),
@@ -37,7 +44,10 @@ impl FixedBaseMSM {
     pub fn new(generators: Vec<G1Affine>, use_precomp: UsePrecomp) -> Self {
         match use_precomp {
             UsePrecomp::Yes { width } => {
-                FixedBaseMSM::Precomp(FixedBaseMSMPrecomp::new(generators, width))
+                FixedBaseMSM::Precomp(FixedBaseMSMPrecompAllWindow::new(&generators, width))
+                // FixedBaseMSM::Precomp(FixedBaseMSMPrecompBLST::new(&generators, width))
+                // FixedBaseMSM::Precomp(TsaurChou::new(8, 4, &generators))
+                // FixedBaseMSM::Precomp(LimLee::new(8, 1, &generators))
             }
             UsePrecomp::No => FixedBaseMSM::NoPrecomp(FixedBaseMSMPippenger::new(&generators)),
         }
@@ -45,7 +55,11 @@ impl FixedBaseMSM {
 
     pub fn msm(&self, scalars: Vec<Scalar>) -> G1Projective {
         match self {
-            FixedBaseMSM::Precomp(precomp) => precomp.msm(scalars),
+            FixedBaseMSM::Precomp(precomp) => {
+                // TsaurChau
+                // precomp.mul_naive_better_wnaf_precomputations_final_msm(&scalars)
+                precomp.msm(&scalars)
+            }
             FixedBaseMSM::NoPrecomp(precomp) => precomp.msm(&scalars),
         }
     }

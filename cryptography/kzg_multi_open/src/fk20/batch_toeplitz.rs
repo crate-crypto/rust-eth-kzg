@@ -1,6 +1,7 @@
 use crate::fk20::toeplitz::{CirculantMatrix, ToeplitzMatrix};
 use bls12_381::{
     fixed_base_msm::{FixedBaseMSM, UsePrecomp},
+    fixed_base_msm_blst::FixedBaseMultiMSMPrecompBLST,
     g1_batch_normalize, G1Point, G1Projective,
 };
 use maybe_rayon::prelude::*;
@@ -18,6 +19,7 @@ pub struct BatchToeplitzMatrixVecMul {
     /// we can do in a batch.
     batch_size: usize,
     precomputed_fft_vectors: Vec<FixedBaseMSM>,
+    // precomputed_fft_vectors: FixedBaseMultiMSMPrecompBLST,
     // This is the length of the vector that we are multiplying the matrices with.
     // and subsequently will be the length of the final result of the matrix-vector multiplication.
     size_of_vector: usize,
@@ -65,6 +67,8 @@ impl BatchToeplitzMatrixVecMul {
             .map(|v| FixedBaseMSM::new(v, use_precomp))
             .collect();
 
+        // let precomputed_table = FixedBaseMultiMSMPrecompBLST::new(transposed_msm_vectors, 8);
+
         BatchToeplitzMatrixVecMul {
             size_of_vector,
             circulant_domain,
@@ -102,12 +106,17 @@ impl BatchToeplitzMatrixVecMul {
             .collect();
         let msm_scalars = transpose(col_ffts);
 
+        // let now = std::time::Instant::now();
         let result: Vec<_> = (&self.precomputed_fft_vectors)
             .maybe_par_iter()
             .zip(msm_scalars)
             .map(|(points, scalars)| points.msm(scalars))
             .collect();
 
+        // dbg!(now.elapsed().as_micros());
+        // let now = std::time::Instant::now();
+        // let result = self.precomputed_fft_vectors.multi_msm(msm_scalars);
+        // dbg!(now.elapsed().as_micros());
         // Once the aggregate circulant matrix-vector multiplication is done, we need to take the first half
         // of the result, as the second half are extra terms that were added due to the fact that the Toeplitz matrices
         // were embedded into circulant matrices.

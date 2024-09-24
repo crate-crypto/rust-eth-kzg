@@ -1,9 +1,16 @@
-mod batch_add;
+pub mod batch_add;
+pub mod batch_add_blst;
 pub mod batch_inversion;
 mod booth_encoding;
 pub mod fixed_base_msm;
+pub mod fixed_base_msm_blst;
+pub mod fixed_base_msm_blst_all_windows;
 pub mod fixed_base_msm_pippenger;
+pub mod limlee;
 pub mod lincomb;
+pub mod seokim;
+pub mod simple_msm;
+pub mod wnaf;
 
 // Re-export ff and group, so other crates do not need to directly import(and independently version) them
 pub use ff;
