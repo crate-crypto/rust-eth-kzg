@@ -134,12 +134,6 @@ impl Domain {
         // Pad the vector of points with zeroes, so that it is the same size as the
         // domain.
         points.resize(self.size(), G1Projective::identity());
-        naive_fft_g1(self.generator, &points)
-    }
-    pub fn fft_g1_new(&self, mut points: Vec<G1Projective>) -> Vec<G1Projective> {
-        // Pad the vector of points with zeroes, so that it is the same size as the
-        // domain.
-        points.resize(self.size(), G1Projective::identity());
         fft_g1(self.generator, &points)
     }
 
@@ -211,35 +205,6 @@ impl Domain {
     }
 }
 
-/// Computes a DFT using the given points and the nth root of unity.
-fn naive_fft_scalar(nth_root_of_unity: Scalar, points: &[Scalar]) -> Vec<Scalar> {
-    let n = points.len();
-    if n == 1 {
-        return points.to_vec();
-    }
-
-    let (even, odd) = take_even_odd(points);
-
-    // Compute a root with half the order
-    let gen_squared = nth_root_of_unity.square();
-
-    let fft_even = naive_fft_scalar(gen_squared, &even);
-    let fft_odd = naive_fft_scalar(gen_squared, &odd);
-
-    let mut input_point = Scalar::ONE;
-    let mut evaluations = vec![Scalar::ONE; n];
-
-    for k in 0..n / 2 {
-        let tmp = fft_odd[k] * input_point;
-        evaluations[k] = fft_even[k] + tmp;
-        evaluations[k + n / 2] = fft_even[k] - tmp;
-
-        input_point *= nth_root_of_unity;
-    }
-
-    evaluations
-}
-
 fn fft_scalar_inplace(a: &mut [Scalar], nth_root_of_unity: Scalar) {
     let n = a.len();
     let log_n = log2_pow2(n);
@@ -253,12 +218,12 @@ fn fft_scalar_inplace(a: &mut [Scalar], nth_root_of_unity: Scalar) {
         }
     }
 
-    // Main FFT computation
     let mut m = 1;
-    for s in 0..log_n {
+    for _ in 0..log_n {
         let w_m = nth_root_of_unity.pow(&[(n / (2 * m)) as u64]);
         for k in (0..n).step_by(2 * m) {
             let mut w = Scalar::ONE;
+
             for j in 0..m {
                 let t = if w == Scalar::ONE {
                     a[k + j + m]
@@ -267,27 +232,17 @@ fn fft_scalar_inplace(a: &mut [Scalar], nth_root_of_unity: Scalar) {
                 } else {
                     a[k + j + m] * w
                 };
+
                 let u = a[k + j];
+
                 a[k + j] = u + t;
                 a[k + j + m] = u - t;
+
                 w *= w_m;
             }
         }
         m *= 2;
     }
-}
-
-fn bitreverse(mut n: u32, l: u32) -> u32 {
-    let mut r = 0;
-    for _ in 0..l {
-        r = (r << 1) | (n & 1);
-        n >>= 1;
-    }
-    r
-}
-
-fn log2_pow2(n: usize) -> u32 {
-    n.trailing_zeros()
 }
 
 fn fft_scalar(nth_root_of_unity: Scalar, points: &[Scalar]) -> Vec<Scalar> {
@@ -296,38 +251,7 @@ fn fft_scalar(nth_root_of_unity: Scalar, points: &[Scalar]) -> Vec<Scalar> {
     a
 }
 
-/// Computes a DFT of the group elements(points) using powers of the roots of unity.
-///
-/// Note: This is essentially multiple multi-scalar multiplications.
-fn naive_fft_g1(nth_root_of_unity: Scalar, points: &[G1Projective]) -> Vec<G1Projective> {
-    let n = points.len();
-    if n == 1 {
-        return points.to_vec();
-    }
-
-    let (even, odd) = take_even_odd(points);
-
-    // Compute a root with half the order
-    let gen_squared = nth_root_of_unity.square();
-
-    let fft_even = naive_fft_g1(gen_squared, &even);
-    let fft_odd = naive_fft_g1(gen_squared, &odd);
-
-    let mut input_point = Scalar::ONE;
-    let mut evaluations = vec![G1Projective::identity(); n];
-
-    for k in 0..n / 2 {
-        let tmp = fft_odd[k] * input_point;
-        evaluations[k] = G1Projective::from(fft_even[k]) + tmp;
-        evaluations[k + n / 2] = fft_even[k] - tmp;
-
-        input_point *= nth_root_of_unity;
-    }
-
-    evaluations
-}
-
-pub fn fft_g1_inplace(a: &mut [G1Projective], nth_root_of_unity: Scalar) {
+fn fft_g1_inplace(a: &mut [G1Projective], nth_root_of_unity: Scalar) {
     let n = a.len();
     let log_n = log2_pow2(n);
     assert_eq!(n, 1 << log_n);
@@ -342,7 +266,7 @@ pub fn fft_g1_inplace(a: &mut [G1Projective], nth_root_of_unity: Scalar) {
 
     // TODO: can be done once at startup, but not a performance bottleneck right now
     let twiddle_factors = precompute_twiddle_factors(&nth_root_of_unity, n);
-    // Main FFT computation
+
     let mut m = 1;
     for s in 0..log_n {
         // let w_m = nth_root_of_unity.pow(&[(n / (2 * m)) as u64]);
@@ -376,6 +300,19 @@ fn fft_g1(nth_root_of_unity: Scalar, points: &[G1Projective]) -> Vec<G1Projectiv
     a
 }
 
+fn bitreverse(mut n: u32, l: u32) -> u32 {
+    let mut r = 0;
+    for _ in 0..l {
+        r = (r << 1) | (n & 1);
+        n >>= 1;
+    }
+    r
+}
+
+fn log2_pow2(n: usize) -> u32 {
+    n.trailing_zeros()
+}
+
 fn precompute_twiddle_factors<F: Field>(omega: &F, n: usize) -> Vec<F> {
     let log_n = log2_pow2(n);
     (0..log_n)
@@ -383,28 +320,85 @@ fn precompute_twiddle_factors<F: Field>(omega: &F, n: usize) -> Vec<F> {
         .collect()
 }
 
-/// Splits the list into two lists, one containing the even indexed elements
-/// and the other containing the odd indexed elements.
-fn take_even_odd<T: Clone>(list: &[T]) -> (Vec<T>, Vec<T>) {
-    let mut even = Vec::with_capacity(list.len() / 2);
-    let mut odd = Vec::with_capacity(list.len() / 2);
+#[cfg(test)]
+mod naive {
+    use bls12_381::{ff::Field, group::Group, G1Point, G1Projective, Scalar};
 
-    for (index, value) in list.iter().enumerate() {
-        if index % 2 == 0 {
-            even.push(value.clone())
-        } else {
-            odd.push(value.clone())
+    /// Computes a DFT of the group elements(points) using powers of the roots of unity.
+    ///
+    /// Note: This is essentially multiple multi-scalar multiplications.
+    fn fft_g1(nth_root_of_unity: Scalar, points: &[G1Projective]) -> Vec<G1Projective> {
+        let n = points.len();
+        if n == 1 {
+            return points.to_vec();
         }
+
+        let (even, odd) = take_even_odd(points);
+
+        // Compute a root with half the order
+        let gen_squared = nth_root_of_unity.square();
+
+        let fft_even = fft_g1(gen_squared, &even);
+        let fft_odd = fft_g1(gen_squared, &odd);
+
+        let mut input_point = Scalar::ONE;
+        let mut evaluations = vec![G1Projective::identity(); n];
+
+        for k in 0..n / 2 {
+            let tmp = fft_odd[k] * input_point;
+            evaluations[k] = G1Projective::from(fft_even[k]) + tmp;
+            evaluations[k + n / 2] = fft_even[k] - tmp;
+
+            input_point *= nth_root_of_unity;
+        }
+
+        evaluations
     }
 
-    (even, odd)
-}
+    fn fft_scalar(nth_root_of_unity: Scalar, points: &[Scalar]) -> Vec<Scalar> {
+        let n = points.len();
+        if n == 1 {
+            return points.to_vec();
+        }
 
-#[cfg(test)]
-mod tests {
-    use crate::monomial::poly_eval;
+        let (even, odd) = take_even_odd(points);
 
-    use super::*;
+        // Compute a root with half the order
+        let gen_squared = nth_root_of_unity.square();
+
+        let fft_even = fft_scalar(gen_squared, &even);
+        let fft_odd = fft_scalar(gen_squared, &odd);
+
+        let mut input_point = Scalar::ONE;
+        let mut evaluations = vec![Scalar::ONE; n];
+
+        for k in 0..n / 2 {
+            let tmp = fft_odd[k] * input_point;
+            evaluations[k] = fft_even[k] + tmp;
+            evaluations[k + n / 2] = fft_even[k] - tmp;
+
+            input_point *= nth_root_of_unity;
+        }
+
+        evaluations
+    }
+
+    /// Splits the list into two lists, one containing the even indexed elements
+    /// and the other containing the odd indexed elements.
+    fn take_even_odd<T: Clone>(list: &[T]) -> (Vec<T>, Vec<T>) {
+        let mut even = Vec::with_capacity(list.len() / 2);
+        let mut odd = Vec::with_capacity(list.len() / 2);
+
+        for (index, value) in list.iter().enumerate() {
+            if index % 2 == 0 {
+                even.push(value.clone())
+            } else {
+                odd.push(value.clone())
+            }
+        }
+
+        (even, odd)
+    }
 
     #[test]
     fn take_even_odd_smoke_test() {
@@ -418,6 +412,13 @@ mod tests {
         assert_eq!(even, expected_even_list);
         assert_eq!(odd, expected_odd_list);
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::monomial::poly_eval;
+
+    use super::*;
 
     #[test]
     fn largest_root_of_unity_has_correct_order() {
