@@ -273,43 +273,139 @@ fn fft_scalar_inplace(twiddle_factors: &[Scalar], a: &mut [Scalar]) {
 /// Note: This is essentially multiple multi-scalar multiplications.
 fn fft_g1_inplace(twiddle_factors: &[Scalar], a: &mut [G1Projective]) {
     let n = a.len();
-    let log_n = log2_pow2(n);
-    assert_eq!(n, 1 << log_n);
+    assert_eq!(n, 128, "This implementation is specific to size 128");
 
     // Bit-reversal permutation
     for k in 0..n {
-        let rk = bitreverse(k as u32, log_n) as usize;
+        let rk = bitreverse(k as u32, 7) as usize;
         if k < rk {
             a.swap(rk, k);
         }
     }
 
-    let mut m = 1;
-    for s in 0..log_n {
-        let w_m = twiddle_factors[s as usize];
-        for k in (0..n).step_by(2 * m) {
-            let mut w = Scalar::ONE;
-            for j in 0..m {
-                let t = if w == Scalar::ONE {
-                    a[k + j + m]
-                } else if w == -Scalar::ONE {
-                    -a[k + j + m]
-                } else if a[k + j + m].is_identity().into() {
-                    G1Projective::identity()
-                } else {
-                    a[k + j + m] * w
-                };
+    // Radix-8 stage
+    radix8_stage(a, twiddle_factors[0]); // twiddle =omega^{n/8}
 
-                let u = a[k + j];
-                a[k + j] = u + t;
-                a[k + j + m] = u - t;
-                w *= w_m;
-            }
+    // Radix-2 stage
+    radix2_stage(a, 64, twiddle_factors[1]); // twiddle = omega^{n/2}
+
+    // Radix 4 + radix2  impl below
+    // let n = a.len();
+    // assert_eq!(n, 128, "This implementation is specific to size 128");
+
+    // // Bit-reversal permutation
+    // for k in 0..n {
+    //     let rk = bitreverse(k as u32, 7) as usize;
+    //     if k < rk {
+    //         a.swap(rk, k);
+    //     }
+    // }
+
+    // // 3 Radix-4 stages
+    // for s in 0..3 {
+    //     let m = 1 << (2 * s);
+    //     let w_m = twiddle_factors[2 * s];
+    //     radix4_stage(a, m, w_m);
+    // }
+
+    // // 1 Radix-2 stage
+    // let w_m = twiddle_factors[6];
+    // radix2_stage(a, 64, w_m);
+}
+
+//these functions are not correct, they are mostly here to analyze complexity
+fn radix4_stage(a: &mut [G1Projective], m: usize, w_m: Scalar) {
+    let w_m2 = w_m * w_m;
+    let w_m3 = w_m2 * w_m;
+
+    for k in (0..128).step_by(4 * m) {
+        let mut w = Scalar::ONE;
+        let mut w2 = Scalar::ONE;
+        let mut w3 = Scalar::ONE;
+
+        for j in 0..m {
+            let t0 = a[k + j];
+            let t1 = mul(a[k + j + m], w);
+            let t2 = mul(a[k + j + 2 * m], w2);
+            let t3 = mul(a[k + j + 3 * m], w3);
+
+            let u0 = t0 + t2;
+            let u1 = t0 - t2;
+            let u2 = t1 + t3;
+            let u3 = (t1 - t3) * Scalar::from(1u64).sqrt().unwrap();
+
+            a[k + j] = u0 + u2;
+            a[k + j + m] = u1 + u3;
+            a[k + j + 2 * m] = u0 - u2;
+            a[k + j + 3 * m] = u1 - u3;
+
+            w *= w_m;
+            w2 *= w_m2;
+            w3 *= w_m3;
         }
-        m *= 2;
     }
 }
 
+fn mul(s: G1Projective, num: Scalar) -> G1Projective {
+    if num == Scalar::ONE {
+        s
+    } else if num == -Scalar::ONE {
+        -s
+    } else {
+        s * num
+    }
+}
+fn radix8_stage(a: &mut [G1Projective], w_8: Scalar) {
+    let w_1 = w_8;
+    let w_2 = w_1 * w_1;
+    let w_3 = w_2 * w_1;
+    let w_4 = w_2 * w_2;
+    let w_5 = w_4 * w_1;
+    let w_6 = w_4 * w_2;
+    let w_7 = w_4 * w_3;
+
+    for k in 0..16 {
+        let mut t0 = a[k];
+        let mut t1 = mul(a[k + 16], w_1);
+        let mut t2 = mul(a[k + 32], w_2);
+        let mut t3 = mul(a[k + 48], w_3);
+        let mut t4 = mul(a[k + 64], w_4);
+        let mut t5 = mul(a[k + 80], w_5);
+        let mut t6 = mul(a[k + 96], w_6);
+        let mut t7 = mul(a[k + 112], w_7);
+
+        let mut m0 = t0 + t4;
+        let mut m1 = t0 - t4;
+        let mut m2 = t2 + t6;
+        let mut m3 = (t2 - t6) * Scalar::from(1u64).sqrt().unwrap();
+        let mut m4 = t1 + t5;
+        let mut m5 = t1 - t5;
+        let mut m6 = t3 + t7;
+        let mut m7 = (t3 - t7) * Scalar::from(1u64).sqrt().unwrap();
+
+        a[k] = m0 + m2 + m4 + m6;
+        a[k + 16] = m1 + m3 + m5 + m7;
+        a[k + 32] = m0 - m2 + (m4 - m6) * Scalar::from(1u64).sqrt().unwrap();
+        a[k + 48] = m1 - m3 + (m5 - m7) * Scalar::from(1u64).sqrt().unwrap();
+        a[k + 64] = m0 + m2 - m4 - m6;
+        a[k + 80] = m1 + m3 - m5 - m7;
+        a[k + 96] = m0 - m2 - (m4 - m6) * Scalar::from(1u64).sqrt().unwrap();
+        a[k + 112] = m1 - m3 - (m5 - m7) * Scalar::from(1u64).sqrt().unwrap();
+    }
+}
+
+fn radix2_stage(a: &mut [G1Projective], m: usize, w_m: Scalar) {
+    for k in (0..128).step_by(2 * m) {
+        let mut w = Scalar::ONE;
+        for j in 0..m {
+            let t = mul(a[k + j + m], w);
+            let u = a[k + j];
+            a[k + j] = u + t;
+            a[k + j + m] = u - t;
+            w *= w_m;
+        }
+    }
+}
 fn bitreverse(mut n: u32, l: u32) -> u32 {
     let mut r = 0;
     for _ in 0..l {
@@ -397,13 +493,14 @@ mod tests {
             powers
         }
 
-        let n = 4;
+        let n = 128;
         let domain = Domain::new(n);
         let points: Vec<_> = (0..n)
             .map(|_| G1Projective::random(&mut rand::thread_rng()))
             .collect();
-
+        let now = std::time::Instant::now();
         let dft_points = domain.fft_g1(points.clone());
+        dbg!(now.elapsed().as_micros());
         for (i, root) in domain.roots.iter().enumerate() {
             let powers = powers_of(root, points.len());
 
