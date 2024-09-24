@@ -268,45 +268,151 @@ fn fft_scalar_inplace(twiddle_factors: &[Scalar], a: &mut [Scalar]) {
     }
 }
 
-/// Computes a DFT of the group elements(points).
-///
-/// Note: This is essentially multiple multi-scalar multiplications.
+// /// Computes a DFT of the group elements(points).
+// ///
+// /// Note: This is essentially multiple multi-scalar multiplications.
+// fn fft_g1_inplace(twiddle_factors: &[Scalar], a: &mut [G1Projective]) {
+//     let n = a.len();
+//     let log_n = log2_pow2(n);
+//     assert_eq!(n, 1 << log_n);
+
+//     // Bit-reversal permutation
+//     for k in 0..n {
+//         let rk = bitreverse(k as u32, log_n) as usize;
+//         if k < rk {
+//             a.swap(rk, k);
+//         }
+//     }
+
+//     let mut m = 1;
+//     for s in 0..log_n {
+//         let w_m = twiddle_factors[s as usize];
+//         for k in (0..n).step_by(2 * m) {
+//             let mut w = Scalar::ONE;
+//             for j in 0..m {
+//                 let t = if w == Scalar::ONE {
+//                     a[k + j + m]
+//                 } else if w == -Scalar::ONE {
+//                     -a[k + j + m]
+//                 } else if a[k + j + m].is_identity().into() {
+//                     G1Projective::identity()
+//                 } else {
+//                     a[k + j + m] * w
+//                 };
+
+//                 let u = a[k + j];
+//                 a[k + j] = u + t;
+//                 a[k + j + m] = u - t;
+//                 w *= w_m;
+//             }
+//         }
+//         m *= 2;
+//     }
+// }
+
+// fn bitreverse(mut n: u32, l: u32) -> u32 {
+//     let mut r = 0;
+//     for _ in 0..l {
+//         r = (r << 1) | (n & 1);
+//         n >>= 1;
+//     }
+//     r
+// }
+// fn log2_pow2(n: usize) -> u32 {
+//     n.trailing_zeros()
+// }
+
+const CACHE_FRIENDLY_SIZE: usize = 128; // Adjust based on your system's cache size
+
 fn fft_g1_inplace(twiddle_factors: &[Scalar], a: &mut [G1Projective]) {
     let n = a.len();
     let log_n = log2_pow2(n);
     assert_eq!(n, 1 << log_n);
 
-    // Bit-reversal permutation
+    optimized_bit_reversal_permutation(a);
+
+    first_pass_fft(a);
+
+    let mut m = 2;
+    for s in 1..log_n - 1 {
+        let w_m = twiddle_factors[s as usize];
+
+        if n > CACHE_FRIENDLY_SIZE {
+            for chunk in a.chunks_mut(CACHE_FRIENDLY_SIZE) {
+                cache_friendly_fft_step(chunk, m, w_m);
+            }
+        } else {
+            cache_friendly_fft_step(a, m, w_m);
+        }
+
+        m *= 2;
+    }
+
+    last_pass_fft(a, twiddle_factors[log_n as usize - 1]);
+}
+
+fn optimized_bit_reversal_permutation(a: &mut [G1Projective]) {
+    let n = a.len();
+    let log_n = log2_pow2(n);
+
     for k in 0..n {
         let rk = bitreverse(k as u32, log_n) as usize;
         if k < rk {
             a.swap(rk, k);
         }
     }
+}
 
-    let mut m = 1;
-    for s in 0..log_n {
-        let w_m = twiddle_factors[s as usize];
-        for k in (0..n).step_by(2 * m) {
-            let mut w = Scalar::ONE;
-            for j in 0..m {
-                let t = if w == Scalar::ONE {
-                    a[k + j + m]
-                } else if w == -Scalar::ONE {
-                    -a[k + j + m]
-                } else if a[k + j + m].is_identity().into() {
-                    G1Projective::identity()
-                } else {
-                    a[k + j + m] * w
-                };
+fn first_pass_fft(a: &mut [G1Projective]) {
+    for i in (0..a.len()).step_by(2) {
+        let t = a[i + 1];
+        a[i + 1] = a[i] - t;
+        a[i] = a[i] + t;
+    }
+}
 
-                let u = a[k + j];
-                a[k + j] = u + t;
-                a[k + j + m] = u - t;
-                w *= w_m;
-            }
+fn cache_friendly_fft_step(chunk: &mut [G1Projective], m: usize, w_m: Scalar) {
+    for k in (0..chunk.len()).step_by(2 * m) {
+        let mut w = Scalar::ONE;
+        for j in 0..m {
+            let t = if w == Scalar::ONE {
+                chunk[k + j + m]
+            } else if w == -Scalar::ONE {
+                -chunk[k + j + m]
+            } else if chunk[k + j + m].is_identity().into() {
+                G1Projective::identity()
+            } else {
+                chunk[k + j + m] * w
+            };
+
+            let u = chunk[k + j];
+            chunk[k + j] = u + t;
+            chunk[k + j + m] = u - t;
+            w *= w_m;
         }
-        m *= 2;
+    }
+}
+
+fn last_pass_fft(a: &mut [G1Projective], w_m: Scalar) {
+    let n = a.len();
+    let m = n / 2;
+
+    let mut w = Scalar::ONE;
+    for j in 0..m {
+        let t = if w == Scalar::ONE {
+            a[j + m]
+        } else if w == -Scalar::ONE {
+            -a[j + m]
+        } else if a[j + m].is_identity().into() {
+            G1Projective::identity()
+        } else {
+            a[j + m] * w
+        };
+
+        let u = a[j];
+        a[j] = u + t;
+        a[j + m] = u - t;
+        w *= w_m;
     }
 }
 
@@ -318,9 +424,11 @@ fn bitreverse(mut n: u32, l: u32) -> u32 {
     }
     r
 }
+
 fn log2_pow2(n: usize) -> u32 {
     n.trailing_zeros()
 }
+
 fn precompute_twiddle_factors<F: Field>(omega: &F, n: usize) -> Vec<F> {
     let log_n = log2_pow2(n);
     (0..log_n)
