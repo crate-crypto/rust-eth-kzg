@@ -28,7 +28,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: stable
+          toolchain: 1.80.0
 
       - name: Run compile script
         run: ./scripts/compile.sh golang

@@ -11,6 +11,12 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 OS=$(uname)
 ARCH=$(uname -m)
 
+# For windows, we install x86_64-pc-windows-gnu, instead of relying on the msvc version
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "mingw"* ]]; then
+    echo "Installing x86_64-pc-windows-gnu target for Rust..."
+    rustup target add x86_64-pc-windows-gnu
+fi
+
 # Function to compile for Java
 compile_java() {
     echo "Compiling for Java..."
