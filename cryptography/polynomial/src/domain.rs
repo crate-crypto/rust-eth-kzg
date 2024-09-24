@@ -108,7 +108,9 @@ impl Domain {
         // domain.
         polynomial.resize(self.size(), Scalar::ZERO);
 
-        fft_scalar(self.generator, &polynomial)
+        fft_scalar_inplace(self.generator, &mut polynomial);
+
+        polynomial
     }
 
     /// Evaluates a polynomial at the points in the domain multiplied by a coset
@@ -123,7 +125,9 @@ impl Domain {
             *point *= coset_scale;
             coset_scale *= self.coset_generator;
         }
-        fft_scalar(self.generator, &points)
+        fft_scalar_inplace(self.generator, &mut points);
+
+        points
     }
 
     /// Computes a DFT for the group elements(elliptic curve points) using the roots in the domain.
@@ -134,7 +138,10 @@ impl Domain {
         // Pad the vector of points with zeroes, so that it is the same size as the
         // domain.
         points.resize(self.size(), G1Projective::identity());
-        fft_g1(self.generator, &points)
+
+        fft_g1_inplace(self.generator, &mut points);
+
+        points
     }
 
     /// Computes an IDFT for the group elements(elliptic curve points) using the roots in the domain.
@@ -158,15 +165,15 @@ impl Domain {
         // domain.
         points.resize(self.size(), G1Projective::identity());
 
-        let ifft_g1 = fft_g1(self.generator_inv, &points);
+        fft_g1_inplace(self.generator_inv, &mut points);
 
         // Truncate the result if a value of `n` was supplied.
         let mut ifft_g1 = match n {
             Some(num_to_take) => {
-                assert!(num_to_take < ifft_g1.len());
-                ifft_g1[0..num_to_take].to_vec()
+                assert!(num_to_take < points.len());
+                points[0..num_to_take].to_vec()
             }
-            None => ifft_g1,
+            None => points,
         };
 
         for element in ifft_g1.iter_mut() {
@@ -183,13 +190,13 @@ impl Domain {
         // domain.
         points.resize(self.size(), Scalar::ZERO);
 
-        let mut ifft_scalar = fft_scalar(self.generator_inv, &points);
+        fft_scalar_inplace(self.generator_inv, &mut points);
 
-        for element in ifft_scalar.iter_mut() {
+        for element in points.iter_mut() {
             *element *= self.domain_size_inv
         }
 
-        ifft_scalar
+        points
     }
 
     /// Interpolates a polynomial over the coset of a domain
@@ -205,7 +212,7 @@ impl Domain {
     }
 }
 
-fn fft_scalar_inplace(a: &mut [Scalar], nth_root_of_unity: Scalar) {
+fn fft_scalar_inplace(nth_root_of_unity: Scalar, a: &mut [Scalar]) {
     let n = a.len();
     let log_n = log2_pow2(n);
     assert_eq!(n, 1 << log_n);
@@ -245,13 +252,7 @@ fn fft_scalar_inplace(a: &mut [Scalar], nth_root_of_unity: Scalar) {
     }
 }
 
-fn fft_scalar(nth_root_of_unity: Scalar, points: &[Scalar]) -> Vec<Scalar> {
-    let mut a = points.to_vec();
-    fft_scalar_inplace(&mut a, nth_root_of_unity);
-    a
-}
-
-fn fft_g1_inplace(a: &mut [G1Projective], nth_root_of_unity: Scalar) {
+fn fft_g1_inplace(nth_root_of_unity: Scalar, a: &mut [G1Projective]) {
     let n = a.len();
     let log_n = log2_pow2(n);
     assert_eq!(n, 1 << log_n);
@@ -292,12 +293,6 @@ fn fft_g1_inplace(a: &mut [G1Projective], nth_root_of_unity: Scalar) {
         }
         m *= 2;
     }
-}
-
-fn fft_g1(nth_root_of_unity: Scalar, points: &[G1Projective]) -> Vec<G1Projective> {
-    let mut a = points.to_vec();
-    fft_g1_inplace(&mut a, nth_root_of_unity);
-    a
 }
 
 fn bitreverse(mut n: u32, l: u32) -> u32 {
