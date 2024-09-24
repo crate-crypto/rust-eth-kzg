@@ -29,6 +29,9 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.80.0
+      
+      - name: Rustup target
+        run: rustup target list --installed
 
       - name: Run compile script
         run: ./scripts/compile.sh golang
