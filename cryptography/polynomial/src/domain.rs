@@ -223,6 +223,9 @@ impl Domain {
     }
 }
 
+/// Computes a DFT of the field elements(scalars).
+///
+/// Note: This is essentially multiple inner products.
 fn fft_scalar_inplace(twiddle_factors: &[Scalar], a: &mut [Scalar]) {
     let n = a.len();
     let log_n = log2_pow2(n);
@@ -262,6 +265,10 @@ fn fft_scalar_inplace(twiddle_factors: &[Scalar], a: &mut [Scalar]) {
         m *= 2;
     }
 }
+
+/// Computes a DFT of the group elements(points).
+///
+/// Note: This is essentially multiple multi-scalar multiplications.
 fn fft_g1_inplace(twiddle_factors: &[Scalar], a: &mut [G1Projective]) {
     let n = a.len();
     let log_n = log2_pow2(n);
@@ -309,11 +316,9 @@ fn bitreverse(mut n: u32, l: u32) -> u32 {
     }
     r
 }
-
 fn log2_pow2(n: usize) -> u32 {
     n.trailing_zeros()
 }
-
 fn precompute_twiddle_factors<F: Field>(omega: &F, n: usize) -> Vec<F> {
     let log_n = log2_pow2(n);
     (0..log_n)
