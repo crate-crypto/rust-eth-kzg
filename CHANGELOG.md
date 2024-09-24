@@ -1,5 +1,42 @@
 # Changelog
 
+## [0.5.1](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.5.0...v0.5.1) (2024-08-27)
+
+
+### Bug Fixes
+
+* Publish maybe_rayon when releasing crates ([#244](https://github.com/crate-crypto/rust-eth-kzg/issues/244)) ([ad9f273](https://github.com/crate-crypto/rust-eth-kzg/commit/ad9f273a26d32b29b5b6969632e8aaa99f0549b7))
+
+## [0.5.0](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.4.1...v0.5.0) (2024-08-27)
+
+
+### ⚠ BREAKING CHANGES
+
+* **java:** Rename `recoverCellsAndProof` -> `recoverCellsAndKZGProofs`  ([#232](https://github.com/crate-crypto/rust-eth-kzg/issues/232))
+* Add a ThreadCount enum for specifying the number of threads to use ([#225](https://github.com/crate-crypto/rust-eth-kzg/issues/225))
+* Allow downstream users to avoid the precomputations that are needed for the FixedBaseMSM algorithm in FK20 ([#224](https://github.com/crate-crypto/rust-eth-kzg/issues/224))
+* **rust:** Rename `recover_cells_and_proofs` -> `recover_cells_and_kzg_proofs` ([#219](https://github.com/crate-crypto/rust-eth-kzg/issues/219))
+* Move `recover_evaluations_in_domain_order` into cosets.rs ([#175](https://github.com/crate-crypto/rust-eth-kzg/issues/175))
+
+### Features
+
+* Add a ThreadCount enum for specifying the number of threads to use ([#225](https://github.com/crate-crypto/rust-eth-kzg/issues/225)) ([488ae20](https://github.com/crate-crypto/rust-eth-kzg/commit/488ae2008c1171506bd7ded8f50070960877d72d))
+* Allow bindings to specify the number of threads and whether precomputation is wanted ([#228](https://github.com/crate-crypto/rust-eth-kzg/issues/228)) ([ee42bf8](https://github.com/crate-crypto/rust-eth-kzg/commit/ee42bf8da72e6378f53176bd54d33ec9c9963d5a))
+* Allow downstream users to avoid the precomputations that are needed for the FixedBaseMSM algorithm in FK20 ([#224](https://github.com/crate-crypto/rust-eth-kzg/issues/224)) ([5367e79](https://github.com/crate-crypto/rust-eth-kzg/commit/5367e791be156bbb0cb57cf6ce204008c17957fd))
+
+
+### Bug Fixes
+
+* Namespace C methods ([#148](https://github.com/crate-crypto/rust-eth-kzg/issues/148)) ([e175ccd](https://github.com/crate-crypto/rust-eth-kzg/commit/e175ccd26f0276cbd9b5a7c0b8626cd0328bc654))
+* Trigger maybe_rayon release-please config ([cef8ed3](https://github.com/crate-crypto/rust-eth-kzg/commit/cef8ed310317d9305148913aa674e03d8d0593b8))
+
+
+### Miscellaneous Chores
+
+* **java:** Rename `recoverCellsAndProof` -&gt; `recoverCellsAndKZGProofs`  ([#232](https://github.com/crate-crypto/rust-eth-kzg/issues/232)) ([7157789](https://github.com/crate-crypto/rust-eth-kzg/commit/7157789f08f636f18f9d02226344fb6c08bb4628))
+* Move `recover_evaluations_in_domain_order` into cosets.rs ([#175](https://github.com/crate-crypto/rust-eth-kzg/issues/175)) ([5e6ff4f](https://github.com/crate-crypto/rust-eth-kzg/commit/5e6ff4f8a1f49508c3c272b8182bc4b9cefae234))
+* **rust:** Rename `recover_cells_and_proofs` -&gt; `recover_cells_and_kzg_proofs` ([#219](https://github.com/crate-crypto/rust-eth-kzg/issues/219)) ([cc06254](https://github.com/crate-crypto/rust-eth-kzg/commit/cc0625459ab6028a4bbc718f8ab86cfe11f12992))
+
 ## [0.4.1](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.4.0...v0.4.1) (2024-08-13)
 
 

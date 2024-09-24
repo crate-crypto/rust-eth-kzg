@@ -45,6 +45,11 @@
                     "path": "Cargo.toml",
                     "jsonpath": "$.workspace.dependencies.rust_eth_kzg.version"
                 },
+                {
+                    "type": "toml",
+                    "path": "Cargo.toml",
+                    "jsonpath": "$.workspace.dependencies.maybe_rayon.version"
+                },
                 "bindings/nim/nim_code/nim_eth_kzg/nim_eth_kzg.nimble",
                 "bindings/java/java_code/build.gradle",
                 {

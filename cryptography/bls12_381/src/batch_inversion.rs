@@ -1,46 +1,33 @@
-use rayon::prelude::*;
-
 /// Given a vector of field elements {v_i}, compute the vector {v_i^(-1)}
-//
-/// Panics: If any of the elements are zero
-pub fn batch_inverse<F: ff::Field>(elements: &mut [F]) {
-    batch_inversion(elements)
+///
+/// Panics if any of the elements are zero
+pub fn batch_inverse<F: ff::Field>(v: &mut [F]) {
+    let mut scratch_pad = Vec::with_capacity(v.len());
+    batch_inverse_scratch_pad(v, &mut scratch_pad);
 }
 
 /// Given a vector of field elements {v_i}, compute the vector {v_i^(-1)}
 ///
-// Taken and modified from arkworks codebase
-fn batch_inversion<F: ff::Field>(v: &mut [F]) {
-    // Divide the vector v evenly between all available cores
-    let min_elements_per_thread = 1;
-    let num_cpus_available = rayon::current_num_threads();
-    let num_elems = v.len();
-    let num_elem_per_thread =
-        std::cmp::max(num_elems / num_cpus_available, min_elements_per_thread);
-
-    // Batch invert in parallel, without copying the vector
-    v.par_chunks_mut(num_elem_per_thread).for_each(|chunk| {
-        serial_batch_inversion(chunk);
-    });
-}
-
-/// Given a vector of field elements {v_i}, compute the vector {coeff * v_i^(-1)}
-/// This method is explicitly single core.
-fn serial_batch_inversion<F: ff::Field>(v: &mut [F]) {
-    // Montgomery’s Trick and Fast Implementation of Masked AES
+/// A scratchpad is used to avoid excessive allocations in the case that this method is
+/// called repeatedly.
+///
+/// Panics if any of the elements are zero
+pub fn batch_inverse_scratch_pad<F: ff::Field>(v: &mut [F], scratchpad: &mut Vec<F>) {
+    // Montgomery's Trick and Fast Implementation of Masked AES
     // Genelle, Prouff and Quisquater
     // Section 3.2
     // but with an optimization to multiply every element in the returned vector by coeff
 
-    // First pass: compute [a, ab, abc, ...]
-    let mut prod = Vec::with_capacity(v.len());
-    let mut tmp = F::ONE;
-    for f in v.iter().filter(|f| !f.is_zero_vartime()) {
-        tmp.mul_assign(f);
-        prod.push(tmp);
-    }
+    // Clear the scratchpad and ensure it has enough capacity
+    scratchpad.clear();
+    scratchpad.reserve(v.len());
 
-    assert_eq!(prod.len(), v.len(), "inversion by zero is not allowed");
+    // First pass: compute [a, ab, abc, ...]
+    let mut tmp = F::ONE;
+    for f in v.iter() {
+        tmp.mul_assign(f);
+        scratchpad.push(tmp);
+    }
 
     // Invert `tmp`.
     tmp = tmp
@@ -52,14 +39,12 @@ fn serial_batch_inversion<F: ff::Field>(v: &mut [F]) {
         .iter_mut()
         // Backwards
         .rev()
-        // Ignore normalized elements
-        .filter(|f| !f.is_zero_vartime())
         // Backwards, skip last element, fill in one for last term.
-        .zip(prod.into_iter().rev().skip(1).chain(Some(F::ONE)))
+        .zip(scratchpad.iter().rev().skip(1).chain(Some(&F::ONE)))
     {
         // tmp := tmp * f; f := tmp * s = 1/f
         let new_tmp = tmp * *f;
-        *f = tmp * s;
+        *f = tmp * *s;
         tmp = new_tmp;
     }
 }

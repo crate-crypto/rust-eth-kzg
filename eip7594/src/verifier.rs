@@ -9,7 +9,7 @@ use crate::{
     errors::Error,
     serialization::{deserialize_cells, deserialize_compressed_g1_points},
     trusted_setup::TrustedSetup,
-    Bytes48Ref, CellIndex, CellRef, DASContext,
+    with_optional_threadpool, Bytes48Ref, CellIndex, CellRef, DASContext,
 };
 use bls12_381::Scalar;
 use erasure_codes::{BlockErasureIndices, ReedSolomon};
@@ -100,7 +100,7 @@ impl DASContext {
         cells: Vec<CellRef>,
         proofs_bytes: Vec<Bytes48Ref>,
     ) -> Result<(), Error> {
-        self.thread_pool.install(|| {
+        with_optional_threadpool!(self, {
             let (deduplicated_commitments, row_indices) = deduplicate_with_indices(commitments);
             // Validation
             //
