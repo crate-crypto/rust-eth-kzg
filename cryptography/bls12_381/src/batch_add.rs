@@ -3,6 +3,11 @@ use blstrs::{Fp, G1Affine, G1Projective};
 use ff::Field;
 use group::Group;
 
+/// Adds two elliptic curve points using the point addition formula.
+///
+/// Note: The inversion is precomputed and passed as a parameter.
+///
+/// This function handles both addition of distinct points and point doubling.
 #[inline(always)]
 fn point_add_double(p1: G1Affine, p2: G1Affine, inv: &blstrs::Fp) -> G1Affine {
     use ff::Field;
@@ -19,8 +24,13 @@ fn point_add_double(p1: G1Affine, p2: G1Affine, inv: &blstrs::Fp) -> G1Affine {
     G1Affine::from_raw_unchecked(x, y, false)
 }
 
+/// Chooses between point addition and point doubling based on the input points.
+///
+/// Note: This does not handle the case where p1 == -p2.
+///
+/// This case is unlikely for our usecase, and is not trivial
+/// to handle.
 #[inline(always)]
-// Note: We do not handle the case where p1 == -p2
 fn choose_add_or_double(p1: G1Affine, p2: G1Affine) -> Fp {
     if p1 == p2 {
         p2.y().double()
@@ -29,8 +39,15 @@ fn choose_add_or_double(p1: G1Affine, p2: G1Affine) -> Fp {
     }
 }
 
+/// This is the threshold to which batching the inversions in affine
+/// formula costs more than doing mixed addition.
 const BATCH_INVERSE_THRESHOLD: usize = 16;
 
+/// Performs batch addition of elliptic curve points using a binary tree approach with striding.
+///
+/// This function efficiently adds a large number of points by organizing them into a binary tree
+/// and performing batch inversions for the addition formula.
+///
 // TODO(benedikt): top down balanced tree idea - benedikt
 // TODO: search tree for sorted array
 pub fn batch_addition_binary_tree_stride(mut points: Vec<G1Affine>) -> G1Projective {
@@ -76,6 +93,11 @@ pub fn batch_addition_binary_tree_stride(mut points: Vec<G1Affine>) -> G1Project
     sum
 }
 
+/// Performs multi-batch addition of multiple sets of elliptic curve points.
+///
+/// This function efficiently adds multiple sets of points amortizing the cost of the
+/// inversion over all of the sets, using the same binary tree approach with striding
+/// as the single-batch version.
 pub fn multi_batch_addition_binary_tree_stride(
     mut multi_points: Vec<Vec<G1Affine>>,
 ) -> Vec<G1Projective> {
