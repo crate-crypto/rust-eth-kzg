@@ -1,11 +1,11 @@
-use crate::{G1Projective, Scalar};
+use crate::{fixed_base_msm_window::FixedBaseMSMPrecompWindow, G1Projective, Scalar};
 use blstrs::{Fp, G1Affine};
 
 /// FixedBaseMSMPrecomp computes a multi scalar multiplication using pre-computations.
 ///
 /// It uses batch addition to amortize the cost of adding multiple points together.
 #[derive(Debug)]
-pub struct FixedBaseMSMPrecomp {
+pub struct FixedBaseMSMPrecompBLST {
     table: Vec<blst::blst_p1_affine>,
     wbits: usize,
     num_points: usize,
@@ -27,7 +27,7 @@ pub enum UsePrecomp {
 /// of memory.
 #[derive(Debug)]
 pub enum FixedBaseMSM {
-    Precomp(FixedBaseMSMPrecomp),
+    Precomp(FixedBaseMSMPrecompWindow),
     NoPrecomp(Vec<G1Affine>),
 }
 
@@ -35,7 +35,7 @@ impl FixedBaseMSM {
     pub fn new(generators: Vec<G1Affine>, use_precomp: UsePrecomp) -> Self {
         match use_precomp {
             UsePrecomp::Yes { width } => {
-                FixedBaseMSM::Precomp(FixedBaseMSMPrecomp::new(generators, width))
+                FixedBaseMSM::Precomp(FixedBaseMSMPrecompWindow::new(&generators, width))
             }
             UsePrecomp::No => FixedBaseMSM::NoPrecomp(generators),
         }
@@ -43,7 +43,7 @@ impl FixedBaseMSM {
 
     pub fn msm(&self, scalars: Vec<Scalar>) -> G1Projective {
         match self {
-            FixedBaseMSM::Precomp(precomp) => precomp.msm(scalars),
+            FixedBaseMSM::Precomp(precomp) => precomp.msm(&scalars),
             FixedBaseMSM::NoPrecomp(generators) => {
                 use crate::lincomb::g1_lincomb;
                 g1_lincomb(generators, &scalars)
@@ -53,7 +53,7 @@ impl FixedBaseMSM {
     }
 }
 
-impl FixedBaseMSMPrecomp {
+impl FixedBaseMSMPrecompBLST {
     pub fn new(generators_affine: Vec<G1Affine>, wbits: usize) -> Self {
         let num_points = generators_affine.len();
         let table_size_bytes =
@@ -74,7 +74,7 @@ impl FixedBaseMSMPrecomp {
 
         let scratch_space_size = unsafe { blst::blst_p1s_mult_wbits_scratch_sizeof(num_points) };
 
-        FixedBaseMSMPrecomp {
+        FixedBaseMSMPrecompBLST {
             table,
             wbits,
             num_points,
@@ -120,7 +120,7 @@ impl FixedBaseMSMPrecomp {
 
 #[cfg(test)]
 mod tests {
-    use super::{FixedBaseMSMPrecomp, UsePrecomp};
+    use super::{FixedBaseMSMPrecompBLST, UsePrecomp};
     use crate::{fixed_base_msm::FixedBaseMSM, G1Projective, Scalar};
     use ff::Field;
     use group::Group;
@@ -158,7 +158,7 @@ mod tests {
         let generators: Vec<_> = (0..length)
             .map(|_| G1Projective::random(&mut rand::thread_rng()).into())
             .collect();
-        let fbm = FixedBaseMSMPrecomp::new(generators, 8);
+        let fbm = FixedBaseMSMPrecompBLST::new(generators, 8);
         for val in fbm.table.into_iter() {
             let is_inf =
                 unsafe { blst::blst_p1_affine_is_inf(&val as *const blst::blst_p1_affine) };
