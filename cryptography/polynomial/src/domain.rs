@@ -134,6 +134,12 @@ impl Domain {
         // Pad the vector of points with zeroes, so that it is the same size as the
         // domain.
         points.resize(self.size(), G1Projective::identity());
+        naive_fft_g1(self.generator, &points)
+    }
+    pub fn fft_g1_new(&self, mut points: Vec<G1Projective>) -> Vec<G1Projective> {
+        // Pad the vector of points with zeroes, so that it is the same size as the
+        // domain.
+        points.resize(self.size(), G1Projective::identity());
         fft_g1(self.generator, &points)
     }
 
@@ -206,7 +212,7 @@ impl Domain {
 }
 
 /// Computes a DFT using the given points and the nth root of unity.
-fn fft_scalar(nth_root_of_unity: Scalar, points: &[Scalar]) -> Vec<Scalar> {
+fn naive_fft_scalar(nth_root_of_unity: Scalar, points: &[Scalar]) -> Vec<Scalar> {
     let n = points.len();
     if n == 1 {
         return points.to_vec();
@@ -217,8 +223,8 @@ fn fft_scalar(nth_root_of_unity: Scalar, points: &[Scalar]) -> Vec<Scalar> {
     // Compute a root with half the order
     let gen_squared = nth_root_of_unity.square();
 
-    let fft_even = fft_scalar(gen_squared, &even);
-    let fft_odd = fft_scalar(gen_squared, &odd);
+    let fft_even = naive_fft_scalar(gen_squared, &even);
+    let fft_odd = naive_fft_scalar(gen_squared, &odd);
 
     let mut input_point = Scalar::ONE;
     let mut evaluations = vec![Scalar::ONE; n];
@@ -234,10 +240,66 @@ fn fft_scalar(nth_root_of_unity: Scalar, points: &[Scalar]) -> Vec<Scalar> {
     evaluations
 }
 
+fn fft_scalar_inplace(a: &mut [Scalar], nth_root_of_unity: Scalar) {
+    let n = a.len();
+    let log_n = log2_pow2(n);
+    assert_eq!(n, 1 << log_n);
+
+    // Bit-reversal permutation
+    for k in 0..n {
+        let rk = bitreverse(k as u32, log_n) as usize;
+        if k < rk {
+            a.swap(rk, k);
+        }
+    }
+
+    // Main FFT computation
+    let mut m = 1;
+    for s in 0..log_n {
+        let w_m = nth_root_of_unity.pow(&[(n / (2 * m)) as u64]);
+        for k in (0..n).step_by(2 * m) {
+            let mut w = Scalar::ONE;
+            for j in 0..m {
+                let t = if w == Scalar::ONE {
+                    a[k + j + m]
+                } else if w == -Scalar::ONE {
+                    -a[k + j + m]
+                } else {
+                    a[k + j + m] * w
+                };
+                let u = a[k + j];
+                a[k + j] = u + t;
+                a[k + j + m] = u - t;
+                w *= w_m;
+            }
+        }
+        m *= 2;
+    }
+}
+
+fn bitreverse(mut n: u32, l: u32) -> u32 {
+    let mut r = 0;
+    for _ in 0..l {
+        r = (r << 1) | (n & 1);
+        n >>= 1;
+    }
+    r
+}
+
+fn log2_pow2(n: usize) -> u32 {
+    n.trailing_zeros()
+}
+
+fn fft_scalar(nth_root_of_unity: Scalar, points: &[Scalar]) -> Vec<Scalar> {
+    let mut a = points.to_vec();
+    fft_scalar_inplace(&mut a, nth_root_of_unity);
+    a
+}
+
 /// Computes a DFT of the group elements(points) using powers of the roots of unity.
 ///
 /// Note: This is essentially multiple multi-scalar multiplications.
-fn fft_g1(nth_root_of_unity: Scalar, points: &[G1Projective]) -> Vec<G1Projective> {
+fn naive_fft_g1(nth_root_of_unity: Scalar, points: &[G1Projective]) -> Vec<G1Projective> {
     let n = points.len();
     if n == 1 {
         return points.to_vec();
@@ -248,8 +310,8 @@ fn fft_g1(nth_root_of_unity: Scalar, points: &[G1Projective]) -> Vec<G1Projectiv
     // Compute a root with half the order
     let gen_squared = nth_root_of_unity.square();
 
-    let fft_even = fft_g1(gen_squared, &even);
-    let fft_odd = fft_g1(gen_squared, &odd);
+    let fft_even = naive_fft_g1(gen_squared, &even);
+    let fft_odd = naive_fft_g1(gen_squared, &odd);
 
     let mut input_point = Scalar::ONE;
     let mut evaluations = vec![G1Projective::identity(); n];
@@ -263,6 +325,62 @@ fn fft_g1(nth_root_of_unity: Scalar, points: &[G1Projective]) -> Vec<G1Projectiv
     }
 
     evaluations
+}
+
+pub fn fft_g1_inplace(a: &mut [G1Projective], nth_root_of_unity: Scalar) {
+    let n = a.len();
+    let log_n = log2_pow2(n);
+    assert_eq!(n, 1 << log_n);
+
+    // Bit-reversal permutation
+    for k in 0..n {
+        let rk = bitreverse(k as u32, log_n) as usize;
+        if k < rk {
+            a.swap(rk, k);
+        }
+    }
+
+    // TODO: can be done once at startup, but not a performance bottleneck right now
+    let twiddle_factors = precompute_twiddle_factors(&nth_root_of_unity, n);
+    // Main FFT computation
+    let mut m = 1;
+    for s in 0..log_n {
+        // let w_m = nth_root_of_unity.pow(&[(n / (2 * m)) as u64]);
+        let w_m = twiddle_factors[s as usize];
+        for k in (0..n).step_by(2 * m) {
+            let mut w = Scalar::ONE;
+            for j in 0..m {
+                let t = if w == Scalar::ONE {
+                    a[k + j + m]
+                } else if w == -Scalar::ONE {
+                    -a[k + j + m]
+                } else if a[k + j + m].is_identity().into() {
+                    G1Projective::identity()
+                } else {
+                    a[k + j + m] * w
+                };
+
+                let u = a[k + j];
+                a[k + j] = u + t;
+                a[k + j + m] = u - t;
+                w *= w_m;
+            }
+        }
+        m *= 2;
+    }
+}
+
+fn fft_g1(nth_root_of_unity: Scalar, points: &[G1Projective]) -> Vec<G1Projective> {
+    let mut a = points.to_vec();
+    fft_g1_inplace(&mut a, nth_root_of_unity);
+    a
+}
+
+fn precompute_twiddle_factors<F: Field>(omega: &F, n: usize) -> Vec<F> {
+    let log_n = log2_pow2(n);
+    (0..log_n)
+        .map(|s| omega.pow(&[(n / (1 << (s + 1))) as u64]))
+        .collect()
 }
 
 /// Splits the list into two lists, one containing the even indexed elements
