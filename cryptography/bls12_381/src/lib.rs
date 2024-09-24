@@ -1,3 +1,4 @@
+pub mod batch_add;
 pub mod batch_inversion;
 pub mod fixed_base_msm;
 pub mod lincomb;
