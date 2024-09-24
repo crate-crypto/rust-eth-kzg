@@ -1,6 +1,6 @@
 use std::ops::Neg;
 
-// TODO: Link to halo2 file + docs + comments
+// Code was taken from: https://github.com/privacy-scaling-explorations/halo2curves/blob/b753a832e92d5c86c5c997327a9cf9de86a18851/src/msm.rs#L13
 pub fn get_booth_index(window_index: usize, window_size: usize, el: &[u8]) -> i32 {
     // Booth encoding:
     // * step by `window` size
