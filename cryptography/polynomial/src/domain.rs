@@ -27,6 +27,12 @@ pub struct Domain {
     coset_generator: Scalar,
     /// Inverse of the coset generator
     coset_generator_inv: Scalar,
+    /// Precomputed values for the generator to speed up
+    /// the forward FFT
+    twiddle_factors: Vec<Scalar>,
+    /// Precomputed values for the generator to speed up
+    /// the backward FFT
+    twiddle_factors_inv: Vec<Scalar>,
 }
 
 impl Domain {
@@ -59,6 +65,9 @@ impl Domain {
             .invert()
             .expect("coset generator should not be zero");
 
+        let twiddle_factors = precompute_twiddle_factors(&generator, size);
+        let twiddle_factors_inv = precompute_twiddle_factors(&generator_inv, size);
+
         Self {
             roots,
             domain_size: size_as_scalar,
@@ -67,6 +76,8 @@ impl Domain {
             generator_inv,
             coset_generator,
             coset_generator_inv,
+            twiddle_factors,
+            twiddle_factors_inv,
         }
     }
 
@@ -139,7 +150,7 @@ impl Domain {
         // domain.
         points.resize(self.size(), G1Projective::identity());
 
-        fft_g1_inplace(self.generator, &mut points);
+        fft_g1_inplace(&self.twiddle_factors, &mut points);
 
         points
     }
@@ -165,7 +176,7 @@ impl Domain {
         // domain.
         points.resize(self.size(), G1Projective::identity());
 
-        fft_g1_inplace(self.generator_inv, &mut points);
+        fft_g1_inplace(&self.twiddle_factors_inv, &mut points);
 
         // Truncate the result if a value of `n` was supplied.
         let mut ifft_g1 = match n {
@@ -252,7 +263,7 @@ fn fft_scalar_inplace(nth_root_of_unity: Scalar, a: &mut [Scalar]) {
     }
 }
 
-fn fft_g1_inplace(nth_root_of_unity: Scalar, a: &mut [G1Projective]) {
+fn fft_g1_inplace(twiddle_factors: &[Scalar], a: &mut [G1Projective]) {
     let n = a.len();
     let log_n = log2_pow2(n);
     assert_eq!(n, 1 << log_n);
@@ -265,12 +276,8 @@ fn fft_g1_inplace(nth_root_of_unity: Scalar, a: &mut [G1Projective]) {
         }
     }
 
-    // TODO: can be done once at startup, but not a performance bottleneck right now
-    let twiddle_factors = precompute_twiddle_factors(&nth_root_of_unity, n);
-
     let mut m = 1;
     for s in 0..log_n {
-        // let w_m = nth_root_of_unity.pow(&[(n / (2 * m)) as u64]);
         let w_m = twiddle_factors[s as usize];
         for k in (0..n).step_by(2 * m) {
             let mut w = Scalar::ONE;
