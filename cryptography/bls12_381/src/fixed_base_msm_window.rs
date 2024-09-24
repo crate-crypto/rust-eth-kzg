@@ -31,7 +31,7 @@ impl FixedBaseMSMPrecompWindow {
             wbits,
         }
     }
-    // Given a point, we precompute P,..., (2^w -1) * P
+    // Given a point, we precompute P,..., (2^{w-1}-1) * P
     fn precompute_points(wbits: usize, point: G1Affine) -> Vec<G1Affine> {
         let mut lookup_table = Vec::with_capacity(1 << (wbits - 1));
 
