@@ -275,6 +275,10 @@ fn fft_g1_inplace(twiddle_factors: &[Scalar], a: &mut [G1Projective]) {
     let n = a.len();
     assert_eq!(n, 128, "This implementation is specific to size 128");
 
+    let omega = twiddle_factors[0];
+    let omegan8 = omega.pow(&[n as u64 / 8]);
+    let omegan2 = omega.pow(&[n as u64 / 2]);
+
     // Bit-reversal permutation
     for k in 0..n {
         let rk = bitreverse(k as u32, 7) as usize;
@@ -284,10 +288,10 @@ fn fft_g1_inplace(twiddle_factors: &[Scalar], a: &mut [G1Projective]) {
     }
 
     // Radix-8 stage
-    radix8_stage(a, twiddle_factors[0]); // twiddle =omega^{n/8}
+    radix8_stage(a, omegan8); // twiddle =omega^{n/8}
 
     // Radix-2 stage
-    radix2_stage(a, 64, twiddle_factors[1]); // twiddle = omega^{n/2}
+    radix2_stage(a, 64, omegan2); // twiddle = omega^{n/2}
 
     // Radix 4 + radix2  impl below
     // let n = a.len();
