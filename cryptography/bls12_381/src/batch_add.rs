@@ -3,7 +3,7 @@ use blstrs::{Fp, G1Affine, G1Projective};
 use ff::Field;
 use group::Group;
 
-/// Adds two elliptic curve points using the point addition formula.
+/// Adds two elliptic curve points using the point addition/doubling formula.
 ///
 /// Note: The inversion is precomputed and passed as a parameter.
 ///
