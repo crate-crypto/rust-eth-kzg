@@ -1,7 +1,8 @@
 use crate_crypto_internal_eth_kzg_bls12_381::{
     batch_inversion,
     ff::Field,
-    fixed_base_msm::{FixedBaseMSM, UsePrecomp},
+    fixed_base_msm::FixedBaseMSMPrecompBLST,
+    fixed_base_msm_window::FixedBaseMSMPrecompWindow,
     g1_batch_normalize, g2_batch_normalize,
     group::Group,
     lincomb::{g1_lincomb, g1_lincomb_unsafe, g2_lincomb, g2_lincomb_unsafe},
@@ -28,11 +29,17 @@ pub fn fixed_base_msm(c: &mut Criterion) {
         .into_iter()
         .map(|p| p.into())
         .collect();
-    let fbm = FixedBaseMSM::new(generators, UsePrecomp::Yes { width: 8 });
-    let scalars: Vec<_> = random_scalars(length);
 
-    c.bench_function("bls12_381 fixed_base_msm length=64 width=8", |b| {
+    let fbm = FixedBaseMSMPrecompBLST::new(generators.clone(), 8);
+    let scalars: Vec<_> = random_scalars(length);
+    c.bench_function("bls12_381 fixed_base_msm length=64 width=8 (blst)", |b| {
         b.iter(|| fbm.msm(scalars.clone()))
+    });
+
+    let fbm = FixedBaseMSMPrecompWindow::new(&generators, 8);
+    let scalars: Vec<_> = random_scalars(length);
+    c.bench_function("bls12_381 fixed_base_msm length=64 width=8 (rust)", |b| {
+        b.iter(|| fbm.msm(&scalars))
     });
 }
 
