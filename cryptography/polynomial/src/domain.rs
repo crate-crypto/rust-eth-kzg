@@ -119,7 +119,7 @@ impl Domain {
         // domain.
         polynomial.resize(self.size(), Scalar::ZERO);
 
-        fft_scalar_inplace(self.generator, &mut polynomial);
+        fft_scalar_inplace(&self.twiddle_factors, &mut polynomial);
 
         polynomial
     }
@@ -136,7 +136,7 @@ impl Domain {
             *point *= coset_scale;
             coset_scale *= self.coset_generator;
         }
-        fft_scalar_inplace(self.generator, &mut points);
+        fft_scalar_inplace(&self.twiddle_factors, &mut points);
 
         points
     }
@@ -201,7 +201,7 @@ impl Domain {
         // domain.
         points.resize(self.size(), Scalar::ZERO);
 
-        fft_scalar_inplace(self.generator_inv, &mut points);
+        fft_scalar_inplace(&self.twiddle_factors_inv, &mut points);
 
         for element in points.iter_mut() {
             *element *= self.domain_size_inv
@@ -223,7 +223,7 @@ impl Domain {
     }
 }
 
-fn fft_scalar_inplace(nth_root_of_unity: Scalar, a: &mut [Scalar]) {
+fn fft_scalar_inplace(twiddle_factors: &[Scalar], a: &mut [Scalar]) {
     let n = a.len();
     let log_n = log2_pow2(n);
     assert_eq!(n, 1 << log_n);
@@ -237,8 +237,8 @@ fn fft_scalar_inplace(nth_root_of_unity: Scalar, a: &mut [Scalar]) {
     }
 
     let mut m = 1;
-    for _ in 0..log_n {
-        let w_m = nth_root_of_unity.pow(&[(n / (2 * m)) as u64]);
+    for s in 0..log_n {
+        let w_m = twiddle_factors[s as usize];
         for k in (0..n).step_by(2 * m) {
             let mut w = Scalar::ONE;
 
@@ -262,7 +262,6 @@ fn fft_scalar_inplace(nth_root_of_unity: Scalar, a: &mut [Scalar]) {
         m *= 2;
     }
 }
-
 fn fft_g1_inplace(twiddle_factors: &[Scalar], a: &mut [G1Projective]) {
     let n = a.len();
     let log_n = log2_pow2(n);
