@@ -61,10 +61,10 @@ impl FixedBaseMSMPrecompWindow {
                 if point_idx == 0 {
                     continue;
                 }
-                let sign = point_idx.is_positive();
+                let is_scalar_positive = point_idx.is_positive();
                 let point_idx = point_idx.unsigned_abs() as usize - 1;
                 let mut point = sub_table[point_idx];
-                if !sign {
+                if !is_scalar_positive {
                     point = -point;
                 }
 
