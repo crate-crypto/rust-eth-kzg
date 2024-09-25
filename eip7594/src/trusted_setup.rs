@@ -8,8 +8,24 @@ const TRUSTED_SETUP_JSON: &str = include_str!("../data/trusted_setup_4096.json")
 
 #[derive(Deserialize, Debug, PartialEq, Eq)]
 pub struct TrustedSetup {
+    /// G1 Monomial represents a list of uncompressed
+    /// hex encoded group elements in the G1 group on the bls12-381 curve.
+    ///
+    /// Ethereum has multiple trusted setups, however the one being
+    /// used currently contains 4096 G1 elements.
     pub g1_monomial: Vec<String>,
+    /// G1 Lagrange represents a list of uncompressed
+    /// hex encoded group elements in the G1 group on the bls12-381 curve.
+    ///
+    /// These are related to `G1 Monomial` in that they are what one
+    /// would get if we did an inverse FFT on the `G1 monomial` elements.
+    ///
+    /// The length of this vector is equal to the length of G1_Monomial.
     pub g1_lagrange: Vec<String>,
+    /// G2 Monomial represents a list of uncompressed hex encoded
+    /// group elements in the G2 group on the bls12-381 curve.
+    ///
+    /// The length of this vector is 65.
     pub g2_monomial: Vec<String>,
 }
 

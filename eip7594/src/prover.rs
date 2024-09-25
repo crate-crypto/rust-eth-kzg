@@ -106,12 +106,9 @@ impl DASContext {
     /// Recovers the cells and computes the KZG proofs, given a subset of cells.
     ///
     /// Use erasure decoding to recover the polynomial corresponding to the cells
-    /// that were generated from KZG multi point prover.
+    /// that were provided as input.
     ///
     /// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/13ac373a2c284dc66b48ddd2ef0a10537e4e0de6/specs/_features/eip7594/polynomial-commitments-sampling.md#recover_cells_and_kzg_proofs
-    ///
-    // Note: The fact that we recover the polynomial for the bit-reversed version of the blob
-    // is irrelevant.
     pub fn recover_cells_and_kzg_proofs(
         &self,
         cell_indices: Vec<CellIndex>,

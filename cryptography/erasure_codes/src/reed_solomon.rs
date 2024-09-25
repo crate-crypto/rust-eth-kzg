@@ -75,12 +75,14 @@ impl ReedSolomon {
 
         let num_blocks = evaluation_size / block_size;
 
+        let block_size_domain = Domain::new(block_size);
+
         Self {
             poly_len,
             evaluation_domain,
             expansion_factor,
             block_size,
-            block_size_domain: Domain::new(block_size),
+            block_size_domain,
             num_blocks,
         }
     }

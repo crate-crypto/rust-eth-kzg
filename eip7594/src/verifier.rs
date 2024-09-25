@@ -4,7 +4,7 @@ pub use crate::errors::VerifierError;
 
 use crate::{
     constants::{
-        CELLS_PER_EXT_BLOB, EXTENSION_FACTOR, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_EXT_BLOB,
+        CELLS_PER_EXT_BLOB, EXPANSION_FACTOR, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_EXT_BLOB,
     },
     errors::Error,
     serialization::{deserialize_cells, deserialize_compressed_g1_points},
@@ -39,7 +39,7 @@ impl VerifierContext {
         VerifierContext {
             rs: ReedSolomon::new(
                 FIELD_ELEMENTS_PER_BLOB,
-                EXTENSION_FACTOR,
+                EXPANSION_FACTOR,
                 CELLS_PER_EXT_BLOB,
             ),
             kzg_multipoint_verifier: multipoint_verifier,
@@ -95,9 +95,6 @@ impl DASContext {
     /// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/13ac373a2c284dc66b48ddd2ef0a10537e4e0de6/specs/_features/eip7594/polynomial-commitments-sampling.md#verify_cell_kzg_proof_batch
     pub fn verify_cell_kzg_proof_batch(
         &self,
-        // This is a deduplicated list of row commitments
-        // It is not indicative of the total number of commitments in the batch.
-        // This is what row_indices is used for.
         commitments: Vec<Bytes48Ref>,
         cell_indices: Vec<CellIndex>,
         cells: Vec<CellRef>,
@@ -123,7 +120,7 @@ impl DASContext {
 
             // Deserialization
             //
-            let row_commitment_ = deserialize_compressed_g1_points(deduplicated_commitments)?;
+            let row_commitments_ = deserialize_compressed_g1_points(deduplicated_commitments)?;
             let proofs_ = deserialize_compressed_g1_points(proofs_bytes)?;
             let coset_evals = deserialize_cells(cells)?;
 
@@ -133,7 +130,7 @@ impl DASContext {
                 .verifier_ctx
                 .kzg_multipoint_verifier
                 .verify_multi_opening(
-                    &row_commitment_,
+                    &row_commitments_,
                     &row_indices,
                     &cell_indices,
                     &coset_evals,
@@ -203,7 +200,7 @@ mod validation {
     use kzg_multi_open::CommitmentIndex;
 
     use crate::{
-        constants::{BYTES_PER_CELL, CELLS_PER_EXT_BLOB, EXTENSION_FACTOR},
+        constants::{BYTES_PER_CELL, CELLS_PER_EXT_BLOB, EXPANSION_FACTOR},
         verifier::VerifierError,
         Bytes48Ref, CellIndex, CellRef,
     };
@@ -288,10 +285,10 @@ mod validation {
         }
 
         // Check that we have enough cells to perform a reconstruction
-        if cell_indices.len() < CELLS_PER_EXT_BLOB / EXTENSION_FACTOR {
+        if cell_indices.len() < CELLS_PER_EXT_BLOB / EXPANSION_FACTOR {
             return Err(VerifierError::NotEnoughCellsToReconstruct {
                 num_cells_received: cell_indices.len(),
-                min_cells_needed: CELLS_PER_EXT_BLOB / EXTENSION_FACTOR,
+                min_cells_needed: CELLS_PER_EXT_BLOB / EXPANSION_FACTOR,
             });
         }
 

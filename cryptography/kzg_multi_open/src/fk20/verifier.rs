@@ -145,7 +145,7 @@ impl FK20Verifier {
         // Compute random challenges for batching the opening together.
         //
         // We compute one challenge `r` using fiat-shamir and the rest are powers of `r`
-        // This is safe since 1, X, X^2, ..., X^n of a variable X are linearly independent (ie there is no non-trivial linear combination that equals zero)
+        // This is safe because of the Schwartz-Zippel Lemma.
         let r = compute_fiat_shamir_challenge(
             &self.opening_key,
             deduplicated_commitments,
@@ -186,10 +186,10 @@ impl FK20Verifier {
         // to be `deduplicated_commitments.len()`.
         //
         // This only panics, if `deduplicated_commitments.len()` != `weights.len()`
-        let comm_random_sum_commitments = g1_lincomb(deduplicated_commitments, &weights)
+        let random_sum_commitments = g1_lincomb(deduplicated_commitments, &weights)
             .expect("number of row_commitments and number of weights should be the same");
 
-        // Compute a random linear combination of the interpolation polynomials
+        // Linearly combine the interpolation polynomials using the same randomness `r`
         let mut random_sum_interpolation_poly = Vec::new();
         let coset_evals = bit_reversed_coset_evals.to_vec();
         for (k, mut coset_eval) in coset_evals.into_iter().enumerate() {
@@ -230,7 +230,7 @@ impl FK20Verifier {
             .expect("number of proofs and number of weighted_r_powers should be the same");
 
         // This is `rl` in the specs.
-        let pairing_input_g1 = (comm_random_sum_commitments - comm_random_sum_interpolation_poly)
+        let pairing_input_g1 = (random_sum_commitments - comm_random_sum_interpolation_poly)
             + random_weighted_sum_proofs;
 
         let normalized_vectors = g1_batch_normalize(&[comm_random_sum_proofs, pairing_input_g1]);

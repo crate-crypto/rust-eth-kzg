@@ -1,7 +1,7 @@
 use crate::CellIndex;
 use erasure_codes::errors::RSError;
 
-/// Errors that can occur either during proving or verification.
+/// Errors that can occur either during proving, verification or serialization.
 #[derive(Debug)]
 pub enum Error {
     Prover(ProverError),
@@ -10,6 +10,10 @@ pub enum Error {
 }
 
 impl Error {
+    /// Returns true if the reason for the error was due to a proof failing verification.
+    ///
+    /// Note: This distinction in practice, is not meaningful for the caller and is mainly
+    /// here due to the specs and spec tests making this distinction.
     pub fn invalid_proof(&self) -> bool {
         let verifier_error = match self {
             Error::Verifier(verifier_err) => verifier_err,
