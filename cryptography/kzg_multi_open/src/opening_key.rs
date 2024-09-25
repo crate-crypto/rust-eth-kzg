@@ -57,7 +57,7 @@ impl OpeningKey {
     pub fn commit_g2(&self, polynomial: &[Scalar]) -> G2Projective {
         assert!(self.g2s.len() >= polynomial.len());
         g2_lincomb(&self.g2s[0..polynomial.len()], polynomial)
-            .expect("number of g1 points is equal to the number of coefficients in the polynomial")
+            .expect("number of g2 points is equal to the number of coefficients in the polynomial")
     }
 
     /// Commit to a polynomial in monomial form using the G1 group elements

@@ -8,7 +8,7 @@ pub const BYTES_PER_FIELD_ELEMENT: usize = 32;
 
 /// The number of field elements in a cell.
 ///
-/// Note: This is user defined; modifying this value will change the number of proofs produced,
+/// Note: Modifying this value will change the number of proofs produced,
 /// the proof generation time and the time it takes to verify a proof.
 ///
 /// Note: This value must be a power of two between 1 and 64. The greatest value is 64 because there
@@ -29,12 +29,12 @@ pub const BYTES_PER_CELL: usize = FIELD_ELEMENTS_PER_CELL * BYTES_PER_FIELD_ELEM
 
 /// The factor by which we extend a blob.
 ///
-/// Note: This is user defined; modifying this will change the number of proofs produced,
+/// Note: Modifying this will change the number of proofs produced,
 /// proof generation time and the rate of the reed-solomon code.
-pub const EXTENSION_FACTOR: usize = 2;
+pub const EXPANSION_FACTOR: usize = 2;
 
 /// The number of field elements needed to represent an extended blob.
-pub const FIELD_ELEMENTS_PER_EXT_BLOB: usize = EXTENSION_FACTOR * FIELD_ELEMENTS_PER_BLOB;
+pub const FIELD_ELEMENTS_PER_EXT_BLOB: usize = EXPANSION_FACTOR * FIELD_ELEMENTS_PER_BLOB;
 
 /// The number of cells in an extension blob.
 ///
