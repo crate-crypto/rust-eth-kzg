@@ -177,7 +177,7 @@ impl FK20Verifier {
         // One can view this as trading a scalar multiplication for a field addition.
         //
         // The extra field additions are being calculated in the for loop below.
-        let mut weights = vec![Scalar::from(0); num_unique_commitments];
+        let mut weights = vec![Scalar::ZERO; num_unique_commitments];
         for (commitment_index, r_power) in commitment_indices.iter().zip(r_powers.iter()) {
             weights[*commitment_index as usize] += r_power;
         }

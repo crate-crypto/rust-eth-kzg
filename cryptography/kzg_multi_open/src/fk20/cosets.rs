@@ -1,4 +1,4 @@
-use bls12_381::Scalar;
+use bls12_381::{ff::Field, Scalar};
 use polynomial::domain::Domain;
 
 /// Reverses the least significant `bits` of the given number `n`.
@@ -113,7 +113,7 @@ pub fn recover_evaluations_in_domain_order(
         return None;
     }
 
-    let mut elements = vec![Scalar::from(0u64); domain_size];
+    let mut elements = vec![Scalar::ZERO; domain_size];
 
     // Check that each coset has the same size
     let coset_len = coset_evaluations[0].len();

@@ -67,7 +67,7 @@ fn _compute_multi_opening_naive(
     // Divides `self` by x-z using Ruffinis rule
     fn divide_by_linear(poly: &[Scalar], z: Scalar) -> Vec<Scalar> {
         let mut quotient: Vec<Scalar> = Vec::with_capacity(poly.len());
-        let mut k = Scalar::from(0u64);
+        let mut k = Scalar::ZERO;
 
         for coeff in poly.iter().rev() {
             let t = *coeff + k;

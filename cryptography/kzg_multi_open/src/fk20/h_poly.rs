@@ -1,5 +1,5 @@
 use crate::fk20::toeplitz::ToeplitzMatrix;
-use bls12_381::{G1Projective, Scalar};
+use bls12_381::{ff::Field, G1Projective, Scalar};
 use polynomial::monomial::PolyCoeff;
 
 use super::batch_toeplitz::BatchToeplitzMatrixVecMul;
@@ -47,7 +47,7 @@ pub(crate) fn compute_h_poly_commitments(
     let mut matrices = Vec::with_capacity(toeplitz_rows.len());
     // We want to do `coset_size` toeplitz matrix multiplications
     for row in toeplitz_rows.into_iter() {
-        let mut toeplitz_column = vec![Scalar::from(0u64); row.len()];
+        let mut toeplitz_column = vec![Scalar::ZERO; row.len()];
         toeplitz_column[0] = row[0];
 
         matrices.push(ToeplitzMatrix::new(row, toeplitz_column));
