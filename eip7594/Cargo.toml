@@ -32,4 +32,4 @@ serde_yaml = "0.9.34"
 [[bench]]
 name = "benchmark"
 harness = false
-# required-features = ["multithreaded"]
+required-features = ["multithreaded"]
