@@ -37,8 +37,7 @@ pub type CommitmentIndex = u64;
 #[derive(Debug)]
 pub struct FK20Verifier {
     pub opening_key: OpeningKey,
-    // These are bit-reversed.
-    pub coset_shifts: Vec<Scalar>,
+    pub coset_gens_bit_reversed: Vec<Scalar>,
     coset_domain: Domain,
     // Pre-computations for the verification algorithm
     //
@@ -47,15 +46,15 @@ pub struct FK20Verifier {
     // [-1]_2
     neg_g2_gen: G2Prepared,
     //
-    pub coset_shifts_pow_n: Vec<Scalar>,
+    pub coset_gens_pow_n: Vec<Scalar>,
     //
-    inv_coset_shifts_pow_n: Vec<Vec<Scalar>>,
+    inv_coset_gens_pow_n: Vec<Vec<Scalar>>,
 }
 
 impl FK20Verifier {
     pub fn new(opening_key: OpeningKey, num_points_to_open: usize, num_cosets: usize) -> Self {
         const BIT_REVERSED: bool = true;
-        let coset_shifts = coset_gens(num_points_to_open, num_cosets, BIT_REVERSED);
+        let coset_gens = coset_gens(num_points_to_open, num_cosets, BIT_REVERSED);
 
         let coset_size = num_points_to_open / num_cosets;
         assert!(
@@ -70,28 +69,28 @@ impl FK20Verifier {
         // [-1]_2
         let neg_g2_gen = G2Prepared::from(-opening_key.g2_gen());
 
-        let coset_shifts_pow_n = coset_shifts
+        let coset_gens_pow_n = coset_gens
             .iter()
-            .map(|&coset_shift| coset_shift.pow_vartime([n as u64]))
+            .map(|&coset_gen| coset_gen.pow_vartime([n as u64]))
             .collect();
 
-        let inv_coset_shifts_pow_n: Vec<_> = coset_shifts
+        let inv_coset_gens_pow_n: Vec<_> = coset_gens
             .iter()
-            .map(|&coset_shift| {
-                let mut inv_coset_shift_powers = compute_powers(coset_shift, n);
-                batch_inverse(&mut inv_coset_shift_powers); // The coset generators are all roots of unity, so none of them will be zero
-                inv_coset_shift_powers
+            .map(|&coset_gen| {
+                let mut inv_coset_gen_powers = compute_powers(coset_gen, n);
+                batch_inverse(&mut inv_coset_gen_powers); // The coset generators are all roots of unity, so none of them will be zero
+                inv_coset_gen_powers
             })
             .collect();
 
         Self {
             opening_key,
-            coset_shifts,
+            coset_gens_bit_reversed: coset_gens,
             coset_domain,
             s_pow_n,
             neg_g2_gen,
-            coset_shifts_pow_n,
-            inv_coset_shifts_pow_n,
+            coset_gens_pow_n,
+            inv_coset_gens_pow_n,
         }
     }
 
@@ -198,11 +197,11 @@ impl FK20Verifier {
 
             // Compute the interpolation polynomial
             let ifft_scalars = self.coset_domain.ifft_scalars(coset_eval);
-            let inv_coset_shift_pow_n =
-                &self.inv_coset_shifts_pow_n[bit_reversed_coset_indices[k] as usize];
+            let inv_coset_gen_pow_n =
+                &self.inv_coset_gens_pow_n[bit_reversed_coset_indices[k] as usize];
             let ifft_scalars: Vec<_> = ifft_scalars
                 .into_iter()
-                .zip(inv_coset_shift_pow_n)
+                .zip(inv_coset_gen_pow_n)
                 .map(|(scalar, inv_h_k_pow)| scalar * inv_h_k_pow)
                 .collect();
 
@@ -221,8 +220,8 @@ impl FK20Verifier {
 
         let mut weighted_r_powers = Vec::with_capacity(batch_size);
         for (coset_index, r_power) in bit_reversed_coset_indices.iter().zip(r_powers) {
-            let coset_shift_pow_n = self.coset_shifts_pow_n[*coset_index as usize];
-            weighted_r_powers.push(r_power * coset_shift_pow_n);
+            let coset_gen_pow_n = self.coset_gens_pow_n[*coset_index as usize];
+            weighted_r_powers.push(r_power * coset_gen_pow_n);
         }
 
         // Safety: This should never panic since `bit_reversed_proofs.len()` is equal to the batch_size.
