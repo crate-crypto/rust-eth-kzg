@@ -1,5 +1,5 @@
 use crate::{commit_key::CommitKey, opening_key::OpeningKey};
-use bls12_381::{multi_pairings, G1Point, G1Projective, G2Point, G2Prepared, Scalar};
+use bls12_381::{ff::Field, multi_pairings, G1Point, G1Projective, G2Point, G2Prepared, Scalar};
 use polynomial::monomial::{lagrange_interpolate, poly_eval, poly_sub, vanishing_poly, PolyCoeff};
 
 /// This modules contains code to create and verify opening proofs in a naive way.
