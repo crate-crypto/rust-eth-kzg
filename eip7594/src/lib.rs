@@ -4,6 +4,7 @@ compile_error!("feature_a and feature_b cannot be enabled simultaneously");
 pub mod constants;
 mod errors;
 mod prover;
+mod recovery;
 mod serialization;
 mod trusted_setup;
 mod verifier;
