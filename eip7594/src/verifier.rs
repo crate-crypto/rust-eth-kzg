@@ -35,8 +35,11 @@ impl VerifierContext {
     pub fn new(trusted_setup: &TrustedSetup) -> VerifierContext {
         let verification_key = VerificationKey::from(trusted_setup);
 
-        let multipoint_verifier =
-            Verifier::new(verification_key, FIELD_ELEMENTS_PER_EXT_BLOB, CELLS_PER_EXT_BLOB);
+        let multipoint_verifier = Verifier::new(
+            verification_key,
+            FIELD_ELEMENTS_PER_EXT_BLOB,
+            CELLS_PER_EXT_BLOB,
+        );
 
         VerifierContext {
             rs: ReedSolomon::new(
@@ -296,6 +299,10 @@ mod validation {
 
         // Check that we don't have too many cells
         // ie more than we initially generated from the blob
+        //
+        // Note: Since we check that there are no duplicates and that all cell_indices
+        // are between 0 and CELLS_PER_EXT_BLOB. This check should never fail.
+        // It is kept here to be compliant with the specs.
         if cell_indices.len() > CELLS_PER_EXT_BLOB {
             return Err(VerifierError::TooManyCellsReceived {
                 num_cells_received: cell_indices.len(),
