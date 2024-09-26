@@ -1,5 +1,5 @@
 use bls12_381::{G1Point, G2Point};
-use kzg_multi_open::{commit_key::CommitKey, opening_key::OpeningKey};
+use kzg_multi_open::{commit_key::CommitKey, verification_key::VerificationKey};
 use serde::Deserialize;
 
 use crate::constants::{FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL};
@@ -48,9 +48,9 @@ impl From<&TrustedSetup> for CommitKey {
     }
 }
 
-impl From<&TrustedSetup> for OpeningKey {
+impl From<&TrustedSetup> for VerificationKey {
     fn from(setup: &TrustedSetup) -> Self {
-        setup.to_opening_key(SubgroupCheck::NoCheck)
+        setup.to_verification_key(SubgroupCheck::NoCheck)
     }
 }
 
@@ -97,7 +97,7 @@ impl TrustedSetup {
     /// Panics if any of the points are not in the correct subgroup
     fn validate_trusted_setup(&self) {
         self.to_commit_key(SubgroupCheck::Check);
-        self.to_opening_key(SubgroupCheck::Check);
+        self.to_verification_key(SubgroupCheck::Check);
     }
 
     fn to_commit_key(&self, subgroup_check: SubgroupCheck) -> CommitKey {
@@ -105,14 +105,14 @@ impl TrustedSetup {
         CommitKey::new(points)
     }
 
-    fn to_opening_key(&self, subgroup_check: SubgroupCheck) -> OpeningKey {
+    fn to_verification_key(&self, subgroup_check: SubgroupCheck) -> VerificationKey {
         let g2_points = deserialize_g2_points(&self.g2_monomial, subgroup_check);
         let num_g2_points = g2_points.len();
-        // The setup needs as many g1 elements for the opening key as g2 elements, in order
+        // The setup needs as many g1 elements for the verification key as g2 elements, in order
         // to commit to the remainder/interpolation polynomial.
         let g1_points = deserialize_g1_points(&self.g1_monomial[..num_g2_points], subgroup_check);
 
-        OpeningKey::new(
+        VerificationKey::new(
             g1_points,
             g2_points,
             FIELD_ELEMENTS_PER_CELL,

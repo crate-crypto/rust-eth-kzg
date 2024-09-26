@@ -218,7 +218,7 @@ mod tests {
 
     use super::{FK20Prover, Input};
     use crate::{
-        create_insecure_commit_opening_keys,
+        create_insecure_commit_verification_keys,
         fk20::{cosets::generate_cosets, naive as fk20naive, verifier::FK20Verifier},
         naive as kzgnaive,
     };
@@ -229,7 +229,7 @@ mod tests {
         // This tests that if we create proofs over Input::Data
         // then the first set of cells will contain the data.
 
-        let (commit_key, _) = create_insecure_commit_opening_keys();
+        let (commit_key, _) = create_insecure_commit_verification_keys();
 
         let poly_len = 4096;
         let num_points_to_open = 2 * poly_len;
@@ -253,7 +253,7 @@ mod tests {
 
     #[test]
     fn smoke_test_prove_verify() {
-        let (commit_key, opening_key) = create_insecure_commit_opening_keys();
+        let (commit_key, verification_key) = create_insecure_commit_verification_keys();
 
         let poly_len = 4096;
         let num_points_to_open = 2 * poly_len;
@@ -267,7 +267,7 @@ mod tests {
             num_points_to_open,
             UsePrecomp::No,
         );
-        let fk20_verifier = FK20Verifier::new(opening_key, num_points_to_open, num_cosets);
+        let fk20_verifier = FK20Verifier::new(verification_key, num_points_to_open, num_cosets);
 
         let data: Vec<_> = (0..poly_len).map(|i| Scalar::from(i as u64)).collect();
         let (proofs, cells) = fk20.compute_multi_opening_proofs(Input::Data(data.clone()));
@@ -291,7 +291,7 @@ mod tests {
         let poly_len = 4096;
         let poly: Vec<_> = (0..poly_len).map(|i| -Scalar::from(i as u64)).collect();
         let coset_size = 64;
-        let (commit_key, _) = create_insecure_commit_opening_keys();
+        let (commit_key, _) = create_insecure_commit_verification_keys();
 
         // Compute the proofs and evaluations using naive fk20
         let (expected_proofs, expected_evaluations) =
@@ -319,7 +319,7 @@ mod tests {
     fn test_consistency_between_naive_kzg_naive_fk20() {
         // Setup
         //
-        let (ck, _) = create_insecure_commit_opening_keys();
+        let (ck, _) = create_insecure_commit_verification_keys();
 
         const POLYNOMIAL_LEN: usize = 4096;
         const NUMBER_OF_POINTS_TO_EVALUATE: usize = 2 * POLYNOMIAL_LEN;

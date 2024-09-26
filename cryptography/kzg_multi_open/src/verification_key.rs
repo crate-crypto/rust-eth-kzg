@@ -3,9 +3,9 @@ use bls12_381::{
     G1Point, G1Projective, G2Point, G2Projective, Scalar,
 };
 
-/// Opening Key is used to verify opening proofs made about a committed polynomial.
+/// Verification Key is used to verify opening proofs made about a committed polynomial.
 #[derive(Clone, Debug)]
-pub struct OpeningKey {
+pub struct VerificationKey {
     /// The powers of tau G1 used in the setup
     ///
     /// ie group elements of the form `{ \tau^i G }`
@@ -32,7 +32,7 @@ pub struct OpeningKey {
     pub num_coefficients_in_polynomial: usize,
 }
 
-impl OpeningKey {
+impl VerificationKey {
     pub fn new(
         g1s: Vec<G1Point>,
         g2s: Vec<G2Point>,

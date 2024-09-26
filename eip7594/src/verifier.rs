@@ -13,7 +13,9 @@ use crate::{
 };
 use bls12_381::Scalar;
 use erasure_codes::{BlockErasureIndices, ReedSolomon};
-use kzg_multi_open::{opening_key::OpeningKey, recover_evaluations_in_domain_order, Verifier};
+use kzg_multi_open::{
+    recover_evaluations_in_domain_order, verification_key::VerificationKey, Verifier,
+};
 
 /// The context object that is used to call functions in the verifier API.
 #[derive(Debug)]
@@ -31,10 +33,10 @@ impl Default for VerifierContext {
 
 impl VerifierContext {
     pub fn new(trusted_setup: &TrustedSetup) -> VerifierContext {
-        let opening_key = OpeningKey::from(trusted_setup);
+        let verification_key = VerificationKey::from(trusted_setup);
 
         let multipoint_verifier =
-            Verifier::new(opening_key, FIELD_ELEMENTS_PER_EXT_BLOB, CELLS_PER_EXT_BLOB);
+            Verifier::new(verification_key, FIELD_ELEMENTS_PER_EXT_BLOB, CELLS_PER_EXT_BLOB);
 
         VerifierContext {
             rs: ReedSolomon::new(

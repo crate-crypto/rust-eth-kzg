@@ -1,6 +1,6 @@
 pub mod commit_key;
 mod fk20;
-pub mod opening_key;
+pub mod verification_key;
 
 pub use fk20::{
     recover_evaluations_in_domain_order, CommitmentIndex, CosetIndex, Prover, ProverInput,
@@ -11,11 +11,11 @@ pub use fk20::{
 mod naive;
 
 #[cfg(test)]
-pub(crate) fn create_insecure_commit_opening_keys(
-) -> (commit_key::CommitKey, opening_key::OpeningKey) {
+pub(crate) fn create_insecure_commit_verification_keys(
+) -> (commit_key::CommitKey, verification_key::VerificationKey) {
     use bls12_381::{g1_batch_normalize, g2_batch_normalize, G1Projective, G2Projective, Scalar};
     use commit_key::CommitKey;
-    use opening_key::OpeningKey;
+    use verification_key::VerificationKey;
 
     // A single proof will attest to the opening of 64 points.
     let multi_opening_size = 64;
@@ -42,7 +42,7 @@ pub(crate) fn create_insecure_commit_opening_keys(
     let secret = -Scalar::ONE;
     let mut current_secret_pow = Scalar::ONE;
     let g2_gen = G2Projective::generator();
-    // The setup needs 65 g1 elements for the opening key, in order
+    // The setup needs 65 g1 elements for the verification key, in order
     // to commit to the remainder polynomial.
     for _ in 0..multi_opening_size + 1 {
         g2_points.push(g2_gen * current_secret_pow);
@@ -50,7 +50,7 @@ pub(crate) fn create_insecure_commit_opening_keys(
     }
     let g2_points = g2_batch_normalize(&g2_points);
 
-    let vk = OpeningKey::new(
+    let vk = VerificationKey::new(
         g1_points[0..multi_opening_size + 1].to_vec(),
         g2_points,
         multi_opening_size,

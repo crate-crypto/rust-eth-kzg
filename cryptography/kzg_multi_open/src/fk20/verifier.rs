@@ -1,6 +1,6 @@
 use crate::{
     fk20::cosets::{coset_gens, reverse_bit_order},
-    opening_key::OpeningKey,
+    verification_key::VerificationKey,
 };
 use bls12_381::{
     batch_inversion::batch_inverse, ff::Field, g1_batch_normalize, lincomb::g1_lincomb,
@@ -36,7 +36,7 @@ pub type CommitmentIndex = u64;
 ///  - We only use FK20 to create proofs
 #[derive(Debug)]
 pub struct FK20Verifier {
-    pub opening_key: OpeningKey,
+    pub verification_key: VerificationKey,
     pub coset_gens_bit_reversed: Vec<Scalar>,
     coset_domain: Domain,
     // Pre-computations for the verification algorithm
@@ -52,22 +52,26 @@ pub struct FK20Verifier {
 }
 
 impl FK20Verifier {
-    pub fn new(opening_key: OpeningKey, num_points_to_open: usize, num_cosets: usize) -> Self {
+    pub fn new(
+        verification_key: VerificationKey,
+        num_points_to_open: usize,
+        num_cosets: usize,
+    ) -> Self {
         const BIT_REVERSED: bool = true;
         let coset_gens = coset_gens(num_points_to_open, num_cosets, BIT_REVERSED);
 
         let coset_size = num_points_to_open / num_cosets;
         assert!(
-            opening_key.g2s.len() >= coset_size,
+            verification_key.g2s.len() >= coset_size,
             "need as many g2 points as coset size"
         );
-        let coset_domain = polynomial::domain::Domain::new(opening_key.coset_size);
+        let coset_domain = polynomial::domain::Domain::new(verification_key.coset_size);
 
-        let n = opening_key.coset_size;
+        let n = verification_key.coset_size;
         // [s^n]_2
-        let s_pow_n = G2Prepared::from(G2Point::from(opening_key.g2s[n]));
+        let s_pow_n = G2Prepared::from(G2Point::from(verification_key.g2s[n]));
         // [-1]_2
-        let neg_g2_gen = G2Prepared::from(-opening_key.g2_gen());
+        let neg_g2_gen = G2Prepared::from(-verification_key.g2_gen());
 
         let coset_gens_pow_n = coset_gens
             .iter()
@@ -84,7 +88,7 @@ impl FK20Verifier {
             .collect();
 
         Self {
-            opening_key,
+            verification_key,
             coset_gens_bit_reversed: coset_gens,
             coset_domain,
             s_pow_n,
@@ -146,7 +150,7 @@ impl FK20Verifier {
         // We compute one challenge `r` using fiat-shamir and the rest are powers of `r`
         // This is safe because of the Schwartz-Zippel Lemma.
         let r = compute_fiat_shamir_challenge(
-            &self.opening_key,
+            &self.verification_key,
             deduplicated_commitments,
             commitment_indices,
             bit_reversed_coset_indices,
@@ -215,8 +219,9 @@ impl FK20Verifier {
             random_sum_interpolation_poly =
                 poly_add(random_sum_interpolation_poly, scaled_interpolation_poly);
         }
-        let comm_random_sum_interpolation_poly =
-            self.opening_key.commit_g1(&random_sum_interpolation_poly);
+        let comm_random_sum_interpolation_poly = self
+            .verification_key
+            .commit_g1(&random_sum_interpolation_poly);
 
         let mut weighted_r_powers = Vec::with_capacity(batch_size);
         for (coset_index, r_power) in bit_reversed_coset_indices.iter().zip(r_powers) {
@@ -255,7 +260,7 @@ impl FK20Verifier {
 /// The matching function in the spec is: https://github.com/ethereum/consensus-specs/blob/13ac373a2c284dc66b48ddd2ef0a10537e4e0de6/specs/_features/eip7594/polynomial-commitments-sampling.md#compute_verify_cell_kzg_proof_batch_challenge
 #[allow(clippy::manual_slice_size_calculation)]
 fn compute_fiat_shamir_challenge(
-    opening_key: &OpeningKey,
+    verification_key: &VerificationKey,
     row_commitments: &[G1Point],
     row_indices: &[u64],
     coset_indices: &[u64],
@@ -271,14 +276,14 @@ fn compute_fiat_shamir_challenge(
             + row_commitments.len() * G1Point::compressed_size()
             + row_indices.len() * size_of::<u64>()
             + coset_indices.len() * size_of::<u64>()
-            + coset_evals.len() * opening_key.coset_size * size_of::<Scalar>()
+            + coset_evals.len() * verification_key.coset_size * size_of::<Scalar>()
             + proofs.len() * G1Point::compressed_size();
 
     let mut hash_input: Vec<u8> = Vec::with_capacity(hash_input_size);
 
     hash_input.extend(DOMAIN_SEP.as_bytes());
-    hash_input.extend((opening_key.num_coefficients_in_polynomial as u64).to_be_bytes());
-    hash_input.extend((opening_key.coset_size as u64).to_be_bytes());
+    hash_input.extend((verification_key.num_coefficients_in_polynomial as u64).to_be_bytes());
+    hash_input.extend((verification_key.coset_size as u64).to_be_bytes());
 
     let num_commitments = row_commitments.len() as u64;
     hash_input.extend(num_commitments.to_be_bytes());
