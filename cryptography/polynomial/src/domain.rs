@@ -223,17 +223,27 @@ impl Domain {
     }
 }
 
-/// Computes a FFT of the field elements(scalars).
-///
-/// Note: This is essentially multiple inner products.
-///
-/// TODO: This method is still duplicated below
-fn fft_scalar_inplace(twiddle_factors: &[Scalar], a: &mut [Scalar]) {
+use std::ops::{Add, Mul, Neg, Sub};
+
+trait FFTElement:
+    Sized
+    + Copy
+    + Add<Output = Self>
+    + Sub<Output = Self>
+    + Mul<Scalar, Output = Self>
+    + Neg<Output = Self>
+{
+}
+
+impl FFTElement for Scalar {}
+
+impl FFTElement for G1Projective {}
+
+fn fft_inplace<T: FFTElement>(twiddle_factors: &[Scalar], a: &mut [T]) {
     let n = a.len();
     let log_n = log2_pow2(n);
     assert_eq!(n, 1 << log_n);
 
-    // Bit-reversal permutation
     for k in 0..n {
         let rk = bitreverse(k as u32, log_n) as usize;
         if k < rk {
@@ -246,7 +256,6 @@ fn fft_scalar_inplace(twiddle_factors: &[Scalar], a: &mut [Scalar]) {
         let w_m = twiddle_factors[s as usize];
         for k in (0..n).step_by(2 * m) {
             let mut w = Scalar::ONE;
-
             for j in 0..m {
                 let t = if w == Scalar::ONE {
                     a[k + j + m]
@@ -255,12 +264,9 @@ fn fft_scalar_inplace(twiddle_factors: &[Scalar], a: &mut [Scalar]) {
                 } else {
                     a[k + j + m] * w
                 };
-
                 let u = a[k + j];
-
                 a[k + j] = u + t;
                 a[k + j + m] = u - t;
-
                 w *= w_m;
             }
         }
@@ -268,46 +274,12 @@ fn fft_scalar_inplace(twiddle_factors: &[Scalar], a: &mut [Scalar]) {
     }
 }
 
-/// Computes a FFT of the group elements(points).
-///
-/// Note: This is essentially multiple multi-scalar multiplications.
+fn fft_scalar_inplace(twiddle_factors: &[Scalar], a: &mut [Scalar]) {
+    fft_inplace(twiddle_factors, a);
+}
+
 fn fft_g1_inplace(twiddle_factors: &[Scalar], a: &mut [G1Projective]) {
-    let n = a.len();
-    let log_n = log2_pow2(n);
-    assert_eq!(n, 1 << log_n);
-
-    // Bit-reversal permutation
-    for k in 0..n {
-        let rk = bitreverse(k as u32, log_n) as usize;
-        if k < rk {
-            a.swap(rk, k);
-        }
-    }
-
-    let mut m = 1;
-    for s in 0..log_n {
-        let w_m = twiddle_factors[s as usize];
-        for k in (0..n).step_by(2 * m) {
-            let mut w = Scalar::ONE;
-            for j in 0..m {
-                let t = if w == Scalar::ONE {
-                    a[k + j + m]
-                } else if w == -Scalar::ONE {
-                    -a[k + j + m]
-                } else if a[k + j + m].is_identity().into() {
-                    G1Projective::identity()
-                } else {
-                    a[k + j + m] * w
-                };
-
-                let u = a[k + j];
-                a[k + j] = u + t;
-                a[k + j + m] = u - t;
-                w *= w_m;
-            }
-        }
-        m *= 2;
-    }
+    fft_inplace(twiddle_factors, a);
 }
 
 fn bitreverse(mut n: u32, l: u32) -> u32 {
