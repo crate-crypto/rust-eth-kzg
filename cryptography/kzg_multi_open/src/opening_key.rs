@@ -44,6 +44,8 @@ impl OpeningKey {
         // For all of our purposes and for any useful applications, this will be the case.
         let g2_gen = g2s[0];
 
+        assert!(coset_size < g2s.len(), "The coset size must be less than the amount of g2 elements as the verifier needs to do a g2 msm of size `coset_size`");
+
         Self {
             g1s,
             g2s,
