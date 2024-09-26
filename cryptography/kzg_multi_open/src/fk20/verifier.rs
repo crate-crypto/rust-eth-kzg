@@ -41,8 +41,8 @@ pub struct FK20Verifier {
     coset_domain: Domain,
     // Pre-computations for the verification algorithm
     //
-    // [s^n]_2
-    s_pow_n: G2Prepared,
+    // [tau^n]_2
+    tau_pow_n: G2Prepared,
     // [-1]_2
     neg_g2_gen: G2Prepared,
     //
@@ -68,8 +68,8 @@ impl FK20Verifier {
         let coset_domain = polynomial::domain::Domain::new(verification_key.coset_size);
 
         let n = verification_key.coset_size;
-        // [s^n]_2
-        let s_pow_n = G2Prepared::from(G2Point::from(verification_key.g2s[n]));
+        // [tau^n]_2
+        let tau_pow_n = G2Prepared::from(G2Point::from(verification_key.g2s[n]));
         // [-1]_2
         let neg_g2_gen = G2Prepared::from(-verification_key.g2_gen());
 
@@ -91,7 +91,7 @@ impl FK20Verifier {
             verification_key,
             coset_gens_bit_reversed: coset_gens,
             coset_domain,
-            s_pow_n,
+            tau_pow_n,
             neg_g2_gen,
             coset_gens_pow_n,
             inv_coset_gens_pow_n,
@@ -242,7 +242,7 @@ impl FK20Verifier {
         let pairing_input_g1 = normalized_vectors[1];
 
         let proof_valid = multi_pairings(&[
-            (&random_sum_proofs, &self.s_pow_n),
+            (&random_sum_proofs, &self.tau_pow_n),
             (&pairing_input_g1, &self.neg_g2_gen),
         ]);
         if proof_valid {
