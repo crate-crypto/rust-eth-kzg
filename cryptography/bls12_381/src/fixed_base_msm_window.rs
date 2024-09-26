@@ -1,5 +1,5 @@
 use crate::{
-    batch_add::multi_batch_addition_binary_tree_stride, booth_encoding::get_booth_index,
+    batch_addition::multi_batch_addition_binary_tree_stride, booth_encoding::get_booth_index,
     g1_batch_normalize, G1Projective, Scalar,
 };
 use blstrs::G1Affine;
