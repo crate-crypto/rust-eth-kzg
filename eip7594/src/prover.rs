@@ -1,4 +1,5 @@
 use bls12_381::fixed_base_msm::UsePrecomp;
+use erasure_codes::ReedSolomon;
 use kzg_multi_open::{
     commit_key::CommitKey,
     {Prover, ProverInput},
@@ -6,10 +7,11 @@ use kzg_multi_open::{
 
 use crate::{
     constants::{
-        CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL,
+        CELLS_PER_EXT_BLOB, EXPANSION_FACTOR, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL,
         FIELD_ELEMENTS_PER_EXT_BLOB,
     },
     errors::Error,
+    recovery::recover_polynomial_coeff,
     serialization::{
         deserialize_blob_to_scalars, serialize_cells_and_proofs, serialize_g1_compressed,
     },
@@ -23,6 +25,7 @@ use crate::{
 #[derive(Debug)]
 pub struct ProverContext {
     kzg_multipoint_prover: Prover,
+    rs: ReedSolomon,
 }
 
 impl Default for ProverContext {
@@ -54,8 +57,15 @@ impl ProverContext {
             use_precomp,
         );
 
+        let rs = ReedSolomon::new(
+            FIELD_ELEMENTS_PER_BLOB,
+            EXPANSION_FACTOR,
+            CELLS_PER_EXT_BLOB,
+        );
+
         ProverContext {
             kzg_multipoint_prover,
+            rs,
         }
     }
 }
@@ -117,7 +127,7 @@ impl DASContext {
         with_optional_threadpool!(self, {
             // Recover polynomial
             //
-            let poly_coeff = self.recover_polynomial_coeff(cell_indices, cells)?;
+            let poly_coeff = recover_polynomial_coeff(&self.prover_ctx.rs, cell_indices, cells)?;
 
             // Compute proofs and evaluation sets
             //
