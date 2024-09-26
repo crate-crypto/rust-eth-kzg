@@ -1,4 +1,4 @@
-use crate::{commit_key::CommitKey, opening_key::OpeningKey};
+use crate::{commit_key::CommitKey, verification_key::VerificationKey};
 use bls12_381::{ff::Field, multi_pairings, G1Point, G1Projective, G2Point, G2Prepared, Scalar};
 use polynomial::poly_coeff::{
     lagrange_interpolate, poly_eval, poly_sub, vanishing_poly, PolyCoeff,
@@ -37,13 +37,13 @@ pub(crate) fn compute_multi_opening(
 /// Naively Verifies a multi-point opening proof.
 pub(crate) fn verify_multi_opening(
     quotient_commitment: G1Point,
-    opening_key: &OpeningKey,
+    verification_key: &VerificationKey,
     commitment: G1Point,
     input_points: &[Scalar],
     output_points: &[Scalar],
 ) -> bool {
     _verify_multi_opening_naive(
-        opening_key,
+        verification_key,
         commitment,
         quotient_commitment,
         input_points,
@@ -135,7 +135,7 @@ fn _compute_multi_opening_naive(
 /// holds by using the following pairing equation:
 ///     e([Q(X)]_1, [Z(X)]_2) == e([f(X)]_1 - [I(X)]_1, [1]_2)
 fn _verify_multi_opening_naive(
-    opening_key: &OpeningKey,
+    verification_key: &VerificationKey,
     commitment: G1Point,
     proof: G1Point,
     input_points: &[Scalar],
@@ -149,13 +149,16 @@ fn _verify_multi_opening_naive(
     let r_x = lagrange_interpolate(&coordinates).unwrap();
 
     let vanishing_poly = vanishing_poly(input_points);
-    let comm_vanishing_poly: G2Point = opening_key.commit_g2(&vanishing_poly).into();
+    let comm_vanishing_poly: G2Point = verification_key.commit_g2(&vanishing_poly).into();
 
-    let comm_r_x = opening_key.commit_g1(&r_x);
+    let comm_r_x = verification_key.commit_g1(&r_x);
     let comm_minus_r_x: G1Point = (G1Projective::from(commitment) - comm_r_x).into();
     multi_pairings(&[
         (&proof, &G2Prepared::from(comm_vanishing_poly)),
-        (&comm_minus_r_x, &G2Prepared::from(-opening_key.g2_gen())),
+        (
+            &comm_minus_r_x,
+            &G2Prepared::from(-verification_key.g2_gen()),
+        ),
     ])
 }
 
@@ -163,16 +166,16 @@ fn _verify_multi_opening_naive(
 mod tests {
     use bls12_381::Scalar;
 
-    use crate::create_insecure_commit_opening_keys;
+    use crate::create_insecure_commit_verification_keys;
 
     #[test]
     fn smoke_test_naive_multi_opening() {
-        let (ck, opening_key) = create_insecure_commit_opening_keys();
+        let (ck, verification_key) = create_insecure_commit_verification_keys();
 
         let num_points_to_open = 16;
         let input_points: Vec<_> = (0..num_points_to_open).map(|i| Scalar::from(i)).collect();
 
-        let polynomial: Vec<_> = (0..opening_key.num_coefficients_in_polynomial)
+        let polynomial: Vec<_> = (0..verification_key.num_coefficients_in_polynomial)
             .map(|i| -Scalar::from(i as u64))
             .collect();
         let commitment = ck.commit_g1(&polynomial).into();
@@ -181,7 +184,7 @@ mod tests {
             super::compute_multi_opening(&ck, &polynomial, &input_points);
         let proof_valid = super::verify_multi_opening(
             quotient_commitment,
-            &opening_key,
+            &verification_key,
             commitment,
             &input_points,
             &output_points,
@@ -194,7 +197,7 @@ mod tests {
             .collect();
         let proof_valid = super::verify_multi_opening(
             quotient_commitment,
-            &opening_key,
+            &verification_key,
             commitment,
             &input_points,
             &output_points,

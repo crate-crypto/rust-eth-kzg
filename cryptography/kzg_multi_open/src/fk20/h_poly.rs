@@ -71,7 +71,7 @@ pub(crate) fn take_every_nth<T: Clone + Copy>(list: &[T], n: usize) -> Vec<Vec<T
 #[cfg(test)]
 mod tests {
     use crate::{
-        create_insecure_commit_opening_keys,
+        create_insecure_commit_verification_keys,
         fk20::{
             h_poly::{compute_h_poly_commitments, take_every_nth},
             naive,
@@ -92,7 +92,7 @@ mod tests {
     fn check_consistency_of_toeplitz_h_polys() {
         let poly: Vec<_> = (0..4096).map(|i| -Scalar::from(i)).collect();
         let coset_size: usize = 64;
-        let (commit_key, _) = create_insecure_commit_opening_keys();
+        let (commit_key, _) = create_insecure_commit_verification_keys();
 
         // Compute the commitment to the h_polynomials naively
         //

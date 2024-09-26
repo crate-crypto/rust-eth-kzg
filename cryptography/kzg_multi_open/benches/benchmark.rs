@@ -3,14 +3,14 @@ use bls12_381::{ff::Field, G1Projective};
 use bls12_381::{g1_batch_normalize, g2_batch_normalize, G2Projective, Scalar};
 use crate_crypto_kzg_multi_open_fk20::Verifier;
 use crate_crypto_kzg_multi_open_fk20::{
-    commit_key::CommitKey, opening_key::OpeningKey, Prover, ProverInput,
+    commit_key::CommitKey, verification_key::VerificationKey, Prover, ProverInput,
 };
 use criterion::{criterion_group, criterion_main, Criterion};
 
 pub fn bench_compute_proof_fk20(c: &mut Criterion) {
     const POLYNOMIAL_LEN: usize = 4096;
     let polynomial_4096 = random_scalars(POLYNOMIAL_LEN);
-    let (ck, _) = create_insecure_commit_opening_keys();
+    let (ck, _) = create_insecure_commit_verification_keys();
     const NUMBER_OF_POINTS_TO_EVALUATE: usize = 2 * POLYNOMIAL_LEN;
 
     const NUMBER_OF_POINTS_PER_PROOF: usize = 64;
@@ -40,7 +40,7 @@ pub fn bench_compute_proof_fk20(c: &mut Criterion) {
 pub fn bench_verify_proof_fk20(c: &mut Criterion) {
     const POLYNOMIAL_LEN: usize = 4096;
     let polynomial_4096 = random_scalars(POLYNOMIAL_LEN);
-    let (ck, vk) = create_insecure_commit_opening_keys();
+    let (ck, vk) = create_insecure_commit_verification_keys();
     const NUMBER_OF_POINTS_TO_EVALUATE: usize = 2 * POLYNOMIAL_LEN;
 
     const NUMBER_OF_POINTS_PER_PROOF: usize = 64;
@@ -89,7 +89,7 @@ fn random_scalars(size: usize) -> Vec<Scalar> {
 // We duplicate this to ensure that the version in the src code is only ever compiled with the test feature.
 //
 // This code should never be used outside of benchmarks and tests.
-pub fn create_insecure_commit_opening_keys() -> (CommitKey, OpeningKey) {
+pub fn create_insecure_commit_verification_keys() -> (CommitKey, VerificationKey) {
     // A single proof will attest to the opening of 64 points.
     let multi_opening_size = 64;
 
@@ -115,7 +115,7 @@ pub fn create_insecure_commit_opening_keys() -> (CommitKey, OpeningKey) {
     let secret = -Scalar::ONE;
     let mut current_secret_pow = Scalar::ONE;
     let g2_gen = G2Projective::generator();
-    // The setup needs 65 g1 elements for the opening key, in order
+    // The setup needs 65 g1 elements for the verification key, in order
     // to commit to the remainder polynomial.
     for _ in 0..multi_opening_size + 1 {
         g2_points.push(g2_gen * current_secret_pow);
@@ -123,7 +123,7 @@ pub fn create_insecure_commit_opening_keys() -> (CommitKey, OpeningKey) {
     }
     let g2_points = g2_batch_normalize(&g2_points);
 
-    let vk = OpeningKey::new(
+    let vk = VerificationKey::new(
         g1_points[0..multi_opening_size + 1].to_vec(),
         g2_points,
         multi_opening_size,
