@@ -92,7 +92,7 @@ fn _compute_multi_opening_naive(
     }
 
     // Compute f(x) - I(x) / \prod (x - z_i)
-    // Where I(x) is the polynomial such that r(z_i) = f(z_i) for all z_i
+    // Where I(x) is the polynomial such that I(z_i) = f(z_i) for all z_i
     //
     // We can speed up computation of I(x) by doing an IFFT, given the coset generator, since
     // we know all of the points are of the form k * \omega where \omega is a root of unity
@@ -103,15 +103,15 @@ fn _compute_multi_opening_naive(
         .zip(evaluations.iter())
         .map(|(p, e)| (*p, *e))
         .collect();
-    let r_x = lagrange_interpolate(&coordinates).expect("lagrange interpolation failed");
+    let i_x = lagrange_interpolate(&coordinates).expect("lagrange interpolation failed");
 
-    // Check that the r_x polynomial is correct, it should essentially be the polynomial that
-    // evaluates to f(z_i) = r(z_i)
+    // Check that the i_x polynomial is correct, it should essentially be the polynomial that
+    // evaluates to f(z_i) = I(z_i)
     for (point, evaluation) in points.iter().zip(evaluations.iter()) {
-        assert_eq!(poly_eval(&r_x, point), *evaluation);
+        assert_eq!(poly_eval(&i_x, point), *evaluation);
     }
 
-    let poly_shifted = poly_sub(polynomial.to_vec().clone(), r_x.clone());
+    let poly_shifted = poly_sub(polynomial.to_vec().clone(), i_x.clone());
 
     let mut quotient_poly = poly_shifted.to_vec().clone();
     for point in points.iter() {
@@ -146,17 +146,17 @@ fn _verify_multi_opening_naive(
         .zip(output_points.iter())
         .map(|(p, e)| (*p, *e))
         .collect();
-    let r_x = lagrange_interpolate(&coordinates).unwrap();
+    let i_x = lagrange_interpolate(&coordinates).unwrap();
 
     let vanishing_poly = vanishing_poly(input_points);
     let comm_vanishing_poly: G2Point = verification_key.commit_g2(&vanishing_poly).into();
 
-    let comm_r_x = verification_key.commit_g1(&r_x);
-    let comm_minus_r_x: G1Point = (G1Projective::from(commitment) - comm_r_x).into();
+    let comm_i_x = verification_key.commit_g1(&i_x);
+    let comm_minus_i_x: G1Point = (G1Projective::from(commitment) - comm_i_x).into();
     multi_pairings(&[
         (&proof, &G2Prepared::from(comm_vanishing_poly)),
         (
-            &comm_minus_r_x,
+            &comm_minus_i_x,
             &G2Prepared::from(-verification_key.g2_gen()),
         ),
     ])
