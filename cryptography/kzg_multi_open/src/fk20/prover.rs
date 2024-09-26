@@ -5,7 +5,7 @@ use crate::fk20::h_poly::take_every_nth;
 use bls12_381::fixed_base_msm::UsePrecomp;
 use bls12_381::group::prime::PrimeCurveAffine;
 use bls12_381::{g1_batch_normalize, G1Point, Scalar};
-use polynomial::{domain::Domain, monomial::PolyCoeff};
+use polynomial::{domain::Domain, poly_coeff::PolyCoeff};
 
 use super::h_poly::compute_h_poly_commitments;
 

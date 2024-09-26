@@ -1,6 +1,6 @@
 use crate::fk20::toeplitz::ToeplitzMatrix;
 use bls12_381::{ff::Field, G1Projective, Scalar};
-use polynomial::monomial::PolyCoeff;
+use polynomial::poly_coeff::PolyCoeff;
 
 use super::batch_toeplitz::BatchToeplitzMatrixVecMul;
 

@@ -1,4 +1,4 @@
-use crate::monomial::PolyCoeff;
+use crate::poly_coeff::PolyCoeff;
 use bls12_381::ff::{Field, PrimeField};
 use bls12_381::{
     group::Group,
@@ -330,7 +330,7 @@ fn precompute_twiddle_factors<F: Field>(omega: &F, n: usize) -> Vec<F> {
 
 #[cfg(test)]
 mod tests {
-    use crate::monomial::poly_eval;
+    use crate::poly_coeff::poly_eval;
 
     use super::*;
 

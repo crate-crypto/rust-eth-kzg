@@ -206,7 +206,7 @@ mod tests {
     use std::collections::HashSet;
 
     use bls12_381::Scalar;
-    use polynomial::{domain::Domain, monomial::poly_eval};
+    use polynomial::{domain::Domain, poly_coeff::poly_eval};
 
     use crate::fk20::{
         batch_toeplitz::transpose,

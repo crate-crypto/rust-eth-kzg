@@ -1,7 +1,7 @@
 use crate::commit_key::CommitKey;
 use bls12_381::{g1_batch_normalize, G1Point, Scalar};
 use polynomial::domain::Domain;
-use polynomial::monomial::PolyCoeff;
+use polynomial::poly_coeff::PolyCoeff;
 
 use super::cosets::reverse_bit_order;
 
