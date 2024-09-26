@@ -141,7 +141,7 @@ impl Domain {
         points
     }
 
-    /// Computes a DFT for the group elements(elliptic curve points) using the roots in the domain.
+    /// Computes a FFT for the group elements(elliptic curve points) using the roots in the domain.
     ///
     /// Note: Thinking about an FFT as multiple inner products between powers of the elements
     /// in the domain and the input polynomial makes this easier to visualize.
@@ -155,12 +155,12 @@ impl Domain {
         points
     }
 
-    /// Computes an IDFT for the group elements(elliptic curve points) using the roots in the domain.
+    /// Computes an IFFT for the group elements(elliptic curve points) using the roots in the domain.
     pub fn ifft_g1(&self, points: Vec<G1Projective>) -> Vec<G1Projective> {
         self.ifft_g1_take_n(points, None)
     }
 
-    /// Computes an IDFT for the group elements(elliptic curve points) using the roots in the domain.
+    /// Computes an IFFT for the group elements(elliptic curve points) using the roots in the domain.
     ///
     /// `n`:  indicates how many points we would like to return. Passing `None` will return be equivalent
     /// to compute an ifft_g1 and returning as many elements as there are in the domain.
@@ -223,7 +223,7 @@ impl Domain {
     }
 }
 
-/// Computes a DFT of the field elements(scalars).
+/// Computes a FFT of the field elements(scalars).
 ///
 /// Note: This is essentially multiple inner products.
 ///
@@ -268,7 +268,7 @@ fn fft_scalar_inplace(twiddle_factors: &[Scalar], a: &mut [Scalar]) {
     }
 }
 
-/// Computes a DFT of the group elements(points).
+/// Computes a FFT of the group elements(points).
 ///
 /// Note: This is essentially multiple multi-scalar multiplications.
 fn fft_g1_inplace(twiddle_factors: &[Scalar], a: &mut [G1Projective]) {
@@ -403,15 +403,15 @@ mod tests {
             .map(|_| G1Projective::random(&mut rand::thread_rng()))
             .collect();
 
-        let dft_points = domain.fft_g1(points.clone());
+        let fft_points = domain.fft_g1(points.clone());
         for (i, root) in domain.roots.iter().enumerate() {
             let powers = powers_of(root, points.len());
 
             let expected = naive_msm(&points, &powers);
-            let got = dft_points[i];
+            let got = fft_points[i];
             assert_eq!(expected, got);
         }
 
-        assert_eq!(domain.ifft_g1(dft_points), points);
+        assert_eq!(domain.ifft_g1(fft_points), points);
     }
 }
