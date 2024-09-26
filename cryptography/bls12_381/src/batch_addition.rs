@@ -202,7 +202,7 @@ pub fn multi_batch_addition_binary_tree_stride(
 #[cfg(test)]
 mod tests {
 
-    use crate::batch_add::{
+    use crate::batch_addition::{
         batch_addition_binary_tree_stride, multi_batch_addition_binary_tree_stride,
     };
 
