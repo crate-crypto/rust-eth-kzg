@@ -42,7 +42,7 @@ pub fn poly_sub(a: PolyCoeff, b: PolyCoeff) -> PolyCoeff {
 /// Given a polynomial `f(x)` and a scalar `z`. This method will compute
 /// the result of `f(z)` and return the result.
 pub fn poly_eval(poly: &PolyCoeff, value: &Scalar) -> Scalar {
-    let mut result = Scalar::from(0u64);
+    let mut result = Scalar::ZERO;
     for coeff in poly.iter().rev() {
         result = result * value + coeff;
     }
@@ -66,9 +66,9 @@ pub fn poly_mul(a: PolyCoeff, b: PolyCoeff) -> PolyCoeff {
 ///
 /// Example: vanishing_poly([1, 2, 3]) = (x - 1)(x - 2)(x - 3)
 pub fn vanishing_poly(roots: &[Scalar]) -> PolyCoeff {
-    let mut poly = vec![Scalar::from(1u64)];
+    let mut poly = vec![Scalar::ONE];
     for root in roots {
-        poly = poly_mul(poly, vec![-root, Scalar::from(1u64)]);
+        poly = poly_mul(poly, vec![-root, Scalar::ONE]);
     }
     poly
 }
@@ -89,13 +89,13 @@ pub fn lagrange_interpolate(points: &[(Scalar, Scalar)]) -> Option<Vec<Scalar>> 
         max_degree_plus_one >= 2,
         "should interpolate for degree >= 1"
     );
-    let mut coeffs = vec![Scalar::from(0u64); max_degree_plus_one];
+    let mut coeffs = vec![Scalar::ZERO; max_degree_plus_one];
     // external iterator
     for (k, p_k) in points.iter().enumerate() {
         let (x_k, y_k) = p_k;
         // coeffs from 0 to max_degree - 1
-        let mut contribution = vec![Scalar::from(0u64); max_degree_plus_one];
-        let mut denominator = Scalar::from(1u64);
+        let mut contribution = vec![Scalar::ZERO; max_degree_plus_one];
+        let mut denominator = Scalar::ONE;
         let mut max_contribution_degree = 0;
         // internal iterator
         for (j, p_j) in points.iter().enumerate() {
@@ -127,7 +127,7 @@ pub fn lagrange_interpolate(points: &[(Scalar, Scalar)]) -> Option<Vec<Scalar>> 
                     })
                     .collect();
 
-                contribution.insert(0, Scalar::from(0u64));
+                contribution.insert(0, Scalar::ZERO);
                 contribution.truncate(max_degree_plus_one);
 
                 assert_eq!(mul_by_minus_x_j.len(), max_degree_plus_one);
@@ -161,7 +161,7 @@ mod tests {
     use bls12_381::ff::Field;
 
     fn naive_poly_eval(poly: &PolyCoeff, value: &Scalar) -> Scalar {
-        let mut result = Scalar::from(0u64);
+        let mut result = Scalar::ZERO;
         for (i, coeff) in poly.iter().enumerate() {
             result += coeff * value.pow_vartime(&[i as u64]);
         }
@@ -241,7 +241,7 @@ mod tests {
 
         // Check that this polynomial evaluates to zero on the roots
         for root in roots.iter() {
-            assert_eq!(poly_eval(&poly, &root), Scalar::from(0u64));
+            assert_eq!(poly_eval(&poly, &root), Scalar::ZERO);
         }
     }
 

@@ -207,9 +207,11 @@ struct DenseMatrix {
 impl DenseMatrix {
     /// Converts a `ToeplitzMatrix` into a `DenseMatrix`
     fn from_toeplitz(toeplitz: ToeplitzMatrix) -> DenseMatrix {
+        use bls12_381::ff::Field;
+
         let rows = toeplitz.col.len();
         let cols = toeplitz.row.len();
-        let mut matrix = vec![vec![Scalar::from(0u64); toeplitz.col.len()]; toeplitz.row.len()];
+        let mut matrix = vec![vec![Scalar::ZERO; toeplitz.col.len()]; toeplitz.row.len()];
 
         for i in 0..rows {
             for j in 0..cols {

@@ -390,7 +390,7 @@ mod tests {
         }
         fn powers_of(scalar: &Scalar, max_degree: usize) -> Vec<Scalar> {
             let mut powers = Vec::new();
-            powers.push(Scalar::from(1u64));
+            powers.push(Scalar::ONE);
             for i in 1..=max_degree {
                 powers.push(powers[i - 1] * scalar);
             }

@@ -450,7 +450,7 @@ mod tests {
             // zero out `num_erasures` amount of evaluations to simulate erasures
             let mut missing_indices = Vec::new();
             for index in 0..num_erasures {
-                codewords_with_erasures[index] = Scalar::from(0);
+                codewords_with_erasures[index] = Scalar::ZERO;
                 missing_indices.push(index);
             }
 
@@ -490,7 +490,7 @@ mod tests {
             let mut missing_block_indices = Vec::new();
             for index in 0..num_block_erasures {
                 for block in &mut blocks {
-                    block[index] = Scalar::from(0)
+                    block[index] = Scalar::ZERO
                 }
                 missing_block_indices.push(index);
             }
