@@ -6,6 +6,7 @@ use erasure_codes::errors::RSError;
 pub enum Error {
     Prover(ProverError),
     Verifier(VerifierError),
+    Recovery(RecoveryError),
     Serialization(SerializationError),
 }
 
@@ -38,35 +39,56 @@ impl From<SerializationError> for Error {
         Error::Serialization(value)
     }
 }
+impl From<RecoveryError> for Error {
+    fn from(value: RecoveryError) -> Self {
+        Error::Recovery(value)
+    }
+}
 
 /// Errors that can occur while calling a method in the Prover API
 #[derive(Debug)]
 pub enum ProverError {
-    RecoveryFailure(VerifierError),
+    RecoveryFailure(RecoveryError),
 }
 
-impl From<VerifierError> for ProverError {
-    fn from(value: VerifierError) -> Self {
+impl From<RecoveryError> for ProverError {
+    fn from(value: RecoveryError) -> Self {
         ProverError::RecoveryFailure(value)
+    }
+}
+
+#[derive(Debug)]
+/// Errors that can occur while calling the recovery procedure
+pub enum RecoveryError {
+    NotEnoughCellsToReconstruct {
+        num_cells_received: usize,
+        min_cells_needed: usize,
+    },
+    NumCellIndicesNotEqualToNumCells {
+        num_cell_indices: usize,
+        num_cells: usize,
+    },
+    TooManyCellsReceived {
+        num_cells_received: usize,
+        max_cells_needed: usize,
+    },
+    CellIndexOutOfRange {
+        cell_index: CellIndex,
+        max_number_of_cells: u64,
+    },
+    CellIndicesNotUnique,
+    ReedSolomon(RSError),
+}
+
+impl From<RSError> for RecoveryError {
+    fn from(value: RSError) -> Self {
+        RecoveryError::ReedSolomon(value)
     }
 }
 
 /// Errors that can occur while calling a method in the Verifier API
 #[derive(Debug)]
 pub enum VerifierError {
-    NumCellIndicesNotEqualToNumCells {
-        num_cell_indices: usize,
-        num_cells: usize,
-    },
-    CellIndicesNotUnique,
-    NotEnoughCellsToReconstruct {
-        num_cells_received: usize,
-        min_cells_needed: usize,
-    },
-    TooManyCellsReceived {
-        num_cells_received: usize,
-        max_cells_needed: usize,
-    },
     CellIndexOutOfRange {
         cell_index: CellIndex,
         max_number_of_cells: u64,
@@ -82,18 +104,11 @@ pub enum VerifierError {
         cells_len: usize,
         proofs_len: usize,
     },
-    ReedSolomon(RSError),
     FK20(kzg_multi_open::VerifierError),
     PolynomialHasInvalidLength {
         num_coefficients: usize,
         expected_num_coefficients: usize,
     },
-}
-
-impl From<RSError> for VerifierError {
-    fn from(value: RSError) -> Self {
-        VerifierError::ReedSolomon(value)
-    }
 }
 
 impl From<kzg_multi_open::VerifierError> for VerifierError {
