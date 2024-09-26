@@ -6,7 +6,7 @@ use bls12_381::{
     batch_inversion::batch_inverse, ff::Field, g1_batch_normalize, lincomb::g1_lincomb,
     multi_pairings, reduce_bytes_to_scalar_bias, G1Point, G2Point, G2Prepared, Scalar,
 };
-use polynomial::{domain::Domain, monomial::poly_add};
+use polynomial::{domain::Domain, poly_coeff::poly_add};
 use sha2::{Digest, Sha256};
 use std::mem::size_of;
 

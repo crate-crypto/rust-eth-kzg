@@ -1,7 +1,7 @@
 use bls12_381::{batch_inversion::batch_inverse, ff::Field, Scalar};
 
 use crate::errors::RSError;
-use polynomial::{domain::Domain, monomial::vanishing_poly};
+use polynomial::{domain::Domain, poly_coeff::vanishing_poly};
 
 /// ErasurePattern is an abstraction created to capture the idea
 /// that erasures do not appear in completely random locations.

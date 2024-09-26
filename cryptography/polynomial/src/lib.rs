@@ -1,2 +1,2 @@
 pub mod domain;
-pub mod monomial;
+pub mod poly_coeff;
