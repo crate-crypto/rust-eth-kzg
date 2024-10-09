@@ -1,3 +1,4 @@
+use crate::coset_fft::CosetFFT;
 use crate::fft::{fft_g1_inplace, fft_scalar_inplace, precompute_twiddle_factors};
 use crate::poly_coeff::PolyCoeff;
 use bls12_381::ff::{Field, PrimeField};
@@ -127,7 +128,7 @@ impl Domain {
 
     /// Evaluates a polynomial at the points in the domain multiplied by a coset
     /// generator `g`.
-    pub fn coset_fft_scalars(&self, mut points: PolyCoeff) -> Vec<Scalar> {
+    pub fn coset_fft_scalars(&self, mut points: PolyCoeff, coset: &CosetFFT) -> Vec<Scalar> {
         // Pad the polynomial with zeroes, so that it is the same size as the
         // domain.
         points.resize(self.size(), Scalar::ZERO);
@@ -135,7 +136,7 @@ impl Domain {
         let mut coset_scale = Scalar::ONE;
         for point in points.iter_mut() {
             *point *= coset_scale;
-            coset_scale *= self.coset_generator;
+            coset_scale *= coset.generator;
         }
         fft_scalar_inplace(&self.twiddle_factors, &mut points);
 
@@ -212,13 +213,13 @@ impl Domain {
     }
 
     /// Interpolates a polynomial over the coset of a domain
-    pub fn coset_ifft_scalars(&self, points: Vec<Scalar>) -> Vec<Scalar> {
+    pub fn coset_ifft_scalars(&self, points: Vec<Scalar>, coset: &CosetFFT) -> Vec<Scalar> {
         let mut coset_coeffs = self.ifft_scalars(points);
 
         let mut coset_scale = Scalar::ONE;
         for element in coset_coeffs.iter_mut() {
             *element *= coset_scale;
-            coset_scale *= self.coset_generator_inv;
+            coset_scale *= coset.generator_inv;
         }
         coset_coeffs
     }
@@ -268,9 +269,9 @@ mod tests {
         let polynomial: Vec<_> = (0..32).map(|i| -Scalar::from(i)).collect();
 
         let domain = Domain::new(32);
-
-        let coset_evals = domain.coset_fft_scalars(polynomial.clone());
-        let got_poly = domain.coset_ifft_scalars(coset_evals);
+        let coset_fft = CosetFFT::new(Scalar::MULTIPLICATIVE_GENERATOR);
+        let coset_evals = domain.coset_fft_scalars(polynomial.clone(), &coset_fft);
+        let got_poly = domain.coset_ifft_scalars(coset_evals, &coset_fft);
 
         assert_eq!(got_poly, polynomial);
     }
