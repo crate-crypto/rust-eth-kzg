@@ -3,10 +3,10 @@ use crate::{
     verification_key::VerificationKey,
 };
 use bls12_381::{
-    batch_inversion::batch_inverse, ff::Field, g1_batch_normalize, lincomb::g1_lincomb,
-    multi_pairings, reduce_bytes_to_scalar_bias, G1Point, G2Point, G2Prepared, Scalar,
+    ff::Field, g1_batch_normalize, lincomb::g1_lincomb, multi_pairings,
+    reduce_bytes_to_scalar_bias, G1Point, G2Point, G2Prepared, Scalar,
 };
-use polynomial::{domain::Domain, poly_coeff::poly_add};
+use polynomial::{domain::Domain, poly_coeff::poly_add, CosetFFT};
 use sha2::{Digest, Sha256};
 use std::mem::size_of;
 
@@ -45,10 +45,12 @@ pub struct FK20Verifier {
     tau_pow_n: G2Prepared,
     // [-1]_2
     neg_g2_gen: G2Prepared,
-    //
-    pub coset_gens_pow_n: Vec<Scalar>,
-    //
-    inv_coset_gens_pow_n: Vec<Vec<Scalar>>,
+    // Bit reversed vector of the coset generators raised
+    // to the power of `n`, needed to verify a multi opening proof.
+    pub bit_reversed_coset_gens_pow_n: Vec<Scalar>,
+    // Bit reversed vector of the coset generators that
+    // we will use to compute an inverse coset IFFT.
+    bit_reversed_coset_fft_gens: Vec<CosetFFT>,
 }
 
 impl FK20Verifier {
@@ -78,14 +80,7 @@ impl FK20Verifier {
             .map(|&coset_gen| coset_gen.pow_vartime([n as u64]))
             .collect();
 
-        let inv_coset_gens_pow_n: Vec<_> = coset_gens
-            .iter()
-            .map(|&coset_gen| {
-                let mut inv_coset_gen_powers = compute_powers(coset_gen, n);
-                batch_inverse(&mut inv_coset_gen_powers); // The coset generators are all roots of unity, so none of them will be zero
-                inv_coset_gen_powers
-            })
-            .collect();
+        let coset_fft_gens: Vec<_> = coset_gens.iter().map(|gen| CosetFFT::new(*gen)).collect();
 
         Self {
             verification_key,
@@ -93,8 +88,8 @@ impl FK20Verifier {
             coset_domain,
             tau_pow_n,
             neg_g2_gen,
-            coset_gens_pow_n,
-            inv_coset_gens_pow_n,
+            bit_reversed_coset_gens_pow_n: coset_gens_pow_n,
+            bit_reversed_coset_fft_gens: coset_fft_gens,
         }
     }
 
@@ -145,7 +140,9 @@ impl FK20Verifier {
         // The batch size corresponds to how many openings, we ultimately want to be verifying.
         let batch_size = bit_reversed_coset_indices.len();
 
-        // Compute random challenges for batching the opening together.
+        // 1. Compute random challenges for batching the opening together.
+        //
+        // From hereon out, `random` will refer to using these random challenges.
         //
         // We compute one challenge `r` using fiat-shamir and the rest are powers of `r`
         // This is safe because of the Schwartz-Zippel Lemma.
@@ -160,14 +157,28 @@ impl FK20Verifier {
         let r_powers = compute_powers(r, batch_size);
         let num_unique_commitments = deduplicated_commitments.len();
 
-        // First compute a random linear combination of the proofs
+        // 2. Compute a random linear combination of the proofs
         //
         // Safety: This unwrap can never trigger because `r_powers.len()` is `batch_size`
         // and `bit_reversed_proofs.len()` will equal `batch_size` since we must have a proof for each item in the batch.
         let comm_random_sum_proofs = g1_lincomb(bit_reversed_proofs, &r_powers)
             .expect("number of proofs and number of r_powers should be the same");
 
-        // Now compute a random linear combination of the commitments
+        // 3. Compute a weighted random linear combination of the proofs
+        //
+        // Where the `weight` refers to the coset_generators to the power of `n`
+        let mut weighted_r_powers = Vec::with_capacity(batch_size);
+        for (bit_reversed_coset_index, r_power) in bit_reversed_coset_indices.iter().zip(&r_powers)
+        {
+            let coset_gen_pow_n =
+                self.bit_reversed_coset_gens_pow_n[*bit_reversed_coset_index as usize];
+            weighted_r_powers.push(r_power * coset_gen_pow_n);
+        }
+        // Safety: This should never panic since `bit_reversed_proofs.len()` is equal to the batch_size.
+        let random_weighted_sum_proofs = g1_lincomb(bit_reversed_proofs, &weighted_r_powers)
+            .expect("number of proofs and number of weighted_r_powers should be the same");
+
+        // 4. Compute a random linear combination of the commitments
         //
         // For each commitment_index/commitment, we add its contribution of `r` to
         // the associated weight for that commitment.
@@ -181,10 +192,9 @@ impl FK20Verifier {
         //
         // The extra field additions are being calculated in the for loop below.
         let mut weights = vec![Scalar::ZERO; num_unique_commitments];
-        for (commitment_index, r_power) in commitment_indices.iter().zip(r_powers.iter()) {
+        for (commitment_index, r_power) in commitment_indices.iter().zip(&r_powers) {
             weights[*commitment_index as usize] += r_power;
         }
-
         // Safety: This unwrap will never trigger because the length of `weights` has been initialized
         // to be `deduplicated_commitments.len()`.
         //
@@ -192,51 +202,26 @@ impl FK20Verifier {
         let random_sum_commitments = g1_lincomb(deduplicated_commitments, &weights)
             .expect("number of row_commitments and number of weights should be the same");
 
-        // Linearly combine the interpolation polynomials using the same randomness `r`
-        let mut random_sum_interpolation_poly = Vec::new();
-        let coset_evals = bit_reversed_coset_evals.to_vec();
-        for (k, mut coset_eval) in coset_evals.into_iter().enumerate() {
-            // Reverse the order, so it matches the fft domain
-            reverse_bit_order(&mut coset_eval);
-
-            // Compute the interpolation polynomial
-            let ifft_scalars = self.coset_domain.ifft_scalars(coset_eval);
-            let inv_coset_gen_pow_n =
-                &self.inv_coset_gens_pow_n[bit_reversed_coset_indices[k] as usize];
-            let ifft_scalars: Vec<_> = ifft_scalars
-                .into_iter()
-                .zip(inv_coset_gen_pow_n)
-                .map(|(scalar, inv_h_k_pow)| scalar * inv_h_k_pow)
-                .collect();
-
-            // Scale the interpolation polynomial by the challenge
-            let scale_factor = r_powers[k];
-            let scaled_interpolation_poly = ifft_scalars
-                .into_iter()
-                .map(|coeff| coeff * scale_factor)
-                .collect::<Vec<_>>();
-
-            random_sum_interpolation_poly =
-                poly_add(random_sum_interpolation_poly, scaled_interpolation_poly);
-        }
+        // 5. Compute random linear combination of the interpolation polynomials
+        let random_sum_interpolation_poly = compute_sum_interpolation_poly(
+            &self.coset_domain,
+            &self.bit_reversed_coset_fft_gens,
+            &bit_reversed_coset_evals,
+            &bit_reversed_coset_indices,
+            &r_powers,
+        );
         let comm_random_sum_interpolation_poly = self
             .verification_key
             .commit_g1(&random_sum_interpolation_poly);
 
-        let mut weighted_r_powers = Vec::with_capacity(batch_size);
-        for (coset_index, r_power) in bit_reversed_coset_indices.iter().zip(r_powers) {
-            let coset_gen_pow_n = self.coset_gens_pow_n[*coset_index as usize];
-            weighted_r_powers.push(r_power * coset_gen_pow_n);
-        }
-
-        // Safety: This should never panic since `bit_reversed_proofs.len()` is equal to the batch_size.
-        let random_weighted_sum_proofs = g1_lincomb(bit_reversed_proofs, &weighted_r_powers)
-            .expect("number of proofs and number of weighted_r_powers should be the same");
-
-        // This is `rl` in the specs.
+        // 6. Compute pairing check
+        //
+        // Note: This variable is `rl` in the specs.
         let pairing_input_g1 = (random_sum_commitments - comm_random_sum_interpolation_poly)
             + random_weighted_sum_proofs;
 
+        // The pairings function requires elements in affine representation, so we must batch normalize the
+        // pairing inputs.
         let normalized_vectors = g1_batch_normalize(&[comm_random_sum_proofs, pairing_input_g1]);
         let random_sum_proofs = normalized_vectors[0];
         let pairing_input_g1 = normalized_vectors[1];
@@ -335,6 +320,46 @@ fn compute_powers(value: Scalar, num_elements: usize) -> Vec<Scalar> {
     }
 
     powers
+}
+
+/// Computes `k` Interpolation polynomials and then combines
+/// them linearly using `k` values from `r_powers`.
+/// The computed value is I(X) = I_0(x) + r * I_1(x) + ... + r^{n-1} * I_{n-1}(x)
+fn compute_sum_interpolation_poly(
+    coset_domain: &Domain,
+    bit_reversed_coset_fft_gens: &[CosetFFT],
+    bit_reversed_coset_evals: &[Vec<Scalar>],
+    bit_reversed_coset_indices: &[CosetIndex],
+    r_powers: &[Scalar],
+) -> Vec<Scalar> {
+    let mut random_sum_interpolation_poly = Vec::new();
+
+    for ((mut bit_reversed_coset_eval, bit_reversed_coset_index), scale_factor) in
+        bit_reversed_coset_evals
+            .to_vec()
+            .into_iter()
+            .zip(bit_reversed_coset_indices)
+            .zip(r_powers)
+    {
+        // Reverse the order, so it matches the fft domain
+        reverse_bit_order(&mut bit_reversed_coset_eval);
+        let coset_eval = bit_reversed_coset_eval; // variable rename since we un-bit reversed the vector
+
+        // Compute the interpolation polynomial using a coset fft
+        let coset_gen = &bit_reversed_coset_fft_gens[*bit_reversed_coset_index as usize];
+        let ifft_scalars = coset_domain.coset_ifft_scalars(coset_eval, coset_gen);
+
+        // Scale the interpolation polynomial by the challenge
+        let scaled_interpolation_poly = ifft_scalars
+            .into_iter()
+            .map(|coeff| coeff * scale_factor)
+            .collect::<Vec<_>>();
+
+        random_sum_interpolation_poly =
+            poly_add(random_sum_interpolation_poly, scaled_interpolation_poly);
+    }
+
+    random_sum_interpolation_poly
 }
 
 #[cfg(test)]
