@@ -314,6 +314,8 @@ fn compute_powers(value: Scalar, num_elements: usize) -> Vec<Scalar> {
     powers
 }
 
+/// Computes `k` Interpolation polynomials and then combines
+/// them linearly using `k` values from `r_powers`.
 fn compute_sum_interpolation_poly(
     coset_domain: &Domain,
     bit_reversed_coset_fft_gens: &[CosetFFT],
