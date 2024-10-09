@@ -164,7 +164,7 @@ impl FK20Verifier {
         let comm_random_sum_proofs = g1_lincomb(bit_reversed_proofs, &r_powers)
             .expect("number of proofs and number of r_powers should be the same");
 
-        // 2. Compute a weighted random linear combination of the proofs
+        // 3. Compute a weighted random linear combination of the proofs
         //
         // Where the `weight` refers to the coset_generators to the power of `n`
         let mut weighted_r_powers = Vec::with_capacity(batch_size);
@@ -178,7 +178,7 @@ impl FK20Verifier {
         let random_weighted_sum_proofs = g1_lincomb(bit_reversed_proofs, &weighted_r_powers)
             .expect("number of proofs and number of weighted_r_powers should be the same");
 
-        // 3. Compute a random linear combination of the commitments
+        // 4. Compute a random linear combination of the commitments
         //
         // For each commitment_index/commitment, we add its contribution of `r` to
         // the associated weight for that commitment.
@@ -202,7 +202,7 @@ impl FK20Verifier {
         let random_sum_commitments = g1_lincomb(deduplicated_commitments, &weights)
             .expect("number of row_commitments and number of weights should be the same");
 
-        // 4. Compute random linear combination of the interpolation polynomials
+        // 5. Compute random linear combination of the interpolation polynomials
         let random_sum_interpolation_poly = compute_sum_interpolation_poly(
             &self.coset_domain,
             &self.bit_reversed_coset_fft_gens,
@@ -214,7 +214,7 @@ impl FK20Verifier {
             .verification_key
             .commit_g1(&random_sum_interpolation_poly);
 
-        // 5. Compute pairing check
+        // 6. Compute pairing check
         //
         // Note: This variable is `rl` in the specs.
         let pairing_input_g1 = (random_sum_commitments - comm_random_sum_interpolation_poly)
