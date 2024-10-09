@@ -1,19 +1,30 @@
-use bls12_381::{ff::Field, G1Projective, Scalar};
+use bls12_381::{ff::Field, group::Group, G1Projective, Scalar};
 use std::ops::{Add, Mul, Neg, Sub};
 
 trait FFTElement:
     Sized
     + Copy
+    + PartialEq
+    + Eq
     + Add<Output = Self>
     + Sub<Output = Self>
     + Mul<Scalar, Output = Self>
     + Neg<Output = Self>
 {
+    fn zero() -> Self;
 }
 
-impl FFTElement for Scalar {}
+impl FFTElement for Scalar {
+    fn zero() -> Self {
+        Scalar::ZERO
+    }
+}
 
-impl FFTElement for G1Projective {}
+impl FFTElement for G1Projective {
+    fn zero() -> Self {
+        G1Projective::identity()
+    }
+}
 
 fn fft_inplace<T: FFTElement>(twiddle_factors: &[Scalar], a: &mut [T]) {
     let n = a.len();
@@ -37,6 +48,8 @@ fn fft_inplace<T: FFTElement>(twiddle_factors: &[Scalar], a: &mut [T]) {
                     a[k + j + m]
                 } else if w == -Scalar::ONE {
                     -a[k + j + m]
+                } else if a[k + j + m] == T::zero() {
+                    T::zero()
                 } else {
                     a[k + j + m] * w
                 };
