@@ -45,10 +45,12 @@ pub struct FK20Verifier {
     tau_pow_n: G2Prepared,
     // [-1]_2
     neg_g2_gen: G2Prepared,
-    //
-    pub coset_gens_pow_n: Vec<Scalar>,
-    //
-    coset_fft_gens: Vec<CosetFFT>,
+    // Bit reversed vector of the coset generators raised
+    // to the power of `n`, needed to verify a multi opening proof.
+    pub bit_reversed_coset_gens_pow_n: Vec<Scalar>,
+    // Bit reversed vector of the coset generators that
+    // we will use to compute an inverse coset IFFT.
+    bit_reversed_coset_fft_gens: Vec<CosetFFT>,
 }
 
 impl FK20Verifier {
@@ -86,8 +88,8 @@ impl FK20Verifier {
             coset_domain,
             tau_pow_n,
             neg_g2_gen,
-            coset_gens_pow_n,
-            coset_fft_gens,
+            bit_reversed_coset_gens_pow_n: coset_gens_pow_n,
+            bit_reversed_coset_fft_gens: coset_fft_gens,
         }
     }
 
@@ -188,7 +190,7 @@ impl FK20Verifier {
         // Linearly combine the interpolation polynomials using the same randomness `r`
         let random_sum_interpolation_poly = compute_sum_interpolation_poly(
             &self.coset_domain,
-            &self.coset_fft_gens,
+            &self.bit_reversed_coset_fft_gens,
             &bit_reversed_coset_evals,
             &bit_reversed_coset_indices,
             &r_powers,
@@ -198,8 +200,9 @@ impl FK20Verifier {
             .commit_g1(&random_sum_interpolation_poly);
 
         let mut weighted_r_powers = Vec::with_capacity(batch_size);
-        for (coset_index, r_power) in bit_reversed_coset_indices.iter().zip(r_powers) {
-            let coset_gen_pow_n = self.coset_gens_pow_n[*coset_index as usize];
+        for (bit_reversed_coset_index, r_power) in bit_reversed_coset_indices.iter().zip(r_powers) {
+            let coset_gen_pow_n =
+                self.bit_reversed_coset_gens_pow_n[*bit_reversed_coset_index as usize];
             weighted_r_powers.push(r_power * coset_gen_pow_n);
         }
 
@@ -313,29 +316,29 @@ fn compute_powers(value: Scalar, num_elements: usize) -> Vec<Scalar> {
 
 fn compute_sum_interpolation_poly(
     coset_domain: &Domain,
-    coset_fft_gens: &[CosetFFT],
+    bit_reversed_coset_fft_gens: &[CosetFFT],
     bit_reversed_coset_evals: &[Vec<Scalar>],
     bit_reversed_coset_indices: &[CosetIndex],
     r_powers: &[Scalar],
 ) -> Vec<Scalar> {
     let mut random_sum_interpolation_poly = Vec::new();
-    let coset_evals = bit_reversed_coset_evals.to_vec();
-    for (k, mut coset_eval) in coset_evals.into_iter().enumerate() {
-        // Reverse the order, so it matches the fft domain
-        reverse_bit_order(&mut coset_eval);
 
-        // Compute the interpolation polynomial
-        let index = bit_reversed_coset_indices[k] as usize;
-        let ifft_scalars = coset_domain.coset_ifft_scalars(coset_eval, &coset_fft_gens[index]);
-        // let inv_coset_gen_pow_n = &inv_coset_gens_pow_n[bit_reversed_coset_indices[k] as usize];
-        // let ifft_scalars: Vec<_> = ifft_scalars
-        //     .into_iter()
-        //     .zip(inv_coset_gen_pow_n)
-        //     .map(|(scalar, inv_h_k_pow)| scalar * inv_h_k_pow)
-        //     .collect();
+    for ((mut bit_reversed_coset_eval, bit_reversed_coset_index), scale_factor) in
+        bit_reversed_coset_evals
+            .to_vec()
+            .into_iter()
+            .zip(bit_reversed_coset_indices)
+            .zip(r_powers)
+    {
+        // Reverse the order, so it matches the fft domain
+        reverse_bit_order(&mut bit_reversed_coset_eval);
+        let coset_eval = bit_reversed_coset_eval; // variable rename since we un-bit reversed the vector
+
+        // Compute the interpolation polynomial using a coset fft
+        let coset_gen = &bit_reversed_coset_fft_gens[*bit_reversed_coset_index as usize];
+        let ifft_scalars = coset_domain.coset_ifft_scalars(coset_eval, coset_gen);
 
         // Scale the interpolation polynomial by the challenge
-        let scale_factor = r_powers[k];
         let scaled_interpolation_poly = ifft_scalars
             .into_iter()
             .map(|coeff| coeff * scale_factor)
