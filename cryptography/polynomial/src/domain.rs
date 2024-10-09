@@ -24,11 +24,6 @@ pub struct Domain {
     /// Inverse of the generator for the domain
     /// This is cached for IFFT
     pub generator_inv: Scalar,
-    /// Element used to generate a coset
-    /// of the domain
-    coset_generator: Scalar,
-    /// Inverse of the coset generator
-    coset_generator_inv: Scalar,
     /// Precomputed values for the generator to speed up
     /// the forward FFT
     twiddle_factors: Vec<Scalar>,
@@ -62,11 +57,6 @@ impl Domain {
             roots.push(prev_root * generator)
         }
 
-        let coset_generator = Scalar::MULTIPLICATIVE_GENERATOR;
-        let coset_generator_inv = coset_generator
-            .invert()
-            .expect("coset generator should not be zero");
-
         let twiddle_factors = precompute_twiddle_factors(&generator, size);
         let twiddle_factors_inv = precompute_twiddle_factors(&generator_inv, size);
 
@@ -76,8 +66,6 @@ impl Domain {
             domain_size_inv: size_as_scalar_inv,
             generator,
             generator_inv,
-            coset_generator,
-            coset_generator_inv,
             twiddle_factors,
             twiddle_factors_inv,
         }
