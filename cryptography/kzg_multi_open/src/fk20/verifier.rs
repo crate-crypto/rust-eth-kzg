@@ -140,7 +140,9 @@ impl FK20Verifier {
         // The batch size corresponds to how many openings, we ultimately want to be verifying.
         let batch_size = bit_reversed_coset_indices.len();
 
-        // Compute random challenges for batching the opening together.
+        // 1. Compute random challenges for batching the opening together.
+        //
+        // From hereon out, `random` will refer to using these random challenges.
         //
         // We compute one challenge `r` using fiat-shamir and the rest are powers of `r`
         // This is safe because of the Schwartz-Zippel Lemma.
@@ -155,14 +157,28 @@ impl FK20Verifier {
         let r_powers = compute_powers(r, batch_size);
         let num_unique_commitments = deduplicated_commitments.len();
 
-        // First compute a random linear combination of the proofs
+        // 2. Compute a random linear combination of the proofs
         //
         // Safety: This unwrap can never trigger because `r_powers.len()` is `batch_size`
         // and `bit_reversed_proofs.len()` will equal `batch_size` since we must have a proof for each item in the batch.
         let comm_random_sum_proofs = g1_lincomb(bit_reversed_proofs, &r_powers)
             .expect("number of proofs and number of r_powers should be the same");
 
-        // Now compute a random linear combination of the commitments
+        // 2. Compute a weighted random linear combination of the proofs
+        //
+        // Where the `weight` refers to the coset_generators to the power of `n`
+        let mut weighted_r_powers = Vec::with_capacity(batch_size);
+        for (bit_reversed_coset_index, r_power) in bit_reversed_coset_indices.iter().zip(&r_powers)
+        {
+            let coset_gen_pow_n =
+                self.bit_reversed_coset_gens_pow_n[*bit_reversed_coset_index as usize];
+            weighted_r_powers.push(r_power * coset_gen_pow_n);
+        }
+        // Safety: This should never panic since `bit_reversed_proofs.len()` is equal to the batch_size.
+        let random_weighted_sum_proofs = g1_lincomb(bit_reversed_proofs, &weighted_r_powers)
+            .expect("number of proofs and number of weighted_r_powers should be the same");
+
+        // 3. Compute a random linear combination of the commitments
         //
         // For each commitment_index/commitment, we add its contribution of `r` to
         // the associated weight for that commitment.
@@ -176,10 +192,9 @@ impl FK20Verifier {
         //
         // The extra field additions are being calculated in the for loop below.
         let mut weights = vec![Scalar::ZERO; num_unique_commitments];
-        for (commitment_index, r_power) in commitment_indices.iter().zip(r_powers.iter()) {
+        for (commitment_index, r_power) in commitment_indices.iter().zip(&r_powers) {
             weights[*commitment_index as usize] += r_power;
         }
-
         // Safety: This unwrap will never trigger because the length of `weights` has been initialized
         // to be `deduplicated_commitments.len()`.
         //
@@ -187,7 +202,7 @@ impl FK20Verifier {
         let random_sum_commitments = g1_lincomb(deduplicated_commitments, &weights)
             .expect("number of row_commitments and number of weights should be the same");
 
-        // Linearly combine the interpolation polynomials using the same randomness `r`
+        // 4. Compute random linear combination of the interpolation polynomials
         let random_sum_interpolation_poly = compute_sum_interpolation_poly(
             &self.coset_domain,
             &self.bit_reversed_coset_fft_gens,
@@ -199,21 +214,14 @@ impl FK20Verifier {
             .verification_key
             .commit_g1(&random_sum_interpolation_poly);
 
-        let mut weighted_r_powers = Vec::with_capacity(batch_size);
-        for (bit_reversed_coset_index, r_power) in bit_reversed_coset_indices.iter().zip(r_powers) {
-            let coset_gen_pow_n =
-                self.bit_reversed_coset_gens_pow_n[*bit_reversed_coset_index as usize];
-            weighted_r_powers.push(r_power * coset_gen_pow_n);
-        }
-
-        // Safety: This should never panic since `bit_reversed_proofs.len()` is equal to the batch_size.
-        let random_weighted_sum_proofs = g1_lincomb(bit_reversed_proofs, &weighted_r_powers)
-            .expect("number of proofs and number of weighted_r_powers should be the same");
-
-        // This is `rl` in the specs.
+        // 5. Compute pairing check
+        //
+        // Note: This variable is `rl` in the specs.
         let pairing_input_g1 = (random_sum_commitments - comm_random_sum_interpolation_poly)
             + random_weighted_sum_proofs;
 
+        // The pairings function requires elements in affine representation, so we must batch normalize the
+        // pairing inputs.
         let normalized_vectors = g1_batch_normalize(&[comm_random_sum_proofs, pairing_input_g1]);
         let random_sum_proofs = normalized_vectors[0];
         let pairing_input_g1 = normalized_vectors[1];
