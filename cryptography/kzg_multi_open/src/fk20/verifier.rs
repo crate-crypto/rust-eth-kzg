@@ -316,6 +316,7 @@ fn compute_powers(value: Scalar, num_elements: usize) -> Vec<Scalar> {
 
 /// Computes `k` Interpolation polynomials and then combines
 /// them linearly using `k` values from `r_powers`.
+/// The computed value is I(X) = I_0(x) + r * I_1(x) + ... + r^{n-1} * I_{n-1}(x)
 fn compute_sum_interpolation_poly(
     coset_domain: &Domain,
     bit_reversed_coset_fft_gens: &[CosetFFT],
