@@ -3,10 +3,10 @@ use crate::{
     verification_key::VerificationKey,
 };
 use bls12_381::{
-    batch_inversion::batch_inverse, ff::Field, g1_batch_normalize, lincomb::g1_lincomb,
-    multi_pairings, reduce_bytes_to_scalar_bias, G1Point, G2Point, G2Prepared, Scalar,
+    ff::Field, g1_batch_normalize, lincomb::g1_lincomb, multi_pairings,
+    reduce_bytes_to_scalar_bias, G1Point, G2Point, G2Prepared, Scalar,
 };
-use polynomial::{domain::Domain, poly_coeff::poly_add};
+use polynomial::{domain::Domain, poly_coeff::poly_add, CosetFFT};
 use sha2::{Digest, Sha256};
 use std::mem::size_of;
 
@@ -48,7 +48,7 @@ pub struct FK20Verifier {
     //
     pub coset_gens_pow_n: Vec<Scalar>,
     //
-    inv_coset_gens_pow_n: Vec<Vec<Scalar>>,
+    coset_fft_gens: Vec<CosetFFT>,
 }
 
 impl FK20Verifier {
@@ -78,14 +78,7 @@ impl FK20Verifier {
             .map(|&coset_gen| coset_gen.pow_vartime([n as u64]))
             .collect();
 
-        let inv_coset_gens_pow_n: Vec<_> = coset_gens
-            .iter()
-            .map(|&coset_gen| {
-                let mut inv_coset_gen_powers = compute_powers(coset_gen, n);
-                batch_inverse(&mut inv_coset_gen_powers); // The coset generators are all roots of unity, so none of them will be zero
-                inv_coset_gen_powers
-            })
-            .collect();
+        let coset_fft_gens: Vec<_> = coset_gens.iter().map(|gen| CosetFFT::new(*gen)).collect();
 
         Self {
             verification_key,
@@ -94,7 +87,7 @@ impl FK20Verifier {
             tau_pow_n,
             neg_g2_gen,
             coset_gens_pow_n,
-            inv_coset_gens_pow_n,
+            coset_fft_gens,
         }
     }
 
@@ -193,32 +186,13 @@ impl FK20Verifier {
             .expect("number of row_commitments and number of weights should be the same");
 
         // Linearly combine the interpolation polynomials using the same randomness `r`
-        let mut random_sum_interpolation_poly = Vec::new();
-        let coset_evals = bit_reversed_coset_evals.to_vec();
-        for (k, mut coset_eval) in coset_evals.into_iter().enumerate() {
-            // Reverse the order, so it matches the fft domain
-            reverse_bit_order(&mut coset_eval);
-
-            // Compute the interpolation polynomial
-            let ifft_scalars = self.coset_domain.ifft_scalars(coset_eval);
-            let inv_coset_gen_pow_n =
-                &self.inv_coset_gens_pow_n[bit_reversed_coset_indices[k] as usize];
-            let ifft_scalars: Vec<_> = ifft_scalars
-                .into_iter()
-                .zip(inv_coset_gen_pow_n)
-                .map(|(scalar, inv_h_k_pow)| scalar * inv_h_k_pow)
-                .collect();
-
-            // Scale the interpolation polynomial by the challenge
-            let scale_factor = r_powers[k];
-            let scaled_interpolation_poly = ifft_scalars
-                .into_iter()
-                .map(|coeff| coeff * scale_factor)
-                .collect::<Vec<_>>();
-
-            random_sum_interpolation_poly =
-                poly_add(random_sum_interpolation_poly, scaled_interpolation_poly);
-        }
+        let random_sum_interpolation_poly = compute_sum_interpolation_poly(
+            &self.coset_domain,
+            &self.coset_fft_gens,
+            &bit_reversed_coset_evals,
+            &bit_reversed_coset_indices,
+            &r_powers,
+        );
         let comm_random_sum_interpolation_poly = self
             .verification_key
             .commit_g1(&random_sum_interpolation_poly);
@@ -335,6 +309,43 @@ fn compute_powers(value: Scalar, num_elements: usize) -> Vec<Scalar> {
     }
 
     powers
+}
+
+fn compute_sum_interpolation_poly(
+    coset_domain: &Domain,
+    coset_fft_gens: &[CosetFFT],
+    bit_reversed_coset_evals: &[Vec<Scalar>],
+    bit_reversed_coset_indices: &[CosetIndex],
+    r_powers: &[Scalar],
+) -> Vec<Scalar> {
+    let mut random_sum_interpolation_poly = Vec::new();
+    let coset_evals = bit_reversed_coset_evals.to_vec();
+    for (k, mut coset_eval) in coset_evals.into_iter().enumerate() {
+        // Reverse the order, so it matches the fft domain
+        reverse_bit_order(&mut coset_eval);
+
+        // Compute the interpolation polynomial
+        let index = bit_reversed_coset_indices[k] as usize;
+        let ifft_scalars = coset_domain.coset_ifft_scalars(coset_eval, &coset_fft_gens[index]);
+        // let inv_coset_gen_pow_n = &inv_coset_gens_pow_n[bit_reversed_coset_indices[k] as usize];
+        // let ifft_scalars: Vec<_> = ifft_scalars
+        //     .into_iter()
+        //     .zip(inv_coset_gen_pow_n)
+        //     .map(|(scalar, inv_h_k_pow)| scalar * inv_h_k_pow)
+        //     .collect();
+
+        // Scale the interpolation polynomial by the challenge
+        let scale_factor = r_powers[k];
+        let scaled_interpolation_poly = ifft_scalars
+            .into_iter()
+            .map(|coeff| coeff * scale_factor)
+            .collect::<Vec<_>>();
+
+        random_sum_interpolation_poly =
+            poly_add(random_sum_interpolation_poly, scaled_interpolation_poly);
+    }
+
+    random_sum_interpolation_poly
 }
 
 #[cfg(test)]

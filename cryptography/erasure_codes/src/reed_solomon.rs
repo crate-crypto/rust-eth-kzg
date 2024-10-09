@@ -1,7 +1,11 @@
-use bls12_381::{batch_inversion::batch_inverse, ff::Field, Scalar};
+use bls12_381::{
+    batch_inversion::batch_inverse,
+    ff::{Field, PrimeField},
+    Scalar,
+};
 
 use crate::errors::RSError;
-use polynomial::{domain::Domain, poly_coeff::vanishing_poly};
+use polynomial::{domain::Domain, poly_coeff::vanishing_poly, CosetFFT};
 
 /// ErasurePattern is an abstraction created to capture the idea
 /// that erasures do not appear in completely random locations.
@@ -62,6 +66,8 @@ pub struct ReedSolomon {
     /// The domain that we will use to efficiently compute the vanishing polynomial with, when the erasure pattern
     /// being used is `BlockSynchronizedErasures`.
     block_size_domain: Domain,
+
+    fft_coset_gen: CosetFFT,
 }
 
 impl ReedSolomon {
@@ -77,6 +83,8 @@ impl ReedSolomon {
 
         let block_size_domain = Domain::new(block_size);
 
+        let fft_coset_gen = CosetFFT::new(Scalar::MULTIPLICATIVE_GENERATOR);
+
         Self {
             poly_len,
             evaluation_domain,
@@ -84,6 +92,7 @@ impl ReedSolomon {
             block_size,
             block_size_domain,
             num_blocks,
+            fft_coset_gen,
         }
     }
 
@@ -294,8 +303,12 @@ impl ReedSolomon {
 
         let dz_poly = self.evaluation_domain.ifft_scalars(ez_eval);
 
-        let coset_dz_eval = self.evaluation_domain.coset_fft_scalars(dz_poly);
-        let mut inv_coset_z_x_eval = self.evaluation_domain.coset_fft_scalars(z_x);
+        let coset_dz_eval = self
+            .evaluation_domain
+            .coset_fft_scalars(dz_poly, &self.fft_coset_gen);
+        let mut inv_coset_z_x_eval = self
+            .evaluation_domain
+            .coset_fft_scalars(z_x, &self.fft_coset_gen);
         // We know that none of the values will be zero since we are evaluating z_x
         // over a coset, that we know it has no roots in.
         batch_inverse(&mut inv_coset_z_x_eval);
@@ -307,7 +320,7 @@ impl ReedSolomon {
 
         let coefficients = self
             .evaluation_domain
-            .coset_ifft_scalars(coset_quotient_eval);
+            .coset_ifft_scalars(coset_quotient_eval, &self.fft_coset_gen);
 
         // Check that the polynomial being returned has the correct degree
         //
