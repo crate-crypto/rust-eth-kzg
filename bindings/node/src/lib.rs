@@ -51,7 +51,7 @@ impl Default for DASContextOptions {
   fn default() -> Self {
     Self {
       use_precomp: true,
-      num_threads: 1,
+      num_threads: 0,
     }
   }
 }
