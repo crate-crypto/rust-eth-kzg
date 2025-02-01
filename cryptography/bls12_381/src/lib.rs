@@ -65,6 +65,7 @@ pub fn reduce_bytes_to_scalar_bias(bytes: [u8; 32]) -> Scalar {
 mod tests {
     use super::*;
     use crate::ff::Field;
+    use group::Group;
 
     // BLS12-381 scalar field modulus (r)
     const BLS12_381_R: [u8; 32] = [
@@ -129,5 +130,39 @@ mod tests {
             result, expected,
             "2^256 - 1 should reduce to (2^256 - 1) mod r"
         );
+    }
+
+    #[test]
+    fn test_batch_normalize_empty() {
+        let empty: Vec<G1Projective> = vec![];
+        let result = g1_batch_normalize(&empty);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_batch_normalize_identity() {
+        let identity: Vec<G1Projective> = vec![
+            G1Projective::identity(),
+            G1Projective::generator(),
+            G1Projective::identity(),
+        ];
+        let result = g1_batch_normalize(&identity);
+        assert!(bool::from(result[0].is_identity()));
+        assert!(bool::from(!result[1].is_identity()));
+        assert!(bool::from(result[2].is_identity()));
+    }
+
+    #[test]
+    fn test_batch_normalize_multiple() {
+        use rand::thread_rng;
+        let mut rng = thread_rng();
+        let points: Vec<G1Projective> = (0..100).map(|_| G1Projective::random(&mut rng)).collect();
+
+        let normalized = g1_batch_normalize(&points);
+
+        assert_eq!(normalized.len(), points.len());
+        for (norm, proj) in normalized.iter().zip(points.iter()) {
+            assert_eq!(*norm, G1Point::from(*proj));
+        }
     }
 }
