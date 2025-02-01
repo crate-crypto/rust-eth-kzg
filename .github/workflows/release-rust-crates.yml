@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: 'The reference (branch/tag/commit) to checkout'
+        description: 'The reference (branch/tag/commit) to checkout '
         required: false
       release-type:
         type: choice
