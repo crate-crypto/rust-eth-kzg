@@ -53,6 +53,11 @@ jobs:
           toolchain: 1.80.0
           target: ${{ matrix.target }}
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
       - name: Build
         run: cargo build --target ${{ matrix.target }} --verbose
         
