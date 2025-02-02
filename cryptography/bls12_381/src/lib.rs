@@ -30,8 +30,60 @@ pub fn multi_pairings(pairs: &[(&G1Point, &blstrs::G2Prepared)]) -> bool {
     pairing_.is_identity().into()
 }
 
+/// Converts Projective points to normalized points efficiently.
+///
+// Note: This efficient variation is needed here and not for G2 because it is called
+// multiple times for MSM pre-computations.
 pub fn g1_batch_normalize(projective_points: &[G1Projective]) -> Vec<G1Point> {
-    batch_normalize_points(projective_points)
+    use group::Group;
+
+    if projective_points.is_empty() {
+        return Vec::new();
+    }
+
+    // Track which points are identity and create a filtered vec without them
+    //
+    // This is because blst will convert all points into the identity point
+    // if even one of them is the identity point.
+    let mut identity_positions = Vec::new();
+    let mut non_identity_points = Vec::new();
+
+    for (idx, point) in projective_points.iter().enumerate() {
+        if point.is_identity().into() {
+            identity_positions.push(idx);
+        } else {
+            non_identity_points.push(*point);
+        }
+    }
+
+    // If all points are identity, return a vector of identity points
+    if non_identity_points.is_empty() {
+        return vec![G1Point::identity(); projective_points.len()];
+    }
+
+    // Convert non-identity points to BLST representation and normalize
+    let points = unsafe {
+        std::slice::from_raw_parts(
+            non_identity_points.as_ptr() as *const blst::blst_p1,
+            non_identity_points.len(),
+        )
+    };
+
+    let normalized = blst::p1_affines::from(points);
+
+    // Convert normalized points back to G1Points
+    let mut result: Vec<G1Point> = normalized
+        .as_slice()
+        .iter()
+        .map(|p| G1Point::from_raw_unchecked(p.x.into(), p.y.into(), false))
+        .collect();
+
+    // Reinsert identity points at their original positions
+    for pos in identity_positions {
+        result.insert(pos, G1Point::identity());
+    }
+
+    result
 }
 pub fn g2_batch_normalize(projective_points: &[G2Projective]) -> Vec<G2Point> {
     batch_normalize_points(projective_points)
