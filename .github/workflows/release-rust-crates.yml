@@ -58,22 +58,11 @@ jobs:
         with:
           node-version: '23.0.0'
 
-      - name: Setup libnode (Windows)
+      - name: Install libnode
         if: matrix.os == 'windows-latest'
+        run: ./scripts/install_libnode_dll_windows.sh golang
         shell: bash
-        run: |
-          echo "Downloading libnode..."
-          curl -L -o libnode.zip https://github.com/metacall/libnode/releases/download/v23.0.0/libnode-amd64-windows.zip
-          echo "Extracting libnode..."
-          unzip libnode.zip
-          NODE_DIR="$RUNNER_TOOL_CACHE/node/$NODE_VERSION/x64"
-          echo "Creating directory if not exists..."
-          mkdir -p "$NODE_DIR"
-          echo "Moving libnode.dll to Node installation directory..."
-          cp libnode.dll "$NODE_DIR/"
-          echo "Verify file was copied:"
-          ls -la "$NODE_DIR/libnode.dll"
-          echo "LIBNODE_PATH=$NODE_DIR" >> $GITHUB_ENV
+
       - name: Build
         run: RUST_BACKTRACE=full cargo build --target ${{ matrix.target }} --verbose
         shell: bash
