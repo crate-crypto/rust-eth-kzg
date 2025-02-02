@@ -37,7 +37,7 @@ jobs:
 
       - name: Install libnode
         if: matrix.os == 'windows-latest'
-        run: ./scripts/install_libnode_dll_windows.sh
+        run: .github/scripts/install_libnode_dll_windows.sh
         shell: bash
 
       - name: Run compile script
