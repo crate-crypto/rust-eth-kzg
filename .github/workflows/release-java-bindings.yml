@@ -67,7 +67,7 @@ jobs:
           node-version: '23.0.0'
       - name: Install libnode
         if: matrix.os == 'windows-latest'
-        run: ./scripts/install_libnode_dll_windows.sh golang
+        run: ./scripts/install_libnode_dll_windows.sh
         shell: bash
 
       - name: Run compile script
