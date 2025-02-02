@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.3](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.5.2...v0.5.3) (2025-02-02)
+
+
+### Features
+
+* Add batch normalization tests ([4a1920a](https://github.com/crate-crypto/rust-eth-kzg/commit/4a1920ac3b65e9cd1478d6695b1d7520bf0946bd))
+
+
+### Bug Fixes
+
+* Trigger build ([4330783](https://github.com/crate-crypto/rust-eth-kzg/commit/433078342e68db5bf113966dc57d944038707ad9))
+
 ## [0.5.2](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.5.1...v0.5.2) (2024-09-24)
 
 
