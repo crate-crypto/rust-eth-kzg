@@ -58,12 +58,14 @@ jobs:
         with:
           node-version: '18'
 
-      - name: List Node directory (Windows)
+      - name: Find node dlls (Windows)
         if: matrix.os == 'windows-latest'
         shell: bash
         run: |
-          echo "Listing Node directory contents:"
-          ls -la "C:\hostedtoolcache\windows\node\18.20.6\x64"
+          echo "Checking System32:"
+          ls -la /c/Windows/System32/*node*dll 2>/dev/null || echo "Not found in System32"
+          echo -e "\nChecking Windows directory:"
+          ls -la /c/Windows/*node*dll 2>/dev/null || echo "Not found in Windows"
 
       - name: Build
         run: RUST_BACKTRACE=full cargo build --target ${{ matrix.target }} --verbose
