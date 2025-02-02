@@ -56,14 +56,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '23.0.0'
 
       - name: List Node directory (Windows)
         if: matrix.os == 'windows-latest'
         shell: bash
         run: |
           echo "Listing Node directory contents:"
-          ls -la "C:\hostedtoolcache\windows\node\18.20.6"
+          ls -la "C:\hostedtoolcache\windows\node\23.0.0"
 
       - name: Build
         run: RUST_BACKTRACE=full cargo build --target ${{ matrix.target }} --verbose
