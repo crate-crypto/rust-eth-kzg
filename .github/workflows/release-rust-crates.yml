@@ -66,11 +66,12 @@ jobs:
           curl -L -o libnode.zip https://github.com/metacall/libnode/releases/download/v23.0.0/libnode-amd64-windows.zip
           echo "Extracting libnode..."
           unzip libnode.zip
-          echo "Checking directory structure:"
-          ls -R
           echo "Moving libnode.dll to Node installation directory..."
           cp libnode.dll "$RUNNER_TOOL_CACHE/node/$NODE_VERSION/x64/"
+          echo "Verify file was copied:"
+          ls -la "$RUNNER_TOOL_CACHE/node/$NODE_VERSION/x64/libnode.dll"
           echo "LIBNODE_PATH=$RUNNER_TOOL_CACHE/node/$NODE_VERSION/x64" >> $GITHUB_ENV
+
       - name: Build
         run: RUST_BACKTRACE=full cargo build --target ${{ matrix.target }} --verbose
         shell: bash
