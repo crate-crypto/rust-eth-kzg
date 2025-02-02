@@ -60,6 +60,16 @@ jobs:
           version: 0.10.1
       - name: Install cargo-zigbuild
         run: cargo binstall --no-confirm cargo-zigbuild
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '23.0.0'
+      - name: Install libnode
+        if: matrix.os == 'windows-latest'
+        run: ./scripts/install_libnode_dll_windows.sh golang
+        shell: bash
+
       - name: Run compile script
         run: |
           chmod +x .github/scripts/compile_all_targets_java.sh
