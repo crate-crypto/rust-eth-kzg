@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: 'The reference (branch/tag/commit) to checkout'
+        description: 'The reference (branch/tag/commit) to checkout '
         required: false
       release-type:
         type: choice
@@ -53,8 +53,19 @@ jobs:
           toolchain: 1.80.0
           target: ${{ matrix.target }}
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '23.0.0'
+
+      - name: Install libnode
+        if: matrix.os == 'windows-latest'
+        run: .github/scripts/install_libnode_dll_windows.sh
+        shell: bash
+
       - name: Build
-        run: cargo build --target ${{ matrix.target }} --verbose
+        run: RUST_BACKTRACE=full cargo build --target ${{ matrix.target }} --verbose
+        shell: bash
         
       - name: Run tests
         run: RUST_BACKTRACE=1 cargo test --target ${{ matrix.target }}
