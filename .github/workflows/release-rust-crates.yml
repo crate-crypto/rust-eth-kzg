@@ -58,16 +58,12 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Search for node dlls (Windows)
+      - name: List Node directory (Windows)
         if: matrix.os == 'windows-latest'
         shell: bash
         run: |
-          echo "Searching for node dlls in Program Files:"
-          find /c/Program\ Files -name "*node*.dll" 2>/dev/null || echo "Not found in Program Files"
-          echo -e "\nSearching in npm cache:"
-          find /c/Users/runneradmin/AppData/Local/npm-cache -name "*node*.dll" 2>/dev/null || echo "Not found in npm cache"
-          echo -e "\nSearching in Node installation:"
-          find /c/hostedtoolcache/windows/node -name "*node*.dll" 2>/dev/null || echo "Not found in Node installation"
+          echo "Listing Node directory contents:"
+          ls -la "C:\hostedtoolcache\windows\node\18.20.6"
 
       - name: Build
         run: RUST_BACKTRACE=full cargo build --target ${{ matrix.target }} --verbose
