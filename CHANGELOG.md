@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.4](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.5.3...v0.5.4) (2025-02-21)
+
+
+### Features
+
+* Bump minor-- add compute_cells for rust impl ([e8f5f21](https://github.com/crate-crypto/rust-eth-kzg/commit/e8f5f212b0a81466d288fe18d7a7232b2eea4972))
+
 ## [0.5.3](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.5.2...v0.5.3) (2025-02-02)
 
 
