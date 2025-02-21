@@ -13,7 +13,8 @@ use crate::{
     errors::Error,
     recovery::recover_polynomial_coeff,
     serialization::{
-        deserialize_blob_to_scalars, serialize_cells_and_proofs, serialize_g1_compressed,
+        deserialize_blob_to_scalars, serialize_cells, serialize_cells_and_proofs,
+        serialize_g1_compressed,
     },
     trusted_setup::TrustedSetup,
     with_optional_threadpool, BlobRef, Cell, CellIndex, CellRef, DASContext, KZGCommitment,
@@ -110,6 +111,24 @@ impl DASContext {
                 .compute_multi_opening_proofs(ProverInput::Data(scalars));
 
             Ok(serialize_cells_and_proofs(cells, proofs))
+        })
+    }
+
+    /// Computes the cells for the given blob.
+    pub fn compute_cells(&self, blob: BlobRef) -> Result<[Cell; CELLS_PER_EXT_BLOB], Error> {
+        with_optional_threadpool!(self, {
+            // Deserialization
+            //
+            let scalars = deserialize_blob_to_scalars(blob)?;
+
+            // Computation
+            //
+            let extended_blob = self
+                .prover_ctx
+                .kzg_multipoint_prover
+                .extend_polynomial(ProverInput::Data(scalars));
+
+            Ok(serialize_cells(extended_blob))
         })
     }
 
