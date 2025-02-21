@@ -90,8 +90,15 @@ fn test_compute_cells_and_kzg_proofs() {
             }
         };
 
+        // Compute the cells using `compute_cells` and check if it matches
+        // `compute_cells_and_kzg_proofs`
+        let extended_blob = ctx.compute_cells(&blob);
+
         match ctx.compute_cells_and_kzg_proofs(&blob) {
             Ok((cells, proofs)) => {
+                let cells_ = extended_blob.expect("cells should have been computed");
+                assert_eq!(cells_, cells);
+
                 let expected_proofs_and_cells = test.proofs_and_cells.unwrap();
 
                 let expected_proofs = expected_proofs_and_cells.proofs;

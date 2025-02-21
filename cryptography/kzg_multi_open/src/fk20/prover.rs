@@ -180,6 +180,19 @@ impl FK20Prover {
         self.compute_multi_opening_proofs_poly_coeff(poly_coeff)
     }
 
+    /// Extends the polynomial by computing its coset evaluations
+    pub fn extend_polynomial(&self, input: Input) -> Vec<Vec<Scalar>> {
+        // Convert data to polynomial coefficients
+        let poly_coeff = match input {
+            Input::PolyCoeff(polynomial) => polynomial,
+            Input::Data(mut data) => {
+                reverse_bit_order(&mut data);
+                self.poly_domain.ifft_scalars(data)
+            }
+        };
+        self.compute_coset_evaluations(poly_coeff)
+    }
+
     /// Computes multi-opening proofs over a given polynomial in coefficient form.
     ///
     /// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/13ac373a2c284dc66b48ddd2ef0a10537e4e0de6/specs/_features/eip7594/polynomial-commitments-sampling.md#compute_cells_and_kzg_proofs_polynomialcoeff

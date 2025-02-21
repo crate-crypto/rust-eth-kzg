@@ -135,7 +135,7 @@ pub(crate) fn serialize_cells_and_proofs(
     proofs: Vec<G1Point>,
 ) -> ([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]) {
     // Serialize the evaluation sets into `Cell`s.
-    let cells = coset_evaluations_to_cells(coset_evaluations.into_iter());
+    let cells = serialize_cells(coset_evaluations);
 
     // Serialize the proofs into `KZGProof` objects.
     let proofs: Vec<_> = proofs.iter().map(serialize_g1_compressed).collect();
@@ -144,4 +144,9 @@ pub(crate) fn serialize_cells_and_proofs(
         .unwrap_or_else(|_| panic!("expected {} number of proofs", CELLS_PER_EXT_BLOB));
 
     (cells, proofs)
+}
+
+pub(crate) fn serialize_cells(coset_evaluations: Vec<Vec<Scalar>>) -> [Cell; CELLS_PER_EXT_BLOB] {
+    // Serialize the evaluation sets into `Cell`s.
+    coset_evaluations_to_cells(coset_evaluations.into_iter())
 }
