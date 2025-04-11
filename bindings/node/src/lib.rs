@@ -144,9 +144,21 @@ impl DASContextJs {
 
   #[napi]
   pub fn compute_cells(&self, blob: Uint8Array) -> Result<Vec<Uint8Array>> {
-    self
-      .compute_cells_and_kzg_proofs(blob)
-      .map(|cells_and_proofs| cells_and_proofs.cells)
+    let blob = blob.as_ref();
+    let ctx = &self.inner;
+
+    let blob = slice_to_array_ref(blob, "blob")?;
+
+    let cells = ctx
+      .compute_cells(blob)
+      .map_err(|err| Error::from_reason(format!("failed to compute compute_cells: {:?}", err)))?;
+
+    let cells_uint8array = cells
+      .into_iter()
+      .map(|cell| Uint8Array::from(cell.to_vec()))
+      .collect::<Vec<Uint8Array>>();
+
+    Ok(cells_uint8array)
   }
 
   #[napi]

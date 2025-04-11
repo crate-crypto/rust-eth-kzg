@@ -139,6 +139,9 @@ public class ReferenceTests
                 Assert.That(cells, Is.EqualTo(expectedCells));
                 byte[][] expectedProofs = GetByteArrays(test.Output.ElementAt(1));
                 Assert.That(proofs, Is.EqualTo(expectedProofs));
+
+                byte[][] cells_ = _context.ComputeCells(blob);
+                Assert.That(cells_, Is.EqualTo(expectedCells));
             }
             catch
             {

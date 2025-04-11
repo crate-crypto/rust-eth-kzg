@@ -116,6 +116,19 @@ describe("Spec tests", () => {
       for (let i = 0; i < proofs.length; i++) {
         assertBytesEqual(proofs[i], expectedProofs[i]);
       }
+
+      try {
+        cells = ctx.computeCells(blob);
+      } catch (err) {
+        expect(test.output).toBeNull();
+        return;
+      }
+
+      expect(cells.length).toBe(expectedCells.length);
+      for (let i = 0; i < cells.length; i++) {
+        assertBytesEqual(cells[i], expectedCells[i]);
+      }
+
     });
   });
 

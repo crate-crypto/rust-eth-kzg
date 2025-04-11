@@ -6,7 +6,7 @@ use std::{env, path::PathBuf};
 const PATH_TO_JAVA_BINDINGS_FILE: &str = "java/java_code/src/main/java/ethereum/cryptography";
 
 // These are the files needed to pass to the `javac` command to generate the header file
-const INPUT_FILES: [&str; 2] = ["LibEthKZG.java", "CellsAndProofs.java"];
+const INPUT_FILES: [&str; 3] = ["LibEthKZG.java", "CellsAndProofs.java", "Cells.java"];
 
 fn main() {
     let path_to_bindings_dir = path_to_bindings_folder();

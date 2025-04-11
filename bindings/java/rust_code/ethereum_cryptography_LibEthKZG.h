@@ -45,6 +45,14 @@ JNIEXPORT jobject JNICALL Java_ethereum_cryptography_LibEthKZG_computeCellsAndKZ
 
 /*
  * Class:     ethereum_cryptography_LibEthKZG
+ * Method:    computeCells
+ * Signature: (J[B)Lethereum/cryptography/Cells;
+ */
+JNIEXPORT jobject JNICALL Java_ethereum_cryptography_LibEthKZG_computeCells
+  (JNIEnv *, jclass, jlong, jbyteArray);
+
+/*
+ * Class:     ethereum_cryptography_LibEthKZG
  * Method:    blobToKZGCommitment
  * Signature: (J[B)[B
  */

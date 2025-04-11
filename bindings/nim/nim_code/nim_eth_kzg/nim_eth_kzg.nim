@@ -118,6 +118,20 @@ proc computeCellsAndProofs*(ctx: KZGCtx, blob : Blob): Result[CellsAndProofs, st
   )
   verify_result(res, ret)
 
+proc computeCells*(ctx: KZGCtx, blob : Blob): Result[Cells, string] {.gcsafe.} =
+  var ret: Cells
+
+  let outCellsPtr = toPtrPtr(ret)
+
+  let res = eth_kzg_compute_cells(
+    ctx.ctx_ptr,
+
+    blob.bytes.getPtr,
+
+    outCellsPtr,
+  )
+  verify_result(res, ret)
+
 proc verifyCellKZGProofBatch*(ctx: KZGCtx, commitments: openArray[Bytes48],
                    cellIndices: openArray[uint64],
                    cells: openArray[Cell],

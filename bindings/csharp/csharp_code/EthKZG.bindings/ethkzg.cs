@@ -109,6 +109,40 @@ public sealed unsafe class EthKZG : IDisposable
         return (outCells, outProofs);
     }
 
+    public unsafe byte[][] ComputeCells(byte[] blob)
+    {
+        // Length checks
+        if (blob.Length != BytesPerBlob)
+        {
+            throw new ArgumentException($"blob has an invalid length");
+        }
+
+        int numCells = CellsPerExtBlob;
+
+        byte[][] outCells = InitializeJaggedArray(numCells, BytesPerCell);
+
+        // Allocate an array of pointers for cells and proofs
+        byte*[] outCellsPtrs = new byte*[numCells];
+
+        fixed (byte* blobPtr = blob)
+        fixed (byte** outCellsPtrPtr = outCellsPtrs)
+        {
+
+            // Get the pointer for each cell
+            for (int i = 0; i < numCells; i++)
+            {
+                fixed (byte* cellPtr = outCells[i])
+                {
+                    outCellsPtrPtr[i] = cellPtr;
+                }
+            }
+
+            CResult result = eth_kzg_compute_cells(_context, blobPtr, outCellsPtrPtr);
+            ThrowOnError(result);
+        }
+        return (outCells);
+    }
+
     public bool VerifyCellKZGProofBatch(byte[][] commitments, ulong[] cellIndices, byte[][] cells, byte[][] proofs)
     {
 
