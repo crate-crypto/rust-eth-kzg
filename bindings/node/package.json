@@ -1,6 +1,6 @@
 {
   "name": "@crate-crypto/node-eth-kzg",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "publishConfig": {
     "access": "public"
   },
