@@ -63,7 +63,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.80.0
+          toolchain: 1.87.0
           targets: ${{ matrix.settings.target }}
 
       # llvm-preview-tools are needed for xwin, because we are compiling assembly (blst)
