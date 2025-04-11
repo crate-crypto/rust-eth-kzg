@@ -100,9 +100,10 @@ pub fn create_insecure_commit_verification_keys() -> (CommitKey, VerificationKey
 
     let g1_gen = G1Projective::generator();
 
+    let secret = Scalar::random(&mut rand::thread_rng());
+
     let mut g1_points = Vec::new();
-    let secret = -Scalar::ONE;
-    let mut current_secret_pow = Scalar::ONE;
+    let mut current_secret_pow = secret;
     for _ in 0..num_coefficients_in_polynomial {
         g1_points.push(g1_gen * current_secret_pow);
         current_secret_pow *= secret;
@@ -112,8 +113,7 @@ pub fn create_insecure_commit_verification_keys() -> (CommitKey, VerificationKey
     let ck = CommitKey::new(g1_points.clone());
 
     let mut g2_points = Vec::new();
-    let secret = -Scalar::ONE;
-    let mut current_secret_pow = Scalar::ONE;
+    let mut current_secret_pow = secret;
     let g2_gen = G2Projective::generator();
     // The setup needs 65 g1 elements for the verification key, in order
     // to commit to the remainder polynomial.
