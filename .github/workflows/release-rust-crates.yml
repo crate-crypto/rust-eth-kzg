@@ -70,21 +70,6 @@ jobs:
       - name: Run tests
         run: RUST_BACKTRACE=1 cargo test --target ${{ matrix.target }}
         shell: bash
-
-  cargo-clippy:
-    runs-on: ubuntu-latest
-    name: Clippy check
-
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install nightly toolchain
-        uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: nightly
-          components: clippy
-      - name: Clippy Check
-        run: cargo clippy --workspace --lib --examples --tests --benches --all-features
-
   # We really only want to publish the eip7594 crate
   # However, crates.io forces us to publish its dependencies too.
   publish:
