@@ -46,7 +46,7 @@ pub(crate) fn compute_h_poly_commitments(
     // element of the row.
     let mut matrices = Vec::with_capacity(toeplitz_rows.len());
     // We want to do `coset_size` toeplitz matrix multiplications
-    for row in toeplitz_rows.into_iter() {
+    for row in toeplitz_rows {
         let mut toeplitz_column = vec![Scalar::ZERO; row.len()];
         toeplitz_column[0] = row[0];
 

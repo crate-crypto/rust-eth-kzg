@@ -42,7 +42,7 @@ namespace EthKZG.Native
         ///  # Undefined behavior
         ///
         ///  - Since the `ctx` is created in Rust, we can only get undefined behavior, if the caller passes in
-        ///  a pointer that was not created by `eth_kzg_das_context_new`.
+        ///    a pointer that was not created by `eth_kzg_das_context_new`.
         /// </summary>
         [DllImport(__DllName, EntryPoint = "eth_kzg_das_context_free", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         internal static extern void eth_kzg_das_context_free(DASContext* ctx);
@@ -114,7 +114,7 @@ namespace EthKZG.Native
         ///  - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` proof and
         ///    that each cell is at least `BYTES_PER_CELL` bytes
         ///  - The caller must ensure that `proofs` points to a region of memory that is at least `proofs_length` proofs
-        ///     and that each proof is at least `BYTES_PER_COMMITMENT` bytes.
+        ///    and that each proof is at least `BYTES_PER_COMMITMENT` bytes.
         ///  - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
         ///
         ///  # Undefined behavior
@@ -131,8 +131,7 @@ namespace EthKZG.Native
         ///  # Safety
         ///
         ///   - If the length parameter for a pointer is set to zero, then this implementation will not check if its pointer is
-        ///    null. This is because the caller might have passed in a null pointer, if the length is zero. Instead an empty slice
-        ///    will be created.
+        ///     null. This is because the caller might have passed in a null pointer, if the length is zero. Instead an empty slice will be created.
         ///
         ///  - The caller must ensure that the pointers are valid.
         ///  - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` cells

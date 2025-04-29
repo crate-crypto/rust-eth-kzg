@@ -25,7 +25,7 @@ impl Default for VerifierContext {
 }
 
 impl VerifierContext {
-    pub fn new(trusted_setup: &TrustedSetup) -> VerifierContext {
+    pub fn new(trusted_setup: &TrustedSetup) -> Self {
         let verification_key = VerificationKey::from(trusted_setup);
 
         let multipoint_verifier = Verifier::new(
@@ -34,7 +34,7 @@ impl VerifierContext {
             CELLS_PER_EXT_BLOB,
         );
 
-        VerifierContext {
+        Self {
             kzg_multipoint_verifier: multipoint_verifier,
         }
     }

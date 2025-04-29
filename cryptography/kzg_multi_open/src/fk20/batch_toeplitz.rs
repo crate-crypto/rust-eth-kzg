@@ -65,7 +65,7 @@ impl BatchToeplitzMatrixVecMul {
             .map(|v| FixedBaseMSM::new(v, use_precomp))
             .collect();
 
-        BatchToeplitzMatrixVecMul {
+        Self {
             size_of_vector,
             circulant_domain,
             precomputed_fft_vectors: precomputed_table,
@@ -102,7 +102,8 @@ impl BatchToeplitzMatrixVecMul {
             .collect();
         let msm_scalars = transpose(col_ffts);
 
-        let result: Vec<_> = (&self.precomputed_fft_vectors)
+        let result: Vec<_> = self
+            .precomputed_fft_vectors
             .maybe_par_iter()
             .zip(msm_scalars)
             .map(|(points, scalars)| points.msm(scalars))

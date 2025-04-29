@@ -67,7 +67,7 @@ pub fn bench_verify_proof_fk20(c: &mut Criterion) {
         |b| {
             b.iter(|| {
                 verifier.verify_multi_opening(
-                    &vec![commitment],
+                    &[commitment],
                     &vec![0; 128],
                     &(0..128).collect::<Vec<_>>(),
                     &coset_evals,

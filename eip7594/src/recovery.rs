@@ -62,7 +62,7 @@ pub(crate) fn recover_polynomial_coeff(
 }
 
 fn find_missing_cell_indices(present_cell_indices: &[usize]) -> Vec<usize> {
-    let cell_indices: HashSet<_> = present_cell_indices.iter().cloned().collect();
+    let cell_indices: HashSet<_> = present_cell_indices.iter().copied().collect();
 
     let mut missing = Vec::new();
 
@@ -98,7 +98,7 @@ mod validation {
         }
 
         // Check that the Cell indices are within the expected range
-        for cell_index in cell_indices.iter() {
+        for cell_index in cell_indices {
             if *cell_index >= (CELLS_PER_EXT_BLOB as u64) {
                 return Err(RecoveryError::CellIndexOutOfRange {
                     cell_index: *cell_index,

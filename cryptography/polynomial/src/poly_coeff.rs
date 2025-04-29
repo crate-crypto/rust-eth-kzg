@@ -163,7 +163,7 @@ mod tests {
     fn naive_poly_eval(poly: &PolyCoeff, value: &Scalar) -> Scalar {
         let mut result = Scalar::ZERO;
         for (i, coeff) in poly.iter().enumerate() {
-            result += coeff * value.pow_vartime(&[i as u64]);
+            result += coeff * value.pow_vartime([i as u64]);
         }
         result
     }
@@ -240,8 +240,8 @@ mod tests {
         assert_eq!(&poly, &expected);
 
         // Check that this polynomial evaluates to zero on the roots
-        for root in roots.iter() {
-            assert_eq!(poly_eval(&poly, &root), Scalar::ZERO);
+        for root in &roots {
+            assert_eq!(poly_eval(&poly, root), Scalar::ZERO);
         }
     }
 

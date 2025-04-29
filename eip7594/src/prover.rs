@@ -64,7 +64,7 @@ impl ProverContext {
             CELLS_PER_EXT_BLOB,
         );
 
-        ProverContext {
+        Self {
             kzg_multipoint_prover,
             rs,
         }

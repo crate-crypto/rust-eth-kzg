@@ -35,16 +35,16 @@ impl FixedBaseMSM {
     pub fn new(generators: Vec<G1Affine>, use_precomp: UsePrecomp) -> Self {
         match use_precomp {
             UsePrecomp::Yes { width } => {
-                FixedBaseMSM::Precomp(FixedBaseMSMPrecompWindow::new(&generators, width))
+                Self::Precomp(FixedBaseMSMPrecompWindow::new(&generators, width))
             }
-            UsePrecomp::No => FixedBaseMSM::NoPrecomp(generators),
+            UsePrecomp::No => Self::NoPrecomp(generators),
         }
     }
 
     pub fn msm(&self, scalars: Vec<Scalar>) -> G1Projective {
         match self {
-            FixedBaseMSM::Precomp(precomp) => precomp.msm(&scalars),
-            FixedBaseMSM::NoPrecomp(generators) => {
+            Self::Precomp(precomp) => precomp.msm(&scalars),
+            Self::NoPrecomp(generators) => {
                 use crate::lincomb::g1_lincomb;
                 g1_lincomb(generators, &scalars)
                     .expect("number of generators and scalars should be equal")
@@ -74,7 +74,7 @@ impl FixedBaseMSMPrecompBLST {
 
         let scratch_space_size = unsafe { blst::blst_p1s_mult_wbits_scratch_sizeof(num_points) };
 
-        FixedBaseMSMPrecompBLST {
+        Self {
             table,
             wbits,
             num_points,
@@ -138,7 +138,7 @@ mod tests {
         let res = crate::lincomb::g1_lincomb(&generators, &scalars)
             .expect("number of generators and number of scalars is equal");
 
-        let fbm = FixedBaseMSM::new(generators.clone(), use_precomp);
+        let fbm = FixedBaseMSM::new(generators, use_precomp);
         let result = fbm.msm(scalars);
 
         assert_eq!(res, result);
@@ -159,9 +159,8 @@ mod tests {
             .map(|_| G1Projective::random(&mut rand::thread_rng()).into())
             .collect();
         let fbm = FixedBaseMSMPrecompBLST::new(generators, 8);
-        for val in fbm.table.into_iter() {
-            let is_inf =
-                unsafe { blst::blst_p1_affine_is_inf(&val as *const blst::blst_p1_affine) };
+        for val in fbm.table {
+            let is_inf = unsafe { blst::blst_p1_affine_is_inf(std::ptr::addr_of!(val)) };
             assert!(!is_inf);
         }
     }
