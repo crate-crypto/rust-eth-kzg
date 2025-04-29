@@ -50,7 +50,7 @@ jobs:
       - name: Setup toolchain
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.87.0
+          toolchain: nightly
           target: ${{ matrix.target }}
 
       - name: Setup Node.js
@@ -87,7 +87,7 @@ jobs:
       - name: Setup toolchain
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.87.0
+          toolchain: nightly
 
       # These steps are in a specific order so crate dependencies are updated first
       - name: Publish maybe_rayon
