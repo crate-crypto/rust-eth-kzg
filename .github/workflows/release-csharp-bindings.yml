@@ -50,7 +50,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.87.0
+          toolchain: 1.86.0
           target: ${{ matrix.target }}
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
