@@ -83,7 +83,7 @@ jobs:
         uses: cargo-bins/cargo-binstall@main
 
       - name: Install cargo-zigbuild
-        run: cargo binstall cargo-zigbuild -y
+        run: cargo binstall cargo-zigbuild@0.20.0 -y
 
       - name: Install cargo-xwin (Windows on Linux only)
         if: contains(matrix.settings.target, 'windows')
