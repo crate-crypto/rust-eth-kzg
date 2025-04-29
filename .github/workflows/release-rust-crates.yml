@@ -83,7 +83,7 @@ jobs:
           toolchain: nightly
           components: clippy
       - name: Clippy Check
-        run: cargo clippy --workspace --lib --examples --tests --benches --all-features --locked
+        run: cargo clippy --workspace --lib --examples --tests --benches --all-features
 
   # We really only want to publish the eip7594 crate
   # However, crates.io forces us to publish its dependencies too.
