@@ -36,7 +36,7 @@ mod serde_ {
     impl TestVector {
         pub fn from_str(yaml_data: &str) -> Self {
             let yaml_test_vector: YamlTestVector = serde_yaml::from_str(yaml_data).unwrap();
-            TestVector::from(yaml_test_vector)
+            Self::from(yaml_test_vector)
         }
     }
 
@@ -64,7 +64,7 @@ mod serde_ {
 
             let output = yaml_test_vector.output;
 
-            TestVector {
+            Self {
                 commitments,
                 cell_indices,
                 cells,
@@ -137,7 +137,7 @@ fn test_verify_cell_kzg_proof_batch() {
                 assert!(test.output.unwrap())
             }
             Err(x) if x.invalid_proof() => {
-                assert!(test.output.unwrap() == false);
+                assert!(!test.output.unwrap());
             }
             Err(_) => {
                 assert!(test.output.is_none());

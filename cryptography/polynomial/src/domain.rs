@@ -33,7 +33,7 @@ pub struct Domain {
 }
 
 impl Domain {
-    pub fn new(size: usize) -> Domain {
+    pub fn new(size: usize) -> Self {
         // We are using roots of unity, so the
         // size of the domain will be padded to
         // the next power of two
@@ -76,14 +76,15 @@ impl Domain {
         assert!(size.is_power_of_two());
 
         let log_size_of_group = size.trailing_zeros();
-        if log_size_of_group > Domain::two_adicity() {
-            panic!("two adicity is 32 but group size needed is 2^{log_size_of_group}");
-        }
+        assert!(
+            log_size_of_group <= Self::two_adicity(),
+            "two adicity is 32 but group size needed is 2^{log_size_of_group}"
+        );
 
         // We now want to compute the generator which has order `size`
-        let exponent: u64 = 1 << (Domain::two_adicity() as u64 - log_size_of_group as u64);
+        let exponent: u64 = 1 << (Self::two_adicity() as u64 - log_size_of_group as u64);
 
-        Domain::largest_root_of_unity().pow_vartime([exponent])
+        Self::largest_root_of_unity().pow_vartime([exponent])
     }
 
     /// The largest root of unity that we can use for the domain
@@ -122,7 +123,7 @@ impl Domain {
         points.resize(self.size(), Scalar::ZERO);
 
         let mut coset_scale = Scalar::ONE;
-        for point in points.iter_mut() {
+        for point in &mut points {
             *point *= coset_scale;
             coset_scale *= coset.generator;
         }
@@ -177,7 +178,7 @@ impl Domain {
             None => points,
         };
 
-        for element in ifft_g1.iter_mut() {
+        for element in &mut ifft_g1 {
             *element *= self.domain_size_inv
         }
 
@@ -193,7 +194,7 @@ impl Domain {
 
         fft_scalar_inplace(&self.twiddle_factors_inv, &mut points);
 
-        for element in points.iter_mut() {
+        for element in &mut points {
             *element *= self.domain_size_inv
         }
 
@@ -205,7 +206,7 @@ impl Domain {
         let mut coset_coeffs = self.ifft_scalars(points);
 
         let mut coset_scale = Scalar::ONE;
-        for element in coset_coeffs.iter_mut() {
+        for element in &mut coset_coeffs {
             *element *= coset_scale;
             coset_scale *= coset.generator_inv;
         }
@@ -224,11 +225,11 @@ mod tests {
         let root = Domain::largest_root_of_unity();
         let order = 2u64.pow(Domain::two_adicity());
 
-        assert_eq!(root.pow_vartime(&[order]), Scalar::ONE);
+        assert_eq!(root.pow_vartime([order]), Scalar::ONE);
 
         // Check that it is indeed a primitive root of unity
         for i in 0..Domain::two_adicity() {
-            assert_ne!(root.pow_vartime(&[2u64.pow(i)]), Scalar::ONE);
+            assert_ne!(root.pow_vartime([2u64.pow(i)]), Scalar::ONE);
         }
     }
 
@@ -236,19 +237,18 @@ mod tests {
     fn fft_test_polynomial() {
         let evaluations = vec![Scalar::from(2u64), Scalar::from(4u64)];
         let domain = Domain::new(2);
-        let roots = domain.roots.clone();
 
         // Interpolate the evaluations
         let poly_coeff = domain.ifft_scalars(evaluations.clone());
 
         // Check interpolation was correct by evalauting the polynomial at the roots
-        for (i, root) in roots.iter().enumerate() {
+        for (i, root) in domain.roots.iter().enumerate() {
             let eval = poly_eval(&poly_coeff, root);
             assert_eq!(eval, evaluations[i]);
         }
 
         // Evaluate the polynomial at the domain points
-        let got_evals = domain.fft_scalars(poly_coeff.clone());
+        let got_evals = domain.fft_scalars(poly_coeff);
         assert_eq!(got_evals, evaluations);
     }
 

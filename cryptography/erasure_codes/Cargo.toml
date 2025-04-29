@@ -8,6 +8,9 @@ license = { workspace = true }
 rust-version = { workspace = true }
 repository = { workspace = true }
 
+[lints]
+workspace = true
+
 [dependencies]
 bls12_381 = { workspace = true }
 polynomial = { workspace = true }

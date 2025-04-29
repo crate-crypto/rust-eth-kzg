@@ -99,6 +99,7 @@ where
 }
 
 // Reduces bytes to be a value less than the scalar modulus.
+#[allow(clippy::borrow_as_ptr)]
 pub fn reduce_bytes_to_scalar_bias(bytes: [u8; 32]) -> Scalar {
     let mut out = blst::blst_fr::default();
 
@@ -107,7 +108,7 @@ pub fn reduce_bytes_to_scalar_bias(bytes: [u8; 32]) -> Scalar {
         let mut s = blst::blst_scalar::default();
         blst::blst_scalar_from_bendian(&mut s, &bytes as *const u8);
         // Convert scalar into a `blst_fr` reducing the value along the way
-        blst::blst_fr_from_scalar(&mut out, &s as *const blst::blst_scalar);
+        blst::blst_fr_from_scalar(&mut out, std::ptr::addr_of!(s));
     }
 
     Scalar::from(out)

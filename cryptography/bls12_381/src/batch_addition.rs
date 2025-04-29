@@ -50,6 +50,7 @@ const BATCH_INVERSE_THRESHOLD: usize = 16;
 ///
 // TODO(benedikt): top down balanced tree idea - benedikt
 // TODO: search tree for sorted array
+#[allow(clippy::assertions_on_constants)]
 pub fn batch_addition_binary_tree_stride(mut points: Vec<G1Affine>) -> G1Projective {
     if points.is_empty() {
         return G1Projective::identity();
@@ -100,6 +101,7 @@ pub fn batch_addition_binary_tree_stride(mut points: Vec<G1Affine>) -> G1Project
 /// This function efficiently adds multiple sets of points amortizing the cost of the
 /// inversion over all of the sets, using the same binary tree approach with striding
 /// as the single-batch version.
+#[allow(clippy::assertions_on_constants)]
 pub fn multi_batch_addition_binary_tree_stride(
     mut multi_points: Vec<Vec<G1Affine>>,
 ) -> Vec<G1Projective> {
@@ -108,7 +110,7 @@ pub fn multi_batch_addition_binary_tree_stride(
 
     // Find the largest buckets, this will be the bottleneck for the number of iterations
     let mut max_bucket_length = 0;
-    for points in multi_points.iter() {
+    for points in &multi_points {
         max_bucket_length = std::cmp::max(max_bucket_length, points.len());
     }
 
@@ -154,7 +156,7 @@ pub fn multi_batch_addition_binary_tree_stride(
         // For each pair of points over all
         // vectors, we collect them and put them in the
         // inverse array
-        for points in multi_points.iter() {
+        for points in &multi_points {
             if points.len() < 2 {
                 continue;
             }
@@ -167,7 +169,7 @@ pub fn multi_batch_addition_binary_tree_stride(
 
         let mut denominators_offset = 0;
 
-        for points in multi_points.iter_mut() {
+        for points in &mut multi_points {
             if points.len() < 2 {
                 continue;
             }
@@ -221,7 +223,7 @@ mod tests {
             .fold(G1Projective::identity(), |acc, p| acc + p)
             .into();
 
-        let got_result = batch_addition_binary_tree_stride(points.clone());
+        let got_result = batch_addition_binary_tree_stride(points);
         assert_eq!(expected_result, got_result.into());
     }
 
@@ -240,7 +242,7 @@ mod tests {
 
         let expected_results: Vec<G1Projective> = random_sets_of_points
             .into_iter()
-            .map(|points| batch_addition_binary_tree_stride(points).into())
+            .map(batch_addition_binary_tree_stride)
             .collect();
 
         let got_results = multi_batch_addition_binary_tree_stride(random_sets_of_points_clone);

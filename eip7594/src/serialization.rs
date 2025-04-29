@@ -71,7 +71,7 @@ pub(crate) fn deserialize_compressed_g1(point_bytes: &[u8]) -> Result<G1Point, S
     };
 
     let opt_g1: Option<G1Point> = Option::from(G1Point::from_compressed(point_bytes));
-    opt_g1.ok_or(SerializationError::CouldNotDeserializeG1Point {
+    opt_g1.ok_or_else(|| SerializationError::CouldNotDeserializeG1Point {
         bytes: point_bytes.to_vec(),
     })
 }

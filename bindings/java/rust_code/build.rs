@@ -20,7 +20,7 @@ fn main() {
     // Generate the header file
     let mut command = std::process::Command::new("javac");
     command.arg("-h").arg(".");
-    for file in INPUT_FILES.iter() {
+    for file in &INPUT_FILES {
         command.arg(path_to_java_bindings_file.join(file));
     }
     let output = command.output().unwrap();

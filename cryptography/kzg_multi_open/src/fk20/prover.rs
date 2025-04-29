@@ -66,7 +66,7 @@ impl FK20Prover {
         points_per_proof: usize,
         number_of_points_to_open: usize,
         use_precomp: UsePrecomp,
-    ) -> FK20Prover {
+    ) -> Self {
         assert!(points_per_proof.is_power_of_two());
         assert!(number_of_points_to_open.is_power_of_two());
         assert!(number_of_points_to_open > points_per_proof);
@@ -111,7 +111,7 @@ impl FK20Prover {
         let evaluation_domain = Domain::new(number_of_points_to_open);
         let poly_domain = Domain::new(polynomial_bound);
 
-        FK20Prover {
+        Self {
             batch_toeplitz,
             coset_size: points_per_proof,
             number_of_points_to_open,
@@ -143,7 +143,7 @@ impl FK20Prover {
     }
 
     /// The number of proofs that will be produced.
-    pub fn num_proofs(&self) -> usize {
+    pub const fn num_proofs(&self) -> usize {
         self.number_of_points_to_open / self.coset_size
     }
 
@@ -220,7 +220,7 @@ impl FK20Prover {
     }
 
     #[cfg(test)]
-    pub(crate) fn batch_toeplitz_matrix(&self) -> &BatchToeplitzMatrixVecMul {
+    pub(crate) const fn batch_toeplitz_matrix(&self) -> &BatchToeplitzMatrixVecMul {
         &self.batch_toeplitz
     }
 }
@@ -290,7 +290,7 @@ mod tests {
         let coset_indices: Vec<u64> = (0..num_cosets as u64).collect();
 
         let valid = fk20_verifier.verify_multi_opening(
-            &vec![commitment],
+            &[commitment],
             &vec![0u64; num_cosets],
             &coset_indices,
             &cells,
@@ -318,8 +318,7 @@ mod tests {
             2 * poly_len,
             UsePrecomp::No,
         );
-        let (got_proofs, got_evaluations) =
-            fk20.compute_multi_opening_proofs_poly_coeff(poly.clone());
+        let (got_proofs, got_evaluations) = fk20.compute_multi_opening_proofs_poly_coeff(poly);
 
         assert_eq!(got_proofs.len(), expected_proofs.len());
         assert_eq!(got_evaluations.len(), expected_evaluations.len());

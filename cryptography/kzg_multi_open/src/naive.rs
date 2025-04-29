@@ -15,17 +15,17 @@ use polynomial::poly_coeff::{
 /// of magnitudes faster than the naive scheme.
 ///
 /// We will use the naive scheme for testing purposes.
-
+///
 /// Naively computes an opening proof that attests to the evaluation of
 /// `polynomial` at `input_points`.
-//
-// Note: This method returns both the proof and the output points.
-// This does not follow the convention of the other methods which
-// produce proofs.
-//
-// This is done intentionally since that method
-// has additional checks that require the evaluations and computing
-// the output points, the naive way is quite expensive.
+///
+/// Note: This method returns both the proof and the output points.
+/// This does not follow the convention of the other methods which
+/// produce proofs.
+///
+/// This is done intentionally since that method
+/// has additional checks that require the evaluations and computing
+/// the output points, the naive way is quite expensive.
 pub(crate) fn compute_multi_opening(
     commit_key: &CommitKey,
     polynomial: &PolyCoeff,
@@ -111,10 +111,10 @@ fn _compute_multi_opening_naive(
         assert_eq!(poly_eval(&i_x, point), *evaluation);
     }
 
-    let poly_shifted = poly_sub(polynomial.to_vec().clone(), i_x.clone());
+    let poly_shifted = poly_sub(polynomial.clone(), i_x);
 
-    let mut quotient_poly = poly_shifted.to_vec().clone();
-    for point in points.iter() {
+    let mut quotient_poly = poly_shifted;
+    for point in points {
         quotient_poly = divide_by_linear(&quotient_poly, *point);
     }
 
@@ -173,7 +173,7 @@ mod tests {
         let (ck, verification_key) = create_insecure_commit_verification_keys();
 
         let num_points_to_open = 16;
-        let input_points: Vec<_> = (0..num_points_to_open).map(|i| Scalar::from(i)).collect();
+        let input_points: Vec<_> = (0..num_points_to_open).map(Scalar::from).collect();
 
         let polynomial: Vec<_> = (0..verification_key.num_coefficients_in_polynomial)
             .map(|i| -Scalar::from(i as u64))

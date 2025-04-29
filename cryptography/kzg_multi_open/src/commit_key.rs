@@ -12,13 +12,13 @@ pub struct CommitKey {
 }
 
 impl CommitKey {
-    pub fn new(g1_points: Vec<G1Point>) -> CommitKey {
+    pub fn new(g1_points: Vec<G1Point>) -> Self {
         assert!(
             !g1_points.is_empty(),
             "cannot initialize `CommitKey` with no g1 points"
         );
 
-        CommitKey { g1s: g1_points }
+        Self { g1s: g1_points }
     }
 
     /// Commit to `polynomial` in monomial form using the G1 group elements
