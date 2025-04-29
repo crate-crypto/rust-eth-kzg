@@ -22,4 +22,4 @@ jobs:
           components: clippy
 
       - name: Clippy Check
-        run: cargo clippy --workspace --lib --examples --tests --benches --locked
+        run: cargo clippy --workspace --lib --examples --tests --benches
