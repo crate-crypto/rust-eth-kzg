@@ -117,13 +117,13 @@ impl CirculantMatrix {
     /// This method takes a Toeplitz matrix and embeds it into a larger circulant matrix.
     /// The resulting circulant matrix has a dimension that is twice as large as the original
     /// Toeplitz matrix.
-    pub(crate) fn from_toeplitz(tm: ToeplitzMatrix) -> CirculantMatrix {
+    pub(crate) fn from_toeplitz(tm: ToeplitzMatrix) -> Self {
         let mut extension_col = tm.row.clone();
         extension_col.rotate_left(1);
         extension_col.reverse();
 
-        CirculantMatrix {
-            row: [tm.col.clone(), extension_col].concat(),
+        Self {
+            row: [tm.col, extension_col].concat(),
         }
     }
 }
@@ -206,25 +206,25 @@ struct DenseMatrix {
 #[cfg(test)]
 impl DenseMatrix {
     /// Converts a `ToeplitzMatrix` into a `DenseMatrix`
-    fn from_toeplitz(toeplitz: ToeplitzMatrix) -> DenseMatrix {
+    fn from_toeplitz(toeplitz: ToeplitzMatrix) -> Self {
         use bls12_381::ff::Field;
 
         let rows = toeplitz.col.len();
         let cols = toeplitz.row.len();
         let mut matrix = vec![vec![Scalar::ZERO; toeplitz.col.len()]; toeplitz.row.len()];
 
-        for i in 0..rows {
-            for j in 0..cols {
+        for (i, r) in matrix.iter_mut().enumerate().take(rows) {
+            for (j, rc) in r.iter_mut().enumerate().take(cols) {
                 // Determine the value based on the distance from the diagonal
                 if i <= j {
-                    matrix[i][j] = toeplitz.row[j - i];
+                    *rc = toeplitz.row[j - i];
                 } else {
-                    matrix[i][j] = toeplitz.col[i - j];
+                    *rc = toeplitz.col[i - j];
                 }
             }
         }
 
-        DenseMatrix { inner: matrix }
+        Self { inner: matrix }
     }
 
     /// Computes a matrix vector multiplication between `DenseMatrix` and `vector`

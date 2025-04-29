@@ -38,7 +38,7 @@ mod serde_ {
     impl TestVector {
         pub fn from_str(yaml_data: &str) -> Self {
             let yaml_test_vector: YamlTestVector = serde_yaml::from_str(yaml_data).unwrap();
-            TestVector::from(yaml_test_vector)
+            Self::from(yaml_test_vector)
         }
     }
 
@@ -64,9 +64,9 @@ mod serde_ {
                 None => None,
             };
 
-            TestVector {
+            Self {
                 input_cell_indices: cell_indices,
-                input_cells: input_cells,
+                input_cells,
                 proofs_and_cells: output.map(|out| KZGProofsAndCells {
                     proofs: out.0,
                     cells: out.1,

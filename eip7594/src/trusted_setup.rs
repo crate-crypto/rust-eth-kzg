@@ -31,7 +31,7 @@ pub struct TrustedSetup {
 
 impl Default for TrustedSetup {
     fn default() -> Self {
-        TrustedSetup::from_embed()
+        Self::from_embed()
     }
 }
 
@@ -77,7 +77,7 @@ impl TrustedSetup {
       ]
     }
     */
-    pub fn from_json(json: &str) -> TrustedSetup {
+    pub fn from_json(json: &str) -> Self {
         let trusted_setup = Self::from_json_unchecked(json);
         trusted_setup.validate_trusted_setup();
         trusted_setup
@@ -85,7 +85,7 @@ impl TrustedSetup {
     /// Parse a Json string in the format specified by the ethereum trusted setup.
     ///
     /// This method does not check that the points are in the correct subgroup.
-    pub fn from_json_unchecked(json: &str) -> TrustedSetup {
+    pub fn from_json_unchecked(json: &str) -> Self {
         // Note: it is fine to panic here since this method is called on startup
         // and we want to fail fast if the trusted setup is malformed.
         serde_json::from_str(json)
@@ -121,7 +121,7 @@ impl TrustedSetup {
     }
 
     /// Loads the official trusted setup file being used on mainnet from the embedded data folder.
-    fn from_embed() -> TrustedSetup {
+    fn from_embed() -> Self {
         Self::from_json_unchecked(TRUSTED_SETUP_JSON)
     }
 }

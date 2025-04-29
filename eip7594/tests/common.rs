@@ -31,18 +31,18 @@ fn _collect_test_files<P: AsRef<Path>>(dir: P, files: &mut Vec<PathBuf>) -> io::
 }
 
 fn remove_hex_prefix(s: &str) -> &str {
-    if s.starts_with("0x") {
-        &s[2..]
+    if let Some(stripped) = s.strip_prefix("0x") {
+        stripped
     } else {
         panic!(
-            "hex strings in ethereum are assumed to be prefixed with a 0x. 
-                If this is not the case, it is not a bug, however it is cause for concern, 
+            "hex strings in ethereum are assumed to be prefixed with a 0x.
+                If this is not the case, it is not a bug, however it is cause for concern,
                 if there are discrepancies."
         );
     }
 }
 
 pub fn bytes_from_hex(bytes: &str) -> Vec<u8> {
-    let bytes = remove_hex_prefix(&bytes);
+    let bytes = remove_hex_prefix(bytes);
     hex::decode(bytes).unwrap()
 }

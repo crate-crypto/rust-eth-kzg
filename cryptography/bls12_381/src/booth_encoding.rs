@@ -81,7 +81,7 @@ mod tests {
                 acc = acc + acc;
             }
 
-            let idx = get_booth_index(i as usize, window, u.as_ref());
+            let idx = get_booth_index(i, window, u.as_ref());
 
             if idx.is_negative() {
                 acc += table[idx.unsigned_abs() as usize].neg();

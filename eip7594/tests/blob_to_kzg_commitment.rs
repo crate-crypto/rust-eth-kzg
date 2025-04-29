@@ -33,7 +33,7 @@ mod serde_ {
     impl TestVector {
         pub fn from_str(yaml_data: &str) -> Self {
             let yaml_test_vector: YamlTestVector = serde_yaml::from_str(yaml_data).unwrap();
-            TestVector::from(yaml_test_vector)
+            Self::from(yaml_test_vector)
         }
     }
 
@@ -44,12 +44,9 @@ mod serde_ {
 
             let input = bytes_from_hex(&input);
 
-            let commitment = match output {
-                Some(commitment) => Some(bytes_from_hex(&commitment)),
-                None => None,
-            };
+            let commitment = output.map(|commitment| bytes_from_hex(&commitment));
 
-            TestVector {
+            Self {
                 blob: input,
                 commitment,
             }

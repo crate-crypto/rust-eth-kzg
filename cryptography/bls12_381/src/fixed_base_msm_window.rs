@@ -22,7 +22,7 @@ impl FixedBaseMSMPrecompWindow {
         // where each point is 64 bytes.
         //
         let precomputed_points: Vec<_> = points
-            .into_iter()
+            .iter()
             .map(|point| Self::precompute_points(wbits, *point))
             .collect();
 
@@ -53,7 +53,11 @@ impl FixedBaseMSMPrecompWindow {
 
         let mut windows_of_points = vec![Vec::with_capacity(scalars.len()); number_of_windows];
 
-        for window_idx in 0..number_of_windows {
+        for (window_idx, windows_of_point) in windows_of_points
+            .iter_mut()
+            .enumerate()
+            .take(number_of_windows)
+        {
             for (scalar_idx, scalar_bytes) in scalars_bytes.iter().enumerate() {
                 let sub_table = &self.table[scalar_idx];
                 let point_idx = get_booth_index(window_idx, self.wbits, scalar_bytes.as_ref());
@@ -68,7 +72,7 @@ impl FixedBaseMSMPrecompWindow {
                     point = -point;
                 }
 
-                windows_of_points[window_idx].push(point);
+                windows_of_point.push(point);
             }
         }
 
@@ -100,9 +104,9 @@ mod tests {
         use group::Group;
         let lookup_table = FixedBaseMSMPrecompWindow::precompute_points(7, G1Affine::generator());
 
-        for i in 1..lookup_table.len() {
+        for (i, l) in lookup_table.iter().enumerate().skip(1) {
             let expected = G1Projective::generator() * Scalar::from((i + 1) as u64);
-            assert_eq!(lookup_table[i], expected.into(),)
+            assert_eq!(*l, expected.into());
         }
     }
 

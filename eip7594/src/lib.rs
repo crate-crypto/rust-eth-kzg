@@ -110,7 +110,7 @@ impl Default for DASContext {
     fn default() -> Self {
         let trusted_setup = TrustedSetup::default();
         const DEFAULT_NUM_THREADS: ThreadCount = ThreadCount::Single;
-        DASContext::with_threads(&trusted_setup, DEFAULT_NUM_THREADS, UsePrecomp::No)
+        Self::with_threads(&trusted_setup, DEFAULT_NUM_THREADS, UsePrecomp::No)
     }
 }
 #[cfg(not(feature = "multithreaded"))]
@@ -118,7 +118,7 @@ impl Default for DASContext {
     fn default() -> Self {
         let trusted_setup = TrustedSetup::default();
 
-        DASContext::new(&trusted_setup, UsePrecomp::No)
+        Self::new(&trusted_setup, UsePrecomp::No)
     }
 }
 
@@ -137,7 +137,7 @@ impl DASContext {
                 .unwrap(),
         );
 
-        DASContext {
+        Self {
             #[cfg(feature = "multithreaded")]
             thread_pool,
             prover_ctx: ProverContext::new(trusted_setup, use_precomp),
@@ -160,11 +160,11 @@ impl DASContext {
         }
     }
 
-    pub fn prover_ctx(&self) -> &ProverContext {
+    pub const fn prover_ctx(&self) -> &ProverContext {
         &self.prover_ctx
     }
 
-    pub fn verifier_ctx(&self) -> &VerifierContext {
+    pub const fn verifier_ctx(&self) -> &VerifierContext {
         &self.verifier_ctx
     }
 }

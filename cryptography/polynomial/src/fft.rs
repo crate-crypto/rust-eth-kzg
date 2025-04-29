@@ -16,13 +16,13 @@ trait FFTElement:
 
 impl FFTElement for Scalar {
     fn zero() -> Self {
-        Scalar::ZERO
+        Self::ZERO
     }
 }
 
 impl FFTElement for G1Projective {
     fn zero() -> Self {
-        G1Projective::identity()
+        Self::identity()
     }
 }
 
@@ -79,12 +79,14 @@ fn bitreverse(mut n: u32, l: u32) -> u32 {
     }
     r
 }
-fn log2_pow2(n: usize) -> u32 {
+
+const fn log2_pow2(n: usize) -> u32 {
     n.trailing_zeros()
 }
+
 pub(crate) fn precompute_twiddle_factors<F: Field>(omega: &F, n: usize) -> Vec<F> {
     let log_n = log2_pow2(n);
     (0..log_n)
-        .map(|s| omega.pow(&[(n / (1 << (s + 1))) as u64]))
+        .map(|s| omega.pow([(n / (1 << (s + 1))) as u64]))
         .collect()
 }

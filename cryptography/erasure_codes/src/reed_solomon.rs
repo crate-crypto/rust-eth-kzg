@@ -21,8 +21,8 @@ pub(crate) enum ErasurePattern {
     ///  - Codeword = [0,b,0,d,0,f,0,h]
     ///  - block_size = 2
     ///  - block_index = 0
-    /// In the above example, we had 4 blocks and
-    /// each block had an erasure at index 0.
+    ///
+    /// In the above example, we had 4 blocks and each block had an erasure at index 0.
     BlockSynchronizedErasures(BlockErasureIndices),
     /// There is no pattern to the missing erasures.
     ///
@@ -100,21 +100,22 @@ impl ReedSolomon {
     /// tolerate before are not able to recover the message.
     ///
     /// Note: we need to have at least `poly_len` evaluations
-    fn acceptable_num_random_erasures(&self) -> usize {
+    const fn acceptable_num_random_erasures(&self) -> usize {
         let total_codeword_len = self.poly_len * self.expansion_factor;
         let min_num_evaluations_needed = self.poly_len;
         total_codeword_len - min_num_evaluations_needed
     }
+
     /// Returns the maximum number of block erasures indices that can be missing
     /// before we are not able to recover the message.
     ///
     /// Note: This can also be computed by doing block_size / expansion_factor
-    pub fn acceptable_num_block_erasures(&self) -> usize {
+    pub const fn acceptable_num_block_erasures(&self) -> usize {
         self.acceptable_num_random_erasures() / self.num_blocks
     }
 
     /// The number of scalars in the reed solomon encoded polynomial
-    pub fn codeword_length(&self) -> usize {
+    pub const fn codeword_length(&self) -> usize {
         self.poly_len * self.expansion_factor
     }
 
@@ -166,6 +167,7 @@ impl ReedSolomon {
     ///  - All of the blocks are not missing.
     ///  - The block indices are not repeated.
     ///  - The block indices are valid (ie each index references a block)
+    ///
     /// It is the responsibility of the caller to ensure that these are valid.
     ///
     /// - We note that the algorithm below has an edge case when all of the blocks
@@ -356,7 +358,7 @@ mod tests {
         const BLOCK_SIZE: usize = 1;
 
         let rs = ReedSolomon::new(POLY_LEN, EXPANSION_FACTOR, BLOCK_SIZE);
-        let block_erasure_indices: Vec<_> = (0..BLOCK_SIZE).map(|i| i).collect();
+        let block_erasure_indices: Vec<_> = (0..BLOCK_SIZE).collect();
 
         rs.construct_vanishing_poly_from_block_erasures(BlockErasureIndices(block_erasure_indices));
     }
@@ -374,7 +376,7 @@ mod tests {
         assert_eq!(codewords.len(), 32);
 
         let got_poly_coeff = rs
-            .recover_polynomial_coefficient(codewords.clone(), BlockErasureIndices::default())
+            .recover_polynomial_coefficient(codewords, BlockErasureIndices::default())
             .unwrap();
 
         assert_eq!(got_poly_coeff.len(), poly_coeff.len());
@@ -396,7 +398,7 @@ mod tests {
         assert_eq!(z.len(), POLY_LEN * EXPANSION_FACTOR);
 
         // Evaluate vanishing polynomial on the evaluation domain
-        let evals = rs.evaluation_domain.fft_scalars(z.clone());
+        let evals = rs.evaluation_domain.fft_scalars(z);
 
         let blocks: Vec<_> = evals.chunks(BLOCK_SIZE).collect();
         assert!(blocks.len() == rs.num_blocks);
@@ -424,12 +426,12 @@ mod tests {
         let rs = ReedSolomon::new(POLY_LEN, EXPANSION_FACTOR, BLOCK_SIZE);
         let got_z_x =
             rs.construct_vanishing_poly_from_block_erasures(BlockErasureIndices(indices.clone()));
-        let got_z_x_lagrange_form = rs.evaluation_domain.fft_scalars(got_z_x.clone());
+        let got_z_x_lagrange_form = rs.evaluation_domain.fft_scalars(got_z_x);
 
         let blocks: Vec<_> = got_z_x_lagrange_form.chunks(BLOCK_SIZE).collect();
 
         let mut all_indices = Vec::new();
-        for index in indices.clone() {
+        for index in indices {
             for i in 0..blocks.len() {
                 all_indices.push(index + i * BLOCK_SIZE)
             }
@@ -440,7 +442,7 @@ mod tests {
             })
             .unwrap();
 
-        let expected_z_x_lagrange_form = rs.evaluation_domain.fft_scalars(z_x.clone());
+        let expected_z_x_lagrange_form = rs.evaluation_domain.fft_scalars(z_x);
         assert_eq!(expected_z_x_lagrange_form, got_z_x_lagrange_form)
     }
 
@@ -462,8 +464,12 @@ mod tests {
 
             // zero out `num_erasures` amount of evaluations to simulate erasures
             let mut missing_indices = Vec::new();
-            for index in 0..num_erasures {
-                codewords_with_erasures[index] = Scalar::ZERO;
+            for (index, codewords_with_erasure) in codewords_with_erasures
+                .iter_mut()
+                .enumerate()
+                .take(num_erasures)
+            {
+                *codewords_with_erasure = Scalar::ZERO;
                 missing_indices.push(index);
             }
 
@@ -495,7 +501,6 @@ mod tests {
         for num_block_erasures in num_block_erasures {
             let mut blocks: Vec<Vec<Scalar>> = original_codewords
                 .chunks(BLOCK_SIZE)
-                .into_iter()
                 .map(|block| block.to_vec())
                 .collect();
 
@@ -508,11 +513,7 @@ mod tests {
                 missing_block_indices.push(index);
             }
 
-            let codeword_with_erasures = blocks
-                .into_iter()
-                .map(|block| block.to_vec())
-                .flatten()
-                .collect();
+            let codeword_with_erasures = blocks.into_iter().flatten().collect();
 
             let maybe_recovered_poly_coeff = rs.recover_polynomial_coefficient(
                 codeword_with_erasures,
