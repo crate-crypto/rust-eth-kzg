@@ -89,9 +89,14 @@ jobs:
         if: contains(matrix.settings.target, 'windows')
         run: cargo binstall cargo-xwin -y
 
-      - name: Build (Mac and Linux)
-        if: contains(matrix.settings.target, 'windows') == false
+      - name: Build Linux
+        if: contains(matrix.settings.target, 'linux')
         run: yarn build --zig --release --target ${{ matrix.settings.target }}
+        working-directory: bindings/node
+
+      - name: Build Mac
+        if: contains(matrix.settings.target, 'apple')
+        run: yarn build --release --target ${{ matrix.settings.target }}
         working-directory: bindings/node
 
       - name: Build (Windows on Linux)
