@@ -18,7 +18,7 @@ bls12_381 = { workspace = true }
 
 [dev-dependencies]
 criterion = "0.5.1"
-rand = "0.8.4"
+rand = { workspace = true }
 
 [[bench]]
 name = "benchmark"
