@@ -13,8 +13,5 @@ workspace = true
 [lib]
 crate-type = ["staticlib"]
 
-[dependencies]
-c_eth_kzg = { workspace = true }
-
 [build-dependencies]
 nbindgen = { git = "https://github.com/arnetheduck/nbindgen/" }

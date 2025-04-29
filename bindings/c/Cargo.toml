@@ -12,7 +12,6 @@ repository = { workspace = true }
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [dependencies]
-libc = "0.2.2"
 rust_eth_kzg = { workspace = true, features = ["multithreaded"] }
 
 [build-dependencies]
