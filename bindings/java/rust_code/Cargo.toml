@@ -10,7 +10,6 @@ repository = { workspace = true }
 
 [dependencies]
 jni = "^0.21.1"
-hex = { workspace = true }
 c_eth_kzg = { workspace = true }
 
 [lib]
