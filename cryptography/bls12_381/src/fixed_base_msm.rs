@@ -1,3 +1,4 @@
+use crate::lincomb::g1_lincomb;
 use crate::{fixed_base_msm_window::FixedBaseMSMPrecompWindow, G1Projective, Scalar};
 use blstrs::{Fp, G1Affine};
 
@@ -44,11 +45,8 @@ impl FixedBaseMSM {
     pub fn msm(&self, scalars: Vec<Scalar>) -> G1Projective {
         match self {
             Self::Precomp(precomp) => precomp.msm(&scalars),
-            Self::NoPrecomp(generators) => {
-                use crate::lincomb::g1_lincomb;
-                g1_lincomb(generators, &scalars)
-                    .expect("number of generators and scalars should be equal")
-            }
+            Self::NoPrecomp(generators) => g1_lincomb(generators, &scalars)
+                .expect("number of generators and scalars should be equal"),
         }
     }
 }
@@ -120,7 +118,7 @@ impl FixedBaseMSMPrecompBLST {
 
 #[cfg(test)]
 mod tests {
-    use super::{FixedBaseMSMPrecompBLST, UsePrecomp};
+    use super::*;
     use crate::{fixed_base_msm::FixedBaseMSM, G1Projective, Scalar};
     use ff::Field;
     use group::Group;
@@ -135,7 +133,7 @@ mod tests {
             .map(|_| Scalar::random(&mut thread_rng()))
             .collect();
 
-        let res = crate::lincomb::g1_lincomb(&generators, &scalars)
+        let res = g1_lincomb(&generators, &scalars)
             .expect("number of generators and number of scalars is equal");
 
         let fbm = FixedBaseMSM::new(generators, use_precomp);

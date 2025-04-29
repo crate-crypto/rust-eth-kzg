@@ -15,7 +15,7 @@ pub fn g1_lincomb_unsafe(points: &[G1Point], scalars: &[Scalar]) -> Option<G1Pro
         return None;
     }
     // Convert to Projective, since the API forces us to do this
-    let points: Vec<G1Projective> = points.iter().map(|p| p.into()).collect();
+    let points: Vec<_> = points.iter().map(Into::into).collect();
 
     Some(G1Projective::multi_exp(&points, scalars))
 }
@@ -37,7 +37,7 @@ pub fn g2_lincomb_unsafe(points: &[G2Point], scalars: &[Scalar]) -> Option<G2Pro
         return None;
     }
     // Convert to Projective, since the API forces us to do this
-    let points: Vec<G2Projective> = points.iter().map(|p| p.into()).collect();
+    let points: Vec<_> = points.iter().map(Into::into).collect();
 
     Some(G2Projective::multi_exp(&points, scalars))
 }

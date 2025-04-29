@@ -10,8 +10,6 @@ use group::Group;
 /// This function handles both addition of distinct points and point doubling.
 #[inline(always)]
 fn point_add_double(p1: G1Affine, p2: G1Affine, inv: &blstrs::Fp) -> G1Affine {
-    use ff::Field;
-
     let lambda = if p1 == p2 {
         p1.x().square().mul3() * inv
     } else {
@@ -71,17 +69,17 @@ pub fn batch_addition_binary_tree_stride(mut points: Vec<G1Affine>) -> G1Project
         }
         denominators.clear();
 
-        for i in (0..=points.len() - 2).step_by(2) {
-            let p1 = points[i];
-            let p2 = points[i + 1];
-            denominators.push(choose_add_or_double(p1, p2));
+        for pair in points.chunks(2) {
+            if let [p1, p2] = pair {
+                denominators.push(choose_add_or_double(*p1, *p2));
+            }
         }
 
         batch_inverse(&mut denominators);
-        for (i, inv) in (0..=points.len() - 2).step_by(2).zip(&denominators) {
-            let p1 = points[i];
-            let p2 = points[i + 1];
-            points[i / 2] = point_add_double(p1, p2, inv);
+        for (i, inv) in (0..).zip(&denominators) {
+            let p1 = points[2 * i];
+            let p2 = points[2 * i + 1];
+            points[i] = point_add_double(p1, p2, inv);
         }
 
         // The latter half of the vector is now unused,
@@ -109,26 +107,14 @@ pub fn multi_batch_addition_binary_tree_stride(
     let mut scratchpad = Vec::with_capacity(total_num_points);
 
     // Find the largest buckets, this will be the bottleneck for the number of iterations
-    let mut max_bucket_length = 0;
-    for points in &multi_points {
-        max_bucket_length = std::cmp::max(max_bucket_length, points.len());
-    }
+    let max_bucket_length = multi_points.iter().map(Vec::len).max().unwrap_or(0);
 
     // Compute the total number of "unit of work"
     // In the single batch addition case this is analogous to
     // the batch inversion threshold
     #[inline(always)]
     fn compute_threshold(points: &[Vec<G1Affine>]) -> usize {
-        points
-            .iter()
-            .map(|p| {
-                if p.len() % 2 == 0 {
-                    p.len() / 2
-                } else {
-                    (p.len() - 1) / 2
-                }
-            })
-            .sum()
+        points.iter().map(|p| p.len() / 2).sum()
     }
 
     let mut denominators = Vec::with_capacity(max_bucket_length);
@@ -157,11 +143,10 @@ pub fn multi_batch_addition_binary_tree_stride(
         // vectors, we collect them and put them in the
         // inverse array
         for points in &multi_points {
-            if points.len() < 2 {
-                continue;
-            }
-            for i in (0..=points.len() - 2).step_by(2) {
-                denominators.push(choose_add_or_double(points[i], points[i + 1]));
+            for pair in points.chunks(2).take(points.len() / 2) {
+                if let [p1, p2] = pair {
+                    denominators.push(choose_add_or_double(*p1, *p2));
+                }
             }
         }
 

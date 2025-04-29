@@ -18,14 +18,19 @@ pub fn batch_inverse_scratch_pad<F: ff::Field>(v: &mut [F], scratchpad: &mut Vec
     // Section 3.2
     // but with an optimization to multiply every element in the returned vector by coeff
 
+    let n = v.len();
+    if n == 0 {
+        return;
+    }
+
     // Clear the scratchpad and ensure it has enough capacity
     scratchpad.clear();
-    scratchpad.reserve(v.len());
+    scratchpad.reserve(n);
 
     // First pass: compute [a, ab, abc, ...]
     let mut tmp = F::ONE;
     for f in v.iter() {
-        tmp.mul_assign(f);
+        tmp *= f;
         scratchpad.push(tmp);
     }
 
