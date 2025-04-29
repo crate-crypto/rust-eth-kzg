@@ -118,7 +118,7 @@ impl FixedBaseMSMPrecompBLST {
 
 #[cfg(test)]
 mod tests {
-    use super::{FixedBaseMSMPrecompBLST, UsePrecomp};
+    use super::*;
     use crate::{fixed_base_msm::FixedBaseMSM, G1Projective, Scalar};
     use ff::Field;
     use group::Group;
