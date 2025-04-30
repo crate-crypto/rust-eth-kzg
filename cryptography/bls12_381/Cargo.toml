@@ -15,7 +15,7 @@ workspace = true
 
 [dependencies]
 
-blst = { version = "0.3", default-features = false, features = ["no-threads"] }
+blst = { version = "0.3", default-features = false }
 
 # __private_bench feature is used to allow us to access the base field
 blstrs = { version = "0.7.1", features = ["__private_bench"] }
@@ -30,7 +30,9 @@ pairing = { version = "0.23" }
 # as to why we need to pull it in here, even though it is not used directly.
 subtle = { version = ">=2.5.0, <3.0" }
 
-tracing = { version = "0.1.41", default-features = false, features = ["attributes"], optional = true }
+tracing = { version = "0.1.41", default-features = false, features = [
+    "attributes",
+], optional = true }
 
 [dev-dependencies]
 criterion = "0.5.1"
