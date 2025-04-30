@@ -60,6 +60,8 @@ pub fn batch_inverse_scratch_pad<F: Field>(v: &mut [F], scratchpad: &mut Vec<F>)
 mod tests {
     use super::*;
     use blstrs::Scalar;
+    use proptest::prelude::*;
+    use rand::{rngs::StdRng, SeedableRng};
 
     fn random_elements(num_elements: usize) -> Vec<Scalar> {
         (0..num_elements)
@@ -91,5 +93,38 @@ mod tests {
         // Calling batch_inverse on a vector with a zero element should panic
         let mut zero_elements = vec![Scalar::ZERO; 1000];
         batch_inverse(&mut zero_elements);
+    }
+
+    /// Small helper to generate a vector of scalars
+    fn arb_scalar_vec() -> impl Strategy<Value = Vec<Scalar>> {
+        proptest::collection::vec(any::<u64>(), 1..100).prop_map(|seeds| {
+            let mut rng = StdRng::seed_from_u64(123);
+            seeds
+                .into_iter()
+                .map(|_| {
+                    let mut scalar = Scalar::random(&mut rng);
+                    // Ensure we don't generate zero, which would panic
+                    if scalar.is_zero_vartime() {
+                        scalar = Scalar::ONE;
+                    }
+                    scalar
+                })
+                .collect::<Vec<_>>()
+        })
+    }
+
+    proptest! {
+        #[test]
+        fn prop_batch_inverse_matches_individual(elements in arb_scalar_vec()) {
+            let mut input = elements.clone();
+
+            let expected: Vec<Scalar> = elements.iter()
+                .map(|e| e.invert().unwrap())
+                .collect();
+
+            batch_inverse(&mut input);
+
+            prop_assert_eq!(input, expected);
+        }
     }
 }
