@@ -9,9 +9,7 @@ use rust_eth_kzg::{
 const POLYNOMIAL_LEN: usize = 4096;
 
 fn dummy_blob() -> [u8; BYTES_PER_BLOB] {
-    let polynomial: Vec<_> = (0..POLYNOMIAL_LEN)
-        .map(|i| -Scalar::from(i as u64))
-        .collect();
+    let polynomial = (0..POLYNOMIAL_LEN).map(|i| -Scalar::from(i as u64));
     let blob: Vec<_> = polynomial
         .into_iter()
         .flat_map(|scalar| scalar.to_bytes_be())
@@ -50,10 +48,7 @@ pub fn bench_compute_cells_and_kzg_proofs(c: &mut Criterion) {
             bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 },
         );
         c.bench_function(
-            &format!(
-                "computing cells_and_kzg_proofs - NUM_THREADS: {:?}",
-                num_threads
-            ),
+            &format!("computing cells_and_kzg_proofs - NUM_THREADS: {num_threads:?}"),
             |b| b.iter(|| ctx.compute_cells_and_kzg_proofs(&blob)),
         );
     }
@@ -68,10 +63,7 @@ pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
     // Worse case is when half of the cells are missing
     let half_cell_indices = &cell_indices[..CELLS_PER_EXT_BLOB / 2];
     let half_cells = &cells[..CELLS_PER_EXT_BLOB / 2];
-    let half_cells = half_cells
-        .iter()
-        .map(|cell| cell.as_ref())
-        .collect::<Vec<_>>();
+    let half_cells = half_cells.iter().map(AsRef::as_ref).collect::<Vec<_>>();
 
     for num_threads in THREAD_COUNTS {
         let ctx = DASContext::with_threads(
@@ -80,14 +72,11 @@ pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
             bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 },
         );
         c.bench_function(
-            &format!(
-                "worse-case recover_cells_and_kzg_proofs - NUM_THREADS: {:?}",
-                num_threads
-            ),
+            &format!("worse-case recover_cells_and_kzg_proofs - NUM_THREADS: {num_threads:?}"),
             |b| {
                 b.iter(|| {
                     ctx.recover_cells_and_kzg_proofs(half_cell_indices.to_vec(), half_cells.clone())
-                })
+                });
             },
         );
     }
@@ -100,7 +89,7 @@ pub fn bench_verify_cell_kzg_proof_batch(c: &mut Criterion) {
 
     let commitments = vec![&commitment; CELLS_PER_EXT_BLOB];
     let cell_indices: Vec<CellIndex> = (0..CELLS_PER_EXT_BLOB).map(|x| x as CellIndex).collect();
-    let cell_refs: Vec<CellRef> = cells.iter().map(|cell| cell.as_ref()).collect();
+    let cell_refs: Vec<CellRef> = cells.iter().map(AsRef::as_ref).collect();
     let proof_refs: Vec<Bytes48Ref> = proofs.iter().collect();
 
     for num_threads in THREAD_COUNTS {
@@ -110,19 +99,16 @@ pub fn bench_verify_cell_kzg_proof_batch(c: &mut Criterion) {
             bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 },
         );
         c.bench_function(
-            &format!(
-                "verify_cell_kzg_proof_batch - NUM_THREADS: {:?}",
-                num_threads
-            ),
+            &format!("verify_cell_kzg_proof_batch - NUM_THREADS: {num_threads:?}"),
             |b| {
                 b.iter(|| {
                     ctx.verify_cell_kzg_proof_batch(
                         commitments.clone(),
-                        cell_indices.clone(),
+                        &cell_indices,
                         cell_refs.clone(),
                         proof_refs.clone(),
                     )
-                })
+                });
             },
         );
     }
@@ -138,7 +124,7 @@ pub fn bench_init_context(c: &mut Criterion) {
                 NUM_THREADS,
                 bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 },
             )
-        })
+        });
     });
 }
 

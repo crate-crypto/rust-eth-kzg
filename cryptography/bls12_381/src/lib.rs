@@ -64,7 +64,7 @@ pub fn g1_batch_normalize(projective_points: &[G1Projective]) -> Vec<G1Point> {
     // Convert non-identity points to BLST representation and normalize
     let points = unsafe {
         std::slice::from_raw_parts(
-            non_identity_points.as_ptr() as *const blst::blst_p1,
+            non_identity_points.as_ptr().cast::<blst::blst_p1>(),
             non_identity_points.len(),
         )
     };

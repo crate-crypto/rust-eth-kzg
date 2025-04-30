@@ -263,9 +263,9 @@ mod tests {
         for (coset, bit_reversed_coset) in cosets.iter().zip(chunked_bit_reversed_roots.iter()) {
             let coset_len = coset.len();
 
-            let coset_set: HashSet<_> = coset.iter().map(|s| s.to_bytes_be()).collect();
+            let coset_set: HashSet<_> = coset.iter().map(Scalar::to_bytes_be).collect();
             let bit_reversed_set: HashSet<_> =
-                bit_reversed_coset.iter().map(|s| s.to_bytes_be()).collect();
+                bit_reversed_coset.iter().map(Scalar::to_bytes_be).collect();
 
             assert_eq!(coset_set, bit_reversed_set);
 
@@ -300,7 +300,7 @@ mod tests {
 
         // The first part of the extended data should match the original data
         let first_half_extended_data = &extended_data[0..original_data.len()];
-        assert_eq!(first_half_extended_data, original_data)
+        assert_eq!(first_half_extended_data, original_data);
     }
 
     #[test]
@@ -321,7 +321,7 @@ mod tests {
                 .iter()
                 .map(|coset_element| poly_eval(&poly_coeff, coset_element))
                 .collect();
-            coset_evaluations.push(evaluations)
+            coset_evaluations.push(evaluations);
         }
 
         // Let's explain how the data is distributed:
@@ -395,7 +395,7 @@ mod tests {
         let full_subgroup_set: HashSet<_> =
             full_subgroup.into_iter().map(|s| s.to_bytes_be()).collect();
 
-        assert_eq!(full_subgroup_set, cosets_flattened_set)
+        assert_eq!(full_subgroup_set, cosets_flattened_set);
     }
 
     #[test]
@@ -412,21 +412,21 @@ mod tests {
             .collect();
         let mut bit_reversed_coset_evaluations: Vec<Vec<Scalar>> = bit_reversed_evaluations
             .chunks(POINTS_PER_COSET)
-            .map(|chunk| chunk.to_vec())
+            .map(<[Scalar]>::to_vec)
             .collect();
 
         // We have 32 values and 4 points per coset, so we have 8 cosets.
-        let coset_indices: Vec<_> = (0..NUM_COSETS).collect();
+        let coset_indices = 0..NUM_COSETS;
 
         // Zero out the first coset
         let first_coset = &mut bit_reversed_coset_evaluations[0];
         for evaluation in first_coset {
-            *evaluation = Scalar::ZERO
+            *evaluation = Scalar::ZERO;
         }
         // Zero out the 4th coset
         let fourth_coset = &mut bit_reversed_coset_evaluations[3];
         for evaluation in fourth_coset {
-            *evaluation = Scalar::ZERO
+            *evaluation = Scalar::ZERO;
         }
 
         // Now let's simulate the first and fourth coset missing
@@ -466,9 +466,9 @@ mod tests {
         for block in coset_evaluations_normal_order.chunks(8) {
             for (index, element) in block.iter().enumerate() {
                 if index == missing_coset_index_0 || index == missing_coset_index_3 {
-                    assert_eq!(*element, Scalar::ZERO)
+                    assert_eq!(*element, Scalar::ZERO);
                 } else {
-                    assert_ne!(*element, Scalar::ZERO)
+                    assert_ne!(*element, Scalar::ZERO);
                 }
             }
         }
@@ -491,7 +491,7 @@ mod tests {
             for k in (1..31).map(|exponent| 2u32.pow(exponent)) {
                 let expected = naive_bit_reverse(i, k);
                 let got = reverse_bits(i as usize, log2(k)) as u32;
-                assert_eq!(expected, got)
+                assert_eq!(expected, got);
             }
         }
     }

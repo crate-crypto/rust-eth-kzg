@@ -63,11 +63,11 @@ fn fft_inplace<T: FFTElement>(twiddle_factors: &[Scalar], a: &mut [T]) {
     }
 }
 
-pub(crate) fn fft_scalar_inplace(twiddle_factors: &[Scalar], a: &mut [Scalar]) {
+pub fn fft_scalar_inplace(twiddle_factors: &[Scalar], a: &mut [Scalar]) {
     fft_inplace(twiddle_factors, a);
 }
 
-pub(crate) fn fft_g1_inplace(twiddle_factors: &[Scalar], a: &mut [G1Projective]) {
+pub fn fft_g1_inplace(twiddle_factors: &[Scalar], a: &mut [G1Projective]) {
     fft_inplace(twiddle_factors, a);
 }
 
@@ -84,7 +84,7 @@ const fn log2_pow2(n: usize) -> u32 {
     n.trailing_zeros()
 }
 
-pub(crate) fn precompute_twiddle_factors<F: Field>(omega: &F, n: usize) -> Vec<F> {
+pub fn precompute_twiddle_factors<F: Field>(omega: &F, n: usize) -> Vec<F> {
     let log_n = log2_pow2(n);
     (0..log_n)
         .map(|s| omega.pow([(n / (1 << (s + 1))) as u64]))

@@ -31,7 +31,7 @@ pub fn bench_erasure_code_decoding_4096_8192(c: &mut Criterion) {
                     encoded_polynomial.clone(),
                     BlockErasureIndices(missing_blocks.clone()),
                 )
-            })
+            });
         },
     );
 }

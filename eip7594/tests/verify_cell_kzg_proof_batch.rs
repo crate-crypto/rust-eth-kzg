@@ -90,51 +90,42 @@ fn test_verify_cell_kzg_proof_batch() {
             .cells
             .iter()
             .map(Vec::as_slice)
-            .map(|v| v.try_into())
+            .map(TryInto::try_into)
             .collect();
 
-        let cells = match cells {
-            Ok(cells) => cells,
-            Err(_) => {
-                assert!(test.output.is_none());
-                continue;
-            }
+        let Ok(cells) = cells else {
+            assert!(test.output.is_none());
+            continue;
         };
 
         let commitments: Result<_, _> = test
             .commitments
             .iter()
             .map(Vec::as_slice)
-            .map(|v| v.try_into())
+            .map(TryInto::try_into)
             .collect();
 
-        let commitments = match commitments {
-            Ok(commitments) => commitments,
-            Err(_) => {
-                assert!(test.output.is_none());
-                continue;
-            }
+        let Ok(commitments) = commitments else {
+            assert!(test.output.is_none());
+            continue;
         };
 
         let proofs: Result<_, _> = test
             .proofs
             .iter()
             .map(Vec::as_slice)
-            .map(|v| v.try_into())
+            .map(TryInto::try_into)
             .collect();
 
-        let proofs = match proofs {
-            Ok(proofs) => proofs,
-            Err(_) => {
-                assert!(test.output.is_none());
-                continue;
-            }
+        let Ok(proofs) = proofs else {
+            assert!(test.output.is_none());
+            continue;
         };
 
-        match ctx.verify_cell_kzg_proof_batch(commitments, test.cell_indices, cells, proofs) {
-            Ok(_) => {
+        match ctx.verify_cell_kzg_proof_batch(commitments, &test.cell_indices, cells, proofs) {
+            Ok(()) => {
                 // We arrive at this point if the proof verified as true
-                assert!(test.output.unwrap())
+                assert!(test.output.unwrap());
             }
             Err(x) if x.invalid_proof() => {
                 assert!(!test.output.unwrap());
@@ -142,6 +133,6 @@ fn test_verify_cell_kzg_proof_batch() {
             Err(_) => {
                 assert!(test.output.is_none());
             }
-        };
+        }
     }
 }

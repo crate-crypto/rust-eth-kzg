@@ -141,7 +141,7 @@ impl CirculantMatrix {
 
         let mut evaluations = Vec::new();
         for (a, b) in m_fft.into_iter().zip(col_fft) {
-            evaluations.push(a * b)
+            evaluations.push(a * b);
         }
 
         domain.ifft_scalars(evaluations)
@@ -162,7 +162,7 @@ impl CirculantMatrix {
 
         let mut evaluations = Vec::new();
         for (a, b) in m_fft.into_iter().zip(col_fft) {
-            evaluations.push(a * b)
+            evaluations.push(a * b);
         }
         domain.ifft_g1(evaluations)
     }
@@ -206,7 +206,7 @@ struct DenseMatrix {
 #[cfg(test)]
 impl DenseMatrix {
     /// Converts a `ToeplitzMatrix` into a `DenseMatrix`
-    fn from_toeplitz(toeplitz: ToeplitzMatrix) -> Self {
+    fn from_toeplitz(toeplitz: &ToeplitzMatrix) -> Self {
         use bls12_381::ff::Field;
 
         let rows = toeplitz.col.len();
@@ -228,7 +228,7 @@ impl DenseMatrix {
     }
 
     /// Computes a matrix vector multiplication between `DenseMatrix` and `vector`
-    fn vector_mul_scalar(self, vector: Vec<Scalar>) -> Vec<Scalar> {
+    fn vector_mul_scalar(self, vector: &[Scalar]) -> Vec<Scalar> {
         fn inner_product(lhs: &[Scalar], rhs: &[Scalar]) -> Scalar {
             lhs.iter().zip(rhs).map(|(a, b)| a * b).sum()
         }
@@ -241,7 +241,7 @@ impl DenseMatrix {
     /// inner product operations.
     fn vector_mul<T>(
         self,
-        vector: Vec<T>,
+        vector: &[T],
         inner_product: fn(lhs: &[T], rhs: &[Scalar]) -> T,
     ) -> Vec<T> {
         let row_length = self.inner[0].len();
@@ -255,7 +255,7 @@ impl DenseMatrix {
 
         self.inner
             .into_iter()
-            .map(|row| inner_product(&vector, &row))
+            .map(|row| inner_product(vector, &row))
             .collect()
     }
 }
@@ -295,7 +295,7 @@ mod tests {
         [3, 2, 1]
         */
         let tm = ToeplitzMatrix::new(col, row);
-        let mut dm = DenseMatrix::from_toeplitz(tm);
+        let mut dm = DenseMatrix::from_toeplitz(&tm);
         assert!(
             is_toeplitz(&dm),
             "dense matrix should represent a toeplitz matrix"
@@ -319,7 +319,7 @@ mod tests {
         let row = vec![Scalar::from(1u64), Scalar::from(5u64), Scalar::from(6u64)];
 
         let tm = ToeplitzMatrix::new(row, col);
-        let dm = DenseMatrix::from_toeplitz(tm);
+        let dm = DenseMatrix::from_toeplitz(&tm);
 
         let vector = vec![Scalar::from(1u64), Scalar::from(2u64), Scalar::from(3u64)];
         /*
@@ -332,8 +332,8 @@ mod tests {
             Scalar::from(19u64),
             Scalar::from(10u64),
         ];
-        let got = dm.vector_mul_scalar(vector);
-        assert_eq!(got, expected)
+        let got = dm.vector_mul_scalar(&vector);
+        assert_eq!(got, expected);
     }
 
     #[test]
@@ -352,7 +352,7 @@ mod tests {
         ];
 
         let tm = ToeplitzMatrix::new(col, row);
-        let dm = DenseMatrix::from_toeplitz(tm.clone());
+        let dm = DenseMatrix::from_toeplitz(&tm);
 
         let vector = vec![
             Scalar::from(1u64),
@@ -361,7 +361,7 @@ mod tests {
             Scalar::from(4u64),
         ];
         let got = tm.vector_mul_scalars(vector.clone());
-        let expected = dm.vector_mul_scalar(vector);
-        assert_eq!(got, expected)
+        let expected = dm.vector_mul_scalar(&vector);
+        assert_eq!(got, expected);
     }
 }

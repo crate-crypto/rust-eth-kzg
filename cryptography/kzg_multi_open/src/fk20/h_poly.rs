@@ -22,15 +22,13 @@ pub(crate) fn compute_h_poly_commitments(
 ) -> Vec<G1Projective> {
     assert!(
         coset_size.is_power_of_two(),
-        "expected coset_size to be a power of two, found {}",
-        coset_size
+        "expected coset_size to be a power of two, found {coset_size}"
     );
 
     let num_coefficients: usize = polynomial.len();
     assert!(
         num_coefficients.is_power_of_two(),
-        "expected polynomial to have power of 2 number of coefficients. Found {}",
-        num_coefficients
+        "expected polynomial to have power of 2 number of coefficients. Found {num_coefficients}"
     );
 
     // Reverse polynomial so highest coefficient is first.
@@ -62,7 +60,7 @@ pub(crate) fn compute_h_poly_commitments(
 /// Where `l` is less than |k|. We return `l-downsampled` groups.
 /// Example: k = [a_0, a_1, a_3, a_4, a_5, a_6], l = 2
 /// Result = [[a_0, a_3, a_5], [a_1, a_4, a_6]]
-#[inline(always)]
+#[inline]
 pub(crate) fn take_every_nth<T: Clone + Copy>(list: &[T], n: usize) -> Vec<Vec<T>> {
     (0..n)
         .map(|i| list.iter().copied().skip(i).step_by(n).collect())
@@ -86,7 +84,7 @@ mod tests {
         let k = vec![5, 4, 3, 2];
         let downsampled_lists = take_every_nth(&k, 2);
         let result = vec![vec![5, 3], vec![4, 2]];
-        assert_eq!(downsampled_lists, result)
+        assert_eq!(downsampled_lists, result);
     }
 
     #[test]
