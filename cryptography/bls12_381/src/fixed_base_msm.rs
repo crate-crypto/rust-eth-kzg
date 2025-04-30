@@ -78,10 +78,10 @@ impl FixedBaseMSM {
     /// - If precomputation is enabled, it uses the optimized windowed method;
     /// - Otherwise, it falls back to a standard linear combination.
     ///   Panics if the number of scalars doesn't match the number of generators.
-    pub fn msm(&self, scalars: Vec<Scalar>) -> G1Projective {
+    pub fn msm(&self, scalars: &[Scalar]) -> G1Projective {
         match self {
-            Self::Precomp(precomp) => precomp.msm(&scalars),
-            Self::NoPrecomp(generators) => g1_lincomb(generators, &scalars)
+            Self::Precomp(precomp) => precomp.msm(scalars),
+            Self::NoPrecomp(generators) => g1_lincomb(generators, scalars)
                 .expect("number of generators and scalars should be equal"),
         }
     }
@@ -102,7 +102,7 @@ impl FixedBaseMSMPrecompBLST {
     /// # Safety
     /// Unsafe FFI calls to BLST are required to compute and use the precomputation table. These
     /// calls are memory-safe under the assumption that all inputs are valid.
-    pub fn new(generators_affine: Vec<G1Affine>, wbits: usize) -> Self {
+    pub fn new(generators_affine: &[G1Affine], wbits: usize) -> Self {
         // Total number of input points
         let num_points = generators_affine.len();
 
@@ -118,7 +118,9 @@ impl FixedBaseMSMPrecompBLST {
         let generators_affine: Vec<&G1Affine> = generators_affine.iter().collect();
 
         // Convert the slice of references into a pointer-to-pointer format expected by BLST.
-        let points = generators_affine.as_ptr() as *const *const blst_p1_affine;
+        let points = generators_affine
+            .as_ptr()
+            .cast::<*const blst::blst_p1_affine>();
 
         // Allocate memory for the precomputed table
         let mut table = vec![blst_p1_affine::default(); table_len];
@@ -126,7 +128,7 @@ impl FixedBaseMSMPrecompBLST {
         //
         // This fills `table` with precomputed multiples of the input points using a width-wbits window.
         unsafe {
-            blst::blst_p1s_mult_wbits_precompute(table.as_mut_ptr(), wbits, points, num_points)
+            blst::blst_p1s_mult_wbits_precompute(table.as_mut_ptr(), wbits, points, num_points);
         };
 
         Self {
@@ -141,6 +143,7 @@ impl FixedBaseMSMPrecompBLST {
     ///
     /// Converts the scalars into BLST-compatible representations and uses
     /// the windowed multiplication routine from BLST with precomputed points.
+    #[allow(clippy::ptr_as_ptr)]
     pub fn msm(&self, scalars: Vec<Scalar>) -> G1Projective {
         const NUM_BITS_SCALAR: usize = Scalar::NUM_BITS as usize;
 
@@ -220,7 +223,7 @@ mod tests {
             .expect("number of generators and number of scalars is equal");
 
         let fbm = FixedBaseMSM::new(generators, use_precomp);
-        let result = fbm.msm(scalars);
+        let result = fbm.msm(&scalars);
 
         assert_eq!(res, result);
     }
@@ -239,7 +242,7 @@ mod tests {
         let generators: Vec<_> = (0..length)
             .map(|_| G1Projective::random(&mut rand::thread_rng()).into())
             .collect();
-        let fbm = FixedBaseMSMPrecompBLST::new(generators, 8);
+        let fbm = FixedBaseMSMPrecompBLST::new(&generators, 8);
         for val in fbm.table {
             let is_inf = unsafe { blst::blst_p1_affine_is_inf(std::ptr::addr_of!(val)) };
             assert!(!is_inf);

@@ -66,13 +66,12 @@ fn test_blob_to_kzg_commitment() {
         let test = TestVector::from_str(&yaml_data);
 
         //
-        let blob: &[u8; BYTES_PER_BLOB] = match (&test.blob[..]).try_into() {
-            Ok(blob) => blob,
-            Err(_) => {
-                // Blob does not have a valid size
-                assert!(test.commitment.is_none());
-                continue;
-            }
+        let blob: &[u8; BYTES_PER_BLOB] = if let Ok(blob) = (&test.blob[..]).try_into() {
+            blob
+        } else {
+            // Blob does not have a valid size
+            assert!(test.commitment.is_none());
+            continue;
         };
 
         match ctx.blob_to_kzg_commitment(blob) {
@@ -85,6 +84,6 @@ fn test_blob_to_kzg_commitment() {
                 // On an error, we expect the output to be null
                 assert!(test.commitment.is_none());
             }
-        };
+        }
     }
 }

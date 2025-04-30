@@ -54,7 +54,7 @@ impl Domain {
 
         for i in 1..size {
             let prev_root = roots[i - 1];
-            roots.push(prev_root * generator)
+            roots.push(prev_root * generator);
         }
 
         let twiddle_factors = precompute_twiddle_factors(&generator, size);
@@ -82,7 +82,7 @@ impl Domain {
         );
 
         // We now want to compute the generator which has order `size`
-        let exponent: u64 = 1 << (Self::two_adicity() as u64 - log_size_of_group as u64);
+        let exponent: u64 = 1 << (u64::from(Self::two_adicity()) - u64::from(log_size_of_group));
 
         Self::largest_root_of_unity().pow_vartime([exponent])
     }
@@ -181,7 +181,7 @@ impl Domain {
         };
 
         for element in &mut ifft_g1 {
-            *element *= self.domain_size_inv
+            *element *= self.domain_size_inv;
         }
 
         ifft_g1
@@ -198,7 +198,7 @@ impl Domain {
         fft_scalar_inplace(&self.twiddle_factors_inv, &mut points);
 
         for element in &mut points {
-            *element *= self.domain_size_inv
+            *element *= self.domain_size_inv;
         }
 
         points

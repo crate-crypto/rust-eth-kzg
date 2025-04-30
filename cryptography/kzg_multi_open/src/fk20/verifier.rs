@@ -277,16 +277,16 @@ fn compute_fiat_shamir_challenge(
     hash_input.extend(num_cosets.to_be_bytes());
 
     for commitment in row_commitments {
-        hash_input.extend(commitment.to_compressed())
+        hash_input.extend(commitment.to_compressed());
     }
 
     for k in 0..num_cosets {
         hash_input.extend(row_indices[k as usize].to_be_bytes());
         hash_input.extend(coset_indices[k as usize].to_be_bytes());
         for eval in &coset_evals[k as usize] {
-            hash_input.extend(eval.to_bytes_be())
+            hash_input.extend(eval.to_bytes_be());
         }
-        hash_input.extend(proofs[k as usize].to_compressed())
+        hash_input.extend(proofs[k as usize].to_compressed());
     }
 
     assert_eq!(hash_input.len(), hash_input_size);

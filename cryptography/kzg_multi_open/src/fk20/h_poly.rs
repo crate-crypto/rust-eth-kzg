@@ -22,15 +22,13 @@ pub(crate) fn compute_h_poly_commitments(
 ) -> Vec<G1Projective> {
     assert!(
         coset_size.is_power_of_two(),
-        "expected coset_size to be a power of two, found {}",
-        coset_size
+        "expected coset_size to be a power of two, found {coset_size}"
     );
 
     let num_coefficients: usize = polynomial.len();
     assert!(
         num_coefficients.is_power_of_two(),
-        "expected polynomial to have power of 2 number of coefficients. Found {}",
-        num_coefficients
+        "expected polynomial to have power of 2 number of coefficients. Found {num_coefficients}"
     );
 
     // Reverse polynomial so highest coefficient is first.
@@ -86,7 +84,7 @@ mod tests {
         let k = vec![5, 4, 3, 2];
         let downsampled_lists = take_every_nth(&k, 2);
         let result = vec![vec![5, 3], vec![4, 2]];
-        assert_eq!(downsampled_lists, result)
+        assert_eq!(downsampled_lists, result);
     }
 
     #[test]
