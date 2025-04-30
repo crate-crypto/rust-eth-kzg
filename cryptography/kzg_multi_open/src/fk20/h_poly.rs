@@ -60,7 +60,7 @@ pub(crate) fn compute_h_poly_commitments(
 /// Where `l` is less than |k|. We return `l-downsampled` groups.
 /// Example: k = [a_0, a_1, a_3, a_4, a_5, a_6], l = 2
 /// Result = [[a_0, a_3, a_5], [a_1, a_4, a_6]]
-#[inline]
+#[inline(always)]
 pub(crate) fn take_every_nth<T: Clone + Copy>(list: &[T], n: usize) -> Vec<Vec<T>> {
     (0..n)
         .map(|i| list.iter().copied().skip(i).step_by(n).collect())
