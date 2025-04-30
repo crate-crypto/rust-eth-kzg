@@ -253,7 +253,7 @@ mod tests {
     fn msm_all_zero_scalars_returns_identity() {
         let generators = random_g1_affines(8);
         let scalars = vec![Scalar::ZERO; 8];
-        let msm = FixedBaseMSMPrecompBLST::new(generators, 4);
+        let msm = FixedBaseMSMPrecompBLST::new(&generators, 4);
         let result = msm.msm(scalars);
         assert_eq!(result, G1Projective::identity());
     }
@@ -268,7 +268,7 @@ mod tests {
             .map(|(p, s)| G1Projective::from(*p) * s)
             .sum();
 
-        let msm = FixedBaseMSMPrecompBLST::new(generators, 4);
+        let msm = FixedBaseMSMPrecompBLST::new(&generators, 4);
         let result = msm.msm(scalars);
 
         assert_eq!(result, expected);
@@ -280,14 +280,14 @@ mod tests {
         let scalars = random_scalars(16);
 
         let base_result = {
-            let msm = FixedBaseMSMPrecompBLST::new(generators.clone(), 4);
+            let msm = FixedBaseMSMPrecompBLST::new(&generators, 4);
             msm.msm(scalars.clone())
         };
 
         for w in [2, 3, 5, 6, 8] {
-            let msm = FixedBaseMSMPrecompBLST::new(generators.clone(), w);
+            let msm = FixedBaseMSMPrecompBLST::new(&generators, w);
             let result = msm.msm(scalars.clone());
-            assert_eq!(result, base_result, "Mismatch for wbits = {}", w);
+            assert_eq!(result, base_result, "Mismatch for wbits = {w}");
         }
     }
 
@@ -296,7 +296,7 @@ mod tests {
     fn msm_panics_on_mismatched_input_lengths() {
         let generators = random_g1_affines(8);
         let scalars = random_scalars(7); // length mismatch
-        let msm = FixedBaseMSMPrecompBLST::new(generators, 4);
+        let msm = FixedBaseMSMPrecompBLST::new(&generators, 4);
         let _ = msm.msm(scalars); // should panic
     }
 }
