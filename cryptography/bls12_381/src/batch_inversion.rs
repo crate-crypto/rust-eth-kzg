@@ -1,7 +1,9 @@
+use ff::Field;
+
 /// Given a vector of field elements {v_i}, compute the vector {v_i^(-1)}
 ///
 /// Panics if any of the elements are zero
-pub fn batch_inverse<F: ff::Field>(v: &mut [F]) {
+pub fn batch_inverse<F: Field>(v: &mut [F]) {
     let mut scratch_pad = Vec::with_capacity(v.len());
     batch_inverse_scratch_pad(v, &mut scratch_pad);
 }
@@ -12,7 +14,7 @@ pub fn batch_inverse<F: ff::Field>(v: &mut [F]) {
 /// called repeatedly.
 ///
 /// Panics if any of the elements are zero
-pub fn batch_inverse_scratch_pad<F: ff::Field>(v: &mut [F], scratchpad: &mut Vec<F>) {
+pub fn batch_inverse_scratch_pad<F: Field>(v: &mut [F], scratchpad: &mut Vec<F>) {
     // Montgomery's Trick and Fast Implementation of Masked AES
     // Genelle, Prouff and Quisquater
     // Section 3.2
@@ -56,9 +58,8 @@ pub fn batch_inverse_scratch_pad<F: ff::Field>(v: &mut [F], scratchpad: &mut Vec
 
 #[cfg(test)]
 mod tests {
-    use super::batch_inverse;
-    use crate::Scalar;
-    use ff::Field;
+    use super::*;
+    use blstrs::Scalar;
 
     fn random_elements(num_elements: usize) -> Vec<Scalar> {
         (0..num_elements)

@@ -3,13 +3,13 @@ use blstrs::{Fp, G1Affine, G1Projective};
 use ff::Field;
 use group::Group;
 
-/// Adds two elliptic curve points using the point addition/doubling formula.
+/// Adds two elliptic curve points (affine coordinates) using the point addition/doubling formula.
 ///
 /// Note: The inversion is precomputed and passed as a parameter.
 ///
 /// This function handles both addition of distinct points and point doubling.
 #[inline(always)]
-fn point_add_double(p1: G1Affine, p2: G1Affine, inv: &blstrs::Fp) -> G1Affine {
+fn point_add_double(p1: G1Affine, p2: G1Affine, inv: &Fp) -> G1Affine {
     let lambda = if p1 == p2 {
         p1.x().square().mul3() * inv
     } else {
@@ -22,12 +22,11 @@ fn point_add_double(p1: G1Affine, p2: G1Affine, inv: &blstrs::Fp) -> G1Affine {
     G1Affine::from_raw_unchecked(x, y, false)
 }
 
-/// Chooses between point addition and point doubling based on the input points.
+/// Chooses between point addition and point doubling based on the input points (affine coordinates).
 ///
 /// Note: This does not handle the case where p1 == -p2.
 ///
-/// This case is unlikely for our usecase, and is not trivial
-/// to handle.
+/// This case is unlikely for our usecase, and is not trivial to handle.
 #[inline(always)]
 fn choose_add_or_double(p1: G1Affine, p2: G1Affine) -> Fp {
     if p1 == p2 {
@@ -39,43 +38,58 @@ fn choose_add_or_double(p1: G1Affine, p2: G1Affine) -> Fp {
 
 /// This is the threshold to which batching the inversions in affine
 /// formula costs more than doing mixed addition.
+///
+/// WARNING: Should be >= 2.
+///     - The threshold cannot be below the number of points needed for group addition
 const BATCH_INVERSE_THRESHOLD: usize = 16;
 
-/// Performs batch addition of elliptic curve points using a binary tree approach with striding.
+/// Efficiently computes the sum of many elliptic curve points (in affine form)
+/// using a binary-tree-style reduction with batched inversions.
 ///
-/// This function efficiently adds a large number of points by organizing them into a binary tree
-/// and performing batch inversions for the addition formula.
+/// This method groups pairs of points, adds them using the standard EC formulas
+/// (addition or doubling), and applies batch inversion to amortize the cost
+/// of computing the slope (λ) denominators.
 ///
+/// The reduction is repeated in-place until the number of points falls below a
+/// threshold, at which point the remaining points are summed sequentially.
+///
+/// Returns the total sum of all input points as a `G1Projective`.
 // TODO(benedikt): top down balanced tree idea - benedikt
 // TODO: search tree for sorted array
-#[allow(clippy::assertions_on_constants)]
 pub fn batch_addition_binary_tree_stride(mut points: Vec<G1Affine>) -> G1Projective {
+    // We return the identity element if the input is empty
     if points.is_empty() {
         return G1Projective::identity();
     }
 
+    // Stores denominators for slope calculations
     let mut denominators = Vec::with_capacity(points.len());
+    // Accumulates the final result (in projective form)
     let mut sum = G1Projective::identity();
 
-    assert!(
-        BATCH_INVERSE_THRESHOLD >= 2,
-        "THRESHOLD cannot be below the number of points needed for group addition"
-    );
+    // Repeat the batch reduction until the number of points is small
     while points.len() > BATCH_INVERSE_THRESHOLD {
+        // If there's an odd number of points, remove the last one
+        // and add it directly to the accumulator (can't be paired)
         if points.len() % 2 != 0 {
             sum += points
                 .pop()
                 .expect("infallible; since points has an odd length");
         }
+
+        // Clear and refill the denominators for this round
         denominators.clear();
 
+        // For each pair of points, compute the denominator of λ
         for pair in points.chunks(2) {
             if let [p1, p2] = pair {
                 denominators.push(choose_add_or_double(*p1, *p2));
             }
         }
 
+        // Batch invert all denominators in one shot (amortized inversion)
         batch_inverse(&mut denominators);
+        // Perform the actual addition or doubling using the precomputed λ
         for (i, inv) in (0..).zip(&denominators) {
             let p1 = points[2 * i];
             let p2 = points[2 * i + 1];
@@ -87,6 +101,7 @@ pub fn batch_addition_binary_tree_stride(mut points: Vec<G1Affine>) -> G1Project
         points.truncate(denominators.len())
     }
 
+    // Once below threshold, do a regular sequential addition of the rest
     for point in points {
         sum += point
     }
@@ -99,37 +114,37 @@ pub fn batch_addition_binary_tree_stride(mut points: Vec<G1Affine>) -> G1Project
 /// This function efficiently adds multiple sets of points amortizing the cost of the
 /// inversion over all of the sets, using the same binary tree approach with striding
 /// as the single-batch version.
-#[allow(clippy::assertions_on_constants)]
 pub fn multi_batch_addition_binary_tree_stride(
     mut multi_points: Vec<Vec<G1Affine>>,
 ) -> Vec<G1Projective> {
-    let total_num_points: usize = multi_points.iter().map(|p| p.len()).sum();
+    // Total number of points across all batches (used for scratchpad allocation)
+    let total_num_points = multi_points.iter().map(|p| p.len()).sum();
     let mut scratchpad = Vec::with_capacity(total_num_points);
 
-    // Find the largest buckets, this will be the bottleneck for the number of iterations
+    // Find the largest set size — used to size the denominator buffer.
+    //
+    // This will be the bottleneck for the number of iterations
     let max_bucket_length = multi_points.iter().map(Vec::len).max().unwrap_or(0);
 
-    // Compute the total number of "unit of work"
-    // In the single batch addition case this is analogous to
-    // the batch inversion threshold
+    // Computes the total number of point pairs across all batches
+    // (i.e., the total number of λ slope denominators needed)
     #[inline(always)]
     fn compute_threshold(points: &[Vec<G1Affine>]) -> usize {
         points.iter().map(|p| p.len() / 2).sum()
     }
 
+    // Preallocate space for denominators (reused across iterations)
     let mut denominators = Vec::with_capacity(max_bucket_length);
     let mut total_amount_of_work = compute_threshold(&multi_points);
 
+    // Output accumulator: one result per set
     let mut sums = vec![G1Projective::identity(); multi_points.len()];
 
-    assert!(
-        BATCH_INVERSE_THRESHOLD >= 2,
-        "THRESHOLD cannot be below the number of points needed for group addition"
-    );
+    // Keep reducing each set in-place until all fall below the threshold
+    //
     // TODO: total_amount_of_work does not seem to be changing performance that much
     while total_amount_of_work > BATCH_INVERSE_THRESHOLD {
-        // For each point, we check if they are odd and pop off
-        // one of the points
+        // Make each set even-length by popping the last element and adding it directly
         for (points, sum) in multi_points.iter_mut().zip(sums.iter_mut()) {
             // Make the number of points even
             if points.len() % 2 != 0 {
@@ -139,9 +154,7 @@ pub fn multi_batch_addition_binary_tree_stride(
 
         denominators.clear();
 
-        // For each pair of points over all
-        // vectors, we collect them and put them in the
-        // inverse array
+        // Collect slope denominators (either x2 - x1 or 2y1) from all point pairs
         for points in &multi_points {
             for pair in points.chunks(2).take(points.len() / 2) {
                 if let [p1, p2] = pair {
@@ -150,10 +163,12 @@ pub fn multi_batch_addition_binary_tree_stride(
             }
         }
 
+        // Batch invert all collected denominators using a shared scratchpad
         batch_inverse_scratch_pad(&mut denominators, &mut scratchpad);
 
         let mut denominators_offset = 0;
 
+        // Apply point_add_double to each pair in each set, using inverted slopes
         for points in &mut multi_points {
             if points.len() < 2 {
                 continue;
@@ -177,6 +192,7 @@ pub fn multi_batch_addition_binary_tree_stride(
         total_amount_of_work = compute_threshold(&multi_points);
     }
 
+    // Final pass: add the few remaining points in each batch sequentially
     for (sum, points) in sums.iter_mut().zip(multi_points) {
         for point in points {
             *sum += point
@@ -188,13 +204,10 @@ pub fn multi_batch_addition_binary_tree_stride(
 
 #[cfg(test)]
 mod tests {
-
-    use crate::batch_addition::{
-        batch_addition_binary_tree_stride, multi_batch_addition_binary_tree_stride,
-    };
-
-    use blstrs::{G1Affine, G1Projective};
-    use group::Group;
+    use super::*;
+    use proptest::prelude::*;
+    use rand::rngs::StdRng;
+    use rand::SeedableRng;
 
     #[test]
     fn test_batch_addition() {
@@ -232,5 +245,55 @@ mod tests {
 
         let got_results = multi_batch_addition_binary_tree_stride(random_sets_of_points_clone);
         assert_eq!(got_results, expected_results);
+    }
+
+    /// Strategy that produces random G1Projective points
+    fn arb_g1_projective() -> impl Strategy<Value = G1Projective> {
+        any::<u64>().prop_map(|seed| {
+            let mut rng = StdRng::seed_from_u64(seed);
+            G1Projective::random(&mut rng)
+        })
+    }
+
+    proptest! {
+        #[test]
+        fn prop_batch_addition_matches_naive(
+            points in proptest::collection::vec(arb_g1_projective(), 1..200)
+        ) {
+            let affine_points: Vec<G1Affine> = points.iter().copied().map(Into::into).collect();
+
+            // Reference sum: naive sequential addition
+            let expected: G1Projective = points.iter().copied().sum();
+
+            // Test: batch addition
+            let got = batch_addition_binary_tree_stride(affine_points);
+
+            prop_assert_eq!(expected, got);
+        }
+
+        #[test]
+        fn prop_multi_batch_addition_matches_naive(
+            batch_sizes in proptest::collection::vec(1usize..50, 1..10),
+            seeds in proptest::collection::vec(any::<u64>(), 1..10)
+        ) {
+            let mut sets = Vec::with_capacity(batch_sizes.len());
+            let mut expected = Vec::with_capacity(batch_sizes.len());
+
+            for (i, &size) in batch_sizes.iter().enumerate() {
+                let seed = *seeds.get(i % seeds.len()).unwrap_or(&0);
+                let mut rng = StdRng::seed_from_u64(seed);
+
+                let proj_points: Vec<G1Projective> =
+                    (0..size).map(|_| G1Projective::random(&mut rng)).collect();
+                let affine_points: Vec<G1Affine> =
+                    proj_points.iter().copied().map(Into::into).collect();
+
+                expected.push(proj_points.iter().copied().sum());
+                sets.push(affine_points);
+            }
+
+            let got = multi_batch_addition_binary_tree_stride(sets);
+            prop_assert_eq!(got, expected);
+        }
     }
 }
