@@ -14,6 +14,7 @@ use super::batch_toeplitz::BatchToeplitzMatrixVecMul;
 /// See section 3.1.1 of the FK20 paper for more details.
 ///
 /// FK20 computes the commitments to these polynomials in 3.1.1.
+#[cfg_attr(feature = "tracing", tracing::instrument(skip_all))]
 pub(crate) fn compute_h_poly_commitments(
     batch_toeplitz: &BatchToeplitzMatrixVecMul,
     mut polynomial: PolyCoeff,

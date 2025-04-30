@@ -152,6 +152,7 @@ impl FK20Prover {
     /// Instead of evaluating each coset individually, we can evaluate the polynomial
     /// at all of the points we want to open at, and then use reverse bit ordering
     /// to group the evaluations into the relevant cosets.
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip_all))]
     fn compute_coset_evaluations(&self, polynomial: PolyCoeff) -> Vec<Vec<Scalar>> {
         let mut evaluations = self.evaluation_domain.fft_scalars(polynomial);
         reverse_bit_order(&mut evaluations);
@@ -199,6 +200,7 @@ impl FK20Prover {
     //
     // Note: one can view this implementation of FK20 as only working over polynomials in coefficient form.
     // ie the core algorithms never consider polynomials in lagrange form.
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip_all))]
     fn compute_multi_opening_proofs_poly_coeff(
         &self,
         polynomial: PolyCoeff,
@@ -207,7 +209,11 @@ impl FK20Prover {
         //
         let h_poly_commitments =
             compute_h_poly_commitments(&self.batch_toeplitz, polynomial.clone(), self.coset_size);
-        let mut proofs = self.proof_domain.fft_g1(h_poly_commitments);
+        let mut proofs = {
+            #[cfg(feature = "tracing")]
+            let _span = tracing::info_span!("compute proof from h_poly_commitments").entered();
+            self.proof_domain.fft_g1(h_poly_commitments)
+        };
 
         // Reverse bit order the set of proofs, so that the proofs line up with the
         // coset evaluations.

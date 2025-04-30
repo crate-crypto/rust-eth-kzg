@@ -30,12 +30,15 @@ pairing = { version = "0.23" }
 # as to why we need to pull it in here, even though it is not used directly.
 subtle = { version = ">=2.5.0, <3.0" }
 
+tracing = { version = "0.1.41", default-features = false, features = ["attributes"], optional = true }
+
 [dev-dependencies]
 criterion = "0.5.1"
 rand = "0.8.4"
 
 [features]
 blst-no-threads = ["blst/no-threads"]
+tracing = ["dep:tracing"]
 
 [[bench]]
 name = "benchmark"

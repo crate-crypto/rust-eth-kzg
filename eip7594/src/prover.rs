@@ -99,6 +99,9 @@ impl DASContext {
         blob: BlobRef,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), Error> {
         with_optional_threadpool!(self, {
+            #[cfg(feature = "tracing")]
+            let _span = tracing::info_span!("compute_cells_and_kzg_proofs").entered();
+
             // Deserialization
             //
             let scalars = deserialize_blob_to_scalars(blob)?;
