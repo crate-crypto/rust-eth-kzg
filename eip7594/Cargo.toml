@@ -33,6 +33,8 @@ hex = "0.4.3"
 # Serde-yaml has been deprecated, however since we only
 # use it for tests, we will not update it.
 serde_yaml = "0.9.34"
+tracing-subscriber = { version = "0.3.19", features = ["std", "env-filter"] }
+tracing-forest = { version = "0.1.6", features = ["ansi", "smallvec"] }
 
 [[bench]]
 name = "benchmark"
