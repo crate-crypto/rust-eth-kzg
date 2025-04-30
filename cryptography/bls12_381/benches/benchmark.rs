@@ -5,7 +5,7 @@ use crate_crypto_internal_eth_kzg_bls12_381::{
     fixed_base_msm_window::FixedBaseMSMPrecompWindow,
     g1_batch_normalize, g2_batch_normalize,
     group::Group,
-    lincomb::{g1_lincomb, g1_lincomb_unsafe, g2_lincomb, g2_lincomb_unsafe},
+    lincomb::{g1_lincomb, g1_lincomb_unchecked, g2_lincomb, g2_lincomb_unchecked},
     G1Projective, G2Projective, Scalar,
 };
 use criterion::{criterion_group, criterion_main, Criterion};
@@ -51,7 +51,7 @@ pub fn bench_msm(c: &mut Criterion) {
     let g1_elements = g1_batch_normalize(&g1_elements);
 
     c.bench_function(&format!("g1 msm of size {}", NUM_G1_ELEMENTS), |b| {
-        b.iter(|| g1_lincomb_unsafe(&g1_elements, &polynomial_4096))
+        b.iter(|| g1_lincomb_unchecked(&g1_elements, &polynomial_4096))
     });
     c.bench_function(&format!("g1 (safe) msm of size {}", NUM_G1_ELEMENTS), |b| {
         b.iter(|| g1_lincomb(&g1_elements, &polynomial_4096))
@@ -64,7 +64,7 @@ pub fn bench_msm(c: &mut Criterion) {
     let g2_elements = g2_batch_normalize(&g2_elements);
 
     c.bench_function(&format!("g2 msm of size {}", NUM_G2_ELEMENTS), |b| {
-        b.iter(|| g2_lincomb_unsafe(&g2_elements, &polynomial_65))
+        b.iter(|| g2_lincomb_unchecked(&g2_elements, &polynomial_65))
     });
     c.bench_function(&format!("g2 (safe) msm of size {}", NUM_G2_ELEMENTS), |b| {
         b.iter(|| g2_lincomb(&g2_elements, &polynomial_65))

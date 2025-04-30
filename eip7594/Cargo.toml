@@ -29,7 +29,7 @@ tracing = ["dep:tracing", "bls12_381/tracing", "kzg_multi_open/tracing"]
 [dev-dependencies]
 criterion = "0.5.1"
 rand = "0.8.4"
-hex = "0.4.3"
+hex = { workspace = true }
 # Serde-yaml has been deprecated, however since we only
 # use it for tests, we will not update it.
 serde_yaml = "0.9.34"
