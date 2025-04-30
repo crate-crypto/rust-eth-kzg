@@ -82,12 +82,9 @@ fn test_compute_cells_and_kzg_proofs() {
         let yaml_data = fs::read_to_string(test_file).unwrap();
         let test = TestVector::from_str(&yaml_data);
 
-        let blob = match test.blob.try_into() {
-            Ok(blob) => blob,
-            Err(_) => {
-                assert!(test.proofs_and_cells.is_none());
-                continue;
-            }
+        let Ok(blob) = test.blob.try_into() else {
+            assert!(test.proofs_and_cells.is_none());
+            continue;
         };
 
         // Compute the cells using `compute_cells` and check if it matches
@@ -119,6 +116,6 @@ fn test_compute_cells_and_kzg_proofs() {
                 // On an error, we expect the output to be null
                 assert!(test.proofs_and_cells.is_none());
             }
-        };
+        }
     }
 }

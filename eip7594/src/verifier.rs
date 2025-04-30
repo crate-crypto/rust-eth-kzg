@@ -52,14 +52,13 @@ fn deduplicate_with_indices<T: Eq + std::hash::Hash + Clone>(input: Vec<T>) -> (
     let mut indices = Vec::with_capacity(input.len());
 
     for item in input {
-        let index = match index_map.get(&item) {
-            Some(&index) => index,
-            None => {
-                let new_index = unique_items.len();
-                unique_items.push(item.clone());
-                index_map.insert(item, new_index);
-                new_index
-            }
+        let index = if let Some(&index) = index_map.get(&item) {
+            index
+        } else {
+            let new_index = unique_items.len();
+            unique_items.push(item.clone());
+            index_map.insert(item, new_index);
+            new_index
         };
         indices.push(index as u64);
     }
@@ -75,7 +74,7 @@ impl DASContext {
     pub fn verify_cell_kzg_proof_batch(
         &self,
         commitments: Vec<Bytes48Ref>,
-        cell_indices: Vec<CellIndex>,
+        cell_indices: &[CellIndex],
         cells: Vec<CellRef>,
         proofs_bytes: Vec<Bytes48Ref>,
     ) -> Result<(), Error> {
@@ -86,7 +85,7 @@ impl DASContext {
             validation::verify_cell_kzg_proof_batch(
                 &deduplicated_commitments,
                 &row_indices,
-                &cell_indices,
+                cell_indices,
                 &cells,
                 &proofs_bytes,
             )?;
@@ -111,7 +110,7 @@ impl DASContext {
                 .verify_multi_opening(
                     &row_commitments_,
                     &row_indices,
-                    &cell_indices,
+                    cell_indices,
                     &coset_evals,
                     &proofs_,
                 );

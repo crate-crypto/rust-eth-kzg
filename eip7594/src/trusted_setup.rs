@@ -153,7 +153,7 @@ fn deserialize_g1_points<T: AsRef<str>>(
             }
         };
 
-        g1_points.push(point)
+        g1_points.push(point);
     }
 
     g1_points
@@ -180,7 +180,7 @@ fn deserialize_g2_points<T: AsRef<str>>(
             SubgroupCheck::Check => G2Point::from_compressed(&g2_point_bytes).unwrap(),
             SubgroupCheck::NoCheck => G2Point::from_compressed_unchecked(&g2_point_bytes).unwrap(),
         };
-        g2_points.push(point)
+        g2_points.push(point);
     }
 
     g2_points

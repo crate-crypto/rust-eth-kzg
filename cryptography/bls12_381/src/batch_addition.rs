@@ -98,12 +98,12 @@ pub fn batch_addition_binary_tree_stride(mut points: Vec<G1Affine>) -> G1Project
 
         // The latter half of the vector is now unused,
         // all results are stored in the former half.
-        points.truncate(denominators.len())
+        points.truncate(denominators.len());
     }
 
     // Once below threshold, do a regular sequential addition of the rest
     for point in points {
-        sum += point
+        sum += point;
     }
 
     sum
@@ -117,21 +117,21 @@ pub fn batch_addition_binary_tree_stride(mut points: Vec<G1Affine>) -> G1Project
 pub fn multi_batch_addition_binary_tree_stride(
     mut multi_points: Vec<Vec<G1Affine>>,
 ) -> Vec<G1Projective> {
-    // Total number of points across all batches (used for scratchpad allocation)
-    let total_num_points = multi_points.iter().map(|p| p.len()).sum();
-    let mut scratchpad = Vec::with_capacity(total_num_points);
-
-    // Find the largest set size — used to size the denominator buffer.
-    //
-    // This will be the bottleneck for the number of iterations
-    let max_bucket_length = multi_points.iter().map(Vec::len).max().unwrap_or(0);
-
     // Computes the total number of point pairs across all batches
     // (i.e., the total number of λ slope denominators needed)
     #[inline(always)]
     fn compute_threshold(points: &[Vec<G1Affine>]) -> usize {
         points.iter().map(|p| p.len() / 2).sum()
     }
+
+    // Total number of points across all batches (used for scratchpad allocation)
+    let total_num_points = multi_points.iter().map(Vec::len).sum();
+    let mut scratchpad = Vec::with_capacity(total_num_points);
+
+    // Find the largest set size — used to size the denominator buffer.
+    //
+    // This will be the bottleneck for the number of iterations
+    let max_bucket_length = multi_points.iter().map(Vec::len).max().unwrap_or(0);
 
     // Preallocate space for denominators (reused across iterations)
     let mut denominators = Vec::with_capacity(max_bucket_length);
@@ -186,7 +186,7 @@ pub fn multi_batch_addition_binary_tree_stride(
             // The latter half of the vector is now unused,
             // all results are stored in the former half.
             points.truncate(num_points);
-            denominators_offset += num_points
+            denominators_offset += num_points;
         }
 
         total_amount_of_work = compute_threshold(&multi_points);
@@ -195,7 +195,7 @@ pub fn multi_batch_addition_binary_tree_stride(
     // Final pass: add the few remaining points in each batch sequentially
     for (sum, points) in sums.iter_mut().zip(multi_points) {
         for point in points {
-            *sum += point
+            *sum += point;
         }
     }
 

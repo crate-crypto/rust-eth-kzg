@@ -113,7 +113,7 @@ impl DASContext {
                 .kzg_multipoint_prover
                 .compute_multi_opening_proofs(ProverInput::Data(scalars));
 
-            Ok(serialize_cells_and_proofs(cells, proofs))
+            Ok(serialize_cells_and_proofs(cells, &proofs))
         })
     }
 
@@ -158,7 +158,7 @@ impl DASContext {
                 .kzg_multipoint_prover
                 .compute_multi_opening_proofs(ProverInput::PolyCoeff(poly_coeff));
 
-            Ok(serialize_cells_and_proofs(coset_evaluations, proofs))
+            Ok(serialize_cells_and_proofs(coset_evaluations, &proofs))
         })
     }
 }

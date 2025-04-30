@@ -108,8 +108,9 @@ pub struct DASContext {
 #[cfg(feature = "multithreaded")]
 impl Default for DASContext {
     fn default() -> Self {
-        let trusted_setup = TrustedSetup::default();
         const DEFAULT_NUM_THREADS: ThreadCount = ThreadCount::Single;
+
+        let trusted_setup = TrustedSetup::default();
         Self::with_threads(&trusted_setup, DEFAULT_NUM_THREADS, UsePrecomp::No)
     }
 }

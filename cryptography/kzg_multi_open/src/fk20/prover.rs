@@ -158,7 +158,7 @@ impl FK20Prover {
         reverse_bit_order(&mut evaluations);
         evaluations
             .chunks_exact(self.coset_size)
-            .map(|slice| slice.to_vec())
+            .map(<[Scalar]>::to_vec)
             .collect()
     }
 
@@ -335,13 +335,13 @@ mod tests {
 
     #[test]
     fn test_consistency_between_naive_kzg_naive_fk20() {
-        // Setup
-        //
-        let (ck, _) = create_insecure_commit_verification_keys();
-
         const POLYNOMIAL_LEN: usize = 4096;
         const NUMBER_OF_POINTS_TO_EVALUATE: usize = 2 * POLYNOMIAL_LEN;
         const COSET_SIZE: usize = 64;
+
+        // Setup
+        //
+        let (ck, _) = create_insecure_commit_verification_keys();
 
         let cosets = generate_cosets(NUMBER_OF_POINTS_TO_EVALUATE, COSET_SIZE, true);
 
@@ -376,8 +376,8 @@ mod tests {
             return false;
         }
 
-        let lhs_set: HashSet<_> = lhs.iter().map(|s| s.to_bytes_be()).collect();
-        let rhs_set: HashSet<_> = rhs.iter().map(|s| s.to_bytes_be()).collect();
+        let lhs_set: HashSet<_> = lhs.iter().map(Scalar::to_bytes_be).collect();
+        let rhs_set: HashSet<_> = rhs.iter().map(Scalar::to_bytes_be).collect();
 
         lhs_set == rhs_set
     }

@@ -13,6 +13,8 @@ mod naive;
 #[cfg(test)]
 pub(crate) fn create_insecure_commit_verification_keys(
 ) -> (commit_key::CommitKey, verification_key::VerificationKey) {
+    use bls12_381::ff::Field;
+    use bls12_381::group::Group;
     use bls12_381::{g1_batch_normalize, g2_batch_normalize, G1Projective, G2Projective, Scalar};
     use commit_key::CommitKey;
     use verification_key::VerificationKey;
@@ -22,8 +24,6 @@ pub(crate) fn create_insecure_commit_verification_keys(
 
     // We are making claims about a polynomial which has 4096 coefficients;
     let num_coefficients_in_polynomial = 4096;
-    use bls12_381::ff::Field;
-    use bls12_381::group::Group;
 
     let g1_gen = G1Projective::generator();
 
@@ -44,14 +44,14 @@ pub(crate) fn create_insecure_commit_verification_keys(
     let g2_gen = G2Projective::generator();
     // The setup needs 65 g1 elements for the verification key, in order
     // to commit to the remainder polynomial.
-    for _ in 0..multi_opening_size + 1 {
+    for _ in 0..=multi_opening_size {
         g2_points.push(g2_gen * current_secret_pow);
         current_secret_pow *= secret;
     }
     let g2_points = g2_batch_normalize(&g2_points);
 
     let vk = VerificationKey::new(
-        g1_points[0..multi_opening_size + 1].to_vec(),
+        g1_points[0..=multi_opening_size].to_vec(),
         g2_points,
         multi_opening_size,
         num_coefficients_in_polynomial,

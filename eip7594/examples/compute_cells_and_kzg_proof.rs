@@ -10,9 +10,7 @@ use tracing_subscriber::{EnvFilter, Registry};
 const POLYNOMIAL_LEN: usize = 4096;
 
 fn dummy_blob() -> [u8; BYTES_PER_BLOB] {
-    let polynomial: Vec<_> = (0..POLYNOMIAL_LEN)
-        .map(|i| -Scalar::from(i as u64))
-        .collect();
+    let polynomial = (0..POLYNOMIAL_LEN).map(|i| -Scalar::from(i as u64));
     let blob: Vec<_> = polynomial
         .into_iter()
         .flat_map(|scalar| scalar.to_bytes_be())
