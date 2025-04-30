@@ -63,10 +63,7 @@ pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
     // Worse case is when half of the cells are missing
     let half_cell_indices = &cell_indices[..CELLS_PER_EXT_BLOB / 2];
     let half_cells = &cells[..CELLS_PER_EXT_BLOB / 2];
-    let half_cells = half_cells
-        .into_iter()
-        .map(|cell| cell.as_ref())
-        .collect::<Vec<_>>();
+    let half_cells = half_cells.iter().map(AsRef::as_ref).collect::<Vec<_>>();
 
     for num_threads in THREAD_COUNTS {
         let ctx = DASContext::with_threads(
@@ -78,10 +75,7 @@ pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
             &format!("worse-case recover_cells_and_kzg_proofs - NUM_THREADS: {num_threads:?}"),
             |b| {
                 b.iter(|| {
-                    ctx.recover_cells_and_kzg_proofs(
-                        half_cell_indices.to_vec(),
-                        half_cells.to_vec(),
-                    )
+                    ctx.recover_cells_and_kzg_proofs(half_cell_indices.to_vec(), half_cells.clone())
                 });
             },
         );
@@ -95,8 +89,8 @@ pub fn bench_verify_cell_kzg_proof_batch(c: &mut Criterion) {
 
     let commitments = vec![&commitment; CELLS_PER_EXT_BLOB];
     let cell_indices: Vec<CellIndex> = (0..CELLS_PER_EXT_BLOB).map(|x| x as CellIndex).collect();
-    let cell_refs: Vec<CellRef> = cells.iter().map(|cell| cell.as_ref()).collect();
-    let proof_refs: Vec<Bytes48Ref> = proofs.iter().map(|proof| proof).collect();
+    let cell_refs: Vec<CellRef> = cells.iter().map(AsRef::as_ref).collect();
+    let proof_refs: Vec<Bytes48Ref> = proofs.iter().collect();
 
     for num_threads in THREAD_COUNTS {
         let ctx = DASContext::with_threads(
@@ -122,7 +116,7 @@ pub fn bench_verify_cell_kzg_proof_batch(c: &mut Criterion) {
 
 pub fn bench_init_context(c: &mut Criterion) {
     const NUM_THREADS: ThreadCount = ThreadCount::Single;
-    c.bench_function(&format!("Initialize context"), |b| {
+    c.bench_function("Initialize context", |b| {
         b.iter(|| {
             let trusted_setup = TrustedSetup::default();
             DASContext::with_threads(
