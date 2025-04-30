@@ -102,7 +102,7 @@ impl FixedBaseMSMPrecompWindow {
     /// - Panics if `scalars.len()` does not match the number of precomputed base points (`self.table.len()`).
     pub fn msm(&self, scalars: &[Scalar]) -> G1Projective {
         // Convert each scalar to little-endian byte representation
-        let scalars_bytes: Vec<_> = scalars.iter().map(|a| a.to_bytes_le()).collect();
+        let scalars_bytes: Vec<_> = scalars.iter().map(Scalar::to_bytes_le).collect();
         // Number of scalar "windows" (i.e., chunks of `wbits` bits per scalar)
         let number_of_windows = Scalar::NUM_BITS as usize / self.wbits + 1;
 

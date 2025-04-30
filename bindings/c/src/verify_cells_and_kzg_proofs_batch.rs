@@ -36,7 +36,7 @@ pub(crate) fn _verify_cell_kzg_proof_batch(
     // Computation
     //
     let verification_result =
-        ctx.verify_cell_kzg_proof_batch(commitments, cell_indices.to_vec(), cells, proofs);
+        ctx.verify_cell_kzg_proof_batch(commitments, cell_indices, cells, proofs);
 
     // Write to output
     let proof_is_valid = verification_result_to_bool_cresult(verification_result)?;

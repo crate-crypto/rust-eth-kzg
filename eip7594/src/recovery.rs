@@ -111,7 +111,7 @@ mod validation {
         //
         // This should be infallible.
         for (i, cell) in cells.iter().enumerate() {
-            assert_eq!(cell.len(), BYTES_PER_CELL, "the number of bytes in a cell should always equal {} since the type is a reference to an array. Check cell at index {}", BYTES_PER_CELL, i);
+            assert_eq!(cell.len(), BYTES_PER_CELL, "the number of bytes in a cell should always equal {BYTES_PER_CELL} since the type is a reference to an array. Check cell at index {i}");
         }
 
         // Check that we have no duplicate cell indices

@@ -22,7 +22,7 @@ fn deserialize_bytes_to_scalars(bytes: &[u8]) -> Result<Vec<Scalar>, Serializati
 
     let mut scalars = Vec::with_capacity(bytes32s.len());
     for bytes32 in bytes32s {
-        scalars.push(deserialize_bytes_to_scalar(bytes32)?)
+        scalars.push(deserialize_bytes_to_scalar(bytes32)?);
     }
     Ok(scalars)
 }
@@ -51,23 +51,22 @@ pub(crate) fn deserialize_bytes_to_scalar(
 
     // Convert the CtOption into Option
     let option_scalar: Option<Scalar> = Scalar::from_bytes_be(bytes32).into();
-    match option_scalar {
-        Some(scalar) => Ok(scalar),
-        None => Err(SerializationError::CouldNotDeserializeScalar {
-            bytes: scalar_bytes.to_vec(),
-        }),
-    }
+    option_scalar.map_or_else(
+        || {
+            Err(SerializationError::CouldNotDeserializeScalar {
+                bytes: scalar_bytes.to_vec(),
+            })
+        },
+        Ok,
+    )
 }
 
 pub(crate) fn deserialize_compressed_g1(point_bytes: &[u8]) -> Result<G1Point, SerializationError> {
-    let point_bytes = match point_bytes.try_into() {
-        Ok(bytes) => bytes,
-        Err(_) => {
-            return Err(SerializationError::G1PointHasInvalidLength {
-                length: point_bytes.len(),
-                bytes: point_bytes.to_vec(),
-            })
-        }
+    let Ok(point_bytes) = point_bytes.try_into() else {
+        return Err(SerializationError::G1PointHasInvalidLength {
+            length: point_bytes.len(),
+            bytes: point_bytes.to_vec(),
+        });
     };
 
     let opt_g1: Option<G1Point> = Option::from(G1Point::from_compressed(point_bytes));
@@ -127,21 +126,21 @@ pub(crate) fn coset_evaluations_to_cells<T: AsRef<[Scalar]>>(
 
     cells
         .try_into()
-        .unwrap_or_else(|_| panic!("expected {} number of cells", CELLS_PER_EXT_BLOB))
+        .unwrap_or_else(|_| panic!("expected {CELLS_PER_EXT_BLOB} number of cells"))
 }
 
 pub(crate) fn serialize_cells_and_proofs(
     coset_evaluations: Vec<Vec<Scalar>>,
-    proofs: Vec<G1Point>,
+    proofs: &[G1Point],
 ) -> ([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]) {
     // Serialize the evaluation sets into `Cell`s.
     let cells = serialize_cells(coset_evaluations);
 
     // Serialize the proofs into `KZGProof` objects.
     let proofs: Vec<_> = proofs.iter().map(serialize_g1_compressed).collect();
-    let proofs: [KZGProof; CELLS_PER_EXT_BLOB] = proofs
+    let proofs = proofs
         .try_into()
-        .unwrap_or_else(|_| panic!("expected {} number of proofs", CELLS_PER_EXT_BLOB));
+        .unwrap_or_else(|_| panic!("expected {CELLS_PER_EXT_BLOB} number of proofs"));
 
     (cells, proofs)
 }

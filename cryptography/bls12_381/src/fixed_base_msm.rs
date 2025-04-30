@@ -1,6 +1,7 @@
 use crate::lincomb::g1_lincomb;
 use crate::{fixed_base_msm_window::FixedBaseMSMPrecompWindow, G1Projective, Scalar};
 use blstrs::{Fp, G1Affine};
+use ff::PrimeField;
 
 /// FixedBaseMSMPrecomp computes a multi scalar multiplication using pre-computations.
 ///
@@ -42,17 +43,17 @@ impl FixedBaseMSM {
         }
     }
 
-    pub fn msm(&self, scalars: Vec<Scalar>) -> G1Projective {
+    pub fn msm(&self, scalars: &[Scalar]) -> G1Projective {
         match self {
-            Self::Precomp(precomp) => precomp.msm(&scalars),
-            Self::NoPrecomp(generators) => g1_lincomb(generators, &scalars)
+            Self::Precomp(precomp) => precomp.msm(scalars),
+            Self::NoPrecomp(generators) => g1_lincomb(generators, scalars)
                 .expect("number of generators and scalars should be equal"),
         }
     }
 }
 
 impl FixedBaseMSMPrecompBLST {
-    pub fn new(generators_affine: Vec<G1Affine>, wbits: usize) -> Self {
+    pub fn new(generators_affine: &[G1Affine], wbits: usize) -> Self {
         let num_points = generators_affine.len();
         let table_size_bytes =
             unsafe { blst::blst_p1s_mult_wbits_precompute_sizeof(wbits, num_points) };
@@ -63,11 +64,13 @@ impl FixedBaseMSMPrecompBLST {
         // Calculate the number of blst_p1_affine elements
         let table_size = table_size_bytes / std::mem::size_of::<blst::blst_p1_affine>();
 
-        let points = generators_affine.as_ptr() as *const *const blst::blst_p1_affine;
+        let points = generators_affine
+            .as_ptr()
+            .cast::<*const blst::blst_p1_affine>();
 
         let mut table = vec![blst::blst_p1_affine::default(); table_size];
         unsafe {
-            blst::blst_p1s_mult_wbits_precompute(table.as_mut_ptr(), wbits, points, num_points)
+            blst::blst_p1s_mult_wbits_precompute(table.as_mut_ptr(), wbits, points, num_points);
         };
 
         let scratch_space_size = unsafe { blst::blst_p1s_mult_wbits_scratch_sizeof(num_points) };
@@ -80,10 +83,11 @@ impl FixedBaseMSMPrecompBLST {
         }
     }
 
+    #[allow(clippy::ptr_as_ptr)]
     pub fn msm(&self, scalars: Vec<Scalar>) -> G1Projective {
-        use ff::PrimeField;
-        let mut ret = blst::blst_p1::default();
         const NUM_BITS_SCALAR: usize = Scalar::NUM_BITS as usize;
+
+        let mut ret = blst::blst_p1::default();
 
         let blst_scalars: Vec<_> = scalars
             .into_iter()
@@ -137,7 +141,7 @@ mod tests {
             .expect("number of generators and number of scalars is equal");
 
         let fbm = FixedBaseMSM::new(generators, use_precomp);
-        let result = fbm.msm(scalars);
+        let result = fbm.msm(&scalars);
 
         assert_eq!(res, result);
     }
@@ -156,7 +160,7 @@ mod tests {
         let generators: Vec<_> = (0..length)
             .map(|_| G1Projective::random(&mut rand::thread_rng()).into())
             .collect();
-        let fbm = FixedBaseMSMPrecompBLST::new(generators, 8);
+        let fbm = FixedBaseMSMPrecompBLST::new(&generators, 8);
         for val in fbm.table {
             let is_inf = unsafe { blst::blst_p1_affine_is_inf(std::ptr::addr_of!(val)) };
             assert!(!is_inf);

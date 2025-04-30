@@ -16,9 +16,8 @@ impl Error {
     /// Note: This distinction in practice, is not meaningful for the caller and is mainly
     /// here due to the specs and spec tests making this distinction.
     pub const fn invalid_proof(&self) -> bool {
-        let verifier_error = match self {
-            Self::Verifier(verifier_err) => verifier_err,
-            _ => return false,
+        let Self::Verifier(verifier_error) = self else {
+            return false;
         };
         matches!(verifier_error, VerifierError::FK20(_))
     }

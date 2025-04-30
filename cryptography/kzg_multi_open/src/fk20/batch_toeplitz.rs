@@ -27,6 +27,7 @@ pub struct BatchToeplitzMatrixVecMul {
 }
 
 impl BatchToeplitzMatrixVecMul {
+    #[allow(clippy::needless_pass_by_value)]
     pub fn new(vectors: Vec<Vec<G1Point>>, use_precomp: UsePrecomp) -> Self {
         let size_of_vector = vectors[0].len();
         let vectors_all_same_length = vectors.iter().all(|v| v.len() == size_of_vector);
@@ -109,7 +110,7 @@ impl BatchToeplitzMatrixVecMul {
             self.precomputed_fft_vectors
                 .maybe_par_iter()
                 .zip(msm_scalars)
-                .map(|(points, scalars)| points.msm(scalars))
+                .map(|(points, scalars)| points.msm(&scalars))
                 .collect()
         };
 
@@ -212,6 +213,6 @@ mod tests {
             }
         }
 
-        assert_eq!(expected_result, got_result)
+        assert_eq!(expected_result, got_result);
     }
 }

@@ -18,7 +18,7 @@ pub fn get_booth_index(window_index: usize, window_size: usize, el: &[u8]) -> i3
     // fill into a u32
     let mut v: [u8; 4] = [0; 4];
     for (dst, src) in v.iter_mut().zip(el.iter().skip(skip_bytes)) {
-        *dst = *src
+        *dst = *src;
     }
     let mut tmp = u32::from_le_bytes(v);
 
@@ -39,9 +39,9 @@ pub fn get_booth_index(window_index: usize, window_size: usize, el: &[u8]) -> i3
 
     // find the booth action index
     if sign {
-        tmp as i32
+        tmp.try_into().unwrap()
     } else {
-        ((!(tmp - 1) & ((1 << window_size) - 1)) as i32).neg()
+        (i32::try_from(!(tmp - 1) & ((1 << window_size) - 1)).unwrap()).neg()
     }
 }
 
@@ -64,7 +64,7 @@ mod tests {
 
         let got = mul(&s, &gen, 4);
 
-        assert_eq!(G1Point::from(res), got)
+        assert_eq!(G1Point::from(res), got);
     }
 
     fn mul(scalar: &Scalar, point: &G1Point, window: usize) -> G1Point {

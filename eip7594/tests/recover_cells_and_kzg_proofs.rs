@@ -91,15 +91,12 @@ fn test_recover_cells_and_kzg_proofs() {
             .input_cells
             .iter()
             .map(Vec::as_slice)
-            .map(|v| v.try_into())
+            .map(TryInto::try_into)
             .collect();
 
-        let input_cells = match input_cells {
-            Ok(input_cells) => input_cells,
-            Err(_) => {
-                assert!(test.proofs_and_cells.is_none());
-                continue;
-            }
+        let Ok(input_cells) = input_cells else {
+            assert!(test.proofs_and_cells.is_none());
+            continue;
         };
 
         match ctx.recover_cells_and_kzg_proofs(test.input_cell_indices, input_cells) {
@@ -124,6 +121,6 @@ fn test_recover_cells_and_kzg_proofs() {
                 // On an error, we expect the output to be null
                 assert!(test.proofs_and_cells.is_none());
             }
-        };
+        }
     }
 }

@@ -31,7 +31,7 @@ pub(crate) fn compute_multi_opening(
     polynomial: &PolyCoeff,
     input_points: &[Scalar],
 ) -> (G1Point, Vec<Scalar>) {
-    _compute_multi_opening_naive(commit_key, polynomial, input_points)
+    compute_multi_opening_naive(commit_key, polynomial, input_points)
 }
 
 /// Naively Verifies a multi-point opening proof.
@@ -42,7 +42,7 @@ pub(crate) fn verify_multi_opening(
     input_points: &[Scalar],
     output_points: &[Scalar],
 ) -> bool {
-    _verify_multi_opening_naive(
+    verify_multi_opening_naive(
         verification_key,
         commitment,
         quotient_commitment,
@@ -61,7 +61,7 @@ pub(crate) fn verify_multi_opening(
 ///
 /// We further note that since the degree of I(X) is less than the degree of Z(X),
 /// the computation can be simplified in monomial form to Q(X) = f(X) / Z(X)
-fn _compute_multi_opening_naive(
+fn compute_multi_opening_naive(
     commit_key: &CommitKey,
     polynomial: &PolyCoeff,
     points: &[Scalar],
@@ -134,7 +134,7 @@ fn _compute_multi_opening_naive(
 /// The verifier receives the commitments to Q(X) and f(X), so they check the equation
 /// holds by using the following pairing equation:
 ///     e([Q(X)]_1, [Z(X)]_2) == e([f(X)]_1 - [I(X)]_1, [1]_2)
-fn _verify_multi_opening_naive(
+fn verify_multi_opening_naive(
     verification_key: &VerificationKey,
     commitment: G1Point,
     proof: G1Point,

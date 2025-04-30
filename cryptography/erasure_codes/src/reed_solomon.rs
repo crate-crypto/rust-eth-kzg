@@ -86,12 +86,12 @@ impl ReedSolomon {
         let fft_coset_gen = CosetFFT::new(Scalar::MULTIPLICATIVE_GENERATOR);
 
         Self {
+            expansion_factor,
             poly_len,
             evaluation_domain,
-            expansion_factor,
             block_size,
-            block_size_domain,
             num_blocks,
+            block_size_domain,
             fft_coset_gen,
         }
     }
@@ -179,7 +179,7 @@ impl ReedSolomon {
     /// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/13ac373a2c284dc66b48ddd2ef0a10537e4e0de6/specs/_features/eip7594/polynomial-commitments-sampling.md#construct_vanishing_polynomial
     fn construct_vanishing_poly_from_block_erasures(
         &self,
-        block_indices: BlockErasureIndices,
+        block_indices: &BlockErasureIndices,
     ) -> Vec<Scalar> {
         assert!(block_indices.0.len() != self.block_size, "all of the blocks are missing. This should have been checked by the caller of this method");
 
@@ -260,7 +260,7 @@ impl ReedSolomon {
                         max_num_block_erasures_accepted: self.acceptable_num_block_erasures(),
                     });
                 }
-                Ok(self.construct_vanishing_poly_from_block_erasures(indices))
+                Ok(self.construct_vanishing_poly_from_block_erasures(&indices))
             }
             #[cfg(test)]
             ErasurePattern::Random { indices } => {
@@ -360,7 +360,9 @@ mod tests {
         let rs = ReedSolomon::new(POLY_LEN, EXPANSION_FACTOR, BLOCK_SIZE);
         let block_erasure_indices: Vec<_> = (0..BLOCK_SIZE).collect();
 
-        rs.construct_vanishing_poly_from_block_erasures(BlockErasureIndices(block_erasure_indices));
+        rs.construct_vanishing_poly_from_block_erasures(&BlockErasureIndices(
+            block_erasure_indices,
+        ));
     }
 
     #[test]
@@ -385,15 +387,15 @@ mod tests {
 
     #[test]
     fn test_vanishing_poly_erasure_pattern_block_synchronized() {
-        let indices = vec![0, 1, 2, 3];
-
         const POLY_LEN: usize = 512;
         const EXPANSION_FACTOR: usize = 2;
         const BLOCK_SIZE: usize = 16;
 
+        let indices = vec![0, 1, 2, 3];
+
         let rs = ReedSolomon::new(POLY_LEN, EXPANSION_FACTOR, BLOCK_SIZE);
         let z =
-            rs.construct_vanishing_poly_from_block_erasures(BlockErasureIndices(indices.clone()));
+            rs.construct_vanishing_poly_from_block_erasures(&BlockErasureIndices(indices.clone()));
 
         assert_eq!(z.len(), POLY_LEN * EXPANSION_FACTOR);
 
@@ -417,15 +419,15 @@ mod tests {
 
     #[test]
     fn test_vanishing_poly_erasure_pattern_equiv_random() {
-        let indices = vec![0, 1];
-
         const POLY_LEN: usize = 64;
         const EXPANSION_FACTOR: usize = 2;
         const BLOCK_SIZE: usize = 4;
 
+        let indices = vec![0, 1];
+
         let rs = ReedSolomon::new(POLY_LEN, EXPANSION_FACTOR, BLOCK_SIZE);
         let got_z_x =
-            rs.construct_vanishing_poly_from_block_erasures(BlockErasureIndices(indices.clone()));
+            rs.construct_vanishing_poly_from_block_erasures(&BlockErasureIndices(indices.clone()));
         let got_z_x_lagrange_form = rs.evaluation_domain.fft_scalars(got_z_x);
 
         let blocks: Vec<_> = got_z_x_lagrange_form.chunks(BLOCK_SIZE).collect();
@@ -433,7 +435,7 @@ mod tests {
         let mut all_indices = Vec::new();
         for index in indices {
             for i in 0..blocks.len() {
-                all_indices.push(index + i * BLOCK_SIZE)
+                all_indices.push(index + i * BLOCK_SIZE);
             }
         }
         let z_x = rs
@@ -443,7 +445,7 @@ mod tests {
             .unwrap();
 
         let expected_z_x_lagrange_form = rs.evaluation_domain.fft_scalars(z_x);
-        assert_eq!(expected_z_x_lagrange_form, got_z_x_lagrange_form)
+        assert_eq!(expected_z_x_lagrange_form, got_z_x_lagrange_form);
     }
 
     #[test]
@@ -480,7 +482,7 @@ mod tests {
                 )
                 .unwrap();
             assert_eq!(recovered_poly_coeff.len(), poly_coeff.len());
-            assert_eq!(recovered_poly_coeff, poly_coeff)
+            assert_eq!(recovered_poly_coeff, poly_coeff);
         }
     }
 
@@ -501,14 +503,14 @@ mod tests {
         for num_block_erasures in num_block_erasures {
             let mut blocks: Vec<Vec<Scalar>> = original_codewords
                 .chunks(BLOCK_SIZE)
-                .map(|block| block.to_vec())
+                .map(<[Scalar]>::to_vec)
                 .collect();
 
             // zero out `num_erasures` amount of evaluations to simulate erasures
             let mut missing_block_indices = Vec::new();
             for index in 0..num_block_erasures {
                 for block in &mut blocks {
-                    block[index] = Scalar::ZERO
+                    block[index] = Scalar::ZERO;
                 }
                 missing_block_indices.push(index);
             }
@@ -522,9 +524,9 @@ mod tests {
             if num_block_erasures <= rs.acceptable_num_block_erasures() {
                 let recovered_poly_coeff = maybe_recovered_poly_coeff.unwrap();
                 assert_eq!(recovered_poly_coeff.len(), poly_coeff.len());
-                assert_eq!(recovered_poly_coeff, poly_coeff)
+                assert_eq!(recovered_poly_coeff, poly_coeff);
             } else {
-                assert!(maybe_recovered_poly_coeff.is_err())
+                assert!(maybe_recovered_poly_coeff.is_err());
             }
         }
     }
