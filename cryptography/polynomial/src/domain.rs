@@ -136,6 +136,7 @@ impl Domain {
     ///
     /// Note: Thinking about an FFT as multiple inner products between powers of the elements
     /// in the domain and the input polynomial makes this easier to visualize.
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip_all))]
     pub fn fft_g1(&self, mut points: Vec<G1Projective>) -> Vec<G1Projective> {
         // Pad the vector of points with zeroes, so that it is the same size as the
         // domain.
@@ -158,6 +159,7 @@ impl Domain {
     ///
     /// This is useful for saving computation on the final scalar multiplication that happens after the
     /// initial FFT is done.
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip_all))]
     pub fn ifft_g1_take_n(
         &self,
         mut points: Vec<G1Projective>,
@@ -187,6 +189,7 @@ impl Domain {
 
     /// Interpolates the points over the domain to get a polynomial
     /// in monomial form.
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip_all))]
     pub fn ifft_scalars(&self, mut points: Vec<Scalar>) -> Vec<Scalar> {
         // Pad the vector with zeroes, so that it is the same size as the
         // domain.

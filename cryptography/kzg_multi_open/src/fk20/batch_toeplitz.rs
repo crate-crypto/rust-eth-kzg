@@ -102,12 +102,16 @@ impl BatchToeplitzMatrixVecMul {
             .collect();
         let msm_scalars = transpose(col_ffts);
 
-        let result: Vec<_> = self
-            .precomputed_fft_vectors
-            .maybe_par_iter()
-            .zip(msm_scalars)
-            .map(|(points, scalars)| points.msm(scalars))
-            .collect();
+        let result: Vec<_> = {
+            #[cfg(feature = "tracing")]
+            let _span =
+                tracing::info_span!("compute fixed-base msm on matrix-vec-mul result").entered();
+            self.precomputed_fft_vectors
+                .maybe_par_iter()
+                .zip(msm_scalars)
+                .map(|(points, scalars)| points.msm(scalars))
+                .collect()
+        };
 
         // Once the aggregate circulant matrix-vector multiplication is done, we need to take the first half
         // of the result, as the second half are extra terms that were added due to the fact that the Toeplitz matrices
