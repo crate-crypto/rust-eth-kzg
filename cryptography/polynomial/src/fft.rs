@@ -163,6 +163,10 @@ fn bitreverse(mut n: u32, l: u32) -> u32 {
 }
 
 fn bitreverse_slice<T>(a: &mut [T]) {
+    if a.is_empty() {
+        return;
+    }
+
     let n = a.len();
     let log_n = log2_pow2(n);
     assert_eq!(n, 1 << log_n);
