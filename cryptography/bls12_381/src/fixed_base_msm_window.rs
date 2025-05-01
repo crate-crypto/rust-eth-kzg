@@ -148,7 +148,7 @@ impl FixedBaseMSMPrecompWindow {
             .last()
             .expect("at least one window required");
 
-      for point in accumulated_points.into_iter().rev().skip(1) {
+        for point in accumulated_points.into_iter().rev().skip(1) {
             // Double the result 'wbits' times
             for _ in 0..self.wbits {
                 result = result.double();
