@@ -135,7 +135,7 @@ impl DASContext {
             rayon::ThreadPoolBuilder::new()
                 .num_threads(num_threads.into())
                 .build()
-                .unwrap(),
+                .expect("failed to build thread pool"),
         );
 
         Self {

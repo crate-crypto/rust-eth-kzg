@@ -130,7 +130,7 @@ mod tests {
         // MSM with empty input returns identity
         let points: Vec<G1Point> = vec![];
         let scalars: Vec<Scalar> = vec![];
-        let result = g1_lincomb(&points, &scalars).unwrap();
+        let result = g1_lincomb(&points, &scalars).expect("length mismatch");
         assert_eq!(result, G1Projective::identity());
     }
 
@@ -162,7 +162,7 @@ mod tests {
         let scalars = vec![s1, s1, s1];
 
         let expected = G1Projective::generator() * s3;
-        let result = g1_lincomb(&points, &scalars).unwrap();
+        let result = g1_lincomb(&points, &scalars).expect("length mismatch");
         assert_eq!(result, expected);
     }
 
@@ -181,7 +181,7 @@ mod tests {
         let scalars = vec![one, one, zero];
 
         // Safe lincomb filters out identity and zero scalar product
-        let result = g1_lincomb(&points, &scalars).unwrap();
+        let result = g1_lincomb(&points, &scalars).expect("length mismatch");
         assert_eq!(result, G1Projective::generator());
     }
 
@@ -199,7 +199,7 @@ mod tests {
         let scalars = vec![one, one, zero];
 
         // Only the first point should contribute: 1 * G = G
-        let result = g2_lincomb(&points, &scalars).unwrap();
+        let result = g2_lincomb(&points, &scalars).expect("length mismatch");
         assert_eq!(result, G2Projective::generator());
     }
 
@@ -214,7 +214,7 @@ mod tests {
         let scalars = vec![one, one];
 
         let expected = G2Projective::generator() * two;
-        let result = g2_lincomb(&points, &scalars).unwrap();
+        let result = g2_lincomb(&points, &scalars).expect("length mismatch");
         assert_eq!(result, expected);
     }
 
@@ -239,7 +239,7 @@ mod tests {
             .sum();
 
         // Compute the result using the optimized linear combination function
-        let result = g1_lincomb(&points, &scalars).unwrap();
+        let result = g1_lincomb(&points, &scalars).expect("length mismatch");
 
         // Ensure the result matches the naive computation
         assert_eq!(result, expected);
@@ -266,7 +266,7 @@ mod tests {
             .sum();
 
         // Compute the result using the optimized linear combination function
-        let result = g2_lincomb(&points, &scalars).unwrap();
+        let result = g2_lincomb(&points, &scalars).expect("length mismatch");
 
         // Ensure the result matches the naive computation
         assert_eq!(result, expected);

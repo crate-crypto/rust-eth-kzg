@@ -146,7 +146,7 @@ fn verify_multi_opening_naive(
         .zip(output_points.iter())
         .map(|(p, e)| (*p, *e))
         .collect();
-    let i_x = lagrange_interpolate(&coordinates).unwrap();
+    let i_x = lagrange_interpolate(&coordinates).expect("lagrange interpolation failed");
 
     let vanishing_poly = vanishing_poly(input_points);
     let comm_vanishing_poly: G2Point = verification_key.commit_g2(&vanishing_poly).into();

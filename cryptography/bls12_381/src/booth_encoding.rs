@@ -39,9 +39,9 @@ pub fn get_booth_index(window_index: usize, window_size: usize, el: &[u8]) -> i3
 
     // find the booth action index
     if sign {
-        tmp.try_into().unwrap()
+        tmp.try_into().expect("Not valid i32")
     } else {
-        (i32::try_from(!(tmp - 1) & ((1 << window_size) - 1)).unwrap()).neg()
+        (i32::try_from(!(tmp - 1) & ((1 << window_size) - 1)).expect("Not valid i32")).neg()
     }
 }
 

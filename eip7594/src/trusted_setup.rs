@@ -177,8 +177,12 @@ fn deserialize_g2_points<T: AsRef<str>>(
             .expect("expected 96 bytes for G2 point");
 
         let point = match subgroup_check {
-            SubgroupCheck::Check => G2Point::from_compressed(&g2_point_bytes).unwrap(),
-            SubgroupCheck::NoCheck => G2Point::from_compressed_unchecked(&g2_point_bytes).unwrap(),
+            SubgroupCheck::Check => {
+                G2Point::from_compressed(&g2_point_bytes).expect("invalid g2 point")
+            }
+            SubgroupCheck::NoCheck => {
+                G2Point::from_compressed_unchecked(&g2_point_bytes).expect("invalid g2 point")
+            }
         };
         g2_points.push(point);
     }

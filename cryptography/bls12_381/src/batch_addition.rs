@@ -148,7 +148,7 @@ pub fn multi_batch_addition_binary_tree_stride(
         for (points, sum) in multi_points.iter_mut().zip(sums.iter_mut()) {
             // Make the number of points even
             if points.len() % 2 != 0 {
-                *sum += points.pop().unwrap();
+                *sum += points.pop().expect("underflow");
             }
         }
 

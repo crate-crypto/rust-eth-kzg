@@ -119,7 +119,7 @@ mod tests {
             let mut input = elements.clone();
 
             let expected: Vec<Scalar> = elements.iter()
-                .map(|e| e.invert().unwrap())
+                .map(|e| e.invert().expect("Cannot invert zero"))
                 .collect();
 
             batch_inverse(&mut input);
