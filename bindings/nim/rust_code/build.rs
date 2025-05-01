@@ -21,14 +21,19 @@ fn main() {
         )
         .with_crate(path_to_c_crate)
         .generate()
-        .unwrap()
+        .expect("Unable to generate bindings")
         .write_to_file(output_file);
 }
 
 fn path_to_bindings_folder() -> PathBuf {
-    let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+    let crate_dir = env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR env not set");
     let crate_dir = PathBuf::from(crate_dir);
     // Go up two directories to be at bindings parent directory
-    let parent = crate_dir.parent().unwrap().parent().unwrap().to_path_buf();
+    let parent = crate_dir
+        .parent()
+        .expect("No parent directory found")
+        .parent()
+        .expect("No parent directory found")
+        .to_path_buf();
     parent
 }

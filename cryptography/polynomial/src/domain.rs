@@ -1,5 +1,7 @@
 use crate::coset_fft::CosetFFT;
-use crate::fft::{fft_g1_inplace, fft_scalar_inplace, precompute_twiddle_factors};
+use crate::fft::{
+    fft_g1_inplace, fft_scalar_inplace, precompute_omegas, precompute_twiddle_factors_bo,
+};
 use crate::poly_coeff::PolyCoeff;
 use bls12_381::ff::{Field, PrimeField};
 use bls12_381::{
@@ -26,10 +28,16 @@ pub struct Domain {
     pub generator_inv: Scalar,
     /// Precomputed values for the generator to speed up
     /// the forward FFT
-    twiddle_factors: Vec<Scalar>,
-    /// Precomputed values for the generator to speed up
+    omegas: Vec<Scalar>,
+    /// Precomputed values for the twiddle factors in bit-reversed order,
+    /// to speed up the forward FFT
+    twiddle_factors_bo: Vec<Scalar>,
+    /// Precomputed values for the inverse generator to speed up
     /// the backward FFT
-    twiddle_factors_inv: Vec<Scalar>,
+    omegas_inv: Vec<Scalar>,
+    /// Precomputed values for the inverse twiddle factors in bit-reversed order,
+    /// to speed up the backward FFT
+    twiddle_factors_inv_bo: Vec<Scalar>,
 }
 
 impl Domain {
@@ -57,8 +65,10 @@ impl Domain {
             roots.push(prev_root * generator);
         }
 
-        let twiddle_factors = precompute_twiddle_factors(&generator, size);
-        let twiddle_factors_inv = precompute_twiddle_factors(&generator_inv, size);
+        let omegas = precompute_omegas(&generator, size);
+        let twiddle_factors_bo = precompute_twiddle_factors_bo(&generator, size);
+        let omegas_inv = precompute_omegas(&generator_inv, size);
+        let twiddle_factors_inv_bo = precompute_twiddle_factors_bo(&generator_inv, size);
 
         Self {
             roots,
@@ -66,8 +76,10 @@ impl Domain {
             domain_size_inv: size_as_scalar_inv,
             generator,
             generator_inv,
-            twiddle_factors,
-            twiddle_factors_inv,
+            omegas,
+            twiddle_factors_bo,
+            omegas_inv,
+            twiddle_factors_inv_bo,
         }
     }
 
@@ -110,7 +122,7 @@ impl Domain {
         // domain.
         polynomial.resize(self.size(), Scalar::ZERO);
 
-        fft_scalar_inplace(&self.twiddle_factors, &mut polynomial);
+        fft_scalar_inplace(&self.omegas, &self.twiddle_factors_bo, &mut polynomial);
 
         polynomial
     }
@@ -127,7 +139,7 @@ impl Domain {
             *point *= coset_scale;
             coset_scale *= coset.generator;
         }
-        fft_scalar_inplace(&self.twiddle_factors, &mut points);
+        fft_scalar_inplace(&self.omegas, &self.twiddle_factors_bo, &mut points);
 
         points
     }
@@ -142,7 +154,7 @@ impl Domain {
         // domain.
         points.resize(self.size(), G1Projective::identity());
 
-        fft_g1_inplace(&self.twiddle_factors, &mut points);
+        fft_g1_inplace(&self.omegas, &self.twiddle_factors_bo, &mut points);
 
         points
     }
@@ -169,7 +181,7 @@ impl Domain {
         // domain.
         points.resize(self.size(), G1Projective::identity());
 
-        fft_g1_inplace(&self.twiddle_factors_inv, &mut points);
+        fft_g1_inplace(&self.omegas_inv, &self.twiddle_factors_inv_bo, &mut points);
 
         // Truncate the result if a value of `n` was supplied.
         let mut ifft_g1 = match n {
@@ -195,7 +207,7 @@ impl Domain {
         // domain.
         points.resize(self.size(), Scalar::ZERO);
 
-        fft_scalar_inplace(&self.twiddle_factors_inv, &mut points);
+        fft_scalar_inplace(&self.omegas_inv, &self.twiddle_factors_inv_bo, &mut points);
 
         for element in &mut points {
             *element *= self.domain_size_inv;

@@ -14,7 +14,7 @@ fn dummy_blob() -> [u8; BYTES_PER_BLOB] {
         .into_iter()
         .flat_map(|scalar| scalar.to_bytes_be())
         .collect();
-    blob.try_into().unwrap()
+    blob.try_into().expect("blob conversion failed")
 }
 
 fn dummy_commitment_cells_and_proofs() -> (
@@ -24,8 +24,14 @@ fn dummy_commitment_cells_and_proofs() -> (
     let ctx = DASContext::default();
     let blob = dummy_blob();
 
-    let commitment = ctx.blob_to_kzg_commitment(&blob).unwrap();
-    (commitment, ctx.compute_cells_and_kzg_proofs(&blob).unwrap())
+    let commitment = ctx
+        .blob_to_kzg_commitment(&blob)
+        .expect("blob to commitment failed");
+    (
+        commitment,
+        ctx.compute_cells_and_kzg_proofs(&blob)
+            .expect("failed to compute kzg proof"),
+    )
 }
 
 const THREAD_COUNTS: [ThreadCount; 5] = [

@@ -144,8 +144,11 @@ impl FixedBaseMSMPrecompWindow {
         let accumulated_points = multi_batch_addition_binary_tree_stride(windows_of_points);
 
         // Now accumulate the windows by doubling wbits times
-        let mut result = *accumulated_points.last().unwrap();
-        for point in accumulated_points.into_iter().rev().skip(1) {
+        let mut result = *accumulated_points
+            .last()
+            .expect("at least one window required");
+
+      for point in accumulated_points.into_iter().rev().skip(1) {
             // Double the result 'wbits' times
             for _ in 0..self.wbits {
                 result = result.double();

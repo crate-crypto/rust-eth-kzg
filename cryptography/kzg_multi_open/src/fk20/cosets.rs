@@ -449,7 +449,7 @@ mod tests {
                 coset_indices_missing,
                 coset_evaluations_missing,
             )
-            .unwrap();
+            .expect("Failed to recover evaluations in domain order");
 
         let missing_coset_index_0 = reverse_bits(0, log2(NUM_COSETS as u32));
         let missing_coset_index_3 = reverse_bits(3, log2(NUM_COSETS as u32));

@@ -1,5 +1,5 @@
 use bls12_381::Scalar;
-use rust_eth_kzg::{constants::BYTES_PER_BLOB, DASContext, ThreadCount, TrustedSetup};
+use rust_eth_kzg::{constants::BYTES_PER_BLOB, DASContext, TrustedSetup};
 use std::time::Instant;
 use tracing_forest::util::LevelFilter;
 use tracing_forest::ForestLayer;
@@ -15,15 +15,21 @@ fn dummy_blob() -> [u8; BYTES_PER_BLOB] {
         .into_iter()
         .flat_map(|scalar| scalar.to_bytes_be())
         .collect();
-    blob.try_into().unwrap()
+    blob.try_into().expect("blob conversion failed")
 }
 fn main() {
     let trusted_setup = TrustedSetup::default();
     let blob = dummy_blob();
 
+    #[cfg(feature = "multithreaded")]
     let ctx = DASContext::with_threads(
         &trusted_setup,
-        ThreadCount::SensibleDefault,
+        rust_eth_kzg::ThreadCount::SensibleDefault,
+        bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 },
+    );
+    #[cfg(feature = "singlethreaded")]
+    let ctx = DASContext::new(
+        &trusted_setup,
         bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 },
     );
 
@@ -31,7 +37,8 @@ fn main() {
 
     let start = Instant::now();
     while Instant::now().duration_since(start).as_secs() < 3 {
-        ctx.compute_cells_and_kzg_proofs(&blob).unwrap();
+        ctx.compute_cells_and_kzg_proofs(&blob)
+            .expect("failed to compute kzg proof");
     }
 
     let env_filter = EnvFilter::builder()
@@ -43,5 +50,6 @@ fn main() {
         .with(ForestLayer::default())
         .init();
 
-    ctx.compute_cells_and_kzg_proofs(&blob).unwrap();
+    ctx.compute_cells_and_kzg_proofs(&blob)
+        .expect("failed to compute kzg proof");
 }

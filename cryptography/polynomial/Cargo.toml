@@ -16,6 +16,7 @@ workspace = true
 [dependencies]
 bls12_381 = { workspace = true }
 tracing = { version = "0.1.41", default-features = false, features = ["attributes"], optional = true }
+maybe_rayon = { workspace = true }
 
 [dev-dependencies]
 criterion = "0.5.1"
@@ -23,6 +24,7 @@ rand = "0.8.4"
 
 [features]
 tracing = ["dep:tracing", "bls12_381/tracing"]
+multithreaded = ["maybe_rayon/multithreaded"]
 
 [[bench]]
 name = "benchmark"
