@@ -122,15 +122,15 @@ fn dit_layer_bo<T: FFTElement>(
 }
 
 #[inline]
-fn dit<T: FFTElement>(a: &mut T, b: &mut T, twddle: Scalar) {
-    let t = if twddle == Scalar::ONE {
+fn dit<T: FFTElement>(a: &mut T, b: &mut T, twiddle: Scalar) {
+    let t = if twiddle == Scalar::ONE {
         *b
-    } else if twddle == -Scalar::ONE {
+    } else if twiddle == -Scalar::ONE {
         -*b
     } else if *b == FFTElement::zero() {
         FFTElement::zero()
     } else {
-        *b * twddle
+        *b * twiddle
     };
     *b = *a;
     *a = *a + t;
