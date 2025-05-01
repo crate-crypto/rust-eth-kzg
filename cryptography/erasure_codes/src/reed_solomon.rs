@@ -374,12 +374,14 @@ mod tests {
         let rs = ReedSolomon::new(POLY_LEN, EXPANSION_FACTOR, BLOCK_SIZE);
         let poly_coeff: Vec<_> = (0..16).map(|i| -Scalar::from(i)).collect();
 
-        let codewords = rs.encode(poly_coeff.clone()).unwrap();
+        let codewords = rs
+            .encode(poly_coeff.clone())
+            .expect("polynomial encode failed");
         assert_eq!(codewords.len(), 32);
 
         let got_poly_coeff = rs
             .recover_polynomial_coefficient(codewords, BlockErasureIndices::default())
-            .unwrap();
+            .expect("polynomial recovery failed");
 
         assert_eq!(got_poly_coeff.len(), poly_coeff.len());
         assert_eq!(got_poly_coeff, poly_coeff);
@@ -442,7 +444,7 @@ mod tests {
             .construct_vanishing_poly_from_erasure_pattern(ErasurePattern::Random {
                 indices: all_indices,
             })
-            .unwrap();
+            .expect("failed to create vanishing polynomial");
 
         let expected_z_x_lagrange_form = rs.evaluation_domain.fft_scalars(z_x);
         assert_eq!(expected_z_x_lagrange_form, got_z_x_lagrange_form);
@@ -459,7 +461,9 @@ mod tests {
             .map(|i| Scalar::from(i as u64))
             .collect::<Vec<_>>();
 
-        let original_codewords = rs.encode(poly_coeff.clone()).unwrap();
+        let original_codewords = rs
+            .encode(poly_coeff.clone())
+            .expect("polynomial encode failed");
         let acceptable_num_erasures: Vec<_> = (0..=rs.acceptable_num_random_erasures()).collect();
         for num_erasures in acceptable_num_erasures {
             let mut codewords_with_erasures = original_codewords.clone();
@@ -480,7 +484,7 @@ mod tests {
                     codewords_with_erasures,
                     missing_indices,
                 )
-                .unwrap();
+                .expect("failed to recover polynomial");
             assert_eq!(recovered_poly_coeff.len(), poly_coeff.len());
             assert_eq!(recovered_poly_coeff, poly_coeff);
         }
@@ -497,7 +501,9 @@ mod tests {
             .map(|i| Scalar::from(i as u64))
             .collect::<Vec<_>>();
 
-        let original_codewords = rs.encode(poly_coeff.clone()).unwrap();
+        let original_codewords = rs
+            .encode(poly_coeff.clone())
+            .expect("polynomial encode failed");
         let num_block_erasures: Vec<_> = (0..=BLOCK_SIZE).collect();
 
         for num_block_erasures in num_block_erasures {
@@ -522,7 +528,8 @@ mod tests {
                 BlockErasureIndices(missing_block_indices),
             );
             if num_block_erasures <= rs.acceptable_num_block_erasures() {
-                let recovered_poly_coeff = maybe_recovered_poly_coeff.unwrap();
+                let recovered_poly_coeff =
+                    maybe_recovered_poly_coeff.expect("polynomial recovery failed");
                 assert_eq!(recovered_poly_coeff.len(), poly_coeff.len());
                 assert_eq!(recovered_poly_coeff, poly_coeff);
             } else {

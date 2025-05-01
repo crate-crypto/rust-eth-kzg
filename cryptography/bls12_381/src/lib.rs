@@ -178,7 +178,8 @@ mod tests {
         // Test case 6: 2^256 - 1 (maximum 32-byte value)
         let max_32_bytes = [0xFF; 32];
         let result = reduce_bytes_to_scalar_bias(max_32_bytes);
-        let expected = Scalar::from_bytes_be(&TWO_256_MINUS_ONE_MOD_R).unwrap();
+        let expected =
+            Scalar::from_bytes_be(&TWO_256_MINUS_ONE_MOD_R).expect("value must be canonical");
         assert_eq!(
             result, expected,
             "2^256 - 1 should reduce to (2^256 - 1) mod r"

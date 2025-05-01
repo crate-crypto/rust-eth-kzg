@@ -11,8 +11,8 @@ fn main() {
     println!("cargo:rustc-link-lib=m");
 
     println!("cargo:rerun-if-changed=src/");
-    let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
-    let package_name = env::var("CARGO_PKG_NAME").unwrap();
+    let crate_dir = env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR env not set");
+    let package_name = env::var("CARGO_PKG_NAME").expect("CARGO_PKG_NAME env not set");
 
     let path_to_crate_dir = PathBuf::from(&crate_dir);
 

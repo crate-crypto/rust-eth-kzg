@@ -133,7 +133,8 @@ impl CResult {
     ///
     /// - If this method is called twice on the same pointer, it will result in a double-free.
     pub fn with_error(error_msg: &str) -> Self {
-        let error_msg = std::ffi::CString::new(error_msg).unwrap();
+        let error_msg =
+            std::ffi::CString::new(error_msg).expect("Unable to convert error to CString");
         CResult {
             status: CResultStatus::Err,
             error_msg: error_msg.into_raw(),
