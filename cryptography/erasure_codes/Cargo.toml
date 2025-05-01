@@ -19,6 +19,9 @@ polynomial = { workspace = true }
 criterion = "0.5.1"
 rand = "0.8.4"
 
+[features]
+multithreaded = ["polynomial/multithreaded"]
+
 [[bench]]
 name = "benchmark"
 harness = false
