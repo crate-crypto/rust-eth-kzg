@@ -1,5 +1,17 @@
 pub use std::iter::IntoIterator;
 pub use std::iter::Iterator;
+pub use std::slice::ChunksMut;
+
+#[inline]
+pub fn join<A, B, RA, RB>(oper_a: A, oper_b: B) -> (RA, RB)
+where
+    A: FnOnce() -> RA + Send,
+    B: FnOnce() -> RB + Send,
+    RA: Send,
+    RB: Send,
+{
+    (oper_a(), oper_b())
+}
 
 pub trait MaybeParallelExt: IntoIterator {
     fn maybe_into_par_iter(self) -> <Self as IntoIterator>::IntoIter
@@ -24,6 +36,10 @@ pub trait MaybeParallelRefMutExt {
     where
         Self: 'a;
     fn maybe_par_iter_mut(&mut self) -> Self::Iter<'_>;
+}
+
+pub trait MaybeParallelSliceMut<T> {
+    fn maybe_par_chunks_mut(&mut self, chunk_size: usize) -> ChunksMut<'_, T>;
 }
 
 impl<T: IntoIterator> MaybeParallelExt for T {}
@@ -55,5 +71,11 @@ where
 
     fn maybe_par_iter_mut(&mut self) -> Self::Iter<'_> {
         self.into_iter()
+    }
+}
+
+impl<T: Send> MaybeParallelSliceMut<T> for [T] {
+    fn maybe_par_chunks_mut(&mut self, chunk_size: usize) -> ChunksMut<'_, T> {
+        self.chunks_mut(chunk_size)
     }
 }
