@@ -33,7 +33,10 @@ where
     for<'a> &'a T: IntoIterator<Item = &'a <T as IntoIterator>::Item>,
 {
     type Item = <T as IntoIterator>::Item;
-    type Iter<'a> = <&'a T as IntoIterator>::IntoIter where Self: 'a;
+    type Iter<'a>
+        = <&'a T as IntoIterator>::IntoIter
+    where
+        Self: 'a;
 
     fn maybe_par_iter(&self) -> Self::Iter<'_> {
         self.into_iter()
@@ -45,7 +48,10 @@ where
     for<'a> &'a mut T: IntoIterator<Item = &'a mut <T as IntoIterator>::Item>,
 {
     type Item = <T as IntoIterator>::Item;
-    type Iter<'a> = <&'a mut T as IntoIterator>::IntoIter where Self: 'a;
+    type Iter<'a>
+        = <&'a mut T as IntoIterator>::IntoIter
+    where
+        Self: 'a;
 
     fn maybe_par_iter_mut(&mut self) -> Self::Iter<'_> {
         self.into_iter()
