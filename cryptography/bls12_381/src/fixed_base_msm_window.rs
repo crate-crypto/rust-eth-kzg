@@ -117,6 +117,7 @@ impl FixedBaseMSMPrecompWindow {
         {
             // For each scalar and its byte representation
             for (scalar_idx, scalar_bytes) in scalars_bytes.iter().enumerate() {
+                let sub_table = &self.table[scalar_idx];
                 // Extract Booth-encoded digit at the given window position
                 let point_idx = get_booth_index(window_idx, self.wbits, scalar_bytes.as_ref());
 
@@ -126,12 +127,12 @@ impl FixedBaseMSMPrecompWindow {
                 }
 
                 // Determine sign and index for lookup
-                let is_scalar_negative = point_idx.is_negative();
+                let is_scalar_positive = point_idx.is_positive();
                 let point_idx = point_idx.unsigned_abs() as usize - 1;
 
                 // Fetch the multiple from the table, and negate if necessary
-                let mut point = self.table[scalar_idx][point_idx];
-                if is_scalar_negative {
+                let mut point = sub_table[point_idx];
+                if !is_scalar_positive {
                     point = -point;
                 }
 
