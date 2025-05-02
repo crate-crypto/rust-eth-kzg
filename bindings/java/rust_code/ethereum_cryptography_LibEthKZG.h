@@ -22,10 +22,10 @@ extern "C" {
 /*
  * Class:     ethereum_cryptography_LibEthKZG
  * Method:    DASContextNew
- * Signature: (ZJ)J
+ * Signature: (Z)J
  */
 JNIEXPORT jlong JNICALL Java_ethereum_cryptography_LibEthKZG_DASContextNew
-  (JNIEnv *, jclass, jboolean, jlong);
+  (JNIEnv *, jclass, jboolean);
 
 /*
  * Class:     ethereum_cryptography_LibEthKZG
