@@ -47,7 +47,7 @@ pub struct FixedBaseMSMPrecompWindow {
 impl FixedBaseMSMPrecompWindow {
     /// Constructs a new `FixedBaseMSMPrecompWindow` by precomputing scalar multiples of input G1 points.
     ///
-    /// For each point, it computes odd multiples up to (2^{wbits - 1} - 1)P to enable
+    /// For each point, it computes multiples up to (2^{wbits - 1} - 1)P to enable
     /// efficient fixed-base MSM using Booth encoding.
     ///
     /// - `points`: G1 base points to precompute.
