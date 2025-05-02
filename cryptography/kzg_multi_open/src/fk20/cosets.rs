@@ -7,32 +7,70 @@ use polynomial::domain::Domain;
 /// `bits` - The number of least significant bits to reverse.
 ///
 /// Returns a new `usize` with the specified number of bits reversed.
-pub(crate) fn reverse_bits(n: usize, bits: u32) -> usize {
-    let mut n = n;
-    let mut r = 0;
-    for _ in 0..bits {
-        r = (r << 1) | (n & 1);
-        n >>= 1;
-    }
-    r
+///
+/// Taken and modified from: https://github.com/Plonky3/Plonky3/blob/a374139abead1008f84a439e95bb495e81ea4be5/util/src/lib.rs#L67-L76
+pub(crate) const fn reverse_bits(n: usize, bits: u32) -> usize {
+    // NB: The only reason we need overflowing_shr() here as opposed
+    // to plain '>>' is to accommodate the case n == num_bits == 0,
+    // which would become `0 >> 64`. Rust thinks that any shift of 64
+    // bits causes overflow, even when the argument is zero.
+    n.reverse_bits().overflowing_shr(usize::BITS - bits).0
 }
 
 /// Computes log2 of an integer.
 ///
 /// Panics if the integer is not a power of two
-pub(crate) fn log2(x: u32) -> u32 {
+pub(crate) const fn log2(x: u32) -> u32 {
     assert!(x > 0 && x.is_power_of_two(), "x must be a power of two.");
     x.trailing_zeros()
 }
 
-// Taken and modified from: https://github.com/filecoin-project/ec-gpu/blob/bdde768d0613ae546524c5612e2ad576a646e036/ec-gpu-gen/src/fft_cpu.rs#L10C8-L10C18
+/// In-place bit-reversal permutation of a slice.
+///
+/// Reorders the elements of the slice `a` in-place by reversing the binary representation of their indices.
+///
+/// For example, if `a.len() == 8` (i.e., `log2(n) = 3`), the index permutation would be:
+///
+/// ```text
+/// Index  Binary   Reversed   Swapped With
+/// -----  -------  ---------  -------------
+///   0     000       000           -
+///   1     001       100           4
+///   2     010       010           -
+///   3     011       110           6
+///   4     100       001           1
+///   5     101       101           -
+///   6     110       011           3
+///   7     111       111           -
+/// ```
+///
+/// This transformation is its own inverse, so applying it twice restores the original order.
+///
+/// # Panics
+/// Panics if the slice length is not a power of two.
+///
+/// # Arguments
+/// * `a` — A mutable slice of data to reorder in-place.
+///
+/// Taken and modified from: https://github.com/filecoin-project/ec-gpu/blob/bdde768d0613ae546524c5612e2ad576a646e036/ec-gpu-gen/src/fft_cpu.rs#L10C8-L10C18
 pub fn reverse_bit_order<T>(a: &mut [T]) {
+    // If we are looking for optimizations, it would be nice to have a look at the following:
+    // https://github.com/Plonky3/Plonky3/blob/a374139abead1008f84a439e95bb495e81ea4be5/matrix/src/util.rs#L36-L57
+
     let n = a.len() as u32;
+
+    // Ensure the length is a power of two for valid bit-reversal indexing
     assert!(n.is_power_of_two(), "n must be a power of two");
+
+    // Compute the number of bits needed to index `n` elements (i.e., log2(n))
     let log_n = log2(n);
 
+    // Iterate through each index and swap with its bit-reversed counterpart
     for k in 0..n {
+        // Compute bit-reversed index of k using only log_n bits
         let rk = reverse_bits(k as usize, log_n) as u32;
+
+        // Swap only if k < rk to avoid double-swapping
         if k < rk {
             a.swap(rk as usize, k as usize);
         }
@@ -49,31 +87,28 @@ pub fn reverse_bit_order<T>(a: &mut [T]) {
 ///
 /// Note: Setting bit_reversed to true will generate the cosets in bit-reversed order.
 pub fn coset_gens(num_points: usize, num_cosets: usize, bit_reversed: bool) -> Vec<Scalar> {
-    use bls12_381::ff::Field;
-
     // Compute the generator for the group containing all of the points.
     //
     // Note: generating the whole group, just to get the generator is inefficient
     // However, this code is not on the hot path, so we don't optimize it.
-    let domain = Domain::new(num_points);
-    let coset_gen = domain.generator;
+    let coset_gen = Domain::new(num_points).generator;
 
-    // The coset generators are just powers
-    // of the generator
-    let mut coset_gens = Vec::new();
-    for i in 0..num_cosets {
-        let generator = if bit_reversed {
-            // Note: We could bit-reverse the `coset_gens` vector instead
-            // instead of bit-reversing the exponent.
-            let rev_i = reverse_bits(i, log2(num_cosets as u32)) as u64;
-            coset_gen.pow_vartime([rev_i])
-        } else {
-            coset_gen.pow_vartime([i as u64])
-        };
-        coset_gens.push(generator);
-    }
+    // Compute the number of bits needed to represent `num_cosets` indices.
+    let bits = log2(num_cosets as u32);
 
-    coset_gens
+    // Generate each coset generator as a power of `coset_gen`.
+    (0..num_cosets)
+        .map(|i| {
+            // Optionally bit-reverse the exponent index.
+            let exp = if bit_reversed {
+                reverse_bits(i, bits)
+            } else {
+                i
+            };
+            // Raise the coset generator to the computed exponent.
+            coset_gen.pow_vartime([exp as u64])
+        })
+        .collect()
 }
 
 /// Given a group of coset evaluations, this method will return/reorder the evaluations as if
@@ -134,20 +169,15 @@ pub fn recover_evaluations_in_domain_order(
     // We want t < k
     // => coset_index * coset_len < k
     // => coset_index < k / coset_len
-    let index_bound = domain_size / coset_len;
-    let all_coset_indices_within_bound = coset_indices
-        .iter()
-        .all(|coset_index| *coset_index < index_bound);
-    if !all_coset_indices_within_bound {
+    let coset_capacity = domain_size / coset_len;
+    if coset_indices.iter().any(|&i| i >= coset_capacity) {
         return None;
     }
 
     // Iterate over each coset evaluation set and place the evaluations in the correct locations
     for (&coset_index, coset_evals) in coset_indices.iter().zip(coset_evaluations) {
         let start = coset_index * coset_len;
-        let end = start + coset_len;
-
-        elements[start..end].copy_from_slice(&coset_evals);
+        elements[start..start + coset_len].copy_from_slice(&coset_evals);
     }
 
     // Now bit reverse the result, so we get the evaluations as if we had just done
@@ -157,10 +187,9 @@ pub fn recover_evaluations_in_domain_order(
     // The order of the coset indices in the returned vector will be different.
     // The new indices of the cosets can be figured out by reverse bit ordering
     // the existing indices.
-    let cosets_per_full_domain = domain_size / coset_len;
-    let num_bits_coset_per_full_domain = log2(cosets_per_full_domain as u32);
+    let num_bits_coset_per_full_domain = log2(coset_capacity as u32);
 
-    let new_coset_indices: Vec<_> = coset_indices
+    let new_coset_indices = coset_indices
         .into_iter()
         .map(|rbo_coset_index| reverse_bits(rbo_coset_index, num_bits_coset_per_full_domain))
         .collect();
@@ -204,6 +233,7 @@ pub(crate) fn generate_cosets(
 
 #[cfg(test)]
 mod tests {
+    use rand::{seq::SliceRandom, thread_rng};
     use std::collections::HashSet;
 
     use bls12_381::Scalar;
@@ -493,6 +523,102 @@ mod tests {
                 let got = reverse_bits(i as usize, log2(k)) as u32;
                 assert_eq!(expected, got);
             }
+        }
+    }
+
+    #[test]
+    fn test_reverse_bits_small() {
+        assert_eq!(reverse_bits(0b000, 3), 0b000);
+        assert_eq!(reverse_bits(0b001, 3), 0b100);
+        assert_eq!(reverse_bits(0b010, 3), 0b010);
+        assert_eq!(reverse_bits(0b011, 3), 0b110);
+        assert_eq!(reverse_bits(0b100, 3), 0b001);
+        assert_eq!(reverse_bits(0b101, 3), 0b101);
+        assert_eq!(reverse_bits(0b110, 3), 0b011);
+        assert_eq!(reverse_bits(0b111, 3), 0b111);
+    }
+
+    #[test]
+    fn test_reverse_bits_varied_width() {
+        // 4-bit reversal
+        assert_eq!(reverse_bits(0b0001, 4), 0b1000);
+        assert_eq!(reverse_bits(0b1010, 4), 0b0101);
+        // 5-bit reversal
+        assert_eq!(reverse_bits(0b10000, 5), 0b00001);
+        assert_eq!(reverse_bits(0b11001, 5), 0b10011);
+    }
+
+    #[test]
+    fn test_reverse_bits_zero_zero() {
+        // This simulates the edge case: n == 0, bits == 0
+        // A naive implementation using .reverse_bits() >> (usize::BITS - bits)
+        // would panic here due to an invalid shift (e.g., 0 >> 64).
+        //
+        // Our implementation should safely return 0.
+        let result = reverse_bits(0, 0);
+        assert_eq!(result, 0);
+    }
+
+    #[test]
+    fn test_reverse_bits_partial_width() {
+        // Only reverse the least significant 4 bits of the number 0b0110_1011
+        let input = 0b0110_1011usize;
+        let bits = 4;
+
+        // Expected: reverse of 0b1001 (LSB 4 bits) => 0b1011 -> 0b1101
+        let expected = 0b1101;
+
+        let result = reverse_bits(input, bits);
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_reverse_bit_order_len_1() {
+        let mut arr = [42];
+        reverse_bit_order(&mut arr);
+        assert_eq!(arr, [42]); // Nothing changes
+    }
+
+    #[test]
+    fn test_reverse_bit_order_len_2() {
+        let mut arr = [1, 2];
+        reverse_bit_order(&mut arr);
+        assert_eq!(arr, [1, 2]);
+    }
+
+    #[test]
+    fn test_reverse_bit_order_len_4() {
+        let mut arr = [10, 20, 30, 40];
+        reverse_bit_order(&mut arr);
+        // Indices 0..4 → 2-bit reversal:
+        // 00 → 00 (0)
+        // 01 → 10 (2)
+        // 10 → 01 (1)
+        // 11 → 11 (3)
+        assert_eq!(arr, [10, 30, 20, 40]); // only 1↔2 swapped
+    }
+
+    #[test]
+    fn test_reverse_bit_order_roundtrip() {
+        for log_n in 1..=10 {
+            let n = 1 << log_n;
+            let mut rng = thread_rng();
+
+            // Generate shuffled input of known size
+            let mut original: Vec<u32> = (0..n).collect();
+            original.shuffle(&mut rng);
+
+            // Clone and apply reverse_bit_order twice
+            let mut reversed = original.clone();
+            reverse_bit_order(&mut reversed);
+            reverse_bit_order(&mut reversed);
+
+            // Check we returned to original
+            assert_eq!(
+                reversed, original,
+                "Mismatch after double reversal for len={n}"
+            );
         }
     }
 }
