@@ -67,6 +67,7 @@ const BATCH_INVERSE_THRESHOLD: usize = 16;
 /// other.
 // TODO(benedikt): top down balanced tree idea - benedikt
 // TODO: search tree for sorted array
+#[allow(dead_code)]
 pub(crate) fn batch_addition_binary_tree_stride(mut points: Vec<G1Affine>) -> G1Projective {
     // We return the identity element if the input is empty
     if points.is_empty() {
