@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.6.0](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.5.4...v0.6.0) (2025-05-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove threadpool ([#328](https://github.com/crate-crypto/rust-eth-kzg/issues/328))
+
+### Features
+
+* Add `tracing` deps and trace time-consuming functions ([#310](https://github.com/crate-crypto/rust-eth-kzg/issues/310)) ([2ced6d9](https://github.com/crate-crypto/rust-eth-kzg/commit/2ced6d99cee120d037bd487e4c75cdf3d750f431))
+* Add non-identity checks and panics docs for batch-add methods ([#329](https://github.com/crate-crypto/rust-eth-kzg/issues/329)) ([1474062](https://github.com/crate-crypto/rust-eth-kzg/commit/14740622027d55537fceaee92e5f32af20c868ba))
+* Adopt cache-aware radix-2 fft from Plonky3 ([#324](https://github.com/crate-crypto/rust-eth-kzg/issues/324)) ([189c392](https://github.com/crate-crypto/rust-eth-kzg/commit/189c3925de7fc05f88661b8fd55005e69e6e7d5a))
+* Replace unwrap with expect ([#323](https://github.com/crate-crypto/rust-eth-kzg/issues/323)) ([225db5e](https://github.com/crate-crypto/rust-eth-kzg/commit/225db5e926042de848064bfd2e6f1e7327f11397))
+
+
+### Miscellaneous Chores
+
+* Remove threadpool ([#328](https://github.com/crate-crypto/rust-eth-kzg/issues/328)) ([334c0ea](https://github.com/crate-crypto/rust-eth-kzg/commit/334c0ea41b7c7fbaec9140460d34f062218c50a7))
+
 ## [0.5.4](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.5.3...v0.5.4) (2025-02-21)
 
 
