@@ -1,18 +1,22 @@
+use crate::errors::RSError;
 use bls12_381::{
     batch_inversion::batch_inverse,
     ff::{Field, PrimeField},
     Scalar,
 };
-
-use crate::errors::RSError;
 use polynomial::{domain::Domain, poly_coeff::vanishing_poly, CosetFFT};
+use std::ops::Deref;
 
-/// ErasurePattern is an abstraction created to capture the idea
+/// `ErasurePattern` is an abstraction created to capture the idea
 /// that erasures do not appear in completely random locations.
 ///
 /// This is useful as it allows us to optimize the construction of
 /// the vanishing polynomial. This is by far the most time consuming part
 /// of unique decoding.
+///
+/// This enum enables efficient construction of vanishing polynomials for recovery:
+/// - `BlockSynchronizedErasures` is optimized for known repeated missing indices in blocks.
+/// - `Random` allows arbitrary erasure indices (used only in testing).
 pub(crate) enum ErasurePattern {
     /// Given a block_size, we can group the codeword into blocks.
     /// A block erasure index now signifies
@@ -31,13 +35,32 @@ pub(crate) enum ErasurePattern {
     Random { indices: Vec<usize> },
 }
 
-/// Given a `block_size`, BlockErasureIndex denotes
+/// Given a `block_size`, `BlockErasureIndex` denotes
 /// the index in every block that an erasure has occurred.
 type BlockErasureIndex = usize;
 
+/// A list of erased indices that appear at the same relative position in every block of the codeword.
+///
+/// For example, if `block_size = 4` and `BlockErasureIndices = vec![0, 2]`,
+/// then each block in the codeword is missing its 0th and 2nd positions.
 #[derive(Debug, Clone, Default)]
 pub struct BlockErasureIndices(pub Vec<BlockErasureIndex>);
 
+impl Deref for BlockErasureIndices {
+    type Target = Vec<BlockErasureIndex>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+/// A Reed-Solomon encoder and erasure decoder over a multiplicative subgroup domain.
+///
+/// This implementation supports structured erasure recovery using block-synchronized erasures,
+/// as well as recovery from arbitrary erasure patterns (for testing).
+///
+/// Internally, it uses FFTs over scalar subgroups, and constructs vanishing polynomials
+/// to isolate and correct missing evaluations.
 #[derive(Debug)]
 pub struct ReedSolomon {
     /// Denotes the factor by which the message/poly_len will be expanded.
@@ -53,7 +76,7 @@ pub struct ReedSolomon {
     /// Denotes the number of scalars that we should group together in the codeword to form a block.
     ///
     /// When the ErasurePattern is BlockSynchronized, we know that every block will
-    /// have an erasure at the BlockErasureIndices given.
+    /// have an erasure at the `BlockErasureIndices` given.
     ///
     /// Another way to think about this is that `block_size` corresponds to the gap between
     /// each `BlockSynchronizedErasures` in a codeword.
@@ -66,33 +89,37 @@ pub struct ReedSolomon {
     /// The domain that we will use to efficiently compute the vanishing polynomial with, when the erasure pattern
     /// being used is `BlockSynchronizedErasures`.
     block_size_domain: Domain,
-
+    /// Coset generator used for coset FFTs when evaluating and interpolating during erasure recovery.
     fft_coset_gen: CosetFFT,
 }
 
 impl ReedSolomon {
+    /// Constructs a new Reed-Solomon encoder/decoder instance for a specified configuration.
+    ///
+    /// - `poly_len`: number of coefficients in the input polynomial.
+    /// - `expansion_factor`: redundancy factor for encoding; the codeword length will be `poly_len * expansion_factor`.
+    /// - `block_size`: how many scalars are grouped together to form a block for block erasure recovery.
+    ///
+    /// All inputs must be powers of two.
     pub fn new(poly_len: usize, expansion_factor: usize, block_size: usize) -> Self {
-        assert!(expansion_factor.is_power_of_two());
-        assert!(poly_len.is_power_of_two());
-        assert!(block_size.is_power_of_two());
+        // Enforce that all parameters are powers of two for FFT domain compatibility.
+        assert!(
+            expansion_factor.is_power_of_two()
+                && poly_len.is_power_of_two()
+                && block_size.is_power_of_two()
+        );
 
+        // Total number of points used for evaluation = length of codeword
         let evaluation_size = poly_len * expansion_factor;
-        let evaluation_domain = Domain::new(evaluation_size);
-
-        let num_blocks = evaluation_size / block_size;
-
-        let block_size_domain = Domain::new(block_size);
-
-        let fft_coset_gen = CosetFFT::new(Scalar::MULTIPLICATIVE_GENERATOR);
 
         Self {
             expansion_factor,
             poly_len,
-            evaluation_domain,
+            evaluation_domain: Domain::new(evaluation_size),
             block_size,
-            num_blocks,
-            block_size_domain,
-            fft_coset_gen,
+            num_blocks: evaluation_size / block_size,
+            block_size_domain: Domain::new(block_size),
+            fft_coset_gen: CosetFFT::new(Scalar::MULTIPLICATIVE_GENERATOR),
         }
     }
 
@@ -181,7 +208,7 @@ impl ReedSolomon {
         &self,
         block_indices: &BlockErasureIndices,
     ) -> Vec<Scalar> {
-        assert!(block_indices.0.len() != self.block_size, "all of the blocks are missing. This should have been checked by the caller of this method");
+        assert!(block_indices.len() != self.block_size, "all of the blocks are missing. This should have been checked by the caller of this method");
 
         let evaluation_domain_size = self.evaluation_domain.roots.len();
 
@@ -191,7 +218,6 @@ impl ReedSolomon {
         // We are essentially calculating the polynomial that vanishes only on the indices
         // in the first block.
         let z_x_missing_indices_roots: Vec<_> = block_indices
-            .0
             .iter()
             .map(|index| self.block_size_domain.roots[*index])
             .collect();
@@ -236,6 +262,15 @@ impl ReedSolomon {
         z_x
     }
 
+    /// Constructs a vanishing polynomial `Z(X)` that evaluates to zero on all known erasure positions.
+    ///
+    /// Depending on the erasure pattern:
+    /// - For `BlockSynchronizedErasures`, builds a sparse polynomial that vanishes on the same index within each block.
+    /// - For `Random` (used in tests), constructs a polynomial that vanishes on arbitrary evaluation domain positions.
+    ///
+    /// This vanishing polynomial is later used to isolate and interpolate the original polynomial.
+    ///
+    /// Returns an error if the number or position of erasures is invalid for the given configuration.
     fn construct_vanishing_poly_from_erasure_pattern(
         &self,
         erasures: ErasurePattern,
@@ -243,10 +278,10 @@ impl ReedSolomon {
         match erasures {
             ErasurePattern::BlockSynchronizedErasures(indices) => {
                 // Check that each block index is valid
-                for block_index in &indices.0 {
-                    if *block_index >= self.block_size {
+                for &block_index in &indices.0 {
+                    if block_index >= self.block_size {
                         return Err(RSError::InvalidBlockIndex {
-                            block_index: *block_index,
+                            block_index,
                             block_size: self.block_size,
                         });
                     }
@@ -254,9 +289,9 @@ impl ReedSolomon {
                 // This method is only used for recovery.
                 // Check that we do not have too many erasures, such that we cannot
                 // recover.
-                if indices.0.len() > self.acceptable_num_block_erasures() {
+                if indices.len() > self.acceptable_num_block_erasures() {
                     return Err(RSError::TooManyBlockErasures {
-                        num_block_erasures: indices.0.len(),
+                        num_block_erasures: indices.len(),
                         max_num_block_erasures_accepted: self.acceptable_num_block_erasures(),
                     });
                 }
@@ -282,7 +317,19 @@ impl ReedSolomon {
         }
     }
 
-    /// The matching function in the spec is: https://github.com/ethereum/consensus-specs/blob/dc5f74da0e9834fa842cdcb33c64b3a1fb1ad579/specs/_features/eip7594/polynomial-commitments-sampling.md#recover_data
+    /// Recovers the original polynomial coefficients from a partially missing codeword,
+    /// using the provided erasure pattern to construct a vanishing polynomial `Z(X)`.
+    ///
+    /// Implements the [`recover_data`] procedure as described in the Ethereum EIP-7594 spec:
+    /// <https://github.com/ethereum/consensus-specs/blob/dc5f74d/specs/_features/eip7594/polynomial-commitments-sampling.md#recover_data>
+    ///
+    /// Steps:
+    /// 1. Constructs `Z(X)` vanishing on erasures.
+    /// 2. Computes `(D·Z)(X)` via evaluation and interpolation.
+    /// 3. Divides in the coset domain to isolate `D(X)`, the original polynomial.
+    /// 4. Returns the truncated degree-`poly_len` coefficients.
+    ///
+    /// Returns an error if the recovered polynomial exceeds the expected degree.
     fn recover_polynomial_coefficient_erasure_pattern(
         &self,
         data_eval: Vec<Scalar>,
@@ -338,7 +385,7 @@ impl ReedSolomon {
         }
 
         // Return the truncated polynomial
-        Ok(coefficients[0..self.poly_len].to_vec())
+        Ok(coefficients[..self.poly_len].to_vec())
     }
 }
 
