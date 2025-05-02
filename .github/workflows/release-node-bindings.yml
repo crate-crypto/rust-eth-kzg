@@ -37,9 +37,9 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          - host: ubuntu-latest
+          - host: macos-14
             target: x86_64-apple-darwin
-          - host: ubuntu-latest
+          - host: macos-14
             target: aarch64-apple-darwin
           - host: ubuntu-latest
             target: x86_64-unknown-linux-gnu
@@ -63,7 +63,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.80.0
+          toolchain: 1.86.0
           targets: ${{ matrix.settings.target }}
 
       # llvm-preview-tools are needed for xwin, because we are compiling assembly (blst)
@@ -83,15 +83,20 @@ jobs:
         uses: cargo-bins/cargo-binstall@main
 
       - name: Install cargo-zigbuild
-        run: cargo binstall cargo-zigbuild -y
+        run: cargo binstall cargo-zigbuild@0.20.0 -y
 
       - name: Install cargo-xwin (Windows on Linux only)
         if: contains(matrix.settings.target, 'windows')
         run: cargo binstall cargo-xwin -y
 
-      - name: Build (Mac and Linux)
-        if: contains(matrix.settings.target, 'windows') == false
+      - name: Build Linux
+        if: contains(matrix.settings.target, 'linux')
         run: yarn build --zig --release --target ${{ matrix.settings.target }}
+        working-directory: bindings/node
+
+      - name: Build Mac
+        if: contains(matrix.settings.target, 'apple')
+        run: yarn build --release --target ${{ matrix.settings.target }}
         working-directory: bindings/node
 
       - name: Build (Windows on Linux)

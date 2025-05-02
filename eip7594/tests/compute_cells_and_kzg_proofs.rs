@@ -36,8 +36,9 @@ mod serde_ {
 
     impl TestVector {
         pub fn from_str(yaml_data: &str) -> Self {
-            let yaml_test_vector: YamlTestVector = serde_yaml::from_str(yaml_data).unwrap();
-            TestVector::from(yaml_test_vector)
+            let yaml_test_vector: YamlTestVector =
+                serde_yaml::from_str(yaml_data).expect("invalid yaml");
+            Self::from(yaml_test_vector)
         }
     }
 
@@ -60,7 +61,7 @@ mod serde_ {
                 None => None,
             };
 
-            TestVector {
+            Self {
                 blob: input,
                 proofs_and_cells: output.map(|out| KZGProofsAndCells {
                     proofs: out.0,
@@ -74,20 +75,17 @@ mod serde_ {
 const TEST_DIR: &str = "../test_vectors/compute_cells_and_kzg_proofs";
 #[test]
 fn test_compute_cells_and_kzg_proofs() {
-    let test_files = collect_test_files(TEST_DIR).unwrap();
+    let test_files = collect_test_files(TEST_DIR).expect("unable to collect test files");
 
     let ctx = rust_eth_kzg::DASContext::default();
 
     for test_file in test_files {
-        let yaml_data = fs::read_to_string(test_file).unwrap();
+        let yaml_data = fs::read_to_string(test_file).expect("unable to read test file");
         let test = TestVector::from_str(&yaml_data);
 
-        let blob = match test.blob.try_into() {
-            Ok(blob) => blob,
-            Err(_) => {
-                assert!(test.proofs_and_cells.is_none());
-                continue;
-            }
+        let Ok(blob) = test.blob.try_into() else {
+            assert!(test.proofs_and_cells.is_none());
+            continue;
         };
 
         // Compute the cells using `compute_cells` and check if it matches
@@ -99,7 +97,8 @@ fn test_compute_cells_and_kzg_proofs() {
                 let cells_ = extended_blob.expect("cells should have been computed");
                 assert_eq!(cells_, cells);
 
-                let expected_proofs_and_cells = test.proofs_and_cells.unwrap();
+                let expected_proofs_and_cells =
+                    test.proofs_and_cells.expect("expected proofs and cells");
 
                 let expected_proofs = expected_proofs_and_cells.proofs;
                 let expected_cells = expected_proofs_and_cells.cells;
@@ -119,6 +118,6 @@ fn test_compute_cells_and_kzg_proofs() {
                 // On an error, we expect the output to be null
                 assert!(test.proofs_and_cells.is_none());
             }
-        };
+        }
     }
 }

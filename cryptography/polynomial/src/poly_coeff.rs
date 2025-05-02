@@ -51,7 +51,7 @@ pub fn poly_eval(poly: &PolyCoeff, value: &Scalar) -> Scalar {
 
 /// For two polynomials, `f(x)` and `g(x)`, this method computes
 /// the result of `f(x) * g(x)` and returns the result.
-pub fn poly_mul(a: PolyCoeff, b: PolyCoeff) -> PolyCoeff {
+pub fn poly_mul(a: &PolyCoeff, b: &PolyCoeff) -> PolyCoeff {
     let mut result = vec![Scalar::ZERO; a.len() + b.len() - 1];
     for (i, a_coeff) in a.iter().enumerate() {
         for (j, b_coeff) in b.iter().enumerate() {
@@ -68,7 +68,7 @@ pub fn poly_mul(a: PolyCoeff, b: PolyCoeff) -> PolyCoeff {
 pub fn vanishing_poly(roots: &[Scalar]) -> PolyCoeff {
     let mut poly = vec![Scalar::ONE];
     for root in roots {
-        poly = poly_mul(poly, vec![-root, Scalar::ONE]);
+        poly = poly_mul(&poly, &vec![-root, Scalar::ONE]);
     }
     poly
 }
@@ -163,7 +163,7 @@ mod tests {
     fn naive_poly_eval(poly: &PolyCoeff, value: &Scalar) -> Scalar {
         let mut result = Scalar::ZERO;
         for (i, coeff) in poly.iter().enumerate() {
-            result += coeff * value.pow_vartime(&[i as u64]);
+            result += coeff * value.pow_vartime([i as u64]);
         }
         result
     }
@@ -223,7 +223,7 @@ mod tests {
             Scalar::from(22),
             Scalar::from(15),
         ];
-        assert_eq!(poly_mul(a, b), expected);
+        assert_eq!(poly_mul(&a, &b), expected);
     }
 
     #[test]
@@ -240,8 +240,8 @@ mod tests {
         assert_eq!(&poly, &expected);
 
         // Check that this polynomial evaluates to zero on the roots
-        for root in roots.iter() {
-            assert_eq!(poly_eval(&poly, &root), Scalar::ZERO);
+        for root in &roots {
+            assert_eq!(poly_eval(&poly, root), Scalar::ZERO);
         }
     }
 

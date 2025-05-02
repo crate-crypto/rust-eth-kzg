@@ -32,8 +32,9 @@ mod serde_ {
 
     impl TestVector {
         pub fn from_str(yaml_data: &str) -> Self {
-            let yaml_test_vector: YamlTestVector = serde_yaml::from_str(yaml_data).unwrap();
-            TestVector::from(yaml_test_vector)
+            let yaml_test_vector: YamlTestVector =
+                serde_yaml::from_str(yaml_data).expect("invalid yaml");
+            Self::from(yaml_test_vector)
         }
     }
 
@@ -44,12 +45,9 @@ mod serde_ {
 
             let input = bytes_from_hex(&input);
 
-            let commitment = match output {
-                Some(commitment) => Some(bytes_from_hex(&commitment)),
-                None => None,
-            };
+            let commitment = output.map(|commitment| bytes_from_hex(&commitment));
 
-            TestVector {
+            Self {
                 blob: input,
                 commitment,
             }
@@ -60,27 +58,26 @@ mod serde_ {
 const TEST_DIR: &str = "../test_vectors/blob_to_kzg_commitment";
 #[test]
 fn test_blob_to_kzg_commitment() {
-    let test_files = collect_test_files(TEST_DIR).unwrap();
+    let test_files = collect_test_files(TEST_DIR).expect("unable to collect test files");
 
     let ctx = rust_eth_kzg::DASContext::default();
 
     for test_file in test_files {
-        let yaml_data = fs::read_to_string(test_file).unwrap();
+        let yaml_data = fs::read_to_string(test_file).expect("unable to read test file");
         let test = TestVector::from_str(&yaml_data);
 
         //
-        let blob: &[u8; BYTES_PER_BLOB] = match (&test.blob[..]).try_into() {
-            Ok(blob) => blob,
-            Err(_) => {
-                // Blob does not have a valid size
-                assert!(test.commitment.is_none());
-                continue;
-            }
+        let blob: &[u8; BYTES_PER_BLOB] = if let Ok(blob) = (&test.blob[..]).try_into() {
+            blob
+        } else {
+            // Blob does not have a valid size
+            assert!(test.commitment.is_none());
+            continue;
         };
 
         match ctx.blob_to_kzg_commitment(blob) {
             Ok(commitment) => {
-                let expected_commitment = test.commitment.unwrap();
+                let expected_commitment = test.commitment.expect("commitment is none");
 
                 assert_eq!(&commitment[..], &expected_commitment);
             }
@@ -88,6 +85,6 @@ fn test_blob_to_kzg_commitment() {
                 // On an error, we expect the output to be null
                 assert!(test.commitment.is_none());
             }
-        };
+        }
     }
 }

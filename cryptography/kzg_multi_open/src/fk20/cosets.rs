@@ -85,23 +85,24 @@ pub fn coset_gens(num_points: usize, num_cosets: usize, bit_reversed: bool) -> V
 /// The coset indices returned can be used to locate the coset_evaluations in the new flattened order:
 ///   - The idea is that a particular coset evaluation is evenly distributed across the set of flattened
 ///     evaluations.
-///   Example:
-///     - Let's say we have `k` cosets. Each coset holds `m` values. Each coset will have an associated index.
-///     - Once this method has completed, we will be given a flattened set of evaluations where the
-///       `m` values in each coset are now a distance of `k` values apart from each other.
-///     - The first value that was in the first coset, will be in position `0`.
-///     - The second value that was in the first coset, will be in position `k`
-///     - The third value that was in the first coset, will be in position `2k`
-///     - The first value that was in the second coset, will NOT be in position `1`
-///        Instead it will be in position `t = reverse_bit_order(1, k)`.
-///     - This value of `t` is what the function returns alongside the flattened evaluations,
-///       allowing the caller to deduce the other positions.
 ///
-//
-// Note: For evaluations that are missing, this method will fill these in with zeroes.
-//
-// Note: It is the callers responsibility to ensure that there are no duplicate
-// coset indices.
+/// Example:
+///   - Let's say we have `k` cosets. Each coset holds `m` values. Each coset will have an associated index.
+///   - Once this method has completed, we will be given a flattened set of evaluations where the
+///     `m` values in each coset are now a distance of `k` values apart from each other.
+///   - The first value that was in the first coset, will be in position `0`.
+///   - The second value that was in the first coset, will be in position `k`
+///   - The third value that was in the first coset, will be in position `2k`
+///   - The first value that was in the second coset, will NOT be in position `1`
+///     Instead it will be in position `t = reverse_bit_order(1, k)`.
+///   - This value of `t` is what the function returns alongside the flattened evaluations,
+///     allowing the caller to deduce the other positions.
+///
+///
+/// Note: For evaluations that are missing, this method will fill these in with zeroes.
+///
+/// Note: It is the callers responsibility to ensure that there are no duplicate
+/// coset indices.
 pub fn recover_evaluations_in_domain_order(
     domain_size: usize,
     coset_indices: Vec<usize>,
@@ -262,9 +263,9 @@ mod tests {
         for (coset, bit_reversed_coset) in cosets.iter().zip(chunked_bit_reversed_roots.iter()) {
             let coset_len = coset.len();
 
-            let coset_set: HashSet<_> = coset.iter().map(|s| s.to_bytes_be()).collect();
+            let coset_set: HashSet<_> = coset.iter().map(Scalar::to_bytes_be).collect();
             let bit_reversed_set: HashSet<_> =
-                bit_reversed_coset.iter().map(|s| s.to_bytes_be()).collect();
+                bit_reversed_coset.iter().map(Scalar::to_bytes_be).collect();
 
             assert_eq!(coset_set, bit_reversed_set);
 
@@ -299,7 +300,7 @@ mod tests {
 
         // The first part of the extended data should match the original data
         let first_half_extended_data = &extended_data[0..original_data.len()];
-        assert_eq!(first_half_extended_data, original_data)
+        assert_eq!(first_half_extended_data, original_data);
     }
 
     #[test]
@@ -320,7 +321,7 @@ mod tests {
                 .iter()
                 .map(|coset_element| poly_eval(&poly_coeff, coset_element))
                 .collect();
-            coset_evaluations.push(evaluations)
+            coset_evaluations.push(evaluations);
         }
 
         // Let's explain how the data is distributed:
@@ -350,7 +351,7 @@ mod tests {
         // The original data will live at every even powered evaluation.
         //
         // Generate the evaluations using a faster method
-        let extended_evaluations = Domain::new(4096 * 2).fft_scalars(poly_coeff.clone());
+        let extended_evaluations = Domain::new(4096 * 2).fft_scalars(poly_coeff);
         let got_coset_evaluations = take_every_nth(&extended_evaluations, 128);
         assert_eq!(got_coset_evaluations, coset_evaluations);
 
@@ -363,7 +364,7 @@ mod tests {
             .iter()
             .enumerate()
             .filter(|(i, _)| i % 2 == 0)
-            .map(|(_, v)| v.clone())
+            .map(|(_, v)| *v)
             .collect();
 
         let first_half_even_indexed_evals = &even_indexed_evaluations[0..original_data.len()];
@@ -394,7 +395,7 @@ mod tests {
         let full_subgroup_set: HashSet<_> =
             full_subgroup.into_iter().map(|s| s.to_bytes_be()).collect();
 
-        assert_eq!(full_subgroup_set, cosets_flattened_set)
+        assert_eq!(full_subgroup_set, cosets_flattened_set);
     }
 
     #[test]
@@ -411,21 +412,21 @@ mod tests {
             .collect();
         let mut bit_reversed_coset_evaluations: Vec<Vec<Scalar>> = bit_reversed_evaluations
             .chunks(POINTS_PER_COSET)
-            .map(|chunk| chunk.to_vec())
+            .map(<[Scalar]>::to_vec)
             .collect();
 
         // We have 32 values and 4 points per coset, so we have 8 cosets.
-        let coset_indices: Vec<_> = (0..NUM_COSETS).collect();
+        let coset_indices = 0..NUM_COSETS;
 
         // Zero out the first coset
         let first_coset = &mut bit_reversed_coset_evaluations[0];
         for evaluation in first_coset {
-            *evaluation = Scalar::ZERO
+            *evaluation = Scalar::ZERO;
         }
         // Zero out the 4th coset
         let fourth_coset = &mut bit_reversed_coset_evaluations[3];
         for evaluation in fourth_coset {
-            *evaluation = Scalar::ZERO
+            *evaluation = Scalar::ZERO;
         }
 
         // Now let's simulate the first and fourth coset missing
@@ -448,7 +449,7 @@ mod tests {
                 coset_indices_missing,
                 coset_evaluations_missing,
             )
-            .unwrap();
+            .expect("Failed to recover evaluations in domain order");
 
         let missing_coset_index_0 = reverse_bits(0, log2(NUM_COSETS as u32));
         let missing_coset_index_3 = reverse_bits(3, log2(NUM_COSETS as u32));
@@ -463,11 +464,11 @@ mod tests {
         // In general, if the `k`th coset is missing, then this function will return the evaluations with 0s
         // in the `rbo(k) + NUM_COSET  * i`'th positions.
         for block in coset_evaluations_normal_order.chunks(8) {
-            for (index, element) in block.into_iter().enumerate() {
+            for (index, element) in block.iter().enumerate() {
                 if index == missing_coset_index_0 || index == missing_coset_index_3 {
-                    assert_eq!(*element, Scalar::ZERO)
+                    assert_eq!(*element, Scalar::ZERO);
                 } else {
-                    assert_ne!(*element, Scalar::ZERO)
+                    assert_ne!(*element, Scalar::ZERO);
                 }
             }
         }
@@ -490,7 +491,7 @@ mod tests {
             for k in (1..31).map(|exponent| 2u32.pow(exponent)) {
                 let expected = naive_bit_reverse(i, k);
                 let got = reverse_bits(i as usize, log2(k)) as u32;
-                assert_eq!(expected, got)
+                assert_eq!(expected, got);
             }
         }
     }

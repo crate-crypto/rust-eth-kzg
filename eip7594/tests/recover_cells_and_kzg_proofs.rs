@@ -37,8 +37,9 @@ mod serde_ {
 
     impl TestVector {
         pub fn from_str(yaml_data: &str) -> Self {
-            let yaml_test_vector: YamlTestVector = serde_yaml::from_str(yaml_data).unwrap();
-            TestVector::from(yaml_test_vector)
+            let yaml_test_vector: YamlTestVector =
+                serde_yaml::from_str(yaml_data).expect("invalid yaml");
+            Self::from(yaml_test_vector)
         }
     }
 
@@ -64,9 +65,9 @@ mod serde_ {
                 None => None,
             };
 
-            TestVector {
+            Self {
                 input_cell_indices: cell_indices,
-                input_cells: input_cells,
+                input_cells,
                 proofs_and_cells: output.map(|out| KZGProofsAndCells {
                     proofs: out.0,
                     cells: out.1,
@@ -79,32 +80,30 @@ mod serde_ {
 const TEST_DIR: &str = "../test_vectors/recover_cells_and_kzg_proofs";
 #[test]
 fn test_recover_cells_and_kzg_proofs() {
-    let test_files = collect_test_files(TEST_DIR).unwrap();
+    let test_files = collect_test_files(TEST_DIR).expect("unable to collect test files");
 
     let ctx = rust_eth_kzg::DASContext::default();
 
     for test_file in test_files {
-        let yaml_data = fs::read_to_string(&test_file).unwrap();
+        let yaml_data = fs::read_to_string(&test_file).expect("unable to read test file");
         let test = TestVector::from_str(&yaml_data);
 
         let input_cells: Result<_, _> = test
             .input_cells
             .iter()
             .map(Vec::as_slice)
-            .map(|v| v.try_into())
+            .map(TryInto::try_into)
             .collect();
 
-        let input_cells = match input_cells {
-            Ok(input_cells) => input_cells,
-            Err(_) => {
-                assert!(test.proofs_and_cells.is_none());
-                continue;
-            }
+        let Ok(input_cells) = input_cells else {
+            assert!(test.proofs_and_cells.is_none());
+            continue;
         };
 
         match ctx.recover_cells_and_kzg_proofs(test.input_cell_indices, input_cells) {
             Ok((cells, proofs)) => {
-                let expected_proofs_and_cells = test.proofs_and_cells.unwrap();
+                let expected_proofs_and_cells =
+                    test.proofs_and_cells.expect("expected proofs and cells");
 
                 let expected_proofs = expected_proofs_and_cells.proofs;
                 let expected_cells = expected_proofs_and_cells.cells;
@@ -124,6 +123,6 @@ fn test_recover_cells_and_kzg_proofs() {
                 // On an error, we expect the output to be null
                 assert!(test.proofs_and_cells.is_none());
             }
-        };
+        }
     }
 }

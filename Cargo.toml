@@ -24,9 +24,33 @@ version = "0.5.4"
 rust-version = "1.70"
 repository = "https://github.com/crate-crypto/rust-eth-kzg"
 
+[workspace.lints.clippy]
+# all lints that are on by default (correctness, suspicious, style, complexity, perf)
+all = { level = "warn", priority = -1 }
+
+# new lints that are still under development
+nursery = { level = "warn", priority = -1 }
+# avoid lints that are too pedantic
+doc_markdown = "allow"
+
+# lints which are rather strict or have occasional false positives
+pedantic = { level = "warn", priority = -1 }
+# avoid lints that are too pedantic
+must_use_candidate = "allow"
+cast_possible_truncation = "allow"
+cast_precision_loss = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+many_single_char_names = "allow"
+should_panic_without_expect = "allow"
+similar_names = "allow"
+cast_sign_loss = "allow"
+redundant_pub_crate = "allow"
+inline_always = "allow"
+
 [workspace.dependencies]
 # These names are essentially a way to achieve scoping when we publish to crates.io
-# Ideally we don't publish bls12_381 and polynomial, but crates.io requires 
+# Ideally we don't publish bls12_381 and polynomial, but crates.io requires
 # all dependencies to be published and not local.
 bls12_381 = { package = "crate_crypto_internal_eth_kzg_bls12_381", version = "0.5.4", path = "cryptography/bls12_381" }
 polynomial = { package = "crate_crypto_internal_eth_kzg_polynomial", version = "0.5.4", path = "cryptography/polynomial" }

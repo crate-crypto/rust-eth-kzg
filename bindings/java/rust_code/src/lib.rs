@@ -159,7 +159,7 @@ fn verify_cell_kzg_proof_batch<'local>(
         .map(|proof| slice_to_array_ref(proof, "proof"))
         .collect::<Result<_, _>>()?;
 
-    match ctx.verify_cell_kzg_proof_batch(commitments, cell_indices, cells, proofs) {
+    match ctx.verify_cell_kzg_proof_batch(commitments, &cell_indices, cells, proofs) {
         Ok(_) => Ok(jboolean::from(true)),
         Err(x) if x.invalid_proof() => Ok(jboolean::from(false)),
         Err(err) => Err(Error::Cryptography(err)),

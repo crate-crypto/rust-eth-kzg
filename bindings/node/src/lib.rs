@@ -241,7 +241,7 @@ impl DASContextJs {
 
     let ctx = &self.inner;
 
-    let valid = ctx.verify_cell_kzg_proof_batch(commitments, cell_indices, cells, proofs);
+    let valid = ctx.verify_cell_kzg_proof_batch(commitments, &cell_indices, cells, proofs);
     match valid {
       Ok(_) => Ok(true),
       Err(x) if x.invalid_proof() => Ok(false),

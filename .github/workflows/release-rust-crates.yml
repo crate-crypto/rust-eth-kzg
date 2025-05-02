@@ -2,19 +2,19 @@ name: Rust Package
 
 on:
   push:
-    branches: [ "master" ]
+    branches: ["master"]
   pull_request:
-    branches: [ "master" ]
+    branches: ["master"]
   workflow_dispatch:
     inputs:
       ref:
-        description: 'The reference (branch/tag/commit) to checkout '
+        description: "The reference (branch/tag/commit) to checkout "
         required: false
       release-type:
         type: choice
         required: false
-        default: 'none'
-        description: 'Indicates whether we want to make a release and if which one'
+        default: "none"
+        description: "Indicates whether we want to make a release and if which one"
         options:
           - release
           - none
@@ -50,13 +50,13 @@ jobs:
       - name: Setup toolchain
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.80.0
+          toolchain: 1.86.0
           target: ${{ matrix.target }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '23.0.0'
+          node-version: "23.0.0"
 
       - name: Install libnode
         if: matrix.os == 'windows-latest'
@@ -66,13 +66,12 @@ jobs:
       - name: Build
         run: RUST_BACKTRACE=full cargo build --target ${{ matrix.target }} --verbose
         shell: bash
-        
+
       - name: Run tests
         run: RUST_BACKTRACE=1 cargo test --target ${{ matrix.target }}
         shell: bash
-
-# We really only want to publish the eip7594 crate
-# However, crates.io forces us to publish its dependencies too.
+  # We really only want to publish the eip7594 crate
+  # However, crates.io forces us to publish its dependencies too.
   publish:
     name: Publish in order
     needs: build-and-test
@@ -87,7 +86,7 @@ jobs:
       - name: Setup toolchain
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.80.0
+          toolchain: 1.86.0
 
       # These steps are in a specific order so crate dependencies are updated first
       - name: Publish maybe_rayon

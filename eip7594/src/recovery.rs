@@ -62,7 +62,7 @@ pub(crate) fn recover_polynomial_coeff(
 }
 
 fn find_missing_cell_indices(present_cell_indices: &[usize]) -> Vec<usize> {
-    let cell_indices: HashSet<_> = present_cell_indices.iter().cloned().collect();
+    let cell_indices: HashSet<_> = present_cell_indices.iter().copied().collect();
 
     let mut missing = Vec::new();
 
@@ -98,7 +98,7 @@ mod validation {
         }
 
         // Check that the Cell indices are within the expected range
-        for cell_index in cell_indices.iter() {
+        for cell_index in cell_indices {
             if *cell_index >= (CELLS_PER_EXT_BLOB as u64) {
                 return Err(RecoveryError::CellIndexOutOfRange {
                     cell_index: *cell_index,
@@ -111,7 +111,7 @@ mod validation {
         //
         // This should be infallible.
         for (i, cell) in cells.iter().enumerate() {
-            assert_eq!(cell.len(), BYTES_PER_CELL, "the number of bytes in a cell should always equal {} since the type is a reference to an array. Check cell at index {}", BYTES_PER_CELL, i);
+            assert_eq!(cell.len(), BYTES_PER_CELL, "the number of bytes in a cell should always equal {BYTES_PER_CELL} since the type is a reference to an array. Check cell at index {i}");
         }
 
         // Check that we have no duplicate cell indices

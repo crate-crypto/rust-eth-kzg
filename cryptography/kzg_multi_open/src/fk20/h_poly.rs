@@ -14,6 +14,7 @@ use super::batch_toeplitz::BatchToeplitzMatrixVecMul;
 /// See section 3.1.1 of the FK20 paper for more details.
 ///
 /// FK20 computes the commitments to these polynomials in 3.1.1.
+#[cfg_attr(feature = "tracing", tracing::instrument(skip_all))]
 pub(crate) fn compute_h_poly_commitments(
     batch_toeplitz: &BatchToeplitzMatrixVecMul,
     mut polynomial: PolyCoeff,
@@ -21,15 +22,13 @@ pub(crate) fn compute_h_poly_commitments(
 ) -> Vec<G1Projective> {
     assert!(
         coset_size.is_power_of_two(),
-        "expected coset_size to be a power of two, found {}",
-        coset_size
+        "expected coset_size to be a power of two, found {coset_size}"
     );
 
     let num_coefficients: usize = polynomial.len();
     assert!(
         num_coefficients.is_power_of_two(),
-        "expected polynomial to have power of 2 number of coefficients. Found {}",
-        num_coefficients
+        "expected polynomial to have power of 2 number of coefficients. Found {num_coefficients}"
     );
 
     // Reverse polynomial so highest coefficient is first.
@@ -46,7 +45,7 @@ pub(crate) fn compute_h_poly_commitments(
     // element of the row.
     let mut matrices = Vec::with_capacity(toeplitz_rows.len());
     // We want to do `coset_size` toeplitz matrix multiplications
-    for row in toeplitz_rows.into_iter() {
+    for row in toeplitz_rows {
         let mut toeplitz_column = vec![Scalar::ZERO; row.len()];
         toeplitz_column[0] = row[0];
 
@@ -85,7 +84,7 @@ mod tests {
         let k = vec![5, 4, 3, 2];
         let downsampled_lists = take_every_nth(&k, 2);
         let result = vec![vec![5, 3], vec![4, 2]];
-        assert_eq!(downsampled_lists, result)
+        assert_eq!(downsampled_lists, result);
     }
 
     #[test]

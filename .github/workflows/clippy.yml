@@ -1,0 +1,25 @@
+name: Clippy Check
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.86.0
+          components: clippy
+
+      - name: Clippy Check
+        run: cargo clippy --workspace --lib --examples --tests --benches

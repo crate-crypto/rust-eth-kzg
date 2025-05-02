@@ -39,7 +39,7 @@ proc eth_kzg_das_context_new*(use_precomp: bool,
 # # Undefined behavior
 #
 # - Since the `ctx` is created in Rust, we can only get undefined behavior, if the caller passes in
-# a pointer that was not created by `eth_kzg_das_context_new`.
+#   a pointer that was not created by `eth_kzg_das_context_new`.
 proc eth_kzg_das_context_free*(ctx: ptr DASContext): void {.importc: "eth_kzg_das_context_free".}
 
 ## Free the memory allocated for the error message.
@@ -121,7 +121,7 @@ proc eth_kzg_compute_cells*(ctx: ptr DASContext,
 # - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` proof and
 #   that each cell is at least `BYTES_PER_CELL` bytes
 # - The caller must ensure that `proofs` points to a region of memory that is at least `proofs_length` proofs
-#    and that each proof is at least `BYTES_PER_COMMITMENT` bytes.
+#   and that each proof is at least `BYTES_PER_COMMITMENT` bytes.
 # - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
 #
 # # Undefined behavior
@@ -144,8 +144,7 @@ proc eth_kzg_verify_cell_kzg_proof_batch*(ctx: ptr DASContext,
 # # Safety
 #
 #  - If the length parameter for a pointer is set to zero, then this implementation will not check if its pointer is
-#   null. This is because the caller might have passed in a null pointer, if the length is zero. Instead an empty slice
-#   will be created.
+#    null. This is because the caller might have passed in a null pointer, if the length is zero. Instead an empty slice will be created.
 #
 # - The caller must ensure that the pointers are valid.
 # - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` cells

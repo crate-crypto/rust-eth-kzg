@@ -31,7 +31,7 @@ pub struct TrustedSetup {
 
 impl Default for TrustedSetup {
     fn default() -> Self {
-        TrustedSetup::from_embed()
+        Self::from_embed()
     }
 }
 
@@ -77,7 +77,7 @@ impl TrustedSetup {
       ]
     }
     */
-    pub fn from_json(json: &str) -> TrustedSetup {
+    pub fn from_json(json: &str) -> Self {
         let trusted_setup = Self::from_json_unchecked(json);
         trusted_setup.validate_trusted_setup();
         trusted_setup
@@ -85,7 +85,7 @@ impl TrustedSetup {
     /// Parse a Json string in the format specified by the ethereum trusted setup.
     ///
     /// This method does not check that the points are in the correct subgroup.
-    pub fn from_json_unchecked(json: &str) -> TrustedSetup {
+    pub fn from_json_unchecked(json: &str) -> Self {
         // Note: it is fine to panic here since this method is called on startup
         // and we want to fail fast if the trusted setup is malformed.
         serde_json::from_str(json)
@@ -121,7 +121,7 @@ impl TrustedSetup {
     }
 
     /// Loads the official trusted setup file being used on mainnet from the embedded data folder.
-    fn from_embed() -> TrustedSetup {
+    fn from_embed() -> Self {
         Self::from_json_unchecked(TRUSTED_SETUP_JSON)
     }
 }
@@ -153,7 +153,7 @@ fn deserialize_g1_points<T: AsRef<str>>(
             }
         };
 
-        g1_points.push(point)
+        g1_points.push(point);
     }
 
     g1_points
@@ -177,10 +177,14 @@ fn deserialize_g2_points<T: AsRef<str>>(
             .expect("expected 96 bytes for G2 point");
 
         let point = match subgroup_check {
-            SubgroupCheck::Check => G2Point::from_compressed(&g2_point_bytes).unwrap(),
-            SubgroupCheck::NoCheck => G2Point::from_compressed_unchecked(&g2_point_bytes).unwrap(),
+            SubgroupCheck::Check => {
+                G2Point::from_compressed(&g2_point_bytes).expect("invalid g2 point")
+            }
+            SubgroupCheck::NoCheck => {
+                G2Point::from_compressed_unchecked(&g2_point_bytes).expect("invalid g2 point")
+            }
         };
-        g2_points.push(point)
+        g2_points.push(point);
     }
 
     g2_points

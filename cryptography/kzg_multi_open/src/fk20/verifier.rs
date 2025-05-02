@@ -103,7 +103,7 @@ impl FK20Verifier {
     /// - bit_reversed_proofs
     ///
     /// This corresponds to the guarantee that every opening should have an `input_point` and an `output_point`
-    /// with a corresponding proof attesting to `f(input_point) = output_point` and a commitment to the polynomial `f`.  
+    /// with a corresponding proof attesting to `f(input_point) = output_point` and a commitment to the polynomial `f`.
     ///
     /// Note: Although this method is on the `FK20Verifier` structure, it is possible to verify methods that are not
     /// created by the `FK20Prover`. FK20Prover generates multi-proofs efficiently using the FK20 strategy, but we
@@ -206,8 +206,8 @@ impl FK20Verifier {
         let random_sum_interpolation_poly = compute_sum_interpolation_poly(
             &self.coset_domain,
             &self.bit_reversed_coset_fft_gens,
-            &bit_reversed_coset_evals,
-            &bit_reversed_coset_indices,
+            bit_reversed_coset_evals,
+            bit_reversed_coset_indices,
             &r_powers,
         );
         let comm_random_sum_interpolation_poly = self
@@ -253,7 +253,7 @@ fn compute_fiat_shamir_challenge(
     proofs: &[G1Point],
 ) -> Scalar {
     const DOMAIN_SEP: &str = "RCKZGCBATCH__V1_";
-    let hash_input_size = DOMAIN_SEP.as_bytes().len()
+    let hash_input_size = DOMAIN_SEP.len()
             + size_of::<u64>() // polynomial bound
             + size_of::<u64>() // field elements per coset
             + size_of::<u64>() // num commitments
@@ -277,16 +277,16 @@ fn compute_fiat_shamir_challenge(
     hash_input.extend(num_cosets.to_be_bytes());
 
     for commitment in row_commitments {
-        hash_input.extend(commitment.to_compressed())
+        hash_input.extend(commitment.to_compressed());
     }
 
     for k in 0..num_cosets {
         hash_input.extend(row_indices[k as usize].to_be_bytes());
         hash_input.extend(coset_indices[k as usize].to_be_bytes());
         for eval in &coset_evals[k as usize] {
-            hash_input.extend(eval.to_bytes_be())
+            hash_input.extend(eval.to_bytes_be());
         }
-        hash_input.extend(proofs[k as usize].to_compressed())
+        hash_input.extend(proofs[k as usize].to_compressed());
     }
 
     assert_eq!(hash_input.len(), hash_input_size);
@@ -336,8 +336,8 @@ fn compute_sum_interpolation_poly(
 
     for ((mut bit_reversed_coset_eval, bit_reversed_coset_index), scale_factor) in
         bit_reversed_coset_evals
-            .to_vec()
-            .into_iter()
+            .iter()
+            .cloned()
             .zip(bit_reversed_coset_indices)
             .zip(r_powers)
     {
@@ -377,9 +377,9 @@ mod tests {
         assert_eq!(powers.len(), num_elements);
         assert_eq!(powers[0], Scalar::ONE);
         assert_eq!(powers[1], base);
-        assert_eq!(powers[2], base.pow_vartime(&[2]));
-        assert_eq!(powers[3], base.pow_vartime(&[3]));
-        assert_eq!(powers[4], base.pow_vartime(&[4]));
+        assert_eq!(powers[2], base.pow_vartime([2]));
+        assert_eq!(powers[3], base.pow_vartime([3]));
+        assert_eq!(powers[4], base.pow_vartime([4]));
 
         let powers = compute_powers(base, 0);
         assert!(powers.is_empty());

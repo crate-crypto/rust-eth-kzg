@@ -32,22 +32,19 @@ pub(crate) fn shift_polynomial(poly: &PolyCoeff, degree: usize) -> &[Scalar] {
 pub(crate) fn compute_h_poly(polynomial: &PolyCoeff, coset_size: usize) -> Vec<&[Scalar]> {
     assert!(
         coset_size.is_power_of_two(),
-        "expected coset_size to be a power of two, found {}",
-        coset_size
+        "expected coset_size to be a power of two, found {coset_size}"
     );
 
     let num_coefficients = polynomial.len();
     assert!(
         num_coefficients.is_power_of_two(),
-        "expected polynomial to have power of 2 number of coefficients. Found {}",
-        num_coefficients
+        "expected polynomial to have power of 2 number of coefficients. Found {num_coefficients}"
     );
 
     let num_proofs: usize = num_coefficients / coset_size;
     assert!(
         num_proofs.is_power_of_two(),
-        "expected num_proofs to be a power of two, found {}",
-        num_proofs
+        "expected num_proofs to be a power of two, found {num_proofs}"
     );
 
     let mut h_polys = Vec::with_capacity(num_proofs);
@@ -105,7 +102,7 @@ fn compute_coset_evaluations(
 
     evaluations
         .chunks_exact(coset_size)
-        .map(|slice| slice.to_vec())
+        .map(<[Scalar]>::to_vec)
         .collect()
 }
 

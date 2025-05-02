@@ -92,7 +92,7 @@ pub extern "C" fn eth_kzg_das_context_new(use_precomp: bool, num_threads: u32) -
 /// # Undefined behavior
 ///
 /// - Since the `ctx` is created in Rust, we can only get undefined behavior, if the caller passes in
-/// a pointer that was not created by `eth_kzg_das_context_new`.
+///   a pointer that was not created by `eth_kzg_das_context_new`.
 #[allow(clippy::not_unsafe_ptr_arg_deref)]
 #[no_mangle]
 pub extern "C" fn eth_kzg_das_context_free(ctx: *mut DASContext) {
@@ -133,7 +133,8 @@ impl CResult {
     ///
     /// - If this method is called twice on the same pointer, it will result in a double-free.
     pub fn with_error(error_msg: &str) -> Self {
-        let error_msg = std::ffi::CString::new(error_msg).unwrap();
+        let error_msg =
+            std::ffi::CString::new(error_msg).expect("Unable to convert error to CString");
         CResult {
             status: CResultStatus::Err,
             error_msg: error_msg.into_raw(),
@@ -285,7 +286,7 @@ fn verification_result_to_bool_cresult(
 /// - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` proof and
 ///   that each cell is at least `BYTES_PER_CELL` bytes
 /// - The caller must ensure that `proofs` points to a region of memory that is at least `proofs_length` proofs
-///    and that each proof is at least `BYTES_PER_COMMITMENT` bytes.
+///   and that each proof is at least `BYTES_PER_COMMITMENT` bytes.
 /// - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
 ///
 /// # Undefined behavior
@@ -333,8 +334,7 @@ pub extern "C" fn eth_kzg_verify_cell_kzg_proof_batch(
 /// # Safety
 ///
 ///  - If the length parameter for a pointer is set to zero, then this implementation will not check if its pointer is
-///   null. This is because the caller might have passed in a null pointer, if the length is zero. Instead an empty slice
-///   will be created.
+///    null. This is because the caller might have passed in a null pointer, if the length is zero. Instead an empty slice will be created.
 ///
 /// - The caller must ensure that the pointers are valid.
 /// - The caller must ensure that `cells` points to a region of memory that is at least `cells_length` cells

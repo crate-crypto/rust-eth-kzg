@@ -15,23 +15,23 @@ use polynomial::poly_coeff::{
 /// of magnitudes faster than the naive scheme.
 ///
 /// We will use the naive scheme for testing purposes.
-
+///
 /// Naively computes an opening proof that attests to the evaluation of
 /// `polynomial` at `input_points`.
-//
-// Note: This method returns both the proof and the output points.
-// This does not follow the convention of the other methods which
-// produce proofs.
-//
-// This is done intentionally since that method
-// has additional checks that require the evaluations and computing
-// the output points, the naive way is quite expensive.
+///
+/// Note: This method returns both the proof and the output points.
+/// This does not follow the convention of the other methods which
+/// produce proofs.
+///
+/// This is done intentionally since that method
+/// has additional checks that require the evaluations and computing
+/// the output points, the naive way is quite expensive.
 pub(crate) fn compute_multi_opening(
     commit_key: &CommitKey,
     polynomial: &PolyCoeff,
     input_points: &[Scalar],
 ) -> (G1Point, Vec<Scalar>) {
-    _compute_multi_opening_naive(commit_key, polynomial, input_points)
+    compute_multi_opening_naive(commit_key, polynomial, input_points)
 }
 
 /// Naively Verifies a multi-point opening proof.
@@ -42,7 +42,7 @@ pub(crate) fn verify_multi_opening(
     input_points: &[Scalar],
     output_points: &[Scalar],
 ) -> bool {
-    _verify_multi_opening_naive(
+    verify_multi_opening_naive(
         verification_key,
         commitment,
         quotient_commitment,
@@ -61,7 +61,7 @@ pub(crate) fn verify_multi_opening(
 ///
 /// We further note that since the degree of I(X) is less than the degree of Z(X),
 /// the computation can be simplified in monomial form to Q(X) = f(X) / Z(X)
-fn _compute_multi_opening_naive(
+fn compute_multi_opening_naive(
     commit_key: &CommitKey,
     polynomial: &PolyCoeff,
     points: &[Scalar],
@@ -111,10 +111,10 @@ fn _compute_multi_opening_naive(
         assert_eq!(poly_eval(&i_x, point), *evaluation);
     }
 
-    let poly_shifted = poly_sub(polynomial.to_vec().clone(), i_x.clone());
+    let poly_shifted = poly_sub(polynomial.clone(), i_x);
 
-    let mut quotient_poly = poly_shifted.to_vec().clone();
-    for point in points.iter() {
+    let mut quotient_poly = poly_shifted;
+    for point in points {
         quotient_poly = divide_by_linear(&quotient_poly, *point);
     }
 
@@ -134,7 +134,7 @@ fn _compute_multi_opening_naive(
 /// The verifier receives the commitments to Q(X) and f(X), so they check the equation
 /// holds by using the following pairing equation:
 ///     e([Q(X)]_1, [Z(X)]_2) == e([f(X)]_1 - [I(X)]_1, [1]_2)
-fn _verify_multi_opening_naive(
+fn verify_multi_opening_naive(
     verification_key: &VerificationKey,
     commitment: G1Point,
     proof: G1Point,
@@ -146,7 +146,7 @@ fn _verify_multi_opening_naive(
         .zip(output_points.iter())
         .map(|(p, e)| (*p, *e))
         .collect();
-    let i_x = lagrange_interpolate(&coordinates).unwrap();
+    let i_x = lagrange_interpolate(&coordinates).expect("lagrange interpolation failed");
 
     let vanishing_poly = vanishing_poly(input_points);
     let comm_vanishing_poly: G2Point = verification_key.commit_g2(&vanishing_poly).into();
@@ -173,7 +173,7 @@ mod tests {
         let (ck, verification_key) = create_insecure_commit_verification_keys();
 
         let num_points_to_open = 16;
-        let input_points: Vec<_> = (0..num_points_to_open).map(|i| Scalar::from(i)).collect();
+        let input_points: Vec<_> = (0..num_points_to_open).map(Scalar::from).collect();
 
         let polynomial: Vec<_> = (0..verification_key.num_coefficients_in_polynomial)
             .map(|i| -Scalar::from(i as u64))

@@ -18,7 +18,7 @@ pub fn get_booth_index(window_index: usize, window_size: usize, el: &[u8]) -> i3
     // fill into a u32
     let mut v: [u8; 4] = [0; 4];
     for (dst, src) in v.iter_mut().zip(el.iter().skip(skip_bytes)) {
-        *dst = *src
+        *dst = *src;
     }
     let mut tmp = u32::from_le_bytes(v);
 
@@ -39,9 +39,9 @@ pub fn get_booth_index(window_index: usize, window_size: usize, el: &[u8]) -> i3
 
     // find the booth action index
     if sign {
-        tmp as i32
+        tmp.try_into().expect("Not valid i32")
     } else {
-        ((!(tmp - 1) & ((1 << window_size) - 1)) as i32).neg()
+        (i32::try_from(!(tmp - 1) & ((1 << window_size) - 1)).expect("Not valid i32")).neg()
     }
 }
 
@@ -64,7 +64,7 @@ mod tests {
 
         let got = mul(&s, &gen, 4);
 
-        assert_eq!(G1Point::from(res), got)
+        assert_eq!(G1Point::from(res), got);
     }
 
     fn mul(scalar: &Scalar, point: &G1Point, window: usize) -> G1Point {
@@ -81,7 +81,7 @@ mod tests {
                 acc = acc + acc;
             }
 
-            let idx = get_booth_index(i as usize, window, u.as_ref());
+            let idx = get_booth_index(i, window, u.as_ref());
 
             if idx.is_negative() {
                 acc += table[idx.unsigned_abs() as usize].neg();

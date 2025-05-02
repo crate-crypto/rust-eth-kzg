@@ -7,8 +7,11 @@ license = { workspace = true }
 rust-version = { workspace = true }
 repository = { workspace = true }
 
+[lints]
+workspace = true
+
 [dependencies]
 
 [build-dependencies]
 csbindgen = "1.9.3"
-toml = "0.5"
+toml = "0.8"

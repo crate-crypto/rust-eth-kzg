@@ -8,6 +8,9 @@ license = { workspace = true }
 rust-version = { workspace = true }
 repository = { workspace = true }
 
+[lints]
+workspace = true
+
 [dependencies]
 kzg_multi_open = { workspace = true }
 bls12_381 = { workspace = true }
@@ -16,20 +19,29 @@ erasure_codes = { workspace = true }
 rayon = { workspace = true, optional = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+tracing = { version = "0.1.41", default-features = false, features = ["attributes"], optional = true }
 
 [features]
-singlethreaded = ["rayon", "kzg_multi_open/singlethreaded"]
+singlethreaded = ["kzg_multi_open/singlethreaded"]
 multithreaded = ["rayon", "kzg_multi_open/multithreaded"]
+tracing = ["dep:tracing", "bls12_381/tracing", "kzg_multi_open/tracing"]
 
 [dev-dependencies]
 criterion = "0.5.1"
 rand = "0.8.4"
-hex = "0.4.3"
-# Serde-yaml has been deprecated, however since we only 
+hex = { workspace = true }
+# Serde-yaml has been deprecated, however since we only
 # use it for tests, we will not update it.
 serde_yaml = "0.9.34"
+tracing-subscriber = { version = "0.3.19", features = ["std", "env-filter"] }
+tracing-forest = { version = "0.1.6", features = ["ansi", "smallvec"] }
 
 [[bench]]
-name = "benchmark"
+name = "benchmark-mt"
 harness = false
 required-features = ["multithreaded"]
+
+[[bench]]
+name = "benchmark-st"
+harness = false
+required-features = ["singlethreaded"]

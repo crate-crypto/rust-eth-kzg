@@ -15,10 +15,9 @@ impl Error {
     ///
     /// Note: This distinction in practice, is not meaningful for the caller and is mainly
     /// here due to the specs and spec tests making this distinction.
-    pub fn invalid_proof(&self) -> bool {
-        let verifier_error = match self {
-            Error::Verifier(verifier_err) => verifier_err,
-            _ => return false,
+    pub const fn invalid_proof(&self) -> bool {
+        let Self::Verifier(verifier_error) = self else {
+            return false;
         };
         matches!(verifier_error, VerifierError::FK20(_))
     }
@@ -26,22 +25,22 @@ impl Error {
 
 impl From<ProverError> for Error {
     fn from(value: ProverError) -> Self {
-        Error::Prover(value)
+        Self::Prover(value)
     }
 }
 impl From<VerifierError> for Error {
     fn from(value: VerifierError) -> Self {
-        Error::Verifier(value)
+        Self::Verifier(value)
     }
 }
 impl From<SerializationError> for Error {
     fn from(value: SerializationError) -> Self {
-        Error::Serialization(value)
+        Self::Serialization(value)
     }
 }
 impl From<RecoveryError> for Error {
     fn from(value: RecoveryError) -> Self {
-        Error::Recovery(value)
+        Self::Recovery(value)
     }
 }
 
@@ -53,7 +52,7 @@ pub enum ProverError {
 
 impl From<RecoveryError> for ProverError {
     fn from(value: RecoveryError) -> Self {
-        ProverError::RecoveryFailure(value)
+        Self::RecoveryFailure(value)
     }
 }
 
@@ -82,7 +81,7 @@ pub enum RecoveryError {
 
 impl From<RSError> for RecoveryError {
     fn from(value: RSError) -> Self {
-        RecoveryError::ReedSolomon(value)
+        Self::ReedSolomon(value)
     }
 }
 
@@ -113,7 +112,7 @@ pub enum VerifierError {
 
 impl From<kzg_multi_open::VerifierError> for VerifierError {
     fn from(value: kzg_multi_open::VerifierError) -> Self {
-        VerifierError::FK20(value)
+        Self::FK20(value)
     }
 }
 

@@ -1,5 +1,7 @@
 use crate::coset_fft::CosetFFT;
-use crate::fft::{fft_g1_inplace, fft_scalar_inplace, precompute_twiddle_factors};
+use crate::fft::{
+    fft_g1_inplace, fft_scalar_inplace, precompute_omegas, precompute_twiddle_factors_bo,
+};
 use crate::poly_coeff::PolyCoeff;
 use bls12_381::ff::{Field, PrimeField};
 use bls12_381::{
@@ -26,14 +28,20 @@ pub struct Domain {
     pub generator_inv: Scalar,
     /// Precomputed values for the generator to speed up
     /// the forward FFT
-    twiddle_factors: Vec<Scalar>,
-    /// Precomputed values for the generator to speed up
+    omegas: Vec<Scalar>,
+    /// Precomputed values for the twiddle factors in bit-reversed order,
+    /// to speed up the forward FFT
+    twiddle_factors_bo: Vec<Scalar>,
+    /// Precomputed values for the inverse generator to speed up
     /// the backward FFT
-    twiddle_factors_inv: Vec<Scalar>,
+    omegas_inv: Vec<Scalar>,
+    /// Precomputed values for the inverse twiddle factors in bit-reversed order,
+    /// to speed up the backward FFT
+    twiddle_factors_inv_bo: Vec<Scalar>,
 }
 
 impl Domain {
-    pub fn new(size: usize) -> Domain {
+    pub fn new(size: usize) -> Self {
         // We are using roots of unity, so the
         // size of the domain will be padded to
         // the next power of two
@@ -54,11 +62,13 @@ impl Domain {
 
         for i in 1..size {
             let prev_root = roots[i - 1];
-            roots.push(prev_root * generator)
+            roots.push(prev_root * generator);
         }
 
-        let twiddle_factors = precompute_twiddle_factors(&generator, size);
-        let twiddle_factors_inv = precompute_twiddle_factors(&generator_inv, size);
+        let omegas = precompute_omegas(&generator, size);
+        let twiddle_factors_bo = precompute_twiddle_factors_bo(&generator, size);
+        let omegas_inv = precompute_omegas(&generator_inv, size);
+        let twiddle_factors_inv_bo = precompute_twiddle_factors_bo(&generator_inv, size);
 
         Self {
             roots,
@@ -66,8 +76,10 @@ impl Domain {
             domain_size_inv: size_as_scalar_inv,
             generator,
             generator_inv,
-            twiddle_factors,
-            twiddle_factors_inv,
+            omegas,
+            twiddle_factors_bo,
+            omegas_inv,
+            twiddle_factors_inv_bo,
         }
     }
 
@@ -76,14 +88,15 @@ impl Domain {
         assert!(size.is_power_of_two());
 
         let log_size_of_group = size.trailing_zeros();
-        if log_size_of_group > Domain::two_adicity() {
-            panic!("two adicity is 32 but group size needed is 2^{log_size_of_group}");
-        }
+        assert!(
+            log_size_of_group <= Self::two_adicity(),
+            "two adicity is 32 but group size needed is 2^{log_size_of_group}"
+        );
 
         // We now want to compute the generator which has order `size`
-        let exponent: u64 = 1 << (Domain::two_adicity() as u64 - log_size_of_group as u64);
+        let exponent: u64 = 1 << (u64::from(Self::two_adicity()) - u64::from(log_size_of_group));
 
-        Domain::largest_root_of_unity().pow_vartime([exponent])
+        Self::largest_root_of_unity().pow_vartime([exponent])
     }
 
     /// The largest root of unity that we can use for the domain
@@ -109,7 +122,7 @@ impl Domain {
         // domain.
         polynomial.resize(self.size(), Scalar::ZERO);
 
-        fft_scalar_inplace(&self.twiddle_factors, &mut polynomial);
+        fft_scalar_inplace(&self.omegas, &self.twiddle_factors_bo, &mut polynomial);
 
         polynomial
     }
@@ -122,11 +135,11 @@ impl Domain {
         points.resize(self.size(), Scalar::ZERO);
 
         let mut coset_scale = Scalar::ONE;
-        for point in points.iter_mut() {
+        for point in &mut points {
             *point *= coset_scale;
             coset_scale *= coset.generator;
         }
-        fft_scalar_inplace(&self.twiddle_factors, &mut points);
+        fft_scalar_inplace(&self.omegas, &self.twiddle_factors_bo, &mut points);
 
         points
     }
@@ -135,12 +148,13 @@ impl Domain {
     ///
     /// Note: Thinking about an FFT as multiple inner products between powers of the elements
     /// in the domain and the input polynomial makes this easier to visualize.
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip_all))]
     pub fn fft_g1(&self, mut points: Vec<G1Projective>) -> Vec<G1Projective> {
         // Pad the vector of points with zeroes, so that it is the same size as the
         // domain.
         points.resize(self.size(), G1Projective::identity());
 
-        fft_g1_inplace(&self.twiddle_factors, &mut points);
+        fft_g1_inplace(&self.omegas, &self.twiddle_factors_bo, &mut points);
 
         points
     }
@@ -157,6 +171,7 @@ impl Domain {
     ///
     /// This is useful for saving computation on the final scalar multiplication that happens after the
     /// initial FFT is done.
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip_all))]
     pub fn ifft_g1_take_n(
         &self,
         mut points: Vec<G1Projective>,
@@ -166,7 +181,7 @@ impl Domain {
         // domain.
         points.resize(self.size(), G1Projective::identity());
 
-        fft_g1_inplace(&self.twiddle_factors_inv, &mut points);
+        fft_g1_inplace(&self.omegas_inv, &self.twiddle_factors_inv_bo, &mut points);
 
         // Truncate the result if a value of `n` was supplied.
         let mut ifft_g1 = match n {
@@ -177,8 +192,8 @@ impl Domain {
             None => points,
         };
 
-        for element in ifft_g1.iter_mut() {
-            *element *= self.domain_size_inv
+        for element in &mut ifft_g1 {
+            *element *= self.domain_size_inv;
         }
 
         ifft_g1
@@ -186,15 +201,16 @@ impl Domain {
 
     /// Interpolates the points over the domain to get a polynomial
     /// in monomial form.
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip_all))]
     pub fn ifft_scalars(&self, mut points: Vec<Scalar>) -> Vec<Scalar> {
         // Pad the vector with zeroes, so that it is the same size as the
         // domain.
         points.resize(self.size(), Scalar::ZERO);
 
-        fft_scalar_inplace(&self.twiddle_factors_inv, &mut points);
+        fft_scalar_inplace(&self.omegas_inv, &self.twiddle_factors_inv_bo, &mut points);
 
-        for element in points.iter_mut() {
-            *element *= self.domain_size_inv
+        for element in &mut points {
+            *element *= self.domain_size_inv;
         }
 
         points
@@ -205,7 +221,7 @@ impl Domain {
         let mut coset_coeffs = self.ifft_scalars(points);
 
         let mut coset_scale = Scalar::ONE;
-        for element in coset_coeffs.iter_mut() {
+        for element in &mut coset_coeffs {
             *element *= coset_scale;
             coset_scale *= coset.generator_inv;
         }
@@ -224,11 +240,11 @@ mod tests {
         let root = Domain::largest_root_of_unity();
         let order = 2u64.pow(Domain::two_adicity());
 
-        assert_eq!(root.pow_vartime(&[order]), Scalar::ONE);
+        assert_eq!(root.pow_vartime([order]), Scalar::ONE);
 
         // Check that it is indeed a primitive root of unity
         for i in 0..Domain::two_adicity() {
-            assert_ne!(root.pow_vartime(&[2u64.pow(i)]), Scalar::ONE);
+            assert_ne!(root.pow_vartime([2u64.pow(i)]), Scalar::ONE);
         }
     }
 
@@ -236,19 +252,18 @@ mod tests {
     fn fft_test_polynomial() {
         let evaluations = vec![Scalar::from(2u64), Scalar::from(4u64)];
         let domain = Domain::new(2);
-        let roots = domain.roots.clone();
 
         // Interpolate the evaluations
         let poly_coeff = domain.ifft_scalars(evaluations.clone());
 
         // Check interpolation was correct by evalauting the polynomial at the roots
-        for (i, root) in roots.iter().enumerate() {
+        for (i, root) in domain.roots.iter().enumerate() {
             let eval = poly_eval(&poly_coeff, root);
             assert_eq!(eval, evaluations[i]);
         }
 
         // Evaluate the polynomial at the domain points
-        let got_evals = domain.fft_scalars(poly_coeff.clone());
+        let got_evals = domain.fft_scalars(poly_coeff);
         assert_eq!(got_evals, evaluations);
     }
 

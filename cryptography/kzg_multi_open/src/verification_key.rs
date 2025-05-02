@@ -70,7 +70,7 @@ impl VerificationKey {
     }
 
     /// Returns the degree-0 element in the G2 powers of tau list
-    pub fn g2_gen(&self) -> G2Point {
+    pub const fn g2_gen(&self) -> G2Point {
         self.g2_gen
     }
 }

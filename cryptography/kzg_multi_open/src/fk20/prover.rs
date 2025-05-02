@@ -66,7 +66,7 @@ impl FK20Prover {
         points_per_proof: usize,
         number_of_points_to_open: usize,
         use_precomp: UsePrecomp,
-    ) -> FK20Prover {
+    ) -> Self {
         assert!(points_per_proof.is_power_of_two());
         assert!(number_of_points_to_open.is_power_of_two());
         assert!(number_of_points_to_open > points_per_proof);
@@ -111,7 +111,7 @@ impl FK20Prover {
         let evaluation_domain = Domain::new(number_of_points_to_open);
         let poly_domain = Domain::new(polynomial_bound);
 
-        FK20Prover {
+        Self {
             batch_toeplitz,
             coset_size: points_per_proof,
             number_of_points_to_open,
@@ -143,7 +143,7 @@ impl FK20Prover {
     }
 
     /// The number of proofs that will be produced.
-    pub fn num_proofs(&self) -> usize {
+    pub const fn num_proofs(&self) -> usize {
         self.number_of_points_to_open / self.coset_size
     }
 
@@ -152,12 +152,13 @@ impl FK20Prover {
     /// Instead of evaluating each coset individually, we can evaluate the polynomial
     /// at all of the points we want to open at, and then use reverse bit ordering
     /// to group the evaluations into the relevant cosets.
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip_all))]
     fn compute_coset_evaluations(&self, polynomial: PolyCoeff) -> Vec<Vec<Scalar>> {
         let mut evaluations = self.evaluation_domain.fft_scalars(polynomial);
         reverse_bit_order(&mut evaluations);
         evaluations
             .chunks_exact(self.coset_size)
-            .map(|slice| slice.to_vec())
+            .map(<[Scalar]>::to_vec)
             .collect()
     }
 
@@ -199,6 +200,7 @@ impl FK20Prover {
     //
     // Note: one can view this implementation of FK20 as only working over polynomials in coefficient form.
     // ie the core algorithms never consider polynomials in lagrange form.
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip_all))]
     fn compute_multi_opening_proofs_poly_coeff(
         &self,
         polynomial: PolyCoeff,
@@ -207,7 +209,11 @@ impl FK20Prover {
         //
         let h_poly_commitments =
             compute_h_poly_commitments(&self.batch_toeplitz, polynomial.clone(), self.coset_size);
-        let mut proofs = self.proof_domain.fft_g1(h_poly_commitments);
+        let mut proofs = {
+            #[cfg(feature = "tracing")]
+            let _span = tracing::info_span!("compute proof from h_poly_commitments").entered();
+            self.proof_domain.fft_g1(h_poly_commitments)
+        };
 
         // Reverse bit order the set of proofs, so that the proofs line up with the
         // coset evaluations.
@@ -220,7 +226,7 @@ impl FK20Prover {
     }
 
     #[cfg(test)]
-    pub(crate) fn batch_toeplitz_matrix(&self) -> &BatchToeplitzMatrixVecMul {
+    pub(crate) const fn batch_toeplitz_matrix(&self) -> &BatchToeplitzMatrixVecMul {
         &self.batch_toeplitz
     }
 }
@@ -290,7 +296,7 @@ mod tests {
         let coset_indices: Vec<u64> = (0..num_cosets as u64).collect();
 
         let valid = fk20_verifier.verify_multi_opening(
-            &vec![commitment],
+            &[commitment],
             &vec![0u64; num_cosets],
             &coset_indices,
             &cells,
@@ -318,8 +324,7 @@ mod tests {
             2 * poly_len,
             UsePrecomp::No,
         );
-        let (got_proofs, got_evaluations) =
-            fk20.compute_multi_opening_proofs_poly_coeff(poly.clone());
+        let (got_proofs, got_evaluations) = fk20.compute_multi_opening_proofs_poly_coeff(poly);
 
         assert_eq!(got_proofs.len(), expected_proofs.len());
         assert_eq!(got_evaluations.len(), expected_evaluations.len());
@@ -330,13 +335,13 @@ mod tests {
 
     #[test]
     fn test_consistency_between_naive_kzg_naive_fk20() {
-        // Setup
-        //
-        let (ck, _) = create_insecure_commit_verification_keys();
-
         const POLYNOMIAL_LEN: usize = 4096;
         const NUMBER_OF_POINTS_TO_EVALUATE: usize = 2 * POLYNOMIAL_LEN;
         const COSET_SIZE: usize = 64;
+
+        // Setup
+        //
+        let (ck, _) = create_insecure_commit_verification_keys();
 
         let cosets = generate_cosets(NUMBER_OF_POINTS_TO_EVALUATE, COSET_SIZE, true);
 
@@ -371,8 +376,8 @@ mod tests {
             return false;
         }
 
-        let lhs_set: HashSet<_> = lhs.iter().map(|s| s.to_bytes_be()).collect();
-        let rhs_set: HashSet<_> = rhs.iter().map(|s| s.to_bytes_be()).collect();
+        let lhs_set: HashSet<_> = lhs.iter().map(Scalar::to_bytes_be).collect();
+        let rhs_set: HashSet<_> = rhs.iter().map(Scalar::to_bytes_be).collect();
 
         lhs_set == rhs_set
     }

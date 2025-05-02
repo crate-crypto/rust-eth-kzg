@@ -20,21 +20,26 @@ fn main() {
     // Generate the header file
     let mut command = std::process::Command::new("javac");
     command.arg("-h").arg(".");
-    for file in INPUT_FILES.iter() {
+    for file in &INPUT_FILES {
         command.arg(path_to_java_bindings_file.join(file));
     }
-    let output = command.output().unwrap();
+    let output = command.output().expect("Unable to execute command");
 
     if !output.status.success() {
-        let output = std::str::from_utf8(&output.stderr).unwrap();
+        let output = std::str::from_utf8(&output.stderr).expect("msg should be utf8");
         panic!("{}", output)
     }
 }
 
 fn path_to_bindings_folder() -> PathBuf {
-    let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+    let crate_dir = env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR env not set");
     let crate_dir = PathBuf::from(crate_dir);
     // Go up two directories to be at bindings parent directory
-    let parent = crate_dir.parent().unwrap().parent().unwrap().to_path_buf();
+    let parent = crate_dir
+        .parent()
+        .expect("No parent directory found")
+        .parent()
+        .expect("No parent directory found")
+        .to_path_buf();
     parent
 }

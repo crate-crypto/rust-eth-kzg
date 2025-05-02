@@ -64,7 +64,7 @@ impl ProverContext {
             CELLS_PER_EXT_BLOB,
         );
 
-        ProverContext {
+        Self {
             kzg_multipoint_prover,
             rs,
         }
@@ -99,6 +99,9 @@ impl DASContext {
         blob: BlobRef,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), Error> {
         with_optional_threadpool!(self, {
+            #[cfg(feature = "tracing")]
+            let _span = tracing::info_span!("compute_cells_and_kzg_proofs").entered();
+
             // Deserialization
             //
             let scalars = deserialize_blob_to_scalars(blob)?;
@@ -110,7 +113,7 @@ impl DASContext {
                 .kzg_multipoint_prover
                 .compute_multi_opening_proofs(ProverInput::Data(scalars));
 
-            Ok(serialize_cells_and_proofs(cells, proofs))
+            Ok(serialize_cells_and_proofs(cells, &proofs))
         })
     }
 
@@ -155,7 +158,7 @@ impl DASContext {
                 .kzg_multipoint_prover
                 .compute_multi_opening_proofs(ProverInput::PolyCoeff(poly_coeff));
 
-            Ok(serialize_cells_and_proofs(coset_evaluations, proofs))
+            Ok(serialize_cells_and_proofs(coset_evaluations, &proofs))
         })
     }
 }
