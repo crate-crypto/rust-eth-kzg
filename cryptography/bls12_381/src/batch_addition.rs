@@ -67,13 +67,13 @@ const BATCH_INVERSE_THRESHOLD: usize = 16;
 /// other.
 // TODO(benedikt): top down balanced tree idea - benedikt
 // TODO: search tree for sorted array
-pub fn batch_addition_binary_tree_stride(mut points: Vec<G1Affine>) -> G1Projective {
+pub(crate) fn batch_addition_binary_tree_stride(mut points: Vec<G1Affine>) -> G1Projective {
     // We return the identity element if the input is empty
     if points.is_empty() {
         return G1Projective::identity();
     }
 
-    assert!(points.iter().all(|point| !bool::from(point.is_identity())));
+    debug_assert!(points.iter().all(|point| !bool::from(point.is_identity())));
 
     // Stores denominators for slope calculations
     let mut denominators = Vec::with_capacity(points.len());
@@ -138,7 +138,7 @@ pub fn batch_addition_binary_tree_stride(mut points: Vec<G1Affine>) -> G1Project
 /// It returns non-sense value if the trace of addition has any identity point,
 /// which has negligible chance to happen if the points are not close to each
 /// other.
-pub fn multi_batch_addition_binary_tree_stride(
+pub(crate) fn multi_batch_addition_binary_tree_stride(
     mut multi_points: Vec<Vec<G1Affine>>,
 ) -> Vec<G1Projective> {
     // Computes the total number of point pairs across all batches
@@ -148,7 +148,7 @@ pub fn multi_batch_addition_binary_tree_stride(
         points.iter().map(|p| p.len() / 2).sum()
     }
 
-    assert!(multi_points
+    debug_assert!(multi_points
         .iter()
         .all(|points| points.iter().all(|point| !bool::from(point.is_identity()))));
 
