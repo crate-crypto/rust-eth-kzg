@@ -1,7 +1,7 @@
 use crate::batch_inversion::{batch_inverse, batch_inverse_scratch_pad};
 use blstrs::{Fp, G1Affine, G1Projective};
 use ff::Field;
-use group::Group;
+use group::{prime::PrimeCurveAffine, Group};
 
 /// Adds two elliptic curve points (affine coordinates) using the point addition/doubling formula.
 ///
@@ -54,6 +54,17 @@ const BATCH_INVERSE_THRESHOLD: usize = 16;
 /// threshold, at which point the remaining points are summed sequentially.
 ///
 /// Returns the total sum of all input points as a `G1Projective`.
+///
+/// # Panics
+///
+/// It panics if any point `points` is identity point, or if the addition trace
+/// has `[O, O]` or `[G, -G]` pair due to computing inverse of 0.
+///
+/// # Undefined returned value
+///
+/// It returns non-sense value if the trace of addition has any identity point,
+/// which has negligible chance to happen if the points are not close to each
+/// other.
 // TODO(benedikt): top down balanced tree idea - benedikt
 // TODO: search tree for sorted array
 pub fn batch_addition_binary_tree_stride(mut points: Vec<G1Affine>) -> G1Projective {
@@ -61,6 +72,8 @@ pub fn batch_addition_binary_tree_stride(mut points: Vec<G1Affine>) -> G1Project
     if points.is_empty() {
         return G1Projective::identity();
     }
+
+    assert!(points.iter().all(|point| !bool::from(point.is_identity())));
 
     // Stores denominators for slope calculations
     let mut denominators = Vec::with_capacity(points.len());
@@ -114,6 +127,17 @@ pub fn batch_addition_binary_tree_stride(mut points: Vec<G1Affine>) -> G1Project
 /// This function efficiently adds multiple sets of points amortizing the cost of the
 /// inversion over all of the sets, using the same binary tree approach with striding
 /// as the single-batch version.
+///
+/// # Panics
+///
+/// It panics if any point `multi_points` is identity point, or if the addition
+/// trace has `[O, O]` or `[G, -G]` pair due to computing inverse of 0.
+///
+/// # Undefined returned value
+///
+/// It returns non-sense value if the trace of addition has any identity point,
+/// which has negligible chance to happen if the points are not close to each
+/// other.
 pub fn multi_batch_addition_binary_tree_stride(
     mut multi_points: Vec<Vec<G1Affine>>,
 ) -> Vec<G1Projective> {
@@ -123,6 +147,10 @@ pub fn multi_batch_addition_binary_tree_stride(
     fn compute_threshold(points: &[Vec<G1Affine>]) -> usize {
         points.iter().map(|p| p.len() / 2).sum()
     }
+
+    assert!(multi_points
+        .iter()
+        .all(|points| points.iter().all(|point| !bool::from(point.is_identity()))));
 
     // Total number of points across all batches (used for scratchpad allocation)
     let total_num_points = multi_points.iter().map(Vec::len).sum();
