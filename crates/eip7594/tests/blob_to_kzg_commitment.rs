@@ -55,7 +55,7 @@ mod serde_ {
     }
 }
 
-const TEST_DIR: &str = "../test_vectors/blob_to_kzg_commitment";
+const TEST_DIR: &str = "../../test_vectors/blob_to_kzg_commitment";
 #[test]
 fn test_blob_to_kzg_commitment() {
     let test_files = collect_test_files(TEST_DIR).expect("unable to collect test files");
