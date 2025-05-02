@@ -1,7 +1,7 @@
 use bls12_381::{lincomb::g1_lincomb, G1Point, G1Projective, Scalar};
 
-// The key that is used to commit to polynomials in monomial form
-//
+/// The key that is used to commit to polynomials in monomial form
+///
 /// This contains group elements of the form `{ \tau^i G }`
 ///  Where:
 /// - `i` ranges from 0 to `degree`.
@@ -12,13 +12,13 @@ pub struct CommitKey {
 }
 
 impl CommitKey {
-    pub fn new(g1_points: Vec<G1Point>) -> Self {
+    pub fn new(g1s: Vec<G1Point>) -> Self {
         assert!(
-            !g1_points.is_empty(),
+            !g1s.is_empty(),
             "cannot initialize `CommitKey` with no g1 points"
         );
 
-        Self { g1s: g1_points }
+        Self { g1s }
     }
 
     /// Commit to `polynomial` in monomial form using the G1 group elements

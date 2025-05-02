@@ -4,7 +4,7 @@ use crate::{
 };
 use bls12_381::{
     ff::Field, g1_batch_normalize, lincomb::g1_lincomb, multi_pairings,
-    reduce_bytes_to_scalar_bias, G1Point, G2Point, G2Prepared, Scalar,
+    reduce_bytes_to_scalar_bias, G1Point, G2Prepared, Scalar,
 };
 use polynomial::{domain::Domain, poly_coeff::poly_add, CosetFFT};
 use sha2::{Digest, Sha256};
@@ -67,20 +67,20 @@ impl FK20Verifier {
             verification_key.g2s.len() >= coset_size,
             "need as many g2 points as coset size"
         );
-        let coset_domain = polynomial::domain::Domain::new(verification_key.coset_size);
+        let coset_domain = Domain::new(verification_key.coset_size);
 
         let n = verification_key.coset_size;
         // [tau^n]_2
-        let tau_pow_n = G2Prepared::from(G2Point::from(verification_key.g2s[n]));
+        let tau_pow_n = G2Prepared::from(verification_key.g2s[n]);
         // [-1]_2
-        let neg_g2_gen = G2Prepared::from(-verification_key.g2_gen());
+        let neg_g2_gen = G2Prepared::from(-verification_key.g2_gen);
 
         let coset_gens_pow_n = coset_gens
             .iter()
             .map(|&coset_gen| coset_gen.pow_vartime([n as u64]))
             .collect();
 
-        let coset_fft_gens: Vec<_> = coset_gens.iter().map(|gen| CosetFFT::new(*gen)).collect();
+        let coset_fft_gens = coset_gens.iter().map(|gen| CosetFFT::new(*gen)).collect();
 
         Self {
             verification_key,

@@ -118,7 +118,7 @@ impl CirculantMatrix {
     /// The resulting circulant matrix has a dimension that is twice as large as the original
     /// Toeplitz matrix.
     pub(crate) fn from_toeplitz(tm: ToeplitzMatrix) -> Self {
-        let mut extension_col = tm.row.clone();
+        let mut extension_col = tm.row;
         extension_col.rotate_left(1);
         extension_col.reverse();
 

@@ -25,10 +25,10 @@ pub struct VerificationKey {
     /// however, we have this explicit parameter to
     /// avoid foot guns.
     pub coset_size: usize,
-    // This the number of coefficients in the polynomial that we want to
-    // verify claims about.
-    //
-    // Note: We could also use the max degree bound here. (This is a matter of preference)
+    /// This the number of coefficients in the polynomial that we want to
+    /// verify claims about.
+    ///
+    /// Note: We could also use the max degree bound here. (This is a matter of preference)
     pub num_coefficients_in_polynomial: usize,
 }
 
@@ -58,19 +58,14 @@ impl VerificationKey {
     /// Commit to a polynomial in monomial form using the G2 group elements
     pub fn commit_g2(&self, polynomial: &[Scalar]) -> G2Projective {
         assert!(self.g2s.len() >= polynomial.len());
-        g2_lincomb(&self.g2s[0..polynomial.len()], polynomial)
+        g2_lincomb(&self.g2s[..polynomial.len()], polynomial)
             .expect("number of g2 points is equal to the number of coefficients in the polynomial")
     }
 
     /// Commit to a polynomial in monomial form using the G1 group elements
     pub fn commit_g1(&self, polynomial: &[Scalar]) -> G1Projective {
         assert!(self.g1s.len() >= polynomial.len());
-        g1_lincomb(&self.g1s[0..polynomial.len()], polynomial)
+        g1_lincomb(&self.g1s[..polynomial.len()], polynomial)
             .expect("number of g1 points is equal to the number of coefficients in the polynomial")
-    }
-
-    /// Returns the degree-0 element in the G2 powers of tau list
-    pub const fn g2_gen(&self) -> G2Point {
-        self.g2_gen
     }
 }
