@@ -84,9 +84,9 @@ proc `=destroy`(x: typeof KZGCtx()[]) =
   if x.ctx_ptr != nil:
     eth_kzg_das_context_free(x.ctx_ptr)
 
-proc newKZGCtx*(use_precomp: bool = true): KZGCtx =
+proc newKZGCtx*(use_precomp: bool = true, num_threads: uint32 = 1): KZGCtx =
   var kzgCtx = KZGCtx()
-  kzgCtx.ctx_ptr = eth_kzg_das_context_new(use_precomp)
+  kzgCtx.ctx_ptr = eth_kzg_das_context_new(use_precomp, num_threads)
   return kzgCtx
 
 
