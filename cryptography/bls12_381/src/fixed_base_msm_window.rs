@@ -48,7 +48,7 @@ impl FixedBaseMSMPrecompWindow {
     }
 
     pub fn msm(&self, scalars: &[Scalar]) -> G1Projective {
-        let scalars_bytes: Vec<_> = scalars.iter().map(blstrs::Scalar::to_bytes_le).collect();
+        let scalars_bytes: Vec<_> = scalars.iter().map(Scalar::to_bytes_le).collect();
         let number_of_windows = Scalar::NUM_BITS as usize / self.wbits + 1;
 
         let mut windows_of_points = vec![Vec::with_capacity(scalars.len()); number_of_windows];
