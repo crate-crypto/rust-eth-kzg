@@ -1,11 +1,13 @@
-use crate::errors::RSError;
+use std::ops::Deref;
+
 use bls12_381::{
     batch_inversion::batch_inverse,
     ff::{Field, PrimeField},
     Scalar,
 };
 use polynomial::{domain::Domain, poly_coeff::vanishing_poly, CosetFFT};
-use std::ops::Deref;
+
+use crate::errors::RSError;
 
 /// `ErasurePattern` is an abstraction created to capture the idea
 /// that erasures do not appear in completely random locations.

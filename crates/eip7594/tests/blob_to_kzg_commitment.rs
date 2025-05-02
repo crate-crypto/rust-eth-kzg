@@ -1,16 +1,17 @@
+use std::fs;
+
 use common::collect_test_files;
 use rust_eth_kzg::constants::BYTES_PER_BLOB;
 use serde_::TestVector;
-use std::fs;
 
 mod common;
 
 mod serde_ {
 
-    use crate::common::UnsafeBytes;
+    use serde::Deserialize;
 
     use super::common::bytes_from_hex;
-    use serde::Deserialize;
+    use crate::common::UnsafeBytes;
 
     #[derive(Deserialize)]
     struct YamlInput {

@@ -1,5 +1,4 @@
-use std::env;
-use std::path::PathBuf;
+use std::{env, path::PathBuf};
 
 /// The path where the generated header file will be written relative to bindings folder.
 const PATH_FOR_NIM_HEADER: &str = "nim/nim_code/nim_eth_kzg/header.nim";

@@ -1,10 +1,9 @@
-use bls12_381::fixed_base_msm::UsePrecomp;
-use bls12_381::group::Group;
-use bls12_381::{ff::Field, G1Projective};
-use bls12_381::{g1_batch_normalize, g2_batch_normalize, G2Projective, Scalar};
-use crate_crypto_kzg_multi_open_fk20::Verifier;
+use bls12_381::{
+    ff::Field, fixed_base_msm::UsePrecomp, g1_batch_normalize, g2_batch_normalize, group::Group,
+    G1Projective, G2Projective, Scalar,
+};
 use crate_crypto_kzg_multi_open_fk20::{
-    commit_key::CommitKey, verification_key::VerificationKey, Prover, ProverInput,
+    commit_key::CommitKey, verification_key::VerificationKey, Prover, ProverInput, Verifier,
 };
 use criterion::{criterion_group, criterion_main, Criterion};
 

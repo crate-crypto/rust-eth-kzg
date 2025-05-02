@@ -1,5 +1,4 @@
-use std::env;
-use std::path::PathBuf;
+use std::{env, path::PathBuf};
 
 /// The directory where the generated header file will be written.
 const DIR_FOR_HEADER: &str = "build";

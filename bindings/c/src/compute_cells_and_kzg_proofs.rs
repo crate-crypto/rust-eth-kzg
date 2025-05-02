@@ -1,6 +1,9 @@
-use crate::pointer_utils::{create_array_ref, deref_const, write_to_2d_slice};
-use crate::{CResult, DASContext};
 use rust_eth_kzg::constants::{BYTES_PER_BLOB, CELLS_PER_EXT_BLOB};
+
+use crate::{
+    pointer_utils::{create_array_ref, deref_const, write_to_2d_slice},
+    CResult, DASContext,
+};
 
 pub(crate) fn _compute_cells_and_kzg_proofs(
     ctx: *const DASContext,

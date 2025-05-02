@@ -1,7 +1,9 @@
 use c_eth_kzg::DASContext;
-use jni::objects::{JByteArray, JClass, JLongArray, JObject, JObjectArray, JValue};
-use jni::sys::{jboolean, jlong};
-use jni::JNIEnv;
+use jni::{
+    objects::{JByteArray, JClass, JLongArray, JObject, JObjectArray, JValue},
+    sys::{jboolean, jlong},
+    JNIEnv,
+};
 
 mod errors;
 use errors::Error;

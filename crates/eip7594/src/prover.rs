@@ -1,9 +1,6 @@
 use bls12_381::fixed_base_msm::UsePrecomp;
 use erasure_codes::ReedSolomon;
-use kzg_multi_open::{
-    commit_key::CommitKey,
-    {Prover, ProverInput},
-};
+use kzg_multi_open::{commit_key::CommitKey, Prover, ProverInput};
 
 use crate::{
     constants::{

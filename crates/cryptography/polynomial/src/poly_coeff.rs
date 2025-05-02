@@ -1,5 +1,4 @@
-use bls12_381::ff::Field;
-use bls12_381::Scalar;
+use bls12_381::{ff::Field, Scalar};
 
 // This file contains methods on a polynomial in coefficient form.
 
@@ -157,8 +156,9 @@ pub fn lagrange_interpolate(points: &[(Scalar, Scalar)]) -> Option<Vec<Scalar>> 
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use bls12_381::ff::Field;
+
+    use super::*;
 
     fn naive_poly_eval(poly: &PolyCoeff, value: &Scalar) -> Scalar {
         let mut result = Scalar::ZERO;

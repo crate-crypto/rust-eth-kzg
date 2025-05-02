@@ -1,12 +1,13 @@
-use crate::coset_fft::CosetFFT;
-use crate::fft::{
-    fft_g1_inplace, fft_scalar_inplace, precompute_omegas, precompute_twiddle_factors_bo,
-};
-use crate::poly_coeff::PolyCoeff;
-use bls12_381::ff::{Field, PrimeField};
 use bls12_381::{
+    ff::{Field, PrimeField},
     group::Group,
-    {G1Projective, Scalar},
+    G1Projective, Scalar,
+};
+
+use crate::{
+    coset_fft::CosetFFT,
+    fft::{fft_g1_inplace, fft_scalar_inplace, precompute_omegas, precompute_twiddle_factors_bo},
+    poly_coeff::PolyCoeff,
 };
 
 /// A struct representing a set of points that are roots of unity,
@@ -231,9 +232,8 @@ impl Domain {
 
 #[cfg(test)]
 mod tests {
-    use crate::poly_coeff::poly_eval;
-
     use super::*;
+    use crate::poly_coeff::poly_eval;
 
     #[test]
     fn largest_root_of_unity_has_correct_order() {

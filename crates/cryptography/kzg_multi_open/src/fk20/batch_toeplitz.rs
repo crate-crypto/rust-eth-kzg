@@ -1,10 +1,11 @@
-use crate::fk20::toeplitz::{CirculantMatrix, ToeplitzMatrix};
 use bls12_381::{
     fixed_base_msm::{FixedBaseMSM, UsePrecomp},
     g1_batch_normalize, G1Point, G1Projective,
 };
 use maybe_rayon::prelude::*;
 use polynomial::domain::Domain;
+
+use crate::fk20::toeplitz::{CirculantMatrix, ToeplitzMatrix};
 
 /// BatchToeplitzMatrixVecMul allows one to compute multiple matrix vector multiplications
 /// and sum them together.
@@ -163,11 +164,11 @@ pub(crate) fn transpose<T: Clone>(v: Vec<Vec<T>>) -> Vec<Vec<T>> {
 
 #[cfg(test)]
 mod tests {
-    use crate::fk20::batch_toeplitz::BatchToeplitzMatrixVecMul;
-    use crate::fk20::toeplitz::ToeplitzMatrix;
-    use bls12_381::fixed_base_msm::UsePrecomp;
-    use bls12_381::group::Group;
-    use bls12_381::{g1_batch_normalize, G1Projective, Scalar};
+    use bls12_381::{
+        fixed_base_msm::UsePrecomp, g1_batch_normalize, group::Group, G1Projective, Scalar,
+    };
+
+    use crate::fk20::{batch_toeplitz::BatchToeplitzMatrixVecMul, toeplitz::ToeplitzMatrix};
 
     #[test]
     fn smoke_aggregated_matrix_vector_mul() {

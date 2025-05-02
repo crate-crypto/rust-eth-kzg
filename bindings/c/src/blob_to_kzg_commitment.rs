@@ -1,7 +1,9 @@
 use rust_eth_kzg::constants::{BYTES_PER_BLOB, BYTES_PER_COMMITMENT};
 
-use crate::pointer_utils::{create_array_ref, deref_const, write_to_slice};
-use crate::{CResult, DASContext};
+use crate::{
+    pointer_utils::{create_array_ref, deref_const, write_to_slice},
+    CResult, DASContext,
+};
 
 pub(crate) fn _blob_to_kzg_commitment(
     ctx: *const DASContext,

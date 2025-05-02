@@ -1,13 +1,14 @@
+use std::fs;
+
 use common::collect_test_files;
 use serde_::TestVector;
-use std::fs;
 
 mod common;
 
 mod serde_ {
-    use crate::common::{bytes_from_hex, UnsafeBytes};
-
     use serde::Deserialize;
+
+    use crate::common::{bytes_from_hex, UnsafeBytes};
 
     #[derive(Deserialize)]
     struct YamlInput {

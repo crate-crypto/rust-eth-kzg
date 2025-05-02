@@ -1,6 +1,9 @@
-use crate::pointer_utils::{create_slice_view, deref_const, deref_mut, ptr_ptr_to_vec_slice_const};
-use crate::{verification_result_to_bool_cresult, CResult, DASContext};
 use rust_eth_kzg::constants::{BYTES_PER_CELL, BYTES_PER_COMMITMENT};
+
+use crate::{
+    pointer_utils::{create_slice_view, deref_const, deref_mut, ptr_ptr_to_vec_slice_const},
+    verification_result_to_bool_cresult, CResult, DASContext,
+};
 
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn _verify_cell_kzg_proof_batch(

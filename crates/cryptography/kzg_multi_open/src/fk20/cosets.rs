@@ -233,11 +233,11 @@ pub(crate) fn generate_cosets(
 
 #[cfg(test)]
 mod tests {
-    use rand::{seq::SliceRandom, thread_rng};
     use std::collections::HashSet;
 
     use bls12_381::Scalar;
     use polynomial::{domain::Domain, poly_coeff::poly_eval};
+    use rand::{seq::SliceRandom, thread_rng};
 
     use crate::fk20::{
         batch_toeplitz::transpose,

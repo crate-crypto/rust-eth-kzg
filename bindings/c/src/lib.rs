@@ -13,12 +13,15 @@ use recover_cells_and_kzg_proofs::_recover_cells_and_proofs;
 
 pub(crate) mod pointer_utils;
 
-pub use rust_eth_kzg::constants::{
-    BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT,
-    CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB,
-};
-pub use rust_eth_kzg::Error;
 use std::ops::Deref;
+
+pub use rust_eth_kzg::{
+    constants::{
+        BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT,
+        CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB,
+    },
+    Error,
+};
 
 /*
  * Note: All methods in this file have been prefixed with `eth_kzg`.

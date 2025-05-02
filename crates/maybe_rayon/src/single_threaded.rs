@@ -1,6 +1,7 @@
-pub use std::iter::IntoIterator;
-pub use std::iter::Iterator;
-pub use std::slice::ChunksMut;
+pub use std::{
+    iter::{IntoIterator, Iterator},
+    slice::ChunksMut,
+};
 
 #[inline]
 pub fn join<A, B, RA, RB>(oper_a: A, oper_b: B) -> (RA, RB)

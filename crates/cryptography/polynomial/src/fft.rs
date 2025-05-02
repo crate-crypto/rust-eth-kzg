@@ -1,7 +1,10 @@
+use std::{
+    iter::successors,
+    ops::{Add, Mul, Neg, Sub},
+};
+
 use bls12_381::{ff::Field, group::Group, G1Projective, Scalar};
 use maybe_rayon::prelude::*;
-use std::iter::successors;
-use std::ops::{Add, Mul, Neg, Sub};
 
 trait FFTElement:
     Sized

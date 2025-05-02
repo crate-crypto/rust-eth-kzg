@@ -4,9 +4,10 @@
 /// could give us 47.
 pub type UnsafeBytes = Vec<u8>;
 
-use std::fs;
-use std::io;
-use std::path::{Path, PathBuf};
+use std::{
+    fs, io,
+    path::{Path, PathBuf},
+};
 
 pub fn collect_test_files<P: AsRef<Path>>(dir: P) -> io::Result<Vec<PathBuf>> {
     let mut files = Vec::new();
