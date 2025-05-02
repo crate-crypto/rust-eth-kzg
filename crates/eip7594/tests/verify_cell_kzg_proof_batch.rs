@@ -76,7 +76,7 @@ mod serde_ {
     }
 }
 
-const TEST_DIR: &str = "../test_vectors/verify_cell_kzg_proof_batch";
+const TEST_DIR: &str = "../../test_vectors/verify_cell_kzg_proof_batch";
 #[test]
 fn test_verify_cell_kzg_proof_batch() {
     let test_files = collect_test_files(TEST_DIR).expect("unable to collect test files");

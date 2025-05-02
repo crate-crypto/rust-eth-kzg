@@ -5,23 +5,17 @@ use std::fs;
 mod common;
 
 mod serde_ {
-    use crate::common::{bytes_from_hex, UnsafeBytes};
+    use crate::common::UnsafeBytes;
 
+    use super::common::bytes_from_hex;
     use serde::Deserialize;
 
     #[derive(Deserialize)]
     struct YamlInput {
-        cell_indices: Vec<u64>,
-        cells: Vec<String>,
+        blob: String,
     }
 
     type YamlOutput = (Vec<String>, Vec<String>);
-
-    #[derive(Debug, Clone)]
-    pub struct KZGProofsAndCells {
-        pub proofs: Vec<UnsafeBytes>,
-        pub cells: Vec<UnsafeBytes>,
-    }
 
     #[derive(Deserialize)]
     struct YamlTestVector {
@@ -29,9 +23,14 @@ mod serde_ {
         output: Option<YamlOutput>,
     }
 
+    #[derive(Debug, Clone)]
+    pub struct KZGProofsAndCells {
+        pub proofs: Vec<UnsafeBytes>,
+        pub cells: Vec<UnsafeBytes>,
+    }
+
     pub struct TestVector {
-        pub input_cell_indices: Vec<u64>,
-        pub input_cells: Vec<UnsafeBytes>,
+        pub blob: UnsafeBytes,
         pub proofs_and_cells: Option<KZGProofsAndCells>,
     }
 
@@ -45,15 +44,12 @@ mod serde_ {
 
     impl From<YamlTestVector> for TestVector {
         fn from(yaml_test_vector: YamlTestVector) -> Self {
-            let cell_indices = yaml_test_vector.input.cell_indices;
+            let input = yaml_test_vector.input.blob;
+            let output = yaml_test_vector.output;
 
-            let input_cells: Vec<_> = yaml_test_vector
-                .input
-                .cells
-                .iter()
-                .map(|cell| bytes_from_hex(cell))
-                .collect();
-            let output = match yaml_test_vector.output {
+            let input = bytes_from_hex(&input);
+
+            let output = match output {
                 Some((cells, kzg_proofs)) => {
                     let kzg_proofs: Vec<_> = kzg_proofs
                         .iter()
@@ -66,8 +62,7 @@ mod serde_ {
             };
 
             Self {
-                input_cell_indices: cell_indices,
-                input_cells,
+                blob: input,
                 proofs_and_cells: output.map(|out| KZGProofsAndCells {
                     proofs: out.0,
                     cells: out.1,
@@ -77,31 +72,31 @@ mod serde_ {
     }
 }
 
-const TEST_DIR: &str = "../test_vectors/recover_cells_and_kzg_proofs";
+const TEST_DIR: &str = "../../test_vectors/compute_cells_and_kzg_proofs";
 #[test]
-fn test_recover_cells_and_kzg_proofs() {
+fn test_compute_cells_and_kzg_proofs() {
     let test_files = collect_test_files(TEST_DIR).expect("unable to collect test files");
 
     let ctx = rust_eth_kzg::DASContext::default();
 
     for test_file in test_files {
-        let yaml_data = fs::read_to_string(&test_file).expect("unable to read test file");
+        let yaml_data = fs::read_to_string(test_file).expect("unable to read test file");
         let test = TestVector::from_str(&yaml_data);
 
-        let input_cells: Result<_, _> = test
-            .input_cells
-            .iter()
-            .map(Vec::as_slice)
-            .map(TryInto::try_into)
-            .collect();
-
-        let Ok(input_cells) = input_cells else {
+        let Ok(blob) = test.blob.try_into() else {
             assert!(test.proofs_and_cells.is_none());
             continue;
         };
 
-        match ctx.recover_cells_and_kzg_proofs(test.input_cell_indices, input_cells) {
+        // Compute the cells using `compute_cells` and check if it matches
+        // `compute_cells_and_kzg_proofs`
+        let extended_blob = ctx.compute_cells(&blob);
+
+        match ctx.compute_cells_and_kzg_proofs(&blob) {
             Ok((cells, proofs)) => {
+                let cells_ = extended_blob.expect("cells should have been computed");
+                assert_eq!(cells_, cells);
+
                 let expected_proofs_and_cells =
                     test.proofs_and_cells.expect("expected proofs and cells");
 
