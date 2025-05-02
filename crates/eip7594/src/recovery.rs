@@ -64,15 +64,9 @@ pub(crate) fn recover_polynomial_coeff(
 fn find_missing_cell_indices(present_cell_indices: &[usize]) -> Vec<usize> {
     let cell_indices: HashSet<_> = present_cell_indices.iter().copied().collect();
 
-    let mut missing = Vec::new();
-
-    for i in 0..CELLS_PER_EXT_BLOB {
-        if !cell_indices.contains(&i) {
-            missing.push(i);
-        }
-    }
-
-    missing
+    (0..CELLS_PER_EXT_BLOB)
+        .filter(|i| !cell_indices.contains(i))
+        .collect()
 }
 
 mod validation {
@@ -152,7 +146,6 @@ mod validation {
 
     #[cfg(test)]
     mod tests {
-
         use super::are_cell_indices_unique;
 
         #[test]
