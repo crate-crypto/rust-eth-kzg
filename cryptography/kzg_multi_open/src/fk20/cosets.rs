@@ -10,6 +10,10 @@ use polynomial::domain::Domain;
 ///
 /// Taken and modified from: https://github.com/Plonky3/Plonky3/blob/a374139abead1008f84a439e95bb495e81ea4be5/util/src/lib.rs#L67-L76
 pub(crate) const fn reverse_bits(n: usize, bits: u32) -> usize {
+    // NB: The only reason we need overflowing_shr() here as opposed
+    // to plain '>>' is to accommodate the case n == num_bits == 0,
+    // which would become `0 >> 64`. Rust thinks that any shift of 64
+    // bits causes overflow, even when the argument is zero.
     n.reverse_bits().overflowing_shr(usize::BITS - bits).0
 }
 
