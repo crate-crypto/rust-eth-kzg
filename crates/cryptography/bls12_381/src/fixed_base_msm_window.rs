@@ -101,6 +101,13 @@ impl FixedBaseMSMPrecompWindow {
     /// # Panics
     /// - Panics if `scalars.len()` does not match the number of precomputed base points (`self.table.len()`).
     pub fn msm(&self, scalars: &[Scalar]) -> G1Projective {
+        // Check that the number of scalars matches the number of points
+        assert_eq!(
+            scalars.len(),
+            self.table.len(),
+            "Number of scalars must match number of points"
+        );
+
         // Convert each scalar to little-endian byte representation
         let scalars_bytes: Vec<_> = scalars.iter().map(Scalar::to_bytes_le).collect();
         // Number of scalar "windows" (i.e., chunks of `wbits` bits per scalar)
@@ -259,5 +266,21 @@ mod tests {
         let result = msm.msm(&[scalar]);
 
         assert_eq!(result, expected);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_msm_mismatched_lengths_should_panic() {
+        let generators: Vec<_> = (0..5)
+            .map(|_| G1Projective::random(&mut rand::thread_rng()).into())
+            .collect();
+
+        let scalars: Vec<_> = (0..3) // fewer scalars than generators
+            .map(|_| Scalar::random(&mut rand::thread_rng()))
+            .collect();
+
+        let msm = FixedBaseMSMPrecompWindow::new(&generators, 7);
+        // This should panic because lengths don't match
+        let _ = msm.msm(&scalars);
     }
 }
