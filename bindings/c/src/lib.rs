@@ -2,11 +2,10 @@ mod blob_to_kzg_commitment;
 use blob_to_kzg_commitment::_blob_to_kzg_commitment;
 
 mod compute_cells_and_kzg_proofs;
-use compute_cells_and_kzg_proofs::_compute_cells_and_kzg_proofs;
+use compute_cells_and_kzg_proofs::{_compute_cells, _compute_cells_and_kzg_proofs};
 
 mod verify_cells_and_kzg_proofs_batch;
 use rust_eth_kzg::constants::RECOMMENDED_PRECOMP_WIDTH;
-use rust_eth_kzg::ThreadCount;
 use verify_cells_and_kzg_proofs_batch::_verify_cell_kzg_proof_batch;
 
 mod recover_cells_and_kzg_proofs;
@@ -54,14 +53,12 @@ impl Deref for DASContext {
 
 /// Create a new DASContext and return a pointer to it.
 ///
-/// `num_threads`: set to `0`` to indicate that the library should pick a sensible default.
-///
 /// # Memory faults
 ///
 /// To avoid memory leaks, one should ensure that the pointer is freed after use
 /// by calling `eth_kzg_das_context_free`.
 #[no_mangle]
-pub extern "C" fn eth_kzg_das_context_new(use_precomp: bool, num_threads: u32) -> *mut DASContext {
+pub extern "C" fn eth_kzg_das_context_new(use_precomp: bool) -> *mut DASContext {
     let use_precomp = if use_precomp {
         rust_eth_kzg::UsePrecomp::Yes {
             width: RECOMMENDED_PRECOMP_WIDTH,
@@ -71,11 +68,7 @@ pub extern "C" fn eth_kzg_das_context_new(use_precomp: bool, num_threads: u32) -
     };
 
     let ctx = Box::new(DASContext {
-        inner: rust_eth_kzg::DASContext::with_threads(
-            &rust_eth_kzg::TrustedSetup::default(),
-            ThreadCount::Multi(num_threads as usize),
-            use_precomp,
-        ),
+        inner: rust_eth_kzg::DASContext::new(&rust_eth_kzg::TrustedSetup::default(), use_precomp),
     });
     Box::into_raw(ctx)
 }
@@ -221,6 +214,34 @@ pub extern "C" fn eth_kzg_compute_cells_and_kzg_proofs(
     out_proofs: *mut *mut u8,
 ) -> CResult {
     match _compute_cells_and_kzg_proofs(ctx, blob, out_cells, out_proofs) {
+        Ok(_) => CResult::with_ok(),
+        Err(err) => err,
+    }
+}
+
+/// Computes the cells for a given blob.
+///
+/// # Safety
+///
+/// - The caller must ensure that the pointers are valid. If pointers are null.
+/// - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
+/// - The caller must ensure that `out_cells` points to a region of memory that is at least `CELLS_PER_EXT_BLOB` elements
+///   and that each element is at least `BYTES_PER_CELL` bytes.
+///
+/// # Undefined behavior
+///
+/// - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+///   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
+#[no_mangle]
+#[must_use]
+pub extern "C" fn eth_kzg_compute_cells(
+    ctx: *const DASContext,
+
+    blob: *const u8,
+
+    out_cells: *mut *mut u8,
+) -> CResult {
+    match _compute_cells(ctx, blob, out_cells) {
         Ok(_) => CResult::with_ok(),
         Err(err) => err,
     }

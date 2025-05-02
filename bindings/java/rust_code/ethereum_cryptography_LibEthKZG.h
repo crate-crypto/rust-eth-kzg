@@ -22,10 +22,10 @@ extern "C" {
 /*
  * Class:     ethereum_cryptography_LibEthKZG
  * Method:    DASContextNew
- * Signature: (ZJ)J
+ * Signature: (Z)J
  */
 JNIEXPORT jlong JNICALL Java_ethereum_cryptography_LibEthKZG_DASContextNew
-  (JNIEnv *, jclass, jboolean, jlong);
+  (JNIEnv *, jclass, jboolean);
 
 /*
  * Class:     ethereum_cryptography_LibEthKZG
@@ -41,6 +41,14 @@ JNIEXPORT void JNICALL Java_ethereum_cryptography_LibEthKZG_DASContextDestroy
  * Signature: (J[B)Lethereum/cryptography/CellsAndProofs;
  */
 JNIEXPORT jobject JNICALL Java_ethereum_cryptography_LibEthKZG_computeCellsAndKZGProofs
+  (JNIEnv *, jclass, jlong, jbyteArray);
+
+/*
+ * Class:     ethereum_cryptography_LibEthKZG
+ * Method:    computeCells
+ * Signature: (J[B)Lethereum/cryptography/Cells;
+ */
+JNIEXPORT jobject JNICALL Java_ethereum_cryptography_LibEthKZG_computeCells
   (JNIEnv *, jclass, jlong, jbyteArray);
 
 /*

@@ -7,7 +7,7 @@ use crate::{
     errors::Error,
     serialization::{deserialize_cells, deserialize_compressed_g1_points},
     trusted_setup::TrustedSetup,
-    with_optional_threadpool, Bytes48Ref, CellIndex, CellRef, DASContext,
+    Bytes48Ref, CellIndex, CellRef, DASContext,
 };
 use kzg_multi_open::{verification_key::VerificationKey, Verifier};
 
@@ -78,45 +78,43 @@ impl DASContext {
         cells: Vec<CellRef>,
         proofs_bytes: Vec<Bytes48Ref>,
     ) -> Result<(), Error> {
-        with_optional_threadpool!(self, {
-            let (deduplicated_commitments, row_indices) = deduplicate_with_indices(commitments);
-            // Validation
-            //
-            validation::verify_cell_kzg_proof_batch(
-                &deduplicated_commitments,
+        let (deduplicated_commitments, row_indices) = deduplicate_with_indices(commitments);
+        // Validation
+        //
+        validation::verify_cell_kzg_proof_batch(
+            &deduplicated_commitments,
+            &row_indices,
+            cell_indices,
+            &cells,
+            &proofs_bytes,
+        )?;
+
+        // If there are no inputs, we return early with no error
+        //
+        if cells.is_empty() {
+            return Ok(());
+        }
+
+        // Deserialization
+        //
+        let row_commitments_ = deserialize_compressed_g1_points(deduplicated_commitments)?;
+        let proofs_ = deserialize_compressed_g1_points(proofs_bytes)?;
+        let coset_evals = deserialize_cells(cells)?;
+
+        // Computation
+        //
+        let ok = self
+            .verifier_ctx
+            .kzg_multipoint_verifier
+            .verify_multi_opening(
+                &row_commitments_,
                 &row_indices,
                 cell_indices,
-                &cells,
-                &proofs_bytes,
-            )?;
+                &coset_evals,
+                &proofs_,
+            );
 
-            // If there are no inputs, we return early with no error
-            //
-            if cells.is_empty() {
-                return Ok(());
-            }
-
-            // Deserialization
-            //
-            let row_commitments_ = deserialize_compressed_g1_points(deduplicated_commitments)?;
-            let proofs_ = deserialize_compressed_g1_points(proofs_bytes)?;
-            let coset_evals = deserialize_cells(cells)?;
-
-            // Computation
-            //
-            let ok = self
-                .verifier_ctx
-                .kzg_multipoint_verifier
-                .verify_multi_opening(
-                    &row_commitments_,
-                    &row_indices,
-                    cell_indices,
-                    &coset_evals,
-                    &proofs_,
-                );
-
-            ok.map_err(VerifierError::from).map_err(Into::into)
-        })
+        ok.map_err(VerifierError::from).map_err(Into::into)
     }
 }
 

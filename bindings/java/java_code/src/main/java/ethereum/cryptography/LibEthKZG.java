@@ -36,19 +36,17 @@ public class LibEthKZG implements AutoCloseable{
     public LibEthKZG() {
         ensureLibraryLoaded();
         boolean usePrecomp = true;
-        long numThreads = 1;
-        this.contextPtr = DASContextNew(usePrecomp, numThreads);
+        this.contextPtr = DASContextNew(usePrecomp);
     }
 
     /**
      * Constructs a LibEthKZG instance with specified parameters.
      *
      * @param usePrecomp Whether to use pre-computation.
-     * @param numThreads Number of threads to use.
      */
-    public LibEthKZG(boolean usePrecomp, long numThreads) {
+    public LibEthKZG(boolean usePrecomp) {
         ensureLibraryLoaded();
-        this.contextPtr = DASContextNew(usePrecomp, numThreads);
+        this.contextPtr = DASContextNew(usePrecomp);
     }
 
     private static void ensureLibraryLoaded() {
@@ -108,6 +106,18 @@ public class LibEthKZG implements AutoCloseable{
     }
 
     /**
+     * Computes cells for a given blob.
+     *
+     * @param blob The input blob.
+     * @return Cells object containing the computed cells.
+     */
+    public Cells computeCells(byte[] blob) {
+        checkContextHasNotBeenFreed();
+        Cells cells = computeCells(contextPtr, blob);
+        return cells;
+    }
+
+    /**
      * Verifies a batch of cell KZG proofs.
      *
      * @param commitmentsArr Array of commitments.
@@ -139,11 +149,13 @@ public class LibEthKZG implements AutoCloseable{
      * library
      */
 
-    private static native long DASContextNew(boolean usePrecomp, long numThreads);
+    private static native long DASContextNew(boolean usePrecomp);
 
     private static native void DASContextDestroy(long ctx_ptr);
 
     private static native CellsAndProofs computeCellsAndKZGProofs(long context_ptr, byte[] blob);
+    
+    private static native Cells computeCells(long context_ptr, byte[] blob);
 
     private static native byte[] blobToKZGCommitment(long context_ptr, byte[] blob);
 

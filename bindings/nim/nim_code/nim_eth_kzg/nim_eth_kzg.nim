@@ -84,9 +84,9 @@ proc `=destroy`(x: typeof KZGCtx()[]) =
   if x.ctx_ptr != nil:
     eth_kzg_das_context_free(x.ctx_ptr)
 
-proc newKZGCtx*(use_precomp: bool = true, num_threads: uint32 = 1): KZGCtx =
+proc newKZGCtx*(use_precomp: bool = true): KZGCtx =
   var kzgCtx = KZGCtx()
-  kzgCtx.ctx_ptr = eth_kzg_das_context_new(use_precomp, num_threads)
+  kzgCtx.ctx_ptr = eth_kzg_das_context_new(use_precomp)
   return kzgCtx
 
 
@@ -115,6 +115,20 @@ proc computeCellsAndProofs*(ctx: KZGCtx, blob : Blob): Result[CellsAndProofs, st
 
     outCellsPtr,
     outProofsPtr
+  )
+  verify_result(res, ret)
+
+proc computeCells*(ctx: KZGCtx, blob : Blob): Result[Cells, string] {.gcsafe.} =
+  var ret: Cells
+
+  let outCellsPtr = toPtrPtr(ret)
+
+  let res = eth_kzg_compute_cells(
+    ctx.ctx_ptr,
+
+    blob.bytes.getPtr,
+
+    outCellsPtr,
   )
   verify_result(res, ret)
 

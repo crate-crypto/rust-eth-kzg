@@ -11,11 +11,9 @@ pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_DASContextNew(
     _env: JNIEnv,
     _class: JClass,
     use_precomp: jboolean,
-    num_threads: jlong,
 ) -> jlong {
     let use_precomp = use_precomp != 0;
-    let num_threads = (num_threads as u64) as u32;
-    c_eth_kzg::eth_kzg_das_context_new(use_precomp, num_threads) as jlong
+    c_eth_kzg::eth_kzg_das_context_new(use_precomp) as jlong
 }
 
 #[no_mangle]
@@ -54,6 +52,35 @@ fn compute_cells_and_kzg_proofs<'local>(
     let (cells, proofs) = ctx.compute_cells_and_kzg_proofs(blob)?;
     let cells = cells.map(|cell| *cell);
     cells_and_proofs_to_jobject(env, &cells, &proofs).map_err(Error::from)
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_computeCells<'local>(
+    mut env: JNIEnv<'local>,
+    _class: JClass,
+    ctx_ptr: jlong,
+    blob: JByteArray<'local>,
+) -> JObject<'local> {
+    let ctx = unsafe { &*(ctx_ptr as *const DASContext) };
+    match compute_cells(&mut env, ctx, blob) {
+        Ok(cells) => cells,
+        Err(err) => {
+            throw_on_error(&mut env, err, "computeCells");
+            JObject::default()
+        }
+    }
+}
+fn compute_cells<'local>(
+    env: &mut JNIEnv<'local>,
+    ctx: &DASContext,
+    blob: JByteArray<'local>,
+) -> Result<JObject<'local>, Error> {
+    let blob = env.convert_byte_array(blob)?;
+    let blob = slice_to_array_ref(&blob, "blob")?;
+
+    let cells = ctx.compute_cells(blob)?;
+    let cells = cells.map(|cell| *cell);
+    cells_to_jobject(env, &cells).map_err(Error::from)
 }
 
 #[no_mangle]
@@ -265,6 +292,32 @@ fn cells_and_proofs_to_jobject<'local>(
     Ok(cells_and_proofs_obj)
 }
 
+fn cells_to_jobject<'local>(
+    env: &mut JNIEnv<'local>,
+    cells: &[impl AsRef<[u8]>],
+) -> Result<JObject<'local>, Error> {
+    // Create a new instance of the Cells class in Java
+    let cells_class = env.find_class("ethereum/cryptography/Cells")?;
+
+    let cell_byte_array_class = env.find_class("[B")?;
+
+    // Create 2D array for cells
+    let cells_array = env.new_object_array(
+        cells.len() as i32,
+        cell_byte_array_class,
+        env.new_byte_array(0)?,
+    )?;
+
+    for (i, cell) in cells.iter().enumerate() {
+        let cell_array = env.byte_array_from_slice(cell.as_ref())?;
+        env.set_object_array_element(&cells_array, i as i32, cell_array)?;
+    }
+
+    // Create the Cells object
+    let cells_obj = env.new_object(cells_class, "([[B)V", &[JValue::Object(&cells_array)])?;
+
+    Ok(cells_obj)
+}
 /// Throws an exception in Java
 fn throw_on_error(env: &mut JNIEnv, err: Error, func_name: &'static str) {
     let reason = match err {

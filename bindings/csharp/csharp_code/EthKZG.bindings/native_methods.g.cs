@@ -19,15 +19,13 @@ namespace EthKZG.Native
         /// <summary>
         ///  Create a new DASContext and return a pointer to it.
         ///
-        ///  `num_threads`: set to `0`` to indicate that the library should pick a sensible default.
-        ///
         ///  # Memory faults
         ///
         ///  To avoid memory leaks, one should ensure that the pointer is freed after use
         ///  by calling `eth_kzg_das_context_free`.
         /// </summary>
         [DllImport(__DllName, EntryPoint = "eth_kzg_das_context_new", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        internal static extern DASContext* eth_kzg_das_context_new([MarshalAs(UnmanagedType.U1)] bool use_precomp, uint num_threads);
+        internal static extern DASContext* eth_kzg_das_context_new([MarshalAs(UnmanagedType.U1)] bool use_precomp);
 
         /// <summary>
         ///  # Safety
@@ -94,6 +92,24 @@ namespace EthKZG.Native
         /// </summary>
         [DllImport(__DllName, EntryPoint = "eth_kzg_compute_cells_and_kzg_proofs", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         internal static extern CResult eth_kzg_compute_cells_and_kzg_proofs(DASContext* ctx, byte* blob, byte** out_cells, byte** out_proofs);
+
+        /// <summary>
+        ///  Computes the cells for a given blob.
+        ///
+        ///  # Safety
+        ///
+        ///  - The caller must ensure that the pointers are valid. If pointers are null.
+        ///  - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
+        ///  - The caller must ensure that `out_cells` points to a region of memory that is at least `CELLS_PER_EXT_BLOB` elements
+        ///    and that each element is at least `BYTES_PER_CELL` bytes.
+        ///
+        ///  # Undefined behavior
+        ///
+        ///  - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+        ///    If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
+        /// </summary>
+        [DllImport(__DllName, EntryPoint = "eth_kzg_compute_cells", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern CResult eth_kzg_compute_cells(DASContext* ctx, byte* blob, byte** out_cells);
 
         /// <summary>
         ///  Verifies a batch of cells and their KZG proofs.

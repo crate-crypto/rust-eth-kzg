@@ -8,7 +8,7 @@ use napi_derive::napi;
 
 use rust_eth_kzg::{
   constants::{self, RECOMMENDED_PRECOMP_WIDTH},
-  DASContext, ThreadCount, TrustedSetup, UsePrecomp,
+  DASContext, TrustedSetup, UsePrecomp,
 };
 
 #[napi]
@@ -44,15 +44,11 @@ impl Default for DASContextJs {
 #[napi(object)]
 pub struct DASContextOptions {
   pub use_precomp: bool,
-  pub num_threads: u32,
 }
 
 impl Default for DASContextOptions {
   fn default() -> Self {
-    Self {
-      use_precomp: true,
-      num_threads: 1,
-    }
+    Self { use_precomp: true }
   }
 }
 
@@ -66,7 +62,6 @@ impl DASContextJs {
   #[napi(factory)]
   pub fn create(options: DASContextOptions) -> Self {
     let use_precomp = options.use_precomp;
-    let num_threads = options.num_threads;
 
     let precomp = if use_precomp {
       UsePrecomp::Yes {
@@ -77,11 +72,7 @@ impl DASContextJs {
     };
 
     DASContextJs {
-      inner: Arc::new(DASContext::with_threads(
-        &TrustedSetup::default(),
-        ThreadCount::Multi(num_threads as usize),
-        precomp,
-      )),
+      inner: Arc::new(DASContext::new(&TrustedSetup::default(), precomp)),
     }
   }
 
@@ -144,9 +135,21 @@ impl DASContextJs {
 
   #[napi]
   pub fn compute_cells(&self, blob: Uint8Array) -> Result<Vec<Uint8Array>> {
-    self
-      .compute_cells_and_kzg_proofs(blob)
-      .map(|cells_and_proofs| cells_and_proofs.cells)
+    let blob = blob.as_ref();
+    let ctx = &self.inner;
+
+    let blob = slice_to_array_ref(blob, "blob")?;
+
+    let cells = ctx
+      .compute_cells(blob)
+      .map_err(|err| Error::from_reason(format!("failed to compute compute_cells: {:?}", err)))?;
+
+    let cells_uint8array = cells
+      .into_iter()
+      .map(|cell| Uint8Array::from(cell.to_vec()))
+      .collect::<Vec<Uint8Array>>();
+
+    Ok(cells_uint8array)
   }
 
   #[napi]

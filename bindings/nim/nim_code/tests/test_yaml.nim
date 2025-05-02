@@ -90,12 +90,17 @@ suite "yaml tests":
     let
       blob = Blob.fromHex(n["input"]["blob"])
       res = ctx.computeCellsAndProofs(blob)
+      resCells = ctx.computeCells(blob)
 
     checkRes(res):
       let cells = Cell.fromHexList(n["output"][0])
       check cells == res.get.cells
       let proofs = KZGProof.fromHexList(n["output"][1])
       check proofs == res.get.proofs
+
+    checkRes(resCells):
+      let cells = Cell.fromHexList(n["output"][0])
+      check cells == resCells.get
 
   runTests(RECOVER_CELLS_AND_PROOFS_TESTS):
     let
