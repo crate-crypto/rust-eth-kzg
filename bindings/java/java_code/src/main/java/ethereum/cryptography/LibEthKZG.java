@@ -108,6 +108,18 @@ public class LibEthKZG implements AutoCloseable{
     }
 
     /**
+     * Computes cells for a given blob.
+     *
+     * @param blob The input blob.
+     * @return Cells object containing the computed cells.
+     */
+    public Cells computeCells(byte[] blob) {
+        checkContextHasNotBeenFreed();
+        Cells cells = computeCells(contextPtr, blob);
+        return cells;
+    }
+
+    /**
      * Verifies a batch of cell KZG proofs.
      *
      * @param commitmentsArr Array of commitments.
@@ -144,6 +156,8 @@ public class LibEthKZG implements AutoCloseable{
     private static native void DASContextDestroy(long ctx_ptr);
 
     private static native CellsAndProofs computeCellsAndKZGProofs(long context_ptr, byte[] blob);
+    
+    private static native Cells computeCells(long context_ptr, byte[] blob);
 
     private static native byte[] blobToKZGCommitment(long context_ptr, byte[] blob);
 

@@ -72,6 +72,9 @@ public class LibEthKZGTest {
             CellsAndProofs cellsAndProofs = context.computeCellsAndKZGProofs(test.getInput().getBlob());
             assertArrayEquals(test.getOutput().getCells(), cellsAndProofs.getCells());
             assertArrayEquals(test.getOutput().getProofs(), cellsAndProofs.getProofs());
+
+            Cells cells = context.computeCells(test.getInput().getBlob());
+            assertArrayEquals(test.getOutput().getCells(), cells.getCells());
         } catch (IllegalArgumentException ex) {
             assertNull(test.getOutput());
         }
