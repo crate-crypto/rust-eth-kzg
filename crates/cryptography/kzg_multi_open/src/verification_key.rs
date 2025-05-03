@@ -25,7 +25,7 @@ pub struct VerificationKey {
     /// however, we have this explicit parameter to
     /// avoid foot guns.
     pub coset_size: usize,
-    /// This the number of coefficients in the polynomial that we want to
+    /// The number of coefficients in the polynomial that we want to
     /// verify claims about.
     ///
     /// Note: We could also use the max degree bound here. (This is a matter of preference)
