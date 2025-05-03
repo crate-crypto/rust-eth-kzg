@@ -76,11 +76,6 @@ impl DASContext {
         cells: Vec<CellRef>,
         proofs_bytes: Vec<Bytes48Ref>,
     ) -> Result<(), Error> {
-        // If there are no inputs, we return early with no error
-        if cells.is_empty() {
-            return Ok(());
-        }
-
         let (deduplicated_commitments, row_indices) = deduplicate_with_indices(commitments);
 
         // Validation
@@ -91,6 +86,11 @@ impl DASContext {
             &cells,
             &proofs_bytes,
         )?;
+
+        // If there are no inputs, we return early with no error
+        if cells.is_empty() {
+            return Ok(());
+        }
 
         // Deserialization
         let row_commitments_ = deserialize_compressed_g1_points(deduplicated_commitments)?;
