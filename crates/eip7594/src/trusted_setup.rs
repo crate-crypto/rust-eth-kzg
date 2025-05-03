@@ -162,13 +162,13 @@ fn deserialize_g2_points<T: AsRef<str>>(
 ) -> Vec<G2Point> {
     g2_points_hex_str
         .iter()
-        .map(|s| {
-            let s = s
+        .map(|hex_str| {
+            let hex_str = hex_str
                 .as_ref()
                 .strip_prefix("0x")
                 .expect("expected hex points to be prefixed with `0x`");
 
-            let bytes: [u8; 96] = hex::decode(s)
+            let bytes: [u8; 96] = hex::decode(hex_str)
                 .expect("trusted setup has malformed g2 points")
                 .try_into()
                 .expect("expected 96 bytes for G2 point");
