@@ -1,9 +1,8 @@
-use crate::commit_key::CommitKey;
 use bls12_381::{g1_batch_normalize, G1Point, Scalar};
-use polynomial::domain::Domain;
-use polynomial::poly_coeff::PolyCoeff;
+use polynomial::{domain::Domain, poly_coeff::PolyCoeff};
 
 use super::cosets::reverse_bit_order;
+use crate::commit_key::CommitKey;
 
 /// This is doing \floor{f(x) / x^d}
 /// which essentially means removing the first d coefficients
@@ -108,8 +107,9 @@ fn compute_coset_evaluations(
 
 #[cfg(test)]
 mod tests {
-    use crate::fk20::naive::shift_polynomial;
     use bls12_381::Scalar;
+
+    use crate::fk20::naive::shift_polynomial;
 
     #[test]
     fn check_divide_by_monomial_floor() {

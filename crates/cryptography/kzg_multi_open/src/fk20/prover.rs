@@ -1,13 +1,16 @@
-use crate::commit_key::CommitKey;
-use crate::fk20::batch_toeplitz::BatchToeplitzMatrixVecMul;
-use crate::fk20::cosets::reverse_bit_order;
-use crate::fk20::h_poly::take_every_nth;
-use bls12_381::fixed_base_msm::UsePrecomp;
-use bls12_381::group::prime::PrimeCurveAffine;
-use bls12_381::{g1_batch_normalize, G1Point, Scalar};
+use bls12_381::{
+    fixed_base_msm::UsePrecomp, g1_batch_normalize, group::prime::PrimeCurveAffine, G1Point, Scalar,
+};
 use polynomial::{domain::Domain, poly_coeff::PolyCoeff};
 
 use super::h_poly::compute_h_poly_commitments;
+use crate::{
+    commit_key::CommitKey,
+    fk20::{
+        batch_toeplitz::BatchToeplitzMatrixVecMul, cosets::reverse_bit_order,
+        h_poly::take_every_nth,
+    },
+};
 
 /// Input contains the various structures that we can make FK20 proofs over.
 pub enum Input {
@@ -235,13 +238,14 @@ impl FK20Prover {
 mod tests {
     use std::collections::HashSet;
 
+    use bls12_381::{fixed_base_msm::UsePrecomp, Scalar};
+
     use super::{FK20Prover, Input};
     use crate::{
         create_insecure_commit_verification_keys,
         fk20::{cosets::generate_cosets, naive as fk20naive, verifier::FK20Verifier},
         naive as kzgnaive,
     };
-    use bls12_381::{fixed_base_msm::UsePrecomp, Scalar};
 
     #[test]
     fn data_is_contained_in_the_first_section_of_cells() {

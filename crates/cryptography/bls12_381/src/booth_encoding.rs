@@ -49,10 +49,11 @@ pub fn get_booth_index(window_index: usize, window_size: usize, el: &[u8]) -> i3
 mod tests {
     use std::ops::Neg;
 
-    use super::get_booth_index;
-    use crate::G1Point;
     use blstrs::{G1Projective, Scalar};
     use ff::{Field, PrimeField};
+
+    use super::get_booth_index;
+    use crate::G1Point;
 
     #[test]
     fn smoke_scalar_mul() {

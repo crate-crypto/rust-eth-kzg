@@ -1,5 +1,4 @@
-use bls12_381::Scalar;
-use bls12_381::{ff::Field, group::Group, G1Projective};
+use bls12_381::{ff::Field, group::Group, G1Projective, Scalar};
 use crate_crypto_internal_eth_kzg_polynomial::{domain::Domain, poly_coeff::poly_eval};
 use criterion::{criterion_group, criterion_main, Criterion};
 

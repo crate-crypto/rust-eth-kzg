@@ -1,8 +1,9 @@
-use crate::{commit_key::CommitKey, verification_key::VerificationKey};
 use bls12_381::{ff::Field, multi_pairings, G1Point, G1Projective, G2Point, G2Prepared, Scalar};
 use polynomial::poly_coeff::{
     lagrange_interpolate, poly_eval, poly_sub, vanishing_poly, PolyCoeff,
 };
+
+use crate::{commit_key::CommitKey, verification_key::VerificationKey};
 
 /// This modules contains code to create and verify opening proofs in a naive way.
 /// It is also general, meaning the points we are creating opening proofs

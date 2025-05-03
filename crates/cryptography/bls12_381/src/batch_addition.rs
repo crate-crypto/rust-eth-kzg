@@ -1,7 +1,8 @@
-use crate::batch_inversion::{batch_inverse, batch_inverse_scratch_pad};
 use blstrs::{Fp, G1Affine, G1Projective};
 use ff::Field;
 use group::{prime::PrimeCurveAffine, Group};
+
+use crate::batch_inversion::{batch_inverse, batch_inverse_scratch_pad};
 
 /// Adds two elliptic curve points (affine coordinates) using the point addition/doubling formula.
 ///
@@ -233,10 +234,10 @@ pub(crate) fn multi_batch_addition_binary_tree_stride(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use proptest::prelude::*;
-    use rand::rngs::StdRng;
-    use rand::SeedableRng;
+    use rand::{rngs::StdRng, SeedableRng};
+
+    use super::*;
 
     #[test]
     fn test_batch_addition() {

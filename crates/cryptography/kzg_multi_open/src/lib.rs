@@ -13,9 +13,10 @@ mod naive;
 #[cfg(test)]
 pub(crate) fn create_insecure_commit_verification_keys(
 ) -> (commit_key::CommitKey, verification_key::VerificationKey) {
-    use bls12_381::ff::Field;
-    use bls12_381::group::Group;
-    use bls12_381::{g1_batch_normalize, g2_batch_normalize, G1Projective, G2Projective, Scalar};
+    use bls12_381::{
+        ff::Field, g1_batch_normalize, g2_batch_normalize, group::Group, G1Projective,
+        G2Projective, Scalar,
+    };
     use commit_key::CommitKey;
     use verification_key::VerificationKey;
 

@@ -1,11 +1,9 @@
+use std::time::Instant;
+
 use bls12_381::Scalar;
 use rust_eth_kzg::{constants::BYTES_PER_BLOB, DASContext, TrustedSetup};
-use std::time::Instant;
-use tracing_forest::util::LevelFilter;
-use tracing_forest::ForestLayer;
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::{EnvFilter, Registry};
+use tracing_forest::{util::LevelFilter, ForestLayer};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Registry};
 
 const POLYNOMIAL_LEN: usize = 4096;
 

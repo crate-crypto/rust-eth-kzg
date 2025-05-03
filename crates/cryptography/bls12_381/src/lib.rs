@@ -1,5 +1,4 @@
-use group::Group;
-use group::{prime::PrimeCurveAffine, Curve};
+use group::{prime::PrimeCurveAffine, Curve, Group};
 use pairing::{MillerLoopResult, MultiMillerLoop};
 
 pub mod batch_addition;
@@ -137,9 +136,10 @@ pub fn reduce_bytes_to_scalar_bias(bytes: [u8; 32]) -> Scalar {
 
 #[cfg(test)]
 mod tests {
+    use rand::rngs::OsRng;
+
     use super::*;
     use crate::ff::Field;
-    use rand::rngs::OsRng;
 
     /// BLS12-381 scalar field modulus (r)
     const BLS12_381_R: [u8; 32] = [

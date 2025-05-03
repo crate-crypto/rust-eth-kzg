@@ -262,9 +262,10 @@ impl DenseMatrix {
 
 #[cfg(test)]
 mod tests {
+    use bls12_381::Scalar;
+
     use super::DenseMatrix;
     use crate::fk20::toeplitz::ToeplitzMatrix;
-    use bls12_381::Scalar;
 
     fn is_toeplitz(dense_matrix: &DenseMatrix) -> bool {
         let num_rows = dense_matrix.inner.len();

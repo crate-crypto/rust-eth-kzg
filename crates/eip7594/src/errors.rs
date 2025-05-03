@@ -1,5 +1,6 @@
-use crate::CellIndex;
 use erasure_codes::errors::RSError;
+
+use crate::CellIndex;
 
 /// Errors that can occur either during proving, verification or serialization.
 #[derive(Debug)]

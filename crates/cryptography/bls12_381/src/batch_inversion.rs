@@ -58,10 +58,11 @@ pub fn batch_inverse_scratch_pad<F: Field>(v: &mut [F], scratchpad: &mut Vec<F>)
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use blstrs::Scalar;
     use proptest::prelude::*;
     use rand::{rngs::StdRng, SeedableRng};
+
+    use super::*;
 
     fn random_elements(num_elements: usize) -> Vec<Scalar> {
         (0..num_elements)

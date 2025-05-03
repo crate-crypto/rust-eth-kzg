@@ -1,10 +1,10 @@
-pub use rayon::iter::IntoParallelIterator;
-pub use rayon::iter::IntoParallelRefIterator;
-pub use rayon::iter::IntoParallelRefMutIterator;
-pub use rayon::iter::ParallelIterator;
-pub use rayon::join;
-pub use rayon::slice::ChunksMut;
-pub use rayon::slice::ParallelSliceMut;
+pub use rayon::{
+    iter::{
+        IntoParallelIterator, IntoParallelRefIterator, IntoParallelRefMutIterator, ParallelIterator,
+    },
+    join,
+    slice::{ChunksMut, ParallelSliceMut},
+};
 
 pub trait MaybeParallelExt: IntoParallelIterator {
     fn maybe_into_par_iter(self) -> <Self as IntoParallelIterator>::Iter

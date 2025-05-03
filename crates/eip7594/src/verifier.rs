@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 
-pub use crate::errors::VerifierError;
+use kzg_multi_open::{verification_key::VerificationKey, Verifier};
 
+pub use crate::errors::VerifierError;
 use crate::{
     constants::{CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_EXT_BLOB},
     errors::Error,
@@ -9,7 +10,6 @@ use crate::{
     trusted_setup::TrustedSetup,
     Bytes48Ref, CellIndex, CellRef, DASContext,
 };
-use kzg_multi_open::{verification_key::VerificationKey, Verifier};
 
 /// The context object that is used to call functions in the verifier API.
 #[derive(Debug)]

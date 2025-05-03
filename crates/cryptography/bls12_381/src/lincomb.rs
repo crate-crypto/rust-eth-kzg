@@ -1,5 +1,6 @@
-use crate::{G1Point, G1Projective, G2Point, G2Projective, Scalar};
 use group::{prime::PrimeCurveAffine, Group};
+
+use crate::{G1Point, G1Projective, G2Point, G2Projective, Scalar};
 
 /// A multi-scalar multiplication algorithm over G1 elements
 ///
@@ -102,9 +103,10 @@ pub fn g2_lincomb(points: &[G2Point], scalars: &[Scalar]) -> Option<G2Projective
 
 #[cfg(test)]
 mod tests {
+    use rand::{rngs::StdRng, SeedableRng};
+
     use super::*;
     use crate::ff::Field;
-    use rand::{rngs::StdRng, SeedableRng};
 
     #[test]
     fn blst_footgun() {

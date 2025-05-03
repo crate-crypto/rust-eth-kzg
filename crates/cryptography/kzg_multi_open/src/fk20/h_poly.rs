@@ -1,8 +1,8 @@
-use crate::fk20::toeplitz::ToeplitzMatrix;
 use bls12_381::{ff::Field, G1Projective, Scalar};
 use polynomial::poly_coeff::PolyCoeff;
 
 use super::batch_toeplitz::BatchToeplitzMatrixVecMul;
+use crate::fk20::toeplitz::ToeplitzMatrix;
 
 /// Computes the `h` polynomials for the FK20 proofs.
 ///
@@ -69,6 +69,8 @@ pub(crate) fn take_every_nth<T: Clone + Copy>(list: &[T], n: usize) -> Vec<Vec<T
 
 #[cfg(test)]
 mod tests {
+    use bls12_381::{fixed_base_msm::UsePrecomp, Scalar};
+
     use crate::{
         create_insecure_commit_verification_keys,
         fk20::{
@@ -77,7 +79,6 @@ mod tests {
             prover::FK20Prover,
         },
     };
-    use bls12_381::{fixed_base_msm::UsePrecomp, Scalar};
 
     #[test]
     fn smoke_test_downsample() {

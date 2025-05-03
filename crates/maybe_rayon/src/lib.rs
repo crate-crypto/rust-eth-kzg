@@ -9,9 +9,8 @@ pub use multi_threaded::*;
 pub use single_threaded::*;
 
 pub mod prelude {
-    pub use crate::MaybeParallelRefExt;
-    pub use crate::MaybeParallelRefMutExt;
-    pub use crate::*;
     #[cfg(feature = "multithreaded")]
     pub use rayon::prelude::*;
+
+    pub use crate::{MaybeParallelRefExt, MaybeParallelRefMutExt, *};
 }

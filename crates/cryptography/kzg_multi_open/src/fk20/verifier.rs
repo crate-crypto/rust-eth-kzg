@@ -1,16 +1,17 @@
-use crate::{
-    fk20::cosets::{coset_gens, reverse_bit_order},
-    verification_key::VerificationKey,
-};
+use std::mem::size_of;
+
 use bls12_381::{
     ff::Field, g1_batch_normalize, lincomb::g1_lincomb, multi_pairings,
     reduce_bytes_to_scalar_bias, G1Point, G2Point, G2Prepared, Scalar,
 };
 use polynomial::{domain::Domain, poly_coeff::poly_add, CosetFFT};
 use sha2::{Digest, Sha256};
-use std::mem::size_of;
 
 use super::errors::VerifierError;
+use crate::{
+    fk20::cosets::{coset_gens, reverse_bit_order},
+    verification_key::VerificationKey,
+};
 
 /// CosetIndex is a reference to a coset.
 ///
@@ -364,8 +365,9 @@ fn compute_sum_interpolation_poly(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use bls12_381::Scalar;
+
+    use super::*;
 
     #[test]
     fn test_compute_powers() {
