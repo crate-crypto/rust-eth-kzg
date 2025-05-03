@@ -70,12 +70,14 @@ impl FK20Prover {
         number_of_points_to_open: usize,
         use_precomp: UsePrecomp,
     ) -> Self {
-        assert!(points_per_proof.is_power_of_two());
-        assert!(number_of_points_to_open.is_power_of_two());
-        assert!(number_of_points_to_open > points_per_proof);
-        assert!(polynomial_bound.is_power_of_two());
-        assert!(commit_key.g1s.len() >= polynomial_bound);
-        assert!(commit_key.g1s.len() > points_per_proof);
+        assert!(
+            points_per_proof.is_power_of_two()
+                && number_of_points_to_open.is_power_of_two()
+                && number_of_points_to_open > points_per_proof
+                && polynomial_bound.is_power_of_two()
+                && commit_key.g1s.len() >= polynomial_bound
+                && commit_key.g1s.len() > points_per_proof
+        );
 
         // 1. Compute the SRS vectors that we will multiply the toeplitz matrices by.
         //
@@ -87,10 +89,10 @@ impl FK20Prover {
         // the quotient polynomial.
         let srs_truncated: Vec<_> = commit_key
             .g1s
-            .clone()
-            .into_iter()
+            .iter()
             .rev()
             .skip(points_per_proof)
+            .copied()
             .collect();
         let mut srs_vectors = take_every_nth(&srs_truncated, points_per_proof);
 
@@ -108,7 +110,6 @@ impl FK20Prover {
         let batch_toeplitz = BatchToeplitzMatrixVecMul::new(srs_vectors, use_precomp);
 
         // 2. Compute the domains needed to produce the proofs and the evaluations
-        //
         let num_proofs = number_of_points_to_open / points_per_proof;
         let proof_domain = Domain::new(num_proofs);
         let evaluation_domain = Domain::new(number_of_points_to_open);

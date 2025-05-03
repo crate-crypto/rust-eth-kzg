@@ -156,10 +156,7 @@ fn verify_multi_opening_naive(
     let comm_minus_i_x: G1Point = (G1Projective::from(commitment) - comm_i_x).into();
     multi_pairings(&[
         (&proof, &G2Prepared::from(comm_vanishing_poly)),
-        (
-            &comm_minus_i_x,
-            &G2Prepared::from(-verification_key.g2_gen()),
-        ),
+        (&comm_minus_i_x, &G2Prepared::from(-verification_key.g2_gen)),
     ])
 }
 
