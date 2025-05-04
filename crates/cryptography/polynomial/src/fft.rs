@@ -34,7 +34,7 @@ impl FFTElement for G1Projective {
 
 // Taken and modified from https://github.com/Plonky3/Plonky3/blob/a374139/dft/src/radix_2_dit_parallel.rs#L106.
 fn fft_inplace<T: FFTElement>(omegas: &[Scalar], twiddle_factors_bo: &[Scalar], values: &mut [T]) {
-    let log_n = log2_pow2(values.len()) as usize;
+    let log_n = values.len().trailing_zeros() as usize;
     let mid = (log_n + 1) / 2;
 
     // The first half looks like a normal DIT.
@@ -87,7 +87,7 @@ fn dit_layer<T: FFTElement>(
 }
 
 fn second_half<T: FFTElement>(values: &mut [T], mid: usize, twiddles_bo: &[Scalar]) {
-    let log_n = log2_pow2(values.len()) as usize;
+    let log_n = values.len().trailing_zeros() as usize;
     values
         .maybe_par_chunks_mut(1 << (log_n - mid))
         .enumerate()
@@ -171,7 +171,7 @@ fn bitreverse_slice<T>(a: &mut [T]) {
     }
 
     let n = a.len();
-    let log_n = log2_pow2(n);
+    let log_n = n.trailing_zeros();
     assert_eq!(n, 1 << log_n);
 
     for k in 0..n {
@@ -182,13 +182,9 @@ fn bitreverse_slice<T>(a: &mut [T]) {
     }
 }
 
-const fn log2_pow2(n: usize) -> u32 {
-    n.trailing_zeros()
-}
-
 /// Returns `[ω_{2}, ω_{4}, ..., ω_{n}]` given input `omega` = `ω_{n}`.
 pub(crate) fn precompute_omegas<F: Field>(omega: &F, n: usize) -> Vec<F> {
-    let log_n = log2_pow2(n);
+    let log_n = n.trailing_zeros();
     (0..log_n)
         .map(|s| omega.pow([(n / (1 << (s + 1))) as u64]))
         .collect()

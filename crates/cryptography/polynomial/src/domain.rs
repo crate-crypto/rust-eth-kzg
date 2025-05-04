@@ -55,16 +55,12 @@ impl Domain {
         let generator = Self::compute_generator_for_size(size);
         let generator_inv = generator.invert().expect("generator should not be zero");
 
-        let size_as_scalar = Scalar::from(size as u64);
-        let size_as_scalar_inv = size_as_scalar.invert().expect("size should not be zero");
+        let domain_size = Scalar::from(size as u64);
+        let domain_size_inv = domain_size.invert().expect("size should not be zero");
 
-        let mut roots = Vec::with_capacity(size);
-        roots.push(Scalar::ONE);
-
-        for i in 1..size {
-            let prev_root = roots[i - 1];
-            roots.push(prev_root * generator);
-        }
+        let roots = std::iter::successors(Some(Scalar::ONE), |root| Some(*root * generator))
+            .take(size)
+            .collect();
 
         let omegas = precompute_omegas(&generator, size);
         let twiddle_factors_bo = precompute_twiddle_factors_bo(&generator, size);
@@ -73,8 +69,8 @@ impl Domain {
 
         Self {
             roots,
-            domain_size: size_as_scalar,
-            domain_size_inv: size_as_scalar_inv,
+            domain_size,
+            domain_size_inv,
             generator,
             generator_inv,
             omegas,
@@ -185,19 +181,16 @@ impl Domain {
         fft_g1_inplace(&self.omegas_inv, &self.twiddle_factors_inv_bo, &mut points);
 
         // Truncate the result if a value of `n` was supplied.
-        let mut ifft_g1 = match n {
-            Some(num_to_take) => {
-                assert!(num_to_take < points.len());
-                points[0..num_to_take].to_vec()
-            }
-            None => points,
-        };
+        let out_len = n.unwrap_or(points.len());
+        assert!(out_len <= points.len());
 
-        for element in &mut ifft_g1 {
+        points.truncate(out_len);
+
+        for element in &mut points {
             *element *= self.domain_size_inv;
         }
 
-        ifft_g1
+        points
     }
 
     /// Interpolates the points over the domain to get a polynomial
