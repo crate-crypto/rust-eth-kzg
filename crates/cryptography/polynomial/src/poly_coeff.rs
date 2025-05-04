@@ -41,11 +41,9 @@ pub fn poly_sub(a: PolyCoeff, b: PolyCoeff) -> PolyCoeff {
 /// Given a polynomial `f(x)` and a scalar `z`. This method will compute
 /// the result of `f(z)` and return the result.
 pub fn poly_eval(poly: &PolyCoeff, value: &Scalar) -> Scalar {
-    let mut result = Scalar::ZERO;
-    for coeff in poly.iter().rev() {
-        result = result * value + coeff;
-    }
-    result
+    poly.iter()
+        .rev()
+        .fold(Scalar::ZERO, |acc, &coeff| acc * value + coeff)
 }
 
 /// For two polynomials, `f(x)` and `g(x)`, this method computes
@@ -65,11 +63,9 @@ pub fn poly_mul(a: &PolyCoeff, b: &PolyCoeff) -> PolyCoeff {
 ///
 /// Example: vanishing_poly([1, 2, 3]) = (x - 1)(x - 2)(x - 3)
 pub fn vanishing_poly(roots: &[Scalar]) -> PolyCoeff {
-    let mut poly = vec![Scalar::ONE];
-    for root in roots {
-        poly = poly_mul(&poly, &vec![-root, Scalar::ONE]);
-    }
-    poly
+    roots.iter().fold(vec![Scalar::ONE], |acc, &root| {
+        poly_mul(&acc, &vec![-root, Scalar::ONE])
+    })
 }
 
 /// Interpolates a set of points to a given polynomial in monomial form.
