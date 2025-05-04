@@ -4,6 +4,8 @@
 /// The number of bytes needed to represent a field element.
 ///
 /// Note: This is originally specified in the 4844 specs.
+///
+/// See: https://github.com/ethereum/EIPs/blob/master/EIPS/eip-4844.md
 pub const BYTES_PER_FIELD_ELEMENT: usize = 32;
 
 /// The number of field elements in a cell.
@@ -19,6 +21,8 @@ pub const FIELD_ELEMENTS_PER_CELL: usize = 64;
 /// The number of field elements needed to represent a blob.
 ///
 /// Note: This is originally specified in the 4844 specs.
+///
+/// See: https://github.com/ethereum/EIPs/blob/master/EIPS/eip-4844.md
 pub const FIELD_ELEMENTS_PER_BLOB: usize = 4096;
 
 /// The number of bytes needed to represent a blob.
@@ -43,7 +47,7 @@ pub const CELLS_PER_EXT_BLOB: usize = FIELD_ELEMENTS_PER_EXT_BLOB / FIELD_ELEMEN
 
 /// The number of proofs for an extension blob.
 ///
-/// Note: Each Cell comes with its own proof.
+/// Note: Each cell comes with its own proof.
 pub const NUM_PROOFS: usize = CELLS_PER_EXT_BLOB;
 
 /// The number of bytes needed to represent a G1 element.
