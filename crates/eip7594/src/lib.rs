@@ -89,12 +89,4 @@ impl DASContext {
             verifier_ctx: VerifierContext::new(trusted_setup),
         }
     }
-
-    pub const fn prover_ctx(&self) -> &ProverContext {
-        &self.prover_ctx
-    }
-
-    pub const fn verifier_ctx(&self) -> &VerifierContext {
-        &self.verifier_ctx
-    }
 }
