@@ -180,6 +180,8 @@ pub mod prover {
     }
 
     /// Compute evaluation and quotient of the given polynomial at the given point.
+    ///
+    /// Note: The quotient is returned in normal order.
     pub fn compute_evaluation_and_quotient(
         domain: &Domain,
         polynomial: &[Scalar],
@@ -189,12 +191,14 @@ pub mod prover {
         let point_idx = domain.roots.iter().position(|root| *root == z);
 
         // Compute evaluation and quotient.
-        let (z, quotient) = point_idx.map_or_else(
+        let (z, mut quotient) = point_idx.map_or_else(
             || compute_evaluation_and_quotient_out_of_domain(domain, polynomial, z),
             |point_idx| {
                 compute_evaluation_and_quotient_within_domain(domain, polynomial, point_idx)
             },
         );
+
+        bitreverse_slice(&mut quotient);
 
         (z, quotient)
     }

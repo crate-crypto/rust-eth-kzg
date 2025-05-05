@@ -44,9 +44,7 @@ impl Context {
         let z = deserialize_bytes_to_scalar(&z)?;
 
         // Compute evaluation and quotient at challenge.
-        let (y, mut quotient) =
-            compute_evaluation_and_quotient(&self.prover.domain, &polynomial, z);
-        bitreverse_slice(&mut quotient);
+        let (y, quotient) = compute_evaluation_and_quotient(&self.prover.domain, &polynomial, z);
 
         // Compute KZG opening proof.
         let proof = g1_lincomb(&self.prover.commit_key.g1_lagrange, &quotient)
@@ -80,9 +78,8 @@ impl Context {
         let z = compute_fiat_shamir_challenge(blob, commitment);
 
         // Compute evaluation and quotient at z.
-        let (_, mut quotient) =
-            compute_evaluation_and_quotient(&self.prover.domain, &polynomial, z);
-        bitreverse_slice(&mut quotient);
+        // The quotient is returned in "normal order"
+        let (_, quotient) = compute_evaluation_and_quotient(&self.prover.domain, &polynomial, z);
 
         // Compute KZG opening proof.
         let proof = g1_lincomb(&self.prover.commit_key.g1_lagrange, &quotient)
