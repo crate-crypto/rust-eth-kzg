@@ -25,28 +25,13 @@ pub(crate) fn bitreverse_slice<T>(a: &mut [T]) {
 }
 
 pub mod verifier {
-    use std::iter::successors;
 
     use bls12_381::{
-        batch_inversion::batch_inverse, ff::Field, group::Curve, lincomb::g1_lincomb,
-        multi_pairings, reduce_bytes_to_scalar_bias, G1Point, G2Point, G2Prepared, Scalar,
+        group::Curve, lincomb::g1_lincomb, multi_pairings, G1Point, G2Point, G2Prepared, Scalar,
     };
     use polynomial::domain::Domain;
-    use sha2::{Digest, Sha256};
 
-    use crate::{
-        constants::{
-            BYTES_PER_BLOB, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, FIELD_ELEMENTS_PER_BLOB,
-        },
-        serialization::{
-            deserialize_blob_to_scalars, deserialize_bytes_to_scalar, deserialize_compressed_g1,
-        },
-        trusted_setup::{
-            deserialize_g1_points, deserialize_g2_points, SubgroupCheck, TrustedSetup,
-        },
-        BlobRef, Context, Error, KZGCommitment, KZGOpeningEvaluation, KZGOpeningPoint, KZGProof,
-        VerifierError,
-    };
+    use crate::{trusted_setup::TrustedSetup, VerifierError};
 
     /// The key that is used to verify KZG single-point opening proofs.
     pub struct VerificationKey {
@@ -162,22 +147,12 @@ pub mod verifier {
 }
 
 pub mod prover {
-    use bls12_381::{
-        batch_inversion::batch_inverse, ff::Field, lincomb::g1_lincomb, G1Point, Scalar,
-    };
+    use bls12_381::{batch_inversion::batch_inverse, ff::Field, G1Point, Scalar};
     use maybe_rayon::prelude::*;
     use polynomial::domain::Domain;
 
     use crate::{
-        constants::FIELD_ELEMENTS_PER_BLOB,
         cryptography::{bitreverse, bitreverse_slice},
-        serialization::{
-            deserialize_blob_to_scalars, deserialize_bytes_to_scalar, deserialize_compressed_g1,
-            serialize_g1_compressed,
-        },
-        trusted_setup::{deserialize_g1_points, SubgroupCheck},
-        verifier::compute_fiat_shamir_challenge,
-        BlobRef, Context, Error, KZGCommitment, KZGOpeningEvaluation, KZGOpeningPoint, KZGProof,
         TrustedSetup,
     };
 
@@ -238,6 +213,8 @@ pub mod prover {
         let mut denoms = roots_brp.iter().map(|root| z - *root).collect::<Vec<_>>();
         batch_inverse(&mut denoms);
 
+        let domain_size = domain.roots.len();
+
         // \sum (ω^i * f(ω^i) / (z - ω^i)) * ((z^n - 1) / n)
         let y = roots_brp
             .maybe_into_par_iter()
@@ -245,7 +222,7 @@ pub mod prover {
             .zip(&denoms)
             .map(|((root, f_root), denom)| root * *f_root * denom)
             .sum::<Scalar>()
-            * (z.pow_vartime([FIELD_ELEMENTS_PER_BLOB as u64]) - Scalar::ONE)
+            * (z.pow_vartime([domain_size as u64]) - Scalar::ONE)
             * domain.domain_size_inv;
 
         // (y - f(ω^i)) / (z - ω^i)
@@ -272,15 +249,17 @@ pub mod prover {
         polynomial: &[Scalar],
         point_idx: usize,
     ) -> (Scalar, Vec<Scalar>) {
+        let domain_size = domain.roots.len();
+
         // ω^m
         let z = domain.roots[point_idx];
         // ω^(n-m)
-        let z_inv = domain.roots[(FIELD_ELEMENTS_PER_BLOB - point_idx) % FIELD_ELEMENTS_PER_BLOB];
+        let z_inv = domain.roots[(domain_size - point_idx) % domain_size];
 
         // Because polynomial is in bit-reversed order, and we need to compute
         // quotient also in bit-reversed order, so we work with bit-reversed point
         // index from now on.
-        let point_idx_brp = bitreverse(point_idx as u32, FIELD_ELEMENTS_PER_BLOB.ilog2()) as usize;
+        let point_idx_brp = bitreverse(point_idx as u32, domain_size.ilog2()) as usize;
 
         // Root in bit-reversed order.
         let mut roots_brp = domain.roots.clone();
