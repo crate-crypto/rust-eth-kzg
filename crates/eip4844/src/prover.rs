@@ -1,12 +1,13 @@
 use bls12_381::lincomb::g1_lincomb;
 
 use crate::{
-    cryptography::{bitreverse_slice, prover::compute_evaluation_and_quotient},
+    cryptography::{
+        bitreverse_slice, compute_fiat_shamir_challenge, prover::compute_evaluation_and_quotient,
+    },
     serialization::{
         deserialize_blob_to_scalars, deserialize_bytes_to_scalar, deserialize_compressed_g1,
         serialize_g1_compressed,
     },
-    verifier::compute_fiat_shamir_challenge,
     BlobRef, Context, Error, KZGCommitment, KZGOpeningEvaluation, KZGOpeningPoint, KZGProof,
 };
 

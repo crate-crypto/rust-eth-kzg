@@ -1,9 +1,8 @@
-use bls12_381::{reduce_bytes_to_scalar_bias, Scalar};
-use sha2::{Digest, Sha256};
-
 use crate::{
-    constants::{BYTES_PER_BLOB, BYTES_PER_COMMITMENT, FIELD_ELEMENTS_PER_BLOB},
-    cryptography::verifier::{compute_evaluation, compute_r_powers_for_verify_kzg_proof_batch},
+    cryptography::{
+        compute_fiat_shamir_challenge,
+        verifier::{compute_evaluation, compute_r_powers_for_verify_kzg_proof_batch},
+    },
     serialization::{
         deserialize_blob_to_scalars, deserialize_bytes_to_scalar, deserialize_compressed_g1,
     },
@@ -135,52 +134,4 @@ impl Context {
 
         Ok(())
     }
-}
-
-/// Compute Fiat-Shamir challenge of a blob KZG proof.
-///
-/// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#compute_challenge
-pub(crate) fn compute_fiat_shamir_challenge(blob: BlobRef, commitment: KZGCommitment) -> Scalar {
-    // DomSepProtocol is a Domain Separator to identify the protocol.
-    //
-    // It matches [FIAT_SHAMIR_PROTOCOL_DOMAIN] in the spec.
-    //
-    // [FIAT_SHAMIR_PROTOCOL_DOMAIN]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#blob
-    const DOMAIN_SEP: &str = "FSBLOBVERIFY_V1_";
-
-    let hash_input_size = DOMAIN_SEP.len()
-            + 2 * size_of::<u64>() // polynomial bound
-            + BYTES_PER_BLOB // blob
-            + BYTES_PER_COMMITMENT // commitment
-            ;
-
-    let mut hash_input: Vec<u8> = Vec::with_capacity(hash_input_size);
-
-    hash_input.extend(DOMAIN_SEP.as_bytes());
-    hash_input.extend(u64_to_byte_array_16(FIELD_ELEMENTS_PER_BLOB as u64));
-    hash_input.extend(blob);
-    hash_input.extend(commitment);
-
-    assert_eq!(hash_input.len(), hash_input_size);
-    let mut hasher = Sha256::new();
-    hasher.update(hash_input);
-    let result: [u8; 32] = hasher.finalize().into();
-
-    // For randomization, we only need a 128 bit scalar, since this is used for batch verification.
-    // See for example, the randomizers section in : https://cr.yp.to/badbatch/badbatch-20120919.pdf
-    //
-    // This is noted because when we convert a 256 bit hash to a scalar, a bias will be introduced.
-    // This however does not affect our security guarantees because the bias is negligible given we
-    // want a uniformly random 128 bit integer.
-    //
-    // Also there is a negligible probably that the scalar is zero, so we do not handle this case here.
-    reduce_bytes_to_scalar_bias(result)
-}
-
-/// Converts a u64 to a byte array of length 16 in big endian format.
-/// This implies that the first 8 bytes of the result are always 0.
-fn u64_to_byte_array_16(number: u64) -> [u8; 16] {
-    let mut bytes = [0; 16];
-    bytes[8..].copy_from_slice(&number.to_be_bytes());
-    bytes
 }
