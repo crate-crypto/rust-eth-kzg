@@ -17,7 +17,7 @@ napi = { version = "2.16.3", default-features = false, features = [
     "async",
 ] }
 napi-derive = "2.16.13"
-rust_eth_kzg = { workspace = true, features = ["multithreaded"] }
+ekzg-eip7594 = { workspace = true, features = ["multithreaded"] }
 
 [build-dependencies]
 napi-build = "2.1.4"

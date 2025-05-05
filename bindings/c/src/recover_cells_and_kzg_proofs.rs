@@ -1,4 +1,4 @@
-use rust_eth_kzg::constants::{BYTES_PER_CELL, CELLS_PER_EXT_BLOB};
+use ekzg_eip7594::constants::{BYTES_PER_CELL, CELLS_PER_EXT_BLOB};
 
 use crate::{
     pointer_utils::{

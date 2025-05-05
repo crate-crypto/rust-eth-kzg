@@ -1,5 +1,5 @@
 [package]
-name = "crate_crypto_internal_eth_kzg_maybe_rayon"
+name = "ekzg-maybe-rayon"
 description = "This crate provides an implementation of a wrapper around the rayon crate"
 version = { workspace = true }
 authors = { workspace = true }

@@ -1,5 +1,5 @@
 [package]
-name = "crate_crypto_internal_eth_kzg_bls12_381"
+name = "ekzg-bls12-381"
 description = "This crate provides the internal implementation of the BLS12-381 curve for the Eth KZG project."
 version = { workspace = true }
 authors = { workspace = true }

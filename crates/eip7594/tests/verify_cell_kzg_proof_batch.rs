@@ -82,7 +82,7 @@ const TEST_DIR: &str = "../../test_vectors/verify_cell_kzg_proof_batch";
 fn test_verify_cell_kzg_proof_batch() {
     let test_files = collect_test_files(TEST_DIR).expect("unable to collect test files");
 
-    let ctx = rust_eth_kzg::DASContext::default();
+    let ctx = ekzg - eip7594::DASContext::default();
 
     for test_file in test_files {
         let yaml_data = fs::read_to_string(&test_file).expect("unable to read test file");

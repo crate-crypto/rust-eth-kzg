@@ -15,7 +15,7 @@ The cryptography implemented in this library is the prerequisite needed for Ethe
 ### Rust
 
 ```
-cargo add rust_eth_kzg
+cargo add ekzg-eip7594
 ```
 
 ### Node

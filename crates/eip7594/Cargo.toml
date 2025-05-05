@@ -1,5 +1,5 @@
 [package]
-name = "rust_eth_kzg"
+name = "ekzg-eip7594"
 description = "This crate provides an implementation of the cryptography needed for EIP-7594"
 version = { workspace = true }
 authors = { workspace = true }
@@ -19,7 +19,9 @@ erasure_codes = { workspace = true }
 rayon = { workspace = true, optional = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tracing = { version = "0.1.41", default-features = false, features = ["attributes"], optional = true }
+tracing = { version = "0.1.41", default-features = false, features = [
+    "attributes",
+], optional = true }
 
 [features]
 singlethreaded = ["kzg_multi_open/singlethreaded"]

@@ -77,7 +77,7 @@ pub struct ToeplitzMatrix {
 /// # Examples
 ///
 /// ```text
-/// use crate_crypto_kzg_multi_open_fk20::fk20::toeplitz::CirculantMatrix;
+/// use ekzg_multi_open::fk20::toeplitz::CirculantMatrix;
 ///
 /// row = [1, 2, 3, 4]
 ///
