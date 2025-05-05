@@ -17,14 +17,13 @@ use crate::{
 /// The key that is used to commit to polynomials in lagrange form (bit-reversed
 /// order)
 pub struct CommitKey {
-    g1_lagrange_brp: Vec<G1Point>,
+    g1_lagrange: Vec<G1Point>,
 }
 
 impl From<&TrustedSetup> for CommitKey {
     fn from(setup: &TrustedSetup) -> Self {
-        let mut g1_lagrange_brp = deserialize_g1_points(&setup.g1_lagrange, SubgroupCheck::NoCheck);
-        bitreverse_slice(&mut g1_lagrange_brp);
-        Self { g1_lagrange_brp }
+        let g1_lagrange = deserialize_g1_points(&setup.g1_lagrange, SubgroupCheck::NoCheck);
+        Self { g1_lagrange }
     }
 }
 
@@ -32,7 +31,7 @@ pub struct Prover {
     /// Domain used to create the opening proofs.
     domain: Domain,
     /// Commitment key used for committing to the polynomial
-    /// in lagrange form (bit-reversed order).
+    /// in lagrange form
     commit_key: CommitKey,
 }
 
@@ -51,10 +50,12 @@ impl Context {
     /// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/13ac373a2c284dc66b48ddd2ef0a10537e4e0de6/specs/deneb/polynomial-commitments.md#blob_to_kzg_commitment
     pub fn blob_to_kzg_commitment(&self, blob: BlobRef) -> Result<KZGCommitment, Error> {
         // Deserialize the blob into scalars.
-        let polynomial = deserialize_blob_to_scalars(blob)?;
+        let mut polynomial = deserialize_blob_to_scalars(blob)?;
+
+        bitreverse_slice(&mut polynomial);
 
         // Compute commitment in lagrange form.
-        let commitment = g1_lincomb(&self.prover.commit_key.g1_lagrange_brp, &polynomial)
+        let commitment = g1_lincomb(&self.prover.commit_key.g1_lagrange, &polynomial)
             .expect("number of g1 points is equal to the number of coefficients in the polynomial")
             .into();
 
@@ -77,10 +78,12 @@ impl Context {
         let z = deserialize_bytes_to_scalar(&z)?;
 
         // Compute evaluation and quotient at challenge.
-        let (y, quotient) = compute_evaluation_and_quotient(&self.prover.domain, &polynomial, z);
+        let (y, mut quotient) =
+            compute_evaluation_and_quotient(&self.prover.domain, &polynomial, z);
+        bitreverse_slice(&mut quotient);
 
         // Compute KZG opening proof.
-        let proof = g1_lincomb(&self.prover.commit_key.g1_lagrange_brp, &quotient)
+        let proof = g1_lincomb(&self.prover.commit_key.g1_lagrange, &quotient)
             .expect("number of g1 points is equal to the number of coefficients in the polynomial")
             .into();
 
@@ -111,10 +114,12 @@ impl Context {
         let z = compute_fiat_shamir_challenge(blob, commitment);
 
         // Compute evaluation and quotient at z.
-        let (_, quotient) = compute_evaluation_and_quotient(&self.prover.domain, &polynomial, z);
+        let (_, mut quotient) =
+            compute_evaluation_and_quotient(&self.prover.domain, &polynomial, z);
+        bitreverse_slice(&mut quotient);
 
         // Compute KZG opening proof.
-        let proof = g1_lincomb(&self.prover.commit_key.g1_lagrange_brp, &quotient)
+        let proof = g1_lincomb(&self.prover.commit_key.g1_lagrange, &quotient)
             .expect("number of g1 points is equal to the number of coefficients in the polynomial")
             .into();
 
