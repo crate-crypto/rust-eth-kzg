@@ -267,6 +267,8 @@ pub(crate) fn compute_evaluation_out_of_domain(
     polynomial: &[Scalar],
     z: Scalar,
 ) -> Scalar {
+    let domain_size = domain.roots.len();
+
     // Note: This clone is okay because after eip7594, this crate is no longer on the critical path.
     let mut roots_brp = domain.roots.clone();
     bitreverse_slice(&mut roots_brp);
@@ -282,7 +284,7 @@ pub(crate) fn compute_evaluation_out_of_domain(
         .zip(&denoms)
         .map(|((root, f_root), denom)| root * *f_root * denom)
         .sum::<Scalar>()
-        * (z.pow_vartime([FIELD_ELEMENTS_PER_BLOB as u64]) - Scalar::ONE)
+        * (z.pow_vartime([domain_size as u64]) - Scalar::ONE)
         * domain.domain_size_inv;
 
     y
