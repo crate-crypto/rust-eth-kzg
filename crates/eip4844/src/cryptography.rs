@@ -1,10 +1,7 @@
-use bls12_381::{reduce_bytes_to_scalar_bias, Scalar};
+use bls12_381::{ff::PrimeField, reduce_bytes_to_scalar_bias, G1Point, Scalar};
 use sha2::{Digest, Sha256};
 
-use crate::{
-    constants::{BYTES_PER_BLOB, BYTES_PER_COMMITMENT, FIELD_ELEMENTS_PER_BLOB},
-    BlobRef, KZGCommitment,
-};
+use crate::{BlobRef, KZGCommitment};
 
 pub(crate) fn bitreverse(mut n: u32, l: u32) -> u32 {
     let mut r = 0;
@@ -43,16 +40,22 @@ pub(crate) fn compute_fiat_shamir_challenge(blob: BlobRef, commitment: KZGCommit
     // [FIAT_SHAMIR_PROTOCOL_DOMAIN]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#blob
     const DOMAIN_SEP: &str = "FSBLOBVERIFY_V1_";
 
+    let bytes_per_commitment = G1Point::compressed_size();
+    let bytes_per_blob = blob.len();
+
+    let num_bytes_scalar = Scalar::NUM_BITS.div_ceil(8) as usize;
+    let field_elements_per_blob = blob.len() / num_bytes_scalar;
+
     let hash_input_size = DOMAIN_SEP.len()
             + 2 * size_of::<u64>() // polynomial bound
-            + BYTES_PER_BLOB // blob
-            + BYTES_PER_COMMITMENT // commitment
+            + bytes_per_blob // blob
+            + bytes_per_commitment // commitment
             ;
 
     let mut hash_input: Vec<u8> = Vec::with_capacity(hash_input_size);
 
     hash_input.extend(DOMAIN_SEP.as_bytes());
-    hash_input.extend(u64_to_byte_array_16(FIELD_ELEMENTS_PER_BLOB as u64));
+    hash_input.extend(u64_to_byte_array_16(field_elements_per_blob as u64));
     hash_input.extend(blob);
     hash_input.extend(commitment);
 
