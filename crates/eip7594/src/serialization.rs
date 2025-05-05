@@ -18,13 +18,10 @@ fn deserialize_bytes_to_scalars(bytes: &[u8]) -> Result<Vec<Scalar>, Serializati
         });
     }
 
-    let bytes32s = bytes.chunks_exact(BYTES_PER_FIELD_ELEMENT);
-
-    let mut scalars = Vec::with_capacity(bytes32s.len());
-    for bytes32 in bytes32s {
-        scalars.push(deserialize_bytes_to_scalar(bytes32)?);
-    }
-    Ok(scalars)
+    bytes
+        .chunks_exact(BYTES_PER_FIELD_ELEMENT)
+        .map(deserialize_bytes_to_scalar)
+        .collect()
 }
 
 pub(crate) fn deserialize_blob_to_scalars(
@@ -38,6 +35,7 @@ pub(crate) fn deserialize_blob_to_scalars(
     }
     deserialize_bytes_to_scalars(blob_bytes)
 }
+
 pub(crate) fn deserialize_cell_to_scalars(
     cell_bytes: &[u8],
 ) -> Result<Vec<Scalar>, SerializationError> {
@@ -74,6 +72,7 @@ pub(crate) fn deserialize_compressed_g1(point_bytes: &[u8]) -> Result<G1Point, S
         bytes: point_bytes.to_vec(),
     })
 }
+
 pub(crate) fn serialize_g1_compressed(point: &G1Point) -> [u8; BYTES_PER_G1_POINT] {
     point.to_compressed()
 }
@@ -94,11 +93,7 @@ pub(crate) fn serialize_scalars_to_cell(scalars: &[Scalar]) -> Vec<u8> {
         "must have exactly {FIELD_ELEMENTS_PER_CELL} scalars to serialize to a cell"
     );
 
-    let mut bytes = Vec::with_capacity(FIELD_ELEMENTS_PER_CELL * BYTES_PER_FIELD_ELEMENT);
-    for scalar in scalars {
-        bytes.extend_from_slice(&scalar.to_bytes_be());
-    }
-    bytes
+    scalars.iter().flat_map(|s| s.to_bytes_be()).collect()
 }
 
 pub(crate) fn deserialize_cells(
@@ -106,8 +101,7 @@ pub(crate) fn deserialize_cells(
 ) -> Result<Vec<Vec<Scalar>>, SerializationError> {
     cells
         .into_iter()
-        .map(AsRef::as_ref)
-        .map(deserialize_cell_to_scalars)
+        .map(|c| deserialize_cell_to_scalars(c))
         .collect()
 }
 

@@ -84,7 +84,7 @@ impl DASContext {
         // width value to `8` for optimal storage and performance tradeoffs.
         use_precomp: UsePrecomp,
     ) -> Self {
-        DASContext {
+        Self {
             prover_ctx: ProverContext::new(trusted_setup, use_precomp),
             verifier_ctx: VerifierContext::new(trusted_setup),
         }
