@@ -1,9 +1,6 @@
 use std::iter::successors;
 
-use bls12_381::{
-    batch_inversion::batch_inverse, ff::Field, group::Curve, lincomb::g1_lincomb, multi_pairings,
-    reduce_bytes_to_scalar_bias, G1Point, G2Point, G2Prepared, Scalar,
-};
+use bls12_381::{batch_inversion::batch_inverse, ff::Field, reduce_bytes_to_scalar_bias, Scalar};
 use polynomial::domain::Domain;
 use sha2::{Digest, Sha256};
 
@@ -11,140 +8,13 @@ use crate::{
     constants::{
         BYTES_PER_BLOB, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, FIELD_ELEMENTS_PER_BLOB,
     },
+    cryptography::bitreverse_slice,
     serialization::{
         deserialize_blob_to_scalars, deserialize_bytes_to_scalar, deserialize_compressed_g1,
     },
-    trusted_setup::{deserialize_g1_points, deserialize_g2_points, SubgroupCheck, TrustedSetup},
     BlobRef, Context, Error, KZGCommitment, KZGOpeningEvaluation, KZGOpeningPoint, KZGProof,
     VerifierError,
 };
-
-/// The key that is used to verify KZG single-point opening proofs.
-pub struct VerificationKey {
-    gen_g1: G1Point,
-    gen_g2: G2Point,
-    tau_g2: G2Point,
-}
-
-impl From<&TrustedSetup> for VerificationKey {
-    fn from(setup: &TrustedSetup) -> Self {
-        let g1_monomial = deserialize_g1_points(&setup.g1_monomial, SubgroupCheck::NoCheck);
-        let g2_monomial = deserialize_g2_points(&setup.g2_monomial, SubgroupCheck::NoCheck);
-        let gen_g1 = g1_monomial[0];
-        let gen_g2 = g2_monomial[0];
-        let tau_g2 = g2_monomial[1];
-        Self {
-            gen_g1,
-            gen_g2,
-            tau_g2,
-        }
-    }
-}
-
-pub struct Verifier {
-    /// Domain used to create the opening proofs.
-    domain: Domain,
-    /// Verification key used to verify KZG single-point opening proofs.
-    verification_key: VerificationKey,
-}
-
-impl Verifier {
-    pub fn new(trusted_setup: &TrustedSetup) -> Self {
-        Self {
-            domain: Domain::new(FIELD_ELEMENTS_PER_BLOB),
-            verification_key: VerificationKey::from(trusted_setup),
-        }
-    }
-
-    fn verify_kzg_proof(
-        &self,
-        commitment: G1Point,
-        z: Scalar,
-        y: Scalar,
-        proof: G1Point,
-    ) -> Result<(), VerifierError> {
-        let vk = &self.verification_key;
-
-        // [f(τ) - f(z)]G₁
-        let commitment_minus_z = (commitment - vk.gen_g1 * y).into();
-
-        // [-1]G₂
-        let neg_gen_g2 = G2Prepared::from(-vk.gen_g2);
-
-        // [τ - z]G₂
-        let tau_minus_challenge_g2 = G2Prepared::from((vk.tau_g2 - vk.gen_g2 * z).to_affine());
-
-        // Check whether `f(X) - f(z) == q(X) * (X - z)`
-        let proof_valid = multi_pairings(&[
-            (&commitment_minus_z, &neg_gen_g2),
-            (&proof, &tau_minus_challenge_g2),
-        ]);
-        if proof_valid {
-            Ok(())
-        } else {
-            Err(VerifierError::InvalidProof)
-        }
-    }
-
-    fn verify_kzg_proof_batch(
-        &self,
-        commitments: &[G1Point],
-        zs: &[Scalar],
-        ys: &[Scalar],
-        proofs: &[G1Point],
-        r_powers: &[Scalar],
-    ) -> Result<(), VerifierError> {
-        assert!(
-            commitments.len() == zs.len()
-                && commitments.len() == ys.len()
-                && commitments.len() == proofs.len()
-                && commitments.len() == r_powers.len()
-        );
-
-        let vk = &self.verification_key;
-
-        // \sum r^i * [f_i(τ)] - (\sum r^i * y_i) * [1] + \sum r^i * z_i * [q(τ)]
-        let lhs_g1 = {
-            let points = commitments
-                .iter()
-                .chain(proofs)
-                .chain([&vk.gen_g1])
-                .copied()
-                .collect::<Vec<_>>();
-            let scalars = r_powers
-                .iter()
-                .copied()
-                .chain(r_powers.iter().zip(zs).map(|(r_i, z_i)| *r_i * z_i))
-                .chain([-r_powers
-                    .iter()
-                    .zip(ys)
-                    .map(|(r_i, y_i)| *r_i * y_i)
-                    .sum::<Scalar>()])
-                .collect::<Vec<_>>();
-            g1_lincomb(&points, &scalars)
-                .expect("points and scalars have same length")
-                .into()
-        };
-
-        // \sum r^i * [q(τ)]
-        let rhs_g1 = g1_lincomb(proofs, r_powers)
-            .expect("points and scalars have same length")
-            .into();
-
-        // [-1]G₂
-        let lhs_g2 = G2Prepared::from(-vk.gen_g2);
-
-        // [τ]G₂
-        let rhs_g2 = G2Prepared::from(vk.tau_g2);
-
-        let proof_valid = multi_pairings(&[(&lhs_g1, &lhs_g2), (&rhs_g1, &rhs_g2)]);
-        if proof_valid {
-            Ok(())
-        } else {
-            Err(VerifierError::InvalidProof)
-        }
-    }
-}
 
 impl Context {
     /// Verify the KZG proof to the commitment.
@@ -416,30 +286,4 @@ pub(crate) fn compute_evaluation_out_of_domain(
         * domain.domain_size_inv;
 
     y
-}
-
-pub(crate) fn bitreverse(mut n: u32, l: u32) -> u32 {
-    let mut r = 0;
-    for _ in 0..l {
-        r = (r << 1) | (n & 1);
-        n >>= 1;
-    }
-    r
-}
-
-pub(crate) fn bitreverse_slice<T>(a: &mut [T]) {
-    if a.is_empty() {
-        return;
-    }
-
-    let n = a.len();
-    let log_n = n.ilog2();
-    assert_eq!(n, 1 << log_n);
-
-    for k in 0..n {
-        let rk = bitreverse(k as u32, log_n) as usize;
-        if k < rk {
-            a.swap(rk, k);
-        }
-    }
 }

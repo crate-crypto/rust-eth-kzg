@@ -1,17 +1,20 @@
-use constants::{BYTES_PER_BLOB, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT};
+use constants::{
+    BYTES_PER_BLOB, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, FIELD_ELEMENTS_PER_BLOB,
+};
 
 mod errors;
 mod prover;
-mod verifier;
+pub(crate) mod verifier;
 
 pub mod constants;
+mod cryptography;
 mod serialization;
 mod trusted_setup;
 
 pub use errors::{Error, ProverError, SerializationError, VerifierError};
-use prover::Prover;
 pub use trusted_setup::TrustedSetup;
-use verifier::Verifier;
+
+use crate::cryptography::{prover::Prover, verifier::Verifier};
 
 /// BlobRef denotes a references to an opaque Blob.
 ///
@@ -51,8 +54,8 @@ impl Default for Context {
 impl Context {
     pub fn new(trusted_setup: &TrustedSetup) -> Self {
         Self {
-            prover: Prover::new(trusted_setup),
-            verifier: Verifier::new(trusted_setup),
+            prover: Prover::new(FIELD_ELEMENTS_PER_BLOB, trusted_setup),
+            verifier: Verifier::new(FIELD_ELEMENTS_PER_BLOB, trusted_setup),
         }
     }
 }
