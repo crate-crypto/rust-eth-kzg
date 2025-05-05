@@ -58,9 +58,13 @@ impl Domain {
         let domain_size = Scalar::from(size as u64);
         let domain_size_inv = domain_size.invert().expect("size should not be zero");
 
-        let roots = std::iter::successors(Some(Scalar::ONE), |root| Some(*root * generator))
-            .take(size)
-            .collect();
+        let mut roots = Vec::with_capacity(size);
+        roots.push(Scalar::ONE);
+
+        for i in 1..size {
+            let prev_root = roots[i - 1];
+            roots.push(prev_root * generator);
+        }
 
         let omegas = precompute_omegas(&generator, size);
         let twiddle_factors_bo = precompute_twiddle_factors_bo(&generator, size);
