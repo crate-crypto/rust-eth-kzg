@@ -69,3 +69,141 @@ impl VerificationKey {
             .expect("number of g1 points is equal to the number of coefficients in the polynomial")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use bls12_381::{group::Group, G1Projective, Scalar};
+
+    use super::*;
+
+    #[test]
+    fn test_commit_g1_matches_lincomb() {
+        // Polynomial coefficients
+        let poly = vec![Scalar::from(1u64), Scalar::from(2u64), Scalar::from(3u64)];
+
+        // G1 points: just use the generator three times
+        let g1s: Vec<G1Point> = (0..3).map(|_| G1Projective::generator().into()).collect();
+
+        // Dummy G2s, unused in this test
+        let g2s: Vec<_> = (0..4).map(|_| G2Projective::generator().into()).collect();
+
+        let vk = VerificationKey::new(g1s.clone(), g2s, 2, 3);
+
+        // Expected = 1 * G + 2 * G + 3 * G = (1 + 2 + 3) * G = 6 * G
+        let g = G1Projective::generator();
+        let expected = g * Scalar::from(6u64);
+
+        let actual = vk.commit_g1(&poly);
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_commit_g2_matches_lincomb() {
+        // Polynomial coefficients
+        let poly = vec![Scalar::from(5u64), Scalar::from(7u64), Scalar::from(11u64)];
+
+        // G2 points: use the generator three times
+        let g2s: Vec<G2Point> = (0..3).map(|_| G2Projective::generator().into()).collect();
+
+        // Dummy G1s, not used here
+        let g1s: Vec<_> = (0..4).map(|_| G1Projective::generator().into()).collect();
+
+        let vk = VerificationKey::new(g1s, g2s.clone(), 2, 3);
+
+        // Expected: 5 * G + 7 * G + 11 * G = (5 + 7 + 11) * G = 23 * G
+        let g = G2Projective::generator();
+        let expected = g * Scalar::from(23u64);
+
+        let actual = vk.commit_g2(&poly);
+
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_coset_size_check_panics() {
+        let g1s = vec![G1Projective::generator().into(); 2];
+        let g2s = vec![G2Projective::generator().into(); 2];
+        let _vk = VerificationKey::new(g1s, g2s, 2, 2); // coset_size == g2s.len() → panic
+    }
+
+    #[test]
+    fn test_g2_gen_is_first_element() {
+        let g2s: Vec<_> = (0..4).map(|_| G2Projective::generator().into()).collect();
+        let g1s: Vec<_> = (0..4).map(|_| G1Projective::generator().into()).collect();
+
+        let vk = VerificationKey::new(g1s, g2s.clone(), 1, 3);
+        assert_eq!(vk.g2_gen, g2s[0]);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_commit_g1_panics_when_poly_longer_than_g1s() {
+        // 2 G1 points
+        let g1s: Vec<G1Point> = (0..2).map(|_| G1Projective::generator().into()).collect();
+        let g2s: Vec<G2Point> = (0..3).map(|_| G2Projective::generator().into()).collect();
+
+        // Polynomial of length 3 — longer than g1s
+        let poly = vec![Scalar::from(1), Scalar::from(2), Scalar::from(3)];
+
+        let vk = VerificationKey::new(g1s, g2s, 1, 3);
+
+        // This will panic: not enough g1s to match poly length
+        let _ = vk.commit_g1(&poly);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_commit_g2_panics_when_poly_longer_than_g2s() {
+        // 2 G2 points
+        let g2s: Vec<G2Point> = (0..2).map(|_| G2Projective::generator().into()).collect();
+        let g1s: Vec<G1Point> = (0..3).map(|_| G1Projective::generator().into()).collect();
+
+        // Polynomial of length 3 — longer than g2s
+        let poly = vec![Scalar::from(5), Scalar::from(7), Scalar::from(11)];
+
+        let vk = VerificationKey::new(g1s, g2s, 1, 3);
+
+        // This will panic: not enough g2s to match poly length
+        let _ = vk.commit_g2(&poly);
+    }
+
+    #[test]
+    fn test_commit_g1_with_more_g1s_than_poly_len() {
+        // 5 G1 points in trusted setup
+        let g1s: Vec<G1Point> = (0..5).map(|_| G1Projective::generator().into()).collect();
+        let g2s: Vec<G2Point> = (0..5).map(|_| G2Projective::generator().into()).collect();
+
+        // Polynomial of length 3
+        let poly = vec![Scalar::from(1), Scalar::from(2), Scalar::from(3)];
+
+        let vk = VerificationKey::new(g1s.clone(), g2s, 1, 5);
+
+        // Compute manually: 1 * G + 2 * G + 3 * G = 6 * G
+        let g = G1Projective::generator();
+        let expected = g * Scalar::from(6u64);
+
+        let actual = vk.commit_g1(&poly);
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_commit_g2_with_more_g2s_than_poly_len() {
+        // 5 G2 points in trusted setup
+        let g2s: Vec<G2Point> = (0..5).map(|_| G2Projective::generator().into()).collect();
+        let g1s: Vec<G1Point> = (0..5).map(|_| G1Projective::generator().into()).collect();
+
+        // Polynomial of length 3
+        let poly = vec![Scalar::from(2), Scalar::from(4), Scalar::from(6)];
+
+        let vk = VerificationKey::new(g1s, g2s.clone(), 1, 5);
+
+        // Compute manually: 2 * G + 4 * G + 6 * G = 12 * G
+        let g = G2Projective::generator();
+        let expected = g * Scalar::from(12u64);
+
+        let actual = vk.commit_g2(&poly);
+        assert_eq!(actual, expected);
+    }
+}
