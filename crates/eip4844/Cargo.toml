@@ -12,7 +12,6 @@ repository = { workspace = true }
 workspace = true
 
 [dependencies]
-kzg_multi_open = { workspace = true }
 bls12_381 = { workspace = true }
 polynomial = { workspace = true }
 maybe_rayon = { workspace = true }
@@ -20,12 +19,14 @@ hex = { workspace = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 sha2 = "0.10.8"
-tracing = { version = "0.1.41", default-features = false, features = ["attributes"], optional = true }
+tracing = { version = "0.1.41", default-features = false, features = [
+    "attributes",
+], optional = true }
 
 [features]
-singlethreaded = ["kzg_multi_open/singlethreaded"]
-multithreaded = ["maybe_rayon/multithreaded", "kzg_multi_open/multithreaded"]
-tracing = ["dep:tracing", "bls12_381/tracing", "kzg_multi_open/tracing"]
+singlethreaded = []
+multithreaded = ["maybe_rayon/multithreaded"]
+tracing = ["dep:tracing", "bls12_381/tracing"]
 
 [dev-dependencies]
 criterion = "0.5.1"

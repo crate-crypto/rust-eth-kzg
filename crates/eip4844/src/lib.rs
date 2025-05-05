@@ -1,17 +1,11 @@
-use constants::{BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT};
+use constants::{BYTES_PER_BLOB, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT};
 
 mod errors;
 mod prover;
 mod verifier;
 
-#[allow(dead_code)]
-#[path = "../../eip7594/src/constants.rs"]
 pub mod constants;
-#[allow(dead_code)]
-#[path = "../../eip7594/src/serialization.rs"]
 mod serialization;
-#[allow(dead_code)]
-#[path = "../../eip7594/src/trusted_setup.rs"]
 mod trusted_setup;
 
 pub use errors::{Error, ProverError, SerializationError, VerifierError};
@@ -28,9 +22,6 @@ pub type BlobRef<'a> = &'a [u8; BYTES_PER_BLOB];
 /// KZGCommitment denotes a 48 byte commitment to a polynomial f(x)
 /// that we would like to make and verify opening proofs about.
 pub type KZGCommitment = [u8; BYTES_PER_COMMITMENT];
-
-// TODO: Remove me.
-pub type Cell = Box<[u8; BYTES_PER_CELL]>;
 
 /// KZGProof denotes a 48 byte commitment to a polynomial
 /// that one can use to prove that a polynomial f(x) was
