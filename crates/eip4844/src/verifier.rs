@@ -1,14 +1,9 @@
-use std::iter::successors;
-
-use bls12_381::{batch_inversion::batch_inverse, ff::Field, reduce_bytes_to_scalar_bias, Scalar};
-use polynomial::domain::Domain;
+use bls12_381::{reduce_bytes_to_scalar_bias, Scalar};
 use sha2::{Digest, Sha256};
 
 use crate::{
-    constants::{
-        BYTES_PER_BLOB, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, FIELD_ELEMENTS_PER_BLOB,
-    },
-    cryptography::bitreverse_slice,
+    constants::{BYTES_PER_BLOB, BYTES_PER_COMMITMENT, FIELD_ELEMENTS_PER_BLOB},
+    cryptography::verifier::{compute_evaluation, compute_r_powers_for_verify_kzg_proof_batch},
     serialization::{
         deserialize_blob_to_scalars, deserialize_bytes_to_scalar, deserialize_compressed_g1,
     },
@@ -128,8 +123,11 @@ impl Context {
             })
             .unzip::<_, _, Vec<_>, Vec<_>>();
 
+        let domain_size = self.verifier.domain.roots.len();
+
         // Compute powers Fiat-Shamir challenge for KZG batch verification.
-        let r_powers = compute_r_powers_for_verify_kzg_proof_batch(commitments, &zs, &ys, proofs);
+        let r_powers =
+            compute_r_powers_for_verify_kzg_proof_batch(domain_size, commitments, &zs, &ys, proofs);
 
         // Verify KZG proof in batch.
         self.verifier
@@ -179,113 +177,10 @@ pub(crate) fn compute_fiat_shamir_challenge(blob: BlobRef, commitment: KZGCommit
     reduce_bytes_to_scalar_bias(result)
 }
 
-/// Compute random linear combination challenge scalars for batch verification.
-///
-/// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#verify_kzg_proof_batch
-fn compute_r_powers_for_verify_kzg_proof_batch(
-    commitments: &[KZGCommitment],
-    zs: &[Scalar],
-    ys: &[Scalar],
-    proofs: &[KZGProof],
-) -> Vec<Scalar> {
-    // DomSepProtocol is a Domain Separator to identify the protocol.
-    //
-    // It matches [RANDOM_CHALLENGE_KZG_BATCH_DOMAIN] in the spec.
-    //
-    // [RANDOM_CHALLENGE_KZG_BATCH_DOMAIN]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#blob
-    const DOMAIN_SEP: &str = "RCKZGBATCH___V1_";
-
-    let n = commitments.len();
-
-    let hash_input_size = DOMAIN_SEP.len()
-        + size_of::<u64>() // polynomial bound
-        + size_of::<u64>() // batch size
-        + n * (
-            BYTES_PER_COMMITMENT // commitment
-            + BYTES_PER_FIELD_ELEMENT // z 
-            + BYTES_PER_FIELD_ELEMENT // y
-            + BYTES_PER_COMMITMENT // proof
-        );
-
-    let mut hash_input: Vec<u8> = Vec::with_capacity(hash_input_size);
-
-    hash_input.extend(DOMAIN_SEP.as_bytes());
-    hash_input.extend((FIELD_ELEMENTS_PER_BLOB as u64).to_be_bytes());
-    hash_input.extend((n as u64).to_be_bytes());
-    commitments
-        .iter()
-        .zip(zs)
-        .zip(ys)
-        .zip(proofs)
-        .for_each(|(((commitment, z), y), proof)| {
-            hash_input.extend(commitment);
-            hash_input.extend(z.to_bytes_be());
-            hash_input.extend(y.to_bytes_be());
-            hash_input.extend(proof);
-        });
-
-    assert_eq!(hash_input.len(), hash_input_size);
-    let mut hasher = Sha256::new();
-    hasher.update(hash_input);
-    let result: [u8; 32] = hasher.finalize().into();
-
-    // For randomization, we only need a 128 bit scalar, since this is used for batch verification.
-    // See for example, the randomizers section in : https://cr.yp.to/badbatch/badbatch-20120919.pdf
-    //
-    // This is noted because when we convert a 256 bit hash to a scalar, a bias will be introduced.
-    // This however does not affect our security guarantees because the bias is negligible given we
-    // want a uniformly random 128 bit integer.
-    //
-    // Also there is a negligible probably that the scalar is zero, so we do not handle this case here.
-    let r = reduce_bytes_to_scalar_bias(result);
-
-    successors(Some(Scalar::ONE), |power| Some(*power * r))
-        .take(n)
-        .collect()
-}
-
 /// Converts a u64 to a byte array of length 16 in big endian format.
 /// This implies that the first 8 bytes of the result are always 0.
 fn u64_to_byte_array_16(number: u64) -> [u8; 16] {
     let mut bytes = [0; 16];
     bytes[8..].copy_from_slice(&number.to_be_bytes());
     bytes
-}
-
-/// Compute evaluation of the given polynomial at the given point.
-pub(crate) fn compute_evaluation(domain: &Domain, polynomial: &[Scalar], z: Scalar) -> Scalar {
-    domain.roots.iter().position(|root| *root == z).map_or_else(
-        || compute_evaluation_out_of_domain(domain, polynomial, z),
-        |position| polynomial[position],
-    )
-}
-
-/// Compute evaluation of the given polynomial at the given point.
-/// The point is guaranteed to be out-of-domain.
-pub(crate) fn compute_evaluation_out_of_domain(
-    domain: &Domain,
-    polynomial: &[Scalar],
-    z: Scalar,
-) -> Scalar {
-    let domain_size = domain.roots.len();
-
-    // Note: This clone is okay because after eip7594, this crate is no longer on the critical path.
-    let mut roots_brp = domain.roots.clone();
-    bitreverse_slice(&mut roots_brp);
-
-    // 1 / (z - ω^i)
-    let mut denoms = roots_brp.iter().map(|root| z - *root).collect::<Vec<_>>();
-    batch_inverse(&mut denoms);
-
-    // \sum (ω^i * f(ω^i) / (z - ω^i)) * ((z^n - 1) / n)
-    let y = roots_brp
-        .iter()
-        .zip(polynomial)
-        .zip(&denoms)
-        .map(|((root, f_root), denom)| root * *f_root * denom)
-        .sum::<Scalar>()
-        * (z.pow_vartime([domain_size as u64]) - Scalar::ONE)
-        * domain.domain_size_inv;
-
-    y
 }
