@@ -37,7 +37,7 @@ impl Default for TrustedSetup {
 
 /// An enum used to specify whether to check that the points are in the correct subgroup
 #[derive(Debug, Copy, Clone)]
-enum SubgroupCheck {
+pub(crate) enum SubgroupCheck {
     Check,
     NoCheck,
 }
@@ -128,7 +128,7 @@ impl TrustedSetup {
 
 /// Deserialize G1 points from hex strings without checking that the element
 /// is in the correct subgroup.
-fn deserialize_g1_points<T: AsRef<str>>(
+pub(crate) fn deserialize_g1_points<T: AsRef<str>>(
     g1_points_hex_str: &[T],
     check: SubgroupCheck,
 ) -> Vec<G1Point> {
@@ -161,7 +161,7 @@ fn deserialize_g1_points<T: AsRef<str>>(
 
 /// Deserialize G2 points from hex strings without checking that the element
 /// is in the correct subgroup.
-fn deserialize_g2_points<T: AsRef<str>>(
+pub(crate) fn deserialize_g2_points<T: AsRef<str>>(
     g2_points_hex_str: &[T],
     subgroup_check: SubgroupCheck,
 ) -> Vec<G2Point> {
