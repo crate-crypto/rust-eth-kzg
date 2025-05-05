@@ -1,10 +1,9 @@
 use std::fs;
 
 use common::collect_test_files;
+use eip4844::constants::{BYTES_PER_BLOB, BYTES_PER_FIELD_ELEMENT};
 use serde_::TestVector;
-use tbd::constants::{BYTES_PER_BLOB, BYTES_PER_FIELD_ELEMENT};
 
-#[path = "../../eip7594/tests/common.rs"]
 mod common;
 
 mod serde_ {
@@ -62,7 +61,7 @@ const TEST_DIR: &str = "../../test_vectors/compute_kzg_proof";
 fn test_compute_kzg_proof() {
     let test_files = collect_test_files(TEST_DIR).expect("unable to collect test files");
 
-    let ctx = tbd::Context::default();
+    let ctx = eip4844::Context::default();
 
     for test_file in test_files {
         let yaml_data = fs::read_to_string(test_file).expect("unable to read test file");
