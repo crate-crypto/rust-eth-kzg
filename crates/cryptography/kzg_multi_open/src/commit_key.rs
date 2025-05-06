@@ -21,7 +21,7 @@ impl CommitKey {
     ///
     /// # Arguments
     /// - `g1s`: A non-empty vector of G1 elements representing powers of the trapdoor $\tau$,
-/// i.e., [ \tau^0 \cdot G, \tau^1 \cdot G, \dots ].
+    /// i.e., [ \tau^0 \cdot G, \tau^1 \cdot G, \dots ].
     ///
     /// # Panics
     /// Panics if `g1s` is empty.
