@@ -109,7 +109,7 @@ mod tests {
         // Dummy G1s, not used here
         let g1s: Vec<_> = (0..4).map(|_| G1Projective::generator().into()).collect();
 
-        let vk = VerificationKey::new(g1s, g2s, 2, 3);
+        let vk = VerificationKey::new(g1s, g2s.clone(), 2, 3);
 
         // Expected: 5 * G + 7 * G + 11 * G = (5 + 7 + 11) * G = 23 * G
         let g = G2Projective::generator();
