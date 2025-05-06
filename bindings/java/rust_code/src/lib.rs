@@ -229,7 +229,7 @@ fn jobject_array_to_2d_byte_array(
 
     for i in 0..outer_len {
         // Get each inner array (JByteArray)
-        let inner_array_obj = env.get_object_array_element(&array, i)?;
+        let inner_array_obj = env.get_object_array_element(array, i)?;
         let inner_array: JByteArray = JByteArray::from(inner_array_obj);
 
         // Get the length of the inner array
