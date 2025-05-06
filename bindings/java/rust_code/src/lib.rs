@@ -53,7 +53,7 @@ fn compute_cells_and_kzg_proofs<'local>(
 
     let (cells, proofs) = ctx.compute_cells_and_kzg_proofs(blob)?;
     let cells = cells.map(|cell| *cell);
-    cells_and_proofs_to_jobject(env, &cells, &proofs).map_err(Error::from)
+    cells_and_proofs_to_jobject(env, &cells, &proofs)
 }
 
 #[no_mangle]
@@ -82,7 +82,7 @@ fn compute_cells<'local>(
 
     let cells = ctx.compute_cells(blob)?;
     let cells = cells.map(|cell| *cell);
-    cells_to_jobject(env, &cells).map_err(Error::from)
+    cells_to_jobject(env, &cells)
 }
 
 #[no_mangle]
@@ -102,7 +102,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_blobToKZGCommitment<
     }
 }
 fn blob_to_kzg_commitment<'local>(
-    env: &mut JNIEnv<'local>,
+    env: &JNIEnv<'local>,
     ctx: &DASContext,
     blob: JByteArray<'local>,
 ) -> Result<JByteArray<'local>, Error> {
@@ -160,7 +160,7 @@ fn verify_cell_kzg_proof_batch<'local>(
         .collect::<Result<_, _>>()?;
 
     match ctx.verify_cell_kzg_proof_batch(commitments, &cell_indices, cells, proofs) {
-        Ok(_) => Ok(jboolean::from(true)),
+        Ok(()) => Ok(jboolean::from(true)),
         Err(x) if x.invalid_proof() => Ok(jboolean::from(false)),
         Err(err) => Err(Error::Cryptography(err)),
     }
@@ -199,7 +199,7 @@ fn recover_cells_and_kzg_proofs<'local>(
 
     let (recovered_cells, recovered_proofs) = ctx.recover_cells_and_kzg_proofs(cell_ids, cells)?;
     let recovered_cells = recovered_cells.map(|cell| *cell);
-    cells_and_proofs_to_jobject(env, &recovered_cells, &recovered_proofs).map_err(Error::from)
+    cells_and_proofs_to_jobject(env, &recovered_cells, &recovered_proofs)
 }
 
 /// Converts a JLongArray to a Vec<u64>
@@ -220,7 +220,7 @@ fn jlongarray_to_vec_u64(env: &JNIEnv, array: JLongArray) -> Result<Vec<u64>, Er
 /// Converts a JObjectArray to a Vec<Vec<u8>>
 fn jobject_array_to_2d_byte_array(
     env: &mut JNIEnv,
-    array: JObjectArray,
+    array: &JObjectArray,
 ) -> Result<Vec<Vec<u8>>, Error> {
     // Get the length of the outer array
     let outer_len = env.get_array_length(&array)?;
@@ -323,18 +323,15 @@ fn cells_to_jobject<'local>(
 /// Throws an exception in Java
 fn throw_on_error(env: &mut JNIEnv, err: Error, func_name: &'static str) {
     let reason = match err {
-        Error::Jni(err) => format!("{:?}", err),
+        Error::Jni(err) => format!("{err:?}"),
         Error::IncorrectSize {
             expected,
             got,
             name,
         } => format!("{name} is not the correct size. expected: {expected}\ngot: {got}"),
-        Error::Cryptography(err) => format!("{:?}", err),
+        Error::Cryptography(err) => format!("{err:?}"),
     };
-    let msg = format!(
-        "function {} has thrown an exception, with reason: {}",
-        func_name, reason
-    );
+    let msg = format!("function {func_name} has thrown an exception, with reason: {reason}");
     env.throw_new("java/lang/IllegalArgumentException", msg)
         .expect("Failed to throw exception");
 }
