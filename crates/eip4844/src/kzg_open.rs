@@ -29,6 +29,7 @@ pub mod verifier {
         batch_inversion::batch_inverse, ff::Field, group::Curve, lincomb::g1_lincomb,
         multi_pairings, G1Point, G2Point, G2Prepared, Scalar,
     };
+    use itertools::{chain, cloned, izip, Itertools};
     use polynomial::domain::Domain;
 
     use crate::{kzg_open::bitreverse_slice, trusted_setup::TrustedSetup, VerifierError};
@@ -65,24 +66,21 @@ pub mod verifier {
             let vk = &self.verification_key;
 
             // [f(τ) - f(z)]G₁
-            let commitment_minus_z = (commitment - vk.gen_g1 * y).into();
+            let lhs_g1 = (commitment - vk.gen_g1 * y).to_affine();
 
             // [-1]G₂
-            let neg_gen_g2 = G2Prepared::from(-vk.gen_g2);
+            let lhs_g2 = G2Prepared::from(-vk.gen_g2);
+
+            // [q(τ)]G₁
+            let rhs_g1 = proof;
 
             // [τ - z]G₂
-            let tau_minus_challenge_g2 = G2Prepared::from((vk.tau_g2 - vk.gen_g2 * z).to_affine());
+            let rhs_g2 = G2Prepared::from((vk.tau_g2 - vk.gen_g2 * z).to_affine());
 
-            // Check whether `f(X) - f(z) == q(X) * (X - z)`
-            let proof_valid = multi_pairings(&[
-                (&commitment_minus_z, &neg_gen_g2),
-                (&proof, &tau_minus_challenge_g2),
-            ]);
-            if proof_valid {
-                Ok(())
-            } else {
-                Err(VerifierError::InvalidProof)
-            }
+            // Check whether `f(τ) - f(z) == q(τ) * (τ - z)`
+            multi_pairings(&[(&lhs_g1, &lhs_g2), (&rhs_g1, &rhs_g2)])
+                .then_some(())
+                .ok_or(VerifierError::InvalidProof)
         }
 
         pub fn verify_kzg_proof_batch(
@@ -102,33 +100,26 @@ pub mod verifier {
 
             let vk = &self.verification_key;
 
-            // \sum r^i * [f_i(τ)] - (\sum r^i * y_i) * [1] + \sum r^i * z_i * [q(τ)]
+            // \sum (r^i * [f_i(τ)]G₁) - [\sum (r^i * y_i)]G₁ + \sum (r^i * z_i * [q(τ)]G₁)
             let lhs_g1 = {
-                let points = commitments
-                    .iter()
-                    .chain(proofs)
-                    .chain([&vk.gen_g1])
+                let points = chain![commitments, [&vk.gen_g1], proofs]
                     .copied()
-                    .collect::<Vec<_>>();
-                let scalars = r_powers
-                    .iter()
-                    .copied()
-                    .chain(r_powers.iter().zip(zs).map(|(r_i, z_i)| *r_i * z_i))
-                    .chain([-r_powers
-                        .iter()
-                        .zip(ys)
-                        .map(|(r_i, y_i)| *r_i * y_i)
-                        .sum::<Scalar>()])
-                    .collect::<Vec<_>>();
+                    .collect_vec();
+                let scalars = {
+                    // \sum r^i * y_i
+                    let y_lincomb: Scalar = izip!(r_powers, ys).map(|(r_i, y_i)| r_i * y_i).sum();
+                    let r_z = r_powers.iter().zip(zs).map(|(r_i, z_i)| r_i * z_i);
+                    chain![cloned(r_powers), [-y_lincomb], r_z].collect_vec()
+                };
                 g1_lincomb(&points, &scalars)
-                    .expect("points and scalars have same length")
-                    .into()
+                    .expect("points.len() == scalars.len()")
+                    .to_affine()
             };
 
-            // \sum r^i * [q(τ)]
+            // \sum r^i * [q(τ)]G₁
             let rhs_g1 = g1_lincomb(proofs, r_powers)
-                .expect("points and scalars have same length")
-                .into();
+                .expect("proofs.len() == r_powers.len()")
+                .to_affine();
 
             // [-1]G₂
             let lhs_g2 = G2Prepared::from(-vk.gen_g2);
@@ -136,12 +127,10 @@ pub mod verifier {
             // [τ]G₂
             let rhs_g2 = G2Prepared::from(vk.tau_g2);
 
-            let proof_valid = multi_pairings(&[(&lhs_g1, &lhs_g2), (&rhs_g1, &rhs_g2)]);
-            if proof_valid {
-                Ok(())
-            } else {
-                Err(VerifierError::InvalidProof)
-            }
+            // Check whether `\sum (r^i * (f_i(τ) - y_i)) + \sum (r^i * z_i * q(τ)) == \sum (r^i * τ * q(τ))`
+            multi_pairings(&[(&lhs_g1, &lhs_g2), (&rhs_g1, &rhs_g2)])
+                .then_some(())
+                .ok_or(VerifierError::InvalidProof)
         }
     }
 
@@ -168,20 +157,12 @@ pub mod verifier {
         bitreverse_slice(&mut polynomial);
 
         // 1 / (z - ω^i)
-        let mut denoms = domain
-            .roots
-            .iter()
-            .map(|root| z - *root)
-            .collect::<Vec<_>>();
+        let mut denoms = domain.roots.iter().map(|root| z - root).collect_vec();
         batch_inverse(&mut denoms);
 
         // \sum (ω^i * f(ω^i) / (z - ω^i)) * ((z^n - 1) / n)
-        let y = domain
-            .roots
-            .iter()
-            .zip(&polynomial)
-            .zip(&denoms)
-            .map(|((root, f_root), denom)| root * *f_root * denom)
+        let y = izip!(&domain.roots, &polynomial, &denoms)
+            .map(|(root, f_root, denom)| root * f_root * denom)
             .sum::<Scalar>()
             * (z.pow_vartime([domain_size as u64]) - Scalar::ONE)
             * domain.domain_size_inv;
@@ -256,7 +237,7 @@ pub mod prover {
         // 1 / (z - ω^i)
         let mut denoms = (&domain.roots)
             .maybe_into_par_iter()
-            .map(|root| z - *root)
+            .map(|root| z - root)
             .collect::<Vec<_>>();
         batch_inverse(&mut denoms);
 

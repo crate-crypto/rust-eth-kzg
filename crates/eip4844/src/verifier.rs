@@ -4,6 +4,7 @@ use bls12_381::{
     ff::{Field, PrimeField},
     reduce_bytes_to_scalar_bias, G1Point, Scalar,
 };
+use itertools::{chain, izip, Itertools};
 use sha2::{Digest, Sha256};
 
 use crate::{
@@ -97,26 +98,23 @@ impl Context {
         let polynomials = blobs
             .iter()
             .map(|blob| deserialize_blob_to_scalars(*blob))
-            .collect::<Result<Vec<_>, _>>()?;
+            .try_collect::<_, Vec<_>, _>()?;
 
         // Deserialize the KZG commitments.
         let commitments_g1 = commitments
             .iter()
             .map(|commitment| deserialize_compressed_g1(commitment))
-            .collect::<Result<Vec<_>, _>>()?;
+            .try_collect::<_, Vec<_>, _>()?;
 
         // Deserialize the KZG proofs.
         let proofs_g1 = proofs
             .iter()
             .map(|proof| deserialize_compressed_g1(proof))
-            .collect::<Result<Vec<_>, _>>()?;
+            .try_collect::<_, Vec<_>, _>()?;
 
         // Compute each Fiat-Shamir challenge and evaluation for each proof.
-        let (zs, ys) = blobs
-            .iter()
-            .zip(&polynomials)
-            .zip(commitments)
-            .map(|((blob, polynomial), commitment)| {
+        let (zs, ys) = izip!(blobs, &polynomials, commitments)
+            .map(|(blob, polynomial, commitment)| {
                 // Compute Fiat-Shamir challenge
                 let z = compute_fiat_shamir_challenge(blob, *commitment);
 
@@ -225,17 +223,9 @@ pub fn compute_r_powers_for_verify_kzg_proof_batch(
     hash_input.extend(DOMAIN_SEP.as_bytes());
     hash_input.extend((domain_size as u64).to_be_bytes());
     hash_input.extend((n as u64).to_be_bytes());
-    commitments
-        .iter()
-        .zip(zs)
-        .zip(ys)
-        .zip(proofs)
-        .for_each(|(((commitment, z), y), proof)| {
-            hash_input.extend(commitment);
-            hash_input.extend(z.to_bytes_be());
-            hash_input.extend(y.to_bytes_be());
-            hash_input.extend(proof);
-        });
+    izip!(commitments, zs, ys, proofs).for_each(|(&commitment, z, y, &proof)| {
+        hash_input.extend(chain![commitment, z.to_bytes_be(), y.to_bytes_be(), proof])
+    });
 
     assert_eq!(hash_input.len(), hash_input_size);
     let mut hasher = Sha256::new();
@@ -252,7 +242,7 @@ pub fn compute_r_powers_for_verify_kzg_proof_batch(
     // Also there is a negligible probably that the scalar is zero, so we do not handle this case here.
     let r = reduce_bytes_to_scalar_bias(result);
 
-    successors(Some(Scalar::ONE), |power| Some(*power * r))
+    successors(Some(Scalar::ONE), |power| Some(power * r))
         .take(n)
         .collect()
 }

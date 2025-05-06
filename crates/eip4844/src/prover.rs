@@ -1,4 +1,4 @@
-use bls12_381::lincomb::g1_lincomb;
+use bls12_381::{group::Curve, lincomb::g1_lincomb};
 
 use crate::{
     kzg_open::{bitreverse_slice, prover::compute_evaluation_and_quotient},
@@ -24,7 +24,7 @@ impl Context {
         // Compute commitment in lagrange form.
         let commitment = g1_lincomb(&self.prover.commit_key.g1_lagrange, &polynomial)
             .expect("commit_key.g1_lagrange.len() == polynomial.len()")
-            .into();
+            .to_affine();
 
         // Serialize the commitment.
         Ok(serialize_g1_compressed(&commitment))
@@ -54,7 +54,7 @@ impl Context {
             let _span = tracing::info_span!("commit quotient").entered();
             g1_lincomb(&self.prover.commit_key.g1_lagrange, &quotient)
                 .expect("commit_key.g1_lagrange.len() == quotient.len()")
-                .into()
+                .to_affine()
         };
 
         // Serialize the commitment.
@@ -93,7 +93,7 @@ impl Context {
             let _span = tracing::info_span!("commit quotient").entered();
             g1_lincomb(&self.prover.commit_key.g1_lagrange, &quotient)
                 .expect("commit_key.g1_lagrange.len() == quotient.len()")
-                .into()
+                .to_affine()
         };
 
         // Serialize the commitment.
