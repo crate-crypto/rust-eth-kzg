@@ -53,7 +53,7 @@ fn compute_cells_and_kzg_proofs<'local>(
 
     let (cells, proofs) = ctx.compute_cells_and_kzg_proofs(blob)?;
     let cells = cells.map(|cell| *cell);
-    cells_and_proofs_to_jobject(env, &cells, &proofs)
+    cells_and_proofs_to_jobject(env, &cells, &proofs).map_err(Error::from)
 }
 
 #[no_mangle]
