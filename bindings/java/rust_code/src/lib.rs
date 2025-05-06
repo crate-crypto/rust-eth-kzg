@@ -141,10 +141,10 @@ fn verify_cell_kzg_proof_batch<'local>(
     cells: JObjectArray<'local>,
     proofs: JObjectArray<'local>,
 ) -> Result<jboolean, Error> {
-    let commitment = jobject_array_to_2d_byte_array(env, commitment)?;
+    let commitment = jobject_array_to_2d_byte_array(env, &commitment)?;
     let cell_indices = jlongarray_to_vec_u64(env, cell_indices)?;
-    let cells = jobject_array_to_2d_byte_array(env, cells)?;
-    let proofs = jobject_array_to_2d_byte_array(env, proofs)?;
+    let cells = jobject_array_to_2d_byte_array(env, &cells)?;
+    let proofs = jobject_array_to_2d_byte_array(env, &proofs)?;
 
     let cells: Vec<_> = cells
         .iter()
@@ -191,7 +191,7 @@ fn recover_cells_and_kzg_proofs<'local>(
     cells: JObjectArray<'local>,
 ) -> Result<JObject<'local>, Error> {
     let cell_ids = jlongarray_to_vec_u64(env, cell_ids)?;
-    let cells = jobject_array_to_2d_byte_array(env, cells)?;
+    let cells = jobject_array_to_2d_byte_array(env, &cells)?;
     let cells: Vec<_> = cells
         .iter()
         .map(|cell| slice_to_array_ref(cell, "cell"))
@@ -223,7 +223,7 @@ fn jobject_array_to_2d_byte_array(
     array: &JObjectArray,
 ) -> Result<Vec<Vec<u8>>, Error> {
     // Get the length of the outer array
-    let outer_len = env.get_array_length(&array)?;
+    let outer_len = env.get_array_length(array)?;
 
     let mut result = Vec::with_capacity(outer_len as usize);
 
