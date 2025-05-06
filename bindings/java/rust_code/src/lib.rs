@@ -82,7 +82,7 @@ fn compute_cells<'local>(
 
     let cells = ctx.compute_cells(blob)?;
     let cells = cells.map(|cell| *cell);
-    cells_to_jobject(env, &cells)
+    cells_to_jobject(env, &cells).map_err(Error::from)
 }
 
 #[no_mangle]
