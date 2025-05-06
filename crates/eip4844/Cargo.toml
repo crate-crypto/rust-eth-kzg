@@ -26,7 +26,7 @@ tracing = { version = "0.1.41", default-features = false, features = [
 [features]
 singlethreaded = []
 multithreaded = ["maybe_rayon/multithreaded"]
-tracing = ["dep:tracing", "bls12_381/tracing"]
+tracing = ["dep:tracing"]
 
 [dev-dependencies]
 criterion = "0.5.1"

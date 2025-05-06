@@ -27,7 +27,7 @@ rand = "0.8.4"
 [features]
 singlethreaded = ["bls12_381/blst-no-threads"]
 multithreaded = ["maybe_rayon/multithreaded"]
-tracing = ["dep:tracing", "bls12_381/tracing", "polynomial/tracing"]
+tracing = ["dep:tracing", "polynomial/tracing"]
 
 [[bench]]
 name = "benchmark"

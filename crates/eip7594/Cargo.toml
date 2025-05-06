@@ -24,7 +24,7 @@ tracing = { version = "0.1.41", default-features = false, features = ["attribute
 [features]
 singlethreaded = ["kzg_multi_open/singlethreaded"]
 multithreaded = ["rayon", "kzg_multi_open/multithreaded"]
-tracing = ["dep:tracing", "bls12_381/tracing", "kzg_multi_open/tracing"]
+tracing = ["dep:tracing", "kzg_multi_open/tracing"]
 
 [dev-dependencies]
 criterion = "0.5.1"
