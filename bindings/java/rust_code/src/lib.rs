@@ -220,7 +220,7 @@ fn jlongarray_to_vec_u64(env: &JNIEnv, array: JLongArray) -> Result<Vec<u64>, Er
 /// Converts a JObjectArray to a Vec<Vec<u8>>
 fn jobject_array_to_2d_byte_array(
     env: &mut JNIEnv,
-    array: &JObjectArray,
+    array: JObjectArray,
 ) -> Result<Vec<Vec<u8>>, Error> {
     // Get the length of the outer array
     let outer_len = env.get_array_length(&array)?;
