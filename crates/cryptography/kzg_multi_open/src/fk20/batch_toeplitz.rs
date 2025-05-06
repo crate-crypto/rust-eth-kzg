@@ -100,7 +100,7 @@ impl BatchToeplitzMatrixVecMul {
         // inner products.
         let col_ffts: Vec<_> = circulant_matrices
             .maybe_into_par_iter()
-            .map(|matrix| self.circulant_domain.fft_scalars(matrix.row))
+            .map(|matrix| self.circulant_domain.fft_scalars(matrix.row.into()))
             .collect();
         let msm_scalars = transpose(col_ffts);
 

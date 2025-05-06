@@ -58,7 +58,7 @@ pub(crate) fn recover_polynomial_coeff(
         )
         .map_err(RecoveryError::from)?;
 
-    Ok(recovered_polynomial_coeff)
+    Ok(recovered_polynomial_coeff.0)
 }
 
 fn find_missing_cell_indices(present_cell_indices: &[usize]) -> Vec<usize> {

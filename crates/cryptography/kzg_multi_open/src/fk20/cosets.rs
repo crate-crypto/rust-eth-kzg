@@ -236,7 +236,7 @@ mod tests {
     use std::collections::HashSet;
 
     use bls12_381::Scalar;
-    use polynomial::{domain::Domain, poly_coeff::poly_eval};
+    use polynomial::domain::Domain;
     use rand::{seq::SliceRandom, thread_rng};
 
     use crate::fk20::{
@@ -349,7 +349,7 @@ mod tests {
         for coset in &cosets {
             let evaluations: Vec<_> = coset
                 .iter()
-                .map(|coset_element| poly_eval(&poly_coeff, coset_element))
+                .map(|coset_element| poly_coeff.eval(coset_element))
                 .collect();
             coset_evaluations.push(evaluations);
         }

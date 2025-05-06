@@ -6,13 +6,14 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use ekzg_multi_open::{
     commit_key::CommitKey, verification_key::VerificationKey, Prover, ProverInput, Verifier,
 };
+use polynomial::poly_coeff::PolyCoeff;
 
 pub fn bench_compute_proof_fk20(c: &mut Criterion) {
     const POLYNOMIAL_LEN: usize = 4096;
     const NUMBER_OF_POINTS_TO_EVALUATE: usize = 2 * POLYNOMIAL_LEN;
     const NUMBER_OF_POINTS_PER_PROOF: usize = 64;
 
-    let polynomial_4096 = random_scalars(POLYNOMIAL_LEN);
+    let polynomial_4096 = PolyCoeff(random_scalars(POLYNOMIAL_LEN));
     let (ck, _) = create_insecure_commit_verification_keys();
 
     let prover = Prover::new(
@@ -41,7 +42,7 @@ pub fn bench_verify_proof_fk20(c: &mut Criterion) {
     const NUMBER_OF_POINTS_TO_EVALUATE: usize = 2 * POLYNOMIAL_LEN;
     const NUMBER_OF_POINTS_PER_PROOF: usize = 64;
 
-    let polynomial_4096 = random_scalars(POLYNOMIAL_LEN);
+    let polynomial_4096 = PolyCoeff(random_scalars(POLYNOMIAL_LEN));
     let (ck, vk) = create_insecure_commit_verification_keys();
 
     let prover = Prover::new(

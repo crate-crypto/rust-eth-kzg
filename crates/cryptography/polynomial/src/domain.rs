@@ -125,7 +125,7 @@ impl Domain {
 
         fft_scalar_inplace(&self.omegas, &self.twiddle_factors_bo, &mut polynomial);
 
-        polynomial
+        polynomial.0
     }
 
     /// Evaluates a polynomial at the points in the domain multiplied by a coset
@@ -136,13 +136,13 @@ impl Domain {
         points.resize(self.size(), Scalar::ZERO);
 
         let mut coset_scale = Scalar::ONE;
-        for point in &mut points {
+        for point in &mut points.0 {
             *point *= coset_scale;
             coset_scale *= coset.generator;
         }
         fft_scalar_inplace(&self.omegas, &self.twiddle_factors_bo, &mut points);
 
-        points
+        points.0
     }
 
     /// Computes a FFT for the group elements(elliptic curve points) using the roots in the domain.
@@ -200,7 +200,7 @@ impl Domain {
     /// Interpolates the points over the domain to get a polynomial
     /// in monomial form.
     #[cfg_attr(feature = "tracing", tracing::instrument(skip_all))]
-    pub fn ifft_scalars(&self, mut points: Vec<Scalar>) -> Vec<Scalar> {
+    pub fn ifft_scalars(&self, mut points: Vec<Scalar>) -> PolyCoeff {
         // Pad the vector with zeroes, so that it is the same size as the
         // domain.
         points.resize(self.size(), Scalar::ZERO);
@@ -211,15 +211,15 @@ impl Domain {
             *element *= self.domain_size_inv;
         }
 
-        points
+        points.into()
     }
 
     /// Interpolates a polynomial over the coset of a domain
-    pub fn coset_ifft_scalars(&self, points: Vec<Scalar>, coset: &CosetFFT) -> Vec<Scalar> {
+    pub fn coset_ifft_scalars(&self, points: Vec<Scalar>, coset: &CosetFFT) -> PolyCoeff {
         let mut coset_coeffs = self.ifft_scalars(points);
 
         let mut coset_scale = Scalar::ONE;
-        for element in &mut coset_coeffs {
+        for element in &mut coset_coeffs.0 {
             *element *= coset_scale;
             coset_scale *= coset.generator_inv;
         }
@@ -230,7 +230,6 @@ impl Domain {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::poly_coeff::poly_eval;
 
     #[test]
     fn largest_root_of_unity_has_correct_order() {
@@ -255,7 +254,7 @@ mod tests {
 
         // Check interpolation was correct by evalauting the polynomial at the roots
         for (i, root) in domain.roots.iter().enumerate() {
-            let eval = poly_eval(&poly_coeff, root);
+            let eval = poly_coeff.eval(root);
             assert_eq!(eval, evaluations[i]);
         }
 
@@ -266,7 +265,7 @@ mod tests {
 
     #[test]
     fn test_polynomial_coset_fft() {
-        let polynomial: Vec<_> = (0..32).map(|i| -Scalar::from(i)).collect();
+        let polynomial = PolyCoeff((0..32).map(|i| -Scalar::from(i)).collect());
 
         let domain = Domain::new(32);
         let coset_fft = CosetFFT::new(Scalar::MULTIPLICATIVE_GENERATOR);

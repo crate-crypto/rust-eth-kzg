@@ -1,7 +1,5 @@
 use bls12_381::{ff::Field, multi_pairings, G1Point, G1Projective, G2Point, G2Prepared, Scalar};
-use polynomial::poly_coeff::{
-    lagrange_interpolate, poly_eval, poly_sub, vanishing_poly, PolyCoeff,
-};
+use polynomial::poly_coeff::{lagrange_interpolate, vanishing_poly, PolyCoeff};
 
 use crate::{commit_key::CommitKey, verification_key::VerificationKey};
 
@@ -88,7 +86,7 @@ fn compute_multi_opening_naive(
 
     let mut evaluations = Vec::new();
     for point in points {
-        let evaluation = poly_eval(polynomial, point);
+        let evaluation = polynomial.eval(point);
         evaluations.push(evaluation);
     }
 
@@ -109,12 +107,12 @@ fn compute_multi_opening_naive(
     // Check that the i_x polynomial is correct, it should essentially be the polynomial that
     // evaluates to f(z_i) = I(z_i)
     for (point, evaluation) in points.iter().zip(evaluations.iter()) {
-        assert_eq!(poly_eval(&i_x, point), *evaluation);
+        assert_eq!(i_x.eval(point), *evaluation);
     }
 
-    let poly_shifted = poly_sub(polynomial.clone(), i_x);
+    let poly_shifted = polynomial.sub(&i_x);
 
-    let mut quotient_poly = poly_shifted;
+    let mut quotient_poly = poly_shifted.0;
     for point in points {
         quotient_poly = divide_by_linear(&quotient_poly, *point);
     }
@@ -163,6 +161,7 @@ fn verify_multi_opening_naive(
 #[cfg(test)]
 mod tests {
     use bls12_381::Scalar;
+    use polynomial::poly_coeff::PolyCoeff;
 
     use crate::create_insecure_commit_verification_keys;
 
@@ -179,7 +178,7 @@ mod tests {
         let commitment = ck.commit_g1(&polynomial).into();
 
         let (quotient_commitment, output_points) =
-            super::compute_multi_opening(&ck, &polynomial, &input_points);
+            super::compute_multi_opening(&ck, &PolyCoeff(polynomial), &input_points);
         let proof_valid = super::verify_multi_opening(
             quotient_commitment,
             &verification_key,

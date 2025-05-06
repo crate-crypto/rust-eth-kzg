@@ -145,7 +145,7 @@ impl DASContext {
         let (proofs, coset_evaluations) = self
             .prover_ctx
             .kzg_multipoint_prover
-            .compute_multi_opening_proofs(ProverInput::PolyCoeff(poly_coeff));
+            .compute_multi_opening_proofs(ProverInput::PolyCoeff(poly_coeff.into()));
 
         Ok(serialize_cells_and_proofs(coset_evaluations, &proofs))
     }

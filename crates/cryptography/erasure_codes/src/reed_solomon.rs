@@ -5,7 +5,11 @@ use bls12_381::{
     ff::{Field, PrimeField},
     Scalar,
 };
-use polynomial::{domain::Domain, poly_coeff::vanishing_poly, CosetFFT};
+use polynomial::{
+    domain::Domain,
+    poly_coeff::{vanishing_poly, PolyCoeff},
+    CosetFFT,
+};
 
 use crate::errors::RSError;
 
@@ -155,7 +159,7 @@ impl ReedSolomon {
 
     /// Encodes a polynomial in coefficient form by evaluating it at `poly_len * expansion_factor`
     /// points.
-    pub fn encode(&self, poly_coefficient_form: Vec<Scalar>) -> Result<Vec<Scalar>, RSError> {
+    pub fn encode(&self, poly_coefficient_form: PolyCoeff) -> Result<Vec<Scalar>, RSError> {
         if poly_coefficient_form.len() > self.poly_len {
             return Err(RSError::PolynomialHasTooManyCoefficients {
                 num_coefficients: poly_coefficient_form.len(),
@@ -180,7 +184,7 @@ impl ReedSolomon {
         &self,
         codeword_with_erasures: Vec<Scalar>,
         erasures: BlockErasureIndices,
-    ) -> Result<Vec<Scalar>, RSError> {
+    ) -> Result<PolyCoeff, RSError> {
         self.recover_polynomial_coefficient_erasure_pattern(
             codeword_with_erasures,
             ErasurePattern::BlockSynchronizedErasures(erasures),
@@ -192,7 +196,7 @@ impl ReedSolomon {
         &self,
         codeword_with_erasures: Vec<Scalar>,
         random_erasure: Vec<usize>,
-    ) -> Result<Vec<Scalar>, RSError> {
+    ) -> Result<PolyCoeff, RSError> {
         self.recover_polynomial_coefficient_erasure_pattern(
             codeword_with_erasures,
             ErasurePattern::Random {
@@ -220,7 +224,7 @@ impl ReedSolomon {
     fn construct_vanishing_poly_from_block_erasures(
         &self,
         block_indices: &BlockErasureIndices,
-    ) -> Vec<Scalar> {
+    ) -> PolyCoeff {
         assert!(block_indices.len() != self.block_size, "all of the blocks are missing. This should have been checked by the caller of this method");
 
         let evaluation_domain_size = self.evaluation_domain.roots.len();
@@ -253,7 +257,7 @@ impl ReedSolomon {
         // Then we expand it by `num_blocks` so that it has additional roots \omega^i * r_i
         // Where \omega is a `num_blocks` root of unity.
         let mut z_x = vec![Scalar::ZERO; evaluation_domain_size];
-        for (i, coeff) in vanish_poly_first_block.into_iter().enumerate() {
+        for (i, coeff) in vanish_poly_first_block.0.into_iter().enumerate() {
             // Let's compute the bounds for the array access below to argue that it is safe:
             //
             //  For all array accesses to be in bound, we have:
@@ -272,7 +276,7 @@ impl ReedSolomon {
             z_x[i * self.num_blocks] = coeff;
         }
 
-        z_x
+        z_x.into()
     }
 
     /// Constructs a vanishing polynomial `Z(X)` that evaluates to zero on all known erasure positions.
@@ -287,7 +291,7 @@ impl ReedSolomon {
     fn construct_vanishing_poly_from_erasure_pattern(
         &self,
         erasures: ErasurePattern,
-    ) -> Result<Vec<Scalar>, RSError> {
+    ) -> Result<PolyCoeff, RSError> {
         match erasures {
             ErasurePattern::BlockSynchronizedErasures(indices) => {
                 // Check that each block index is valid
@@ -347,7 +351,7 @@ impl ReedSolomon {
         &self,
         e_eval: Vec<Scalar>,
         erasure: ErasurePattern,
-    ) -> Result<Vec<Scalar>, RSError> {
+    ) -> Result<PolyCoeff, RSError> {
         // Compute Z(X) which is the polynomial that vanishes on all
         // of the missing points
         let z_x = self.construct_vanishing_poly_from_erasure_pattern(erasure)?;
@@ -394,13 +398,14 @@ impl ReedSolomon {
         }
 
         // Return the truncated polynomial
-        Ok(d_coeffs[..self.poly_len].to_vec())
+        Ok(d_coeffs[..self.poly_len].to_vec().into())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use bls12_381::{ff::Field, Scalar};
+    use polynomial::poly_coeff::PolyCoeff;
 
     use crate::{reed_solomon::ErasurePattern, BlockErasureIndices, ReedSolomon};
 
@@ -428,7 +433,7 @@ mod tests {
         const BLOCK_SIZE: usize = 1;
 
         let rs = ReedSolomon::new(POLY_LEN, EXPANSION_FACTOR, BLOCK_SIZE);
-        let poly_coeff: Vec<_> = (0..16).map(|i| -Scalar::from(i)).collect();
+        let poly_coeff = PolyCoeff((0..16).map(|i| -Scalar::from(i)).collect());
 
         let codewords = rs
             .encode(poly_coeff.clone())
@@ -513,9 +518,7 @@ mod tests {
         const BLOCK_SIZE: usize = 1; // Note: This is not used for random erasures
 
         let rs = ReedSolomon::new(POLY_LEN, EXPANSION_FACTOR, BLOCK_SIZE);
-        let poly_coeff = (0..POLY_LEN)
-            .map(|i| Scalar::from(i as u64))
-            .collect::<Vec<_>>();
+        let poly_coeff = PolyCoeff((0..POLY_LEN).map(|i| Scalar::from(i as u64)).collect());
 
         let original_codewords = rs
             .encode(poly_coeff.clone())
@@ -553,9 +556,7 @@ mod tests {
         const BLOCK_SIZE: usize = 4;
 
         let rs = ReedSolomon::new(POLY_LEN, EXPANSION_FACTOR, BLOCK_SIZE);
-        let poly_coeff = (0..POLY_LEN)
-            .map(|i| Scalar::from(i as u64))
-            .collect::<Vec<_>>();
+        let poly_coeff = PolyCoeff((0..POLY_LEN).map(|i| Scalar::from(i as u64)).collect());
 
         let original_codewords = rs
             .encode(poly_coeff.clone())
