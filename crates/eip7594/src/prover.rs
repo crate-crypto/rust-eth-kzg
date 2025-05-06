@@ -9,10 +9,7 @@ use crate::{
     },
     errors::Error,
     recovery::recover_polynomial_coeff,
-    serialization::{
-        deserialize_blob_to_scalars, serialize_cells, serialize_cells_and_proofs,
-        serialize_g1_compressed,
-    },
+    serialization::{deserialize_blob_to_scalars, serialize_cells, serialize_cells_and_proofs},
     trusted_setup::TrustedSetup,
     BlobRef, Cell, CellIndex, CellRef, DASContext, KZGCommitment, KZGProof,
 };
@@ -82,7 +79,7 @@ impl DASContext {
             .commit(ProverInput::Data(scalars));
 
         // Serialize the commitment.
-        Ok(serialize_g1_compressed(&commitment))
+        Ok(commitment.to_compressed())
     }
 
     /// Computes the cells and the KZG proofs for the given blob.
