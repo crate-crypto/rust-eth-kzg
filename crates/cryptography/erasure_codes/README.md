@@ -11,5 +11,5 @@ that we can publish the eip7594 crate to crates.io. Nevertheless, installation o
 
 ```toml
 [dependencies]
-crate_crypto_internal_eth_kzg_erasure_codes = "0.1.0"
+ekzg-erasure-codes = "0.1.0"
 ```

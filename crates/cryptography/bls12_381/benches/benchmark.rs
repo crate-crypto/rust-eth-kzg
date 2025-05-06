@@ -1,4 +1,5 @@
-use crate_crypto_internal_eth_kzg_bls12_381::{
+use criterion::{criterion_group, criterion_main, Criterion};
+use ekzg_bls12_381::{
     batch_inversion,
     ff::Field,
     fixed_base_msm::FixedBaseMSMPrecompBLST,
@@ -8,7 +9,6 @@ use crate_crypto_internal_eth_kzg_bls12_381::{
     lincomb::{g1_lincomb, g1_lincomb_unchecked, g2_lincomb, g2_lincomb_unchecked},
     G1Projective, G2Projective, Scalar,
 };
-use criterion::{criterion_group, criterion_main, Criterion};
 
 pub fn batch_inversion(c: &mut Criterion) {
     const NUM_ELEMENTS: usize = 8192;

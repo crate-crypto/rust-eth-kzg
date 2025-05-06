@@ -2,10 +2,10 @@ use bls12_381::{
     ff::Field, fixed_base_msm::UsePrecomp, g1_batch_normalize, g2_batch_normalize, group::Group,
     G1Projective, G2Projective, Scalar,
 };
-use crate_crypto_kzg_multi_open_fk20::{
+use criterion::{criterion_group, criterion_main, Criterion};
+use ekzg_multi_open::{
     commit_key::CommitKey, verification_key::VerificationKey, Prover, ProverInput, Verifier,
 };
-use criterion::{criterion_group, criterion_main, Criterion};
 
 pub fn bench_compute_proof_fk20(c: &mut Criterion) {
     const POLYNOMIAL_LEN: usize = 4096;
