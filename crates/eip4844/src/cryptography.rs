@@ -43,8 +43,8 @@ pub(crate) fn compute_fiat_shamir_challenge(blob: BlobRef, commitment: KZGCommit
     let bytes_per_commitment = G1Point::compressed_size();
     let bytes_per_blob = blob.len();
 
-    let num_bytes_scalar = Scalar::NUM_BITS.div_ceil(8) as usize;
-    let field_elements_per_blob = blob.len() / num_bytes_scalar;
+    let bytes_per_field_element = Scalar::NUM_BITS.div_ceil(8) as usize;
+    let field_elements_per_blob = blob.len() / bytes_per_field_element;
 
     let hash_input_size = DOMAIN_SEP.len()
             + 2 * size_of::<u64>() // polynomial bound
@@ -84,18 +84,22 @@ fn u64_to_byte_array_16(number: u64) -> [u8; 16] {
 }
 
 pub mod verifier {
-
     use std::iter::successors;
 
     use bls12_381::{
-        batch_inversion::batch_inverse, ff::Field, group::Curve, lincomb::g1_lincomb,
+        batch_inversion::batch_inverse,
+        ff::{Field, PrimeField},
+        group::Curve,
+        lincomb::g1_lincomb,
         multi_pairings, reduce_bytes_to_scalar_bias, G1Point, G2Point, G2Prepared, Scalar,
     };
     use polynomial::domain::Domain;
     use sha2::{Digest, Sha256};
 
-    use super::bitreverse_slice;
-    use crate::{trusted_setup::TrustedSetup, KZGCommitment, KZGProof, VerifierError};
+    use crate::{
+        cryptography::bitreverse_slice, trusted_setup::TrustedSetup, KZGCommitment, KZGProof,
+        VerifierError,
+    };
 
     /// The key that is used to verify KZG single-point opening proofs.
     pub struct VerificationKey {
@@ -263,17 +267,15 @@ pub mod verifier {
         ys: &[Scalar],
         proofs: &[KZGProof],
     ) -> Vec<Scalar> {
-        use bls12_381::ff::PrimeField;
-
-        let bytes_per_commitment = G1Point::compressed_size();
-        let bytes_per_field_element = Scalar::NUM_BITS.div_ceil(8) as usize;
-
         // DomSepProtocol is a Domain Separator to identify the protocol.
         //
         // It matches [RANDOM_CHALLENGE_KZG_BATCH_DOMAIN] in the spec.
         //
         // [RANDOM_CHALLENGE_KZG_BATCH_DOMAIN]: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#blob
         const DOMAIN_SEP: &str = "RCKZGBATCH___V1_";
+
+        let bytes_per_commitment = G1Point::compressed_size();
+        let bytes_per_field_element = Scalar::NUM_BITS.div_ceil(8) as usize;
 
         let n = commitments.len();
 
