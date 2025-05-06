@@ -24,7 +24,7 @@ authors = ["Kevaundray Wedderburn <kev@the.dev>"]
 edition = "2021"
 license = "MIT"
 version = "0.6.0"
-rust-version = "1.70"
+rust-version = "1.73"
 repository = "https://github.com/crate-crypto/rust-eth-kzg"
 
 [workspace.lints.clippy]
@@ -41,6 +41,7 @@ pedantic = { level = "warn", priority = -1 }
 # avoid lints that are too pedantic
 must_use_candidate = "allow"
 cast_possible_truncation = "allow"
+cast_possible_wrap = "allow"
 cast_precision_loss = "allow"
 missing_errors_doc = "allow"
 missing_panics_doc = "allow"

@@ -21,7 +21,7 @@ impl CommitKey {
     ///
     /// # Arguments
     /// - `g1s`: A non-empty vector of G1 elements representing powers of the trapdoor $\tau$,
-    ///          i.e., [ \tau^0 \cdot G, \tau^1 \cdot G, \dots ].
+    ///   i.e., [ \tau^0 \cdot G, \tau^1 \cdot G, \dots ].
     ///
     /// # Panics
     /// Panics if `g1s` is empty.
@@ -58,7 +58,7 @@ mod tests {
 
         // Setup: 3 G1 generator points
         let g1s: Vec<G1Point> = (0..3).map(|_| G1Projective::generator().into()).collect();
-        let ck = CommitKey::new(g1s.clone());
+        let ck = CommitKey::new(g1s);
 
         // Expected = 1*G + 2*G + 3*G = 6*G
         let expected = G1Projective::generator() * Scalar::from(6);
