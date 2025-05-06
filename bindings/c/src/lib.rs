@@ -5,7 +5,7 @@ mod compute_cells_and_kzg_proofs;
 use compute_cells_and_kzg_proofs::{_compute_cells, _compute_cells_and_kzg_proofs};
 
 mod verify_cells_and_kzg_proofs_batch;
-use ekzg_eip7594::constants::RECOMMENDED_PRECOMP_WIDTH;
+use rust_eth_kzg::constants::RECOMMENDED_PRECOMP_WIDTH;
 use verify_cells_and_kzg_proofs_batch::_verify_cell_kzg_proof_batch;
 
 mod recover_cells_and_kzg_proofs;
@@ -15,7 +15,7 @@ pub(crate) mod pointer_utils;
 
 use std::ops::Deref;
 
-pub use ekzg_eip7594::{
+pub use rust_eth_kzg::{
     constants::{
         BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT,
         CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB,
@@ -37,17 +37,17 @@ pub use ekzg_eip7594::{
 // not defined in this file.
 #[derive(Default)]
 pub struct DASContext {
-    inner: ekzg_eip7594::DASContext,
+    inner: rust_eth_kzg::DASContext,
 }
 
 impl DASContext {
-    pub fn inner(&self) -> &ekzg_eip7594::DASContext {
+    pub fn inner(&self) -> &rust_eth_kzg::DASContext {
         &self.inner
     }
 }
 
 impl Deref for DASContext {
-    type Target = ekzg_eip7594::DASContext;
+    type Target = rust_eth_kzg::DASContext;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
@@ -63,15 +63,15 @@ impl Deref for DASContext {
 #[no_mangle]
 pub extern "C" fn eth_kzg_das_context_new(use_precomp: bool) -> *mut DASContext {
     let use_precomp = if use_precomp {
-        ekzg_eip7594::UsePrecomp::Yes {
+        rust_eth_kzg::UsePrecomp::Yes {
             width: RECOMMENDED_PRECOMP_WIDTH,
         }
     } else {
-        ekzg_eip7594::UsePrecomp::No
+        rust_eth_kzg::UsePrecomp::No
     };
 
     let ctx = Box::new(DASContext {
-        inner: ekzg_eip7594::DASContext::new(&ekzg_eip7594::TrustedSetup::default(), use_precomp),
+        inner: rust_eth_kzg::DASContext::new(&rust_eth_kzg::TrustedSetup::default(), use_precomp),
     });
     Box::into_raw(ctx)
 }

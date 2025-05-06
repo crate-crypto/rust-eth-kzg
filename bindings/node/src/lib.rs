@@ -6,7 +6,7 @@ use napi::{
 };
 use napi_derive::napi;
 
-use ekzg_eip7594::{
+use rust_eth_kzg::{
   constants::{self, RECOMMENDED_PRECOMP_WIDTH},
   DASContext, TrustedSetup, UsePrecomp,
 };

@@ -12,7 +12,7 @@ repository = { workspace = true }
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [dependencies]
-ekzg-eip7594 = { workspace = true, features = ["multithreaded"] }
+rust_eth_kzg = { workspace = true, features = ["multithreaded"] }
 
 [build-dependencies]
 cbindgen = "0.28.0"

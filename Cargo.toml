@@ -57,7 +57,7 @@ inline_always = "allow"
 bls12_381 = { package = "ekzg-bls12-381", version = "0.6.0", path = "crates/cryptography/bls12_381" }
 polynomial = { package = "ekzg-polynomial", version = "0.6.0", path = "crates/cryptography/polynomial" }
 erasure_codes = { package = "ekzg-erasure-codes", version = "0.6.0", path = "crates/cryptography/erasure_codes" }
-ekzg-eip7594 = { version = "0.6.0", path = "crates/eip7594" }
+rust_eth_kzg = { version = "0.6.0", path = "crates/eip7594" }
 maybe_rayon = { package = "ekzg-maybe-rayon", version = "0.6.0", path = "crates/maybe_rayon" }
 kzg_multi_open = { package = "ekzg-multi-open", version = "0.6.0", path = "crates/cryptography/kzg_multi_open" }
 c_eth_kzg = { version = "0.6.0", path = "bindings/c" }
