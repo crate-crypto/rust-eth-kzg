@@ -6,6 +6,12 @@ use crate::constants::{FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL};
 
 const TRUSTED_SETUP_JSON: &str = include_str!("../data/trusted_setup_4096.json");
 
+/// Represents the Ethereum trusted setup used for KZG commitments on the BLS12-381 curve.
+///
+/// This struct holds hex-encoded group elements in G1 and G2, provided in monomial and lagrange bases.
+/// These elements are used to construct commitment and verification keys for polynomial commitment schemes.
+///
+/// The setup is typically loaded from a JSON file matching the format used in Ethereum consensus specifications.
 #[derive(Deserialize, Debug, PartialEq, Eq)]
 pub struct TrustedSetup {
     /// G1 Monomial represents a list of uncompressed
@@ -38,7 +44,9 @@ impl Default for TrustedSetup {
 /// An enum used to specify whether to check that the points are in the correct subgroup
 #[derive(Debug, Copy, Clone)]
 enum SubgroupCheck {
+    /// Enforce subgroup membership checks during deserialization.
     Check,
+    /// Skip subgroup checks (use only when inputs are trusted).
     NoCheck,
 }
 
@@ -82,6 +90,7 @@ impl TrustedSetup {
         trusted_setup.validate_trusted_setup();
         trusted_setup
     }
+
     /// Parse a Json string in the format specified by the ethereum trusted setup.
     ///
     /// This method does not check that the points are in the correct subgroup.
@@ -100,11 +109,17 @@ impl TrustedSetup {
         self.to_verification_key(SubgroupCheck::Check);
     }
 
+    /// Converts the G1 monomial basis from the trusted setup into a `CommitKey`.
+    ///
+    /// Can optionally check subgroup membership.
     fn to_commit_key(&self, subgroup_check: SubgroupCheck) -> CommitKey {
         let points = deserialize_g1_points(&self.g1_monomial, subgroup_check);
         CommitKey::new(points)
     }
 
+    /// Converts G1 and G2 monomials from the trusted setup into a `VerificationKey`.
+    ///
+    /// Uses only as many G1 points as there are G2 points. Can optionally enforce subgroup checks.
     fn to_verification_key(&self, subgroup_check: SubgroupCheck) -> VerificationKey {
         let g2_points = deserialize_g2_points(&self.g2_monomial, subgroup_check);
         let num_g2_points = g2_points.len();
