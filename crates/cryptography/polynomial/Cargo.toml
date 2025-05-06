@@ -25,7 +25,7 @@ criterion = "0.5.1"
 rand = "0.8.4"
 
 [features]
-tracing = ["dep:tracing", "bls12_381/tracing"]
+tracing = ["dep:tracing"]
 multithreaded = ["maybe_rayon/multithreaded"]
 
 [[bench]]
