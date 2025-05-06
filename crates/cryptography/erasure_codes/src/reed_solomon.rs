@@ -18,7 +18,12 @@ use crate::errors::RSError;
 ///
 /// This is useful as it allows us to optimize the construction of
 /// the vanishing polynomial. This is by far the most time consuming part
-/// of unique decoding.
+/// of decoding.
+///
+/// In the context of *unique decoding* — where the goal is to recover the original
+/// message unambiguously, assuming the number of erasures is below a threshold —
+/// efficient vanishing polynomial construction becomes critical. This contrasts with
+/// *list decoding*, where multiple possible codewords may be returned.
 ///
 /// This enum enables efficient construction of vanishing polynomials for recovery:
 /// - `BlockSynchronizedErasures` is optimized for known repeated missing indices in blocks.
@@ -164,11 +169,17 @@ impl ReedSolomon {
         Ok(self.evaluation_domain.fft_scalars(poly_coefficient_form))
     }
 
-    /// Given a codeword and a list of its erasures,
-    /// This method will return the polynomial in coefficient form
-    /// that is able to generate the codeword with the erasures recovered.
+    /// Recovers the original polynomial coefficients from a partially erased codeword,
+    /// assuming a block-synchronized erasure pattern.
     ///
-    /// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/13ac373a2c284dc66b48ddd2ef0a10537e4e0de6/specs/_features/eip7594/polynomial-commitments-sampling.md#recover_polynomialcoeff
+    /// The input `codeword_with_erasures` must be the full set of evaluations over the domain,
+    /// where all field elements corresponding to missing *cells* are replaced with `Scalar::ZERO`.
+    ///
+    /// The `erasures` parameter must specify which relative positions within each block are missing
+    /// (i.e., erasures are synchronized across all blocks).
+    ///
+    /// This method follows the procedure in the EIP-7594 specification:
+    /// https://github.com/ethereum/consensus-specs/blob/13ac373a2c284dc66b48ddd2ef0a10537e4e0de6/specs/_features/eip7594/polynomial-commitments-sampling.md#recover_polynomialcoeff
     pub fn recover_polynomial_coefficient(
         &self,
         codeword_with_erasures: Vec<Scalar>,
@@ -199,9 +210,9 @@ impl ReedSolomon {
     /// This method makes the following assumptions:
     ///  - All of the blocks are not missing.
     ///  - The block indices are not repeated.
-    ///  - The block indices are valid (ie each index references a block)
+    ///  - The block indices are valid (ie each index references a block).
     ///
-    /// It is the responsibility of the caller to ensure that these are valid.
+    /// WARNING: It is the responsibility of the caller to ensure that these are valid.
     ///
     /// - We note that the algorithm below has an edge case when all of the blocks
     ///   are missing. In that particular case, the vanishing polynomial
@@ -235,11 +246,11 @@ impl ReedSolomon {
         // Example; consider the following polynomial f(x) = x - r
         // It vanishes/has roots at `r`.
         //
-        // Now if expand it by a factor of three which is the process of shifting all coefficients
-        // up three spaces, we get the polynomial g(x) = x^3 - r^3.
+        // Now if we expand it by a factor of three which is the process of shifting all coefficients
+        // up three spaces, we get the polynomial g(x) = x^3 - r.
         // g(x) has all of the roots of f(x) and a few extra roots.
         //
-        // The roots of g(x) can be characterized as {r, \omega *r, \omega^2 * r}
+        // The roots of g(x) can be characterized as {r, \omega * r, \omega^2 * r}
         // where \omega is a third root of unity.
         //
         // This process is happening below, ie we create a polynomial which has roots `r_i`
@@ -338,60 +349,56 @@ impl ReedSolomon {
     /// Returns an error if the recovered polynomial exceeds the expected degree.
     fn recover_polynomial_coefficient_erasure_pattern(
         &self,
-        data_eval: Vec<Scalar>,
+        e_eval: Vec<Scalar>,
         erasure: ErasurePattern,
     ) -> Result<PolyCoeff, RSError> {
         // Compute Z(X) which is the polynomial that vanishes on all
         // of the missing points
         let z_x = self.construct_vanishing_poly_from_erasure_pattern(erasure)?;
 
-        // Compute Z(X)_eval which is the vanishing polynomial evaluated
-        // at the missing points
-        let z_x_eval = self.evaluation_domain.fft_scalars(z_x.clone());
+        // Compute Z(X)_eval, the vanishing polynomial evaluated over the entire evaluation domain.
+        // This will be used for pointwise multiplication with the received codeword E(X).
+        let z_eval = self.evaluation_domain.fft_scalars(z_x.clone());
 
-        // Compute (D * Z)(X) or (E * Z)(X) (same polynomials)
-        let ez_eval: Vec<_> = z_x_eval
-            .iter()
-            .zip(data_eval)
-            .map(|(zx, d)| zx * d)
-            .collect();
+        // Compute (E * Z)(X), the pointwise product of the codeword E(X) and vanishing polynomial Z(X).
+        let ez_eval: Vec<_> = z_eval.iter().zip(e_eval).map(|(zx, d)| zx * d).collect();
 
-        let dz_poly = self.evaluation_domain.ifft_scalars(ez_eval);
+        let dz_coeffs = self.evaluation_domain.ifft_scalars(ez_eval);
 
-        let coset_dz_eval = self
+        let dz_coset_eval = self
             .evaluation_domain
-            .coset_fft_scalars(dz_poly, &self.fft_coset_gen);
-        let mut inv_coset_z_x_eval = self
+            .coset_fft_scalars(dz_coeffs, &self.fft_coset_gen);
+        let mut z_inv_coset_eval = self
             .evaluation_domain
             .coset_fft_scalars(z_x, &self.fft_coset_gen);
         // We know that none of the values will be zero since we are evaluating z_x
         // over a coset, that we know it has no roots in.
-        batch_inverse(&mut inv_coset_z_x_eval);
-        let coset_quotient_eval: Vec<_> = coset_dz_eval
+        batch_inverse(&mut z_inv_coset_eval);
+        let d_eval: Vec<_> = dz_coset_eval
             .iter()
-            .zip(inv_coset_z_x_eval)
+            .zip(z_inv_coset_eval)
             .map(|(d, zx_inv)| d * zx_inv)
             .collect();
 
-        let coefficients = self
+        let d_coeffs = self
             .evaluation_domain
-            .coset_ifft_scalars(coset_quotient_eval, &self.fft_coset_gen);
+            .coset_ifft_scalars(d_eval, &self.fft_coset_gen);
 
         // Check that the polynomial being returned has the correct degree
         //
         // The first poly_len terms should describe the polynomial and the
         // higher terms should have zero coefficients.
-        for coefficient in coefficients.iter().skip(self.poly_len) {
+        for coefficient in d_coeffs.iter().skip(self.poly_len) {
             if *coefficient != Scalar::ZERO {
                 return Err(RSError::PolynomialHasInvalidLength {
-                    num_coefficients: coefficients.len(),
+                    num_coefficients: d_coeffs.len(),
                     expected_num_coefficients: self.poly_len,
                 });
             }
         }
 
         // Return the truncated polynomial
-        Ok(coefficients[..self.poly_len].to_vec().into())
+        Ok(d_coeffs[..self.poly_len].to_vec().into())
     }
 }
 
