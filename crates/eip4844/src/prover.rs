@@ -1,4 +1,4 @@
-use bls12_381::lincomb::g1_lincomb;
+use bls12_381::{lincomb::g1_lincomb, G1Point};
 
 use crate::{
     cryptography::{
@@ -6,7 +6,6 @@ use crate::{
     },
     serialization::{
         deserialize_blob_to_scalars, deserialize_bytes_to_scalar, deserialize_compressed_g1,
-        serialize_g1_compressed,
     },
     BlobRef, Context, Error, KZGCommitment, KZGOpeningEvaluation, KZGOpeningPoint, KZGProof,
 };
@@ -23,12 +22,12 @@ impl Context {
         bitreverse_slice(&mut polynomial);
 
         // Compute commitment in lagrange form.
-        let commitment = g1_lincomb(&self.prover.commit_key.g1_lagrange, &polynomial)
+        let commitment: G1Point = g1_lincomb(&self.prover.commit_key.g1_lagrange, &polynomial)
             .expect("commit_key.g1_lagrange.len() == polynomial.len()")
             .into();
 
         // Serialize the commitment.
-        Ok(serialize_g1_compressed(&commitment))
+        Ok(commitment.to_compressed())
     }
 
     /// Compute the KZG proof given a blob and a point.
@@ -50,7 +49,7 @@ impl Context {
         let (y, quotient) = compute_evaluation_and_quotient(&self.prover.domain, &polynomial, z);
 
         // Compute KZG opening proof.
-        let proof = {
+        let proof: G1Point = {
             #[cfg(feature = "tracing")]
             let _span = tracing::info_span!("commit quotient").entered();
             g1_lincomb(&self.prover.commit_key.g1_lagrange, &quotient)
@@ -59,7 +58,7 @@ impl Context {
         };
 
         // Serialize the commitment.
-        Ok((serialize_g1_compressed(&proof), y.to_bytes_be()))
+        Ok((proof.to_compressed(), y.to_bytes_be()))
     }
 
     /// Compute the KZG proof given a blob and its corresponding commitment.
@@ -89,7 +88,7 @@ impl Context {
         let (_, quotient) = compute_evaluation_and_quotient(&self.prover.domain, &polynomial, z);
 
         // Compute KZG opening proof.
-        let proof = {
+        let proof: G1Point = {
             #[cfg(feature = "tracing")]
             let _span = tracing::info_span!("commit quotient").entered();
             g1_lincomb(&self.prover.commit_key.g1_lagrange, &quotient)
@@ -98,6 +97,6 @@ impl Context {
         };
 
         // Serialize the commitment.
-        Ok(serialize_g1_compressed(&proof))
+        Ok(proof.to_compressed())
     }
 }

@@ -1,6 +1,6 @@
 use bls12_381::{G1Point, Scalar};
 
-use crate::constants::{BYTES_PER_BLOB, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1_POINT};
+use crate::constants::{BYTES_PER_BLOB, BYTES_PER_FIELD_ELEMENT};
 pub use crate::errors::SerializationError;
 
 fn deserialize_bytes_to_scalars(bytes: &[u8]) -> Result<Vec<Scalar>, SerializationError> {
@@ -62,7 +62,4 @@ pub(crate) fn deserialize_compressed_g1(point_bytes: &[u8]) -> Result<G1Point, S
     opt_g1.ok_or_else(|| SerializationError::CouldNotDeserializeG1Point {
         bytes: point_bytes.to_vec(),
     })
-}
-pub(crate) fn serialize_g1_compressed(point: &G1Point) -> [u8; BYTES_PER_G1_POINT] {
-    point.to_compressed()
 }
