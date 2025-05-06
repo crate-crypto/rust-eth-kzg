@@ -19,6 +19,6 @@ impl From<jni::errors::Error> for Error {
 
 impl From<KZGError> for Error {
     fn from(err: KZGError) -> Self {
-        Self::Cryptography(err)
+        Error::Cryptography(err)
     }
 }
