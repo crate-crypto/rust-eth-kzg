@@ -103,7 +103,7 @@ impl DASContext {
             .kzg_multipoint_prover
             .compute_multi_opening_proofs(ProverInput::Data(scalars));
 
-        Ok(serialize_cells_and_proofs(cells, &proofs))
+        Ok(serialize_cells_and_proofs(&cells, &proofs))
     }
 
     /// Computes the cells for the given blob.
@@ -119,7 +119,7 @@ impl DASContext {
             .kzg_multipoint_prover
             .extend_polynomial(ProverInput::Data(scalars));
 
-        Ok(serialize_cells(extended_blob))
+        Ok(serialize_cells(&extended_blob))
     }
 
     /// Recovers the cells and computes the KZG proofs, given a subset of cells.
@@ -144,6 +144,6 @@ impl DASContext {
             .kzg_multipoint_prover
             .compute_multi_opening_proofs(ProverInput::PolyCoeff(poly_coeff));
 
-        Ok(serialize_cells_and_proofs(coset_evaluations, &proofs))
+        Ok(serialize_cells_and_proofs(&coset_evaluations, &proofs))
     }
 }

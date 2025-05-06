@@ -127,7 +127,7 @@ pub(crate) fn deserialize_cells(
 /// Converts evaluation sets to `Cell`s and G1 points to `KZGProof`s.
 /// Expects exactly `CELLS_PER_EXT_BLOB` items in both inputs.
 pub(crate) fn serialize_cells_and_proofs(
-    coset_evaluations: Vec<Vec<Scalar>>,
+    coset_evaluations: &[Vec<Scalar>],
     proofs: &[G1Point],
 ) -> ([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]) {
     (
@@ -140,7 +140,7 @@ pub(crate) fn serialize_cells_and_proofs(
 ///
 /// Each set must contain exactly `FIELD_ELEMENTS_PER_CELL` scalars.
 /// Returns a fixed-size array with length `CELLS_PER_EXT_BLOB`.
-pub(crate) fn serialize_cells(coset_evaluations: Vec<Vec<Scalar>>) -> [Cell; CELLS_PER_EXT_BLOB] {
+pub(crate) fn serialize_cells(coset_evaluations: &[Vec<Scalar>]) -> [Cell; CELLS_PER_EXT_BLOB] {
     // Serialize the evaluation sets into `Cell`s.
     std::array::from_fn(|i| {
         let evals = &coset_evaluations[i];
@@ -256,9 +256,9 @@ mod tests {
                     .collect::<Vec<_>>()
             })
             .collect();
-        let cells = serialize_cells(evaluations);
+        let cells = serialize_cells(&evaluations);
         assert_eq!(cells.len(), CELLS_PER_EXT_BLOB);
-        for cell in cells.iter() {
+        for cell in &cells {
             assert_eq!(cell.len(), BYTES_PER_CELL);
         }
     }
@@ -276,7 +276,7 @@ mod tests {
             .map(|_| G1Point::from(G1Projective::generator()))
             .collect();
 
-        let (cells, proofs) = serialize_cells_and_proofs(evaluations, &proofs);
+        let (cells, proofs) = serialize_cells_and_proofs(&evaluations, &proofs);
         assert_eq!(cells.len(), CELLS_PER_EXT_BLOB);
         assert_eq!(proofs.len(), CELLS_PER_EXT_BLOB);
     }
