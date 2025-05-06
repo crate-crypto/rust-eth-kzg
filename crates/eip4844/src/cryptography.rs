@@ -284,7 +284,7 @@ pub mod verifier {
         + size_of::<u64>() // batch size
         + n * (
             bytes_per_commitment // commitment
-            + bytes_per_field_element // z 
+            + bytes_per_field_element // z
             + bytes_per_field_element // y
             + bytes_per_commitment // proof
         );
@@ -452,9 +452,11 @@ pub mod prover {
             .maybe_into_par_iter()
             .enumerate()
             .map(|(idx, root)| {
-                (idx == point_idx)
-                    .then_some(Scalar::ONE)
-                    .unwrap_or_else(|| z - root)
+                if idx == point_idx {
+                    Scalar::ONE
+                } else {
+                    z - root
+                }
             })
             .collect::<Vec<_>>();
         batch_inverse(&mut denoms);

@@ -88,9 +88,7 @@ impl TrustedSetup {
     }
     */
     pub fn from_json(json: &str) -> Self {
-        let trusted_setup = Self::from_json_unchecked(json);
-        // trusted_setup.validate_trusted_setup();
-        trusted_setup
+        Self::from_json_unchecked(json)
     }
     /// Parse a Json string in the format specified by the ethereum trusted setup.
     ///

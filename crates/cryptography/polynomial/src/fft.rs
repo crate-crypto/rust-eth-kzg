@@ -35,7 +35,7 @@ impl FFTElement for G1Projective {
 // Taken and modified from https://github.com/Plonky3/Plonky3/blob/a374139/dft/src/radix_2_dit_parallel.rs#L106.
 fn fft_inplace<T: FFTElement>(omegas: &[Scalar], twiddle_factors_bo: &[Scalar], values: &mut [T]) {
     let log_n = log2_pow2(values.len()) as usize;
-    let mid = (log_n + 1) / 2;
+    let mid = log_n.div_ceil(2);
 
     // The first half looks like a normal DIT.
     reverse_bit_order(values);
