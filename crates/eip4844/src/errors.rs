@@ -1,30 +1,21 @@
 /// Errors that can occur either during proving, verification or serialization.
 #[derive(Debug)]
 pub enum Error {
-    Prover(ProverError),
     Verifier(VerifierError),
     Serialization(SerializationError),
 }
 
-impl From<ProverError> for Error {
-    fn from(value: ProverError) -> Self {
-        Self::Prover(value)
-    }
-}
 impl From<VerifierError> for Error {
     fn from(value: VerifierError) -> Self {
         Self::Verifier(value)
     }
 }
+
 impl From<SerializationError> for Error {
     fn from(value: SerializationError) -> Self {
         Self::Serialization(value)
     }
 }
-
-/// Errors that can occur while calling a method in the Prover API
-#[derive(Debug)]
-pub enum ProverError {}
 
 /// Errors that can occur while calling a method in the Verifier API
 #[derive(Debug)]

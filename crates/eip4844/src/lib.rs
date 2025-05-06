@@ -14,7 +14,7 @@ mod cryptography;
 mod serialization;
 mod trusted_setup;
 
-pub use errors::{Error, ProverError, SerializationError, VerifierError};
+pub use errors::{Error, SerializationError, VerifierError};
 pub use trusted_setup::TrustedSetup;
 
 use crate::cryptography::{prover::Prover, verifier::Verifier};
