@@ -93,7 +93,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_blobToKZGCommitment<
     blob: JByteArray<'local>,
 ) -> JByteArray<'local> {
     let ctx = unsafe { &*(ctx_ptr as *const DASContext) };
-    match blob_to_kzg_commitment(&mut env, ctx, blob) {
+    match blob_to_kzg_commitment(&env, ctx, blob) {
         Ok(commitment) => commitment,
         Err(err) => {
             throw_on_error(&mut env, err, "blobToKZGCommitment");
@@ -136,15 +136,15 @@ pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_verifyCellKZGProofBa
 fn verify_cell_kzg_proof_batch<'local>(
     env: &mut JNIEnv,
     ctx: &DASContext,
-    commitment: JObjectArray<'local>,
+    commitment: &JObjectArray<'local>,
     cell_indices: JLongArray,
-    cells: JObjectArray<'local>,
+    cells: &JObjectArray<'local>,
     proofs: &JObjectArray<'local>,
 ) -> Result<jboolean, Error> {
-    let commitment = jobject_array_to_2d_byte_array(env, &commitment)?;
+    let commitment = jobject_array_to_2d_byte_array(env, commitment)?;
     let cell_indices = jlongarray_to_vec_u64(env, cell_indices)?;
-    let cells = jobject_array_to_2d_byte_array(env, &cells)?;
-    let proofs = jobject_array_to_2d_byte_array(env, &proofs)?;
+    let cells = jobject_array_to_2d_byte_array(env, cells)?;
+    let proofs = jobject_array_to_2d_byte_array(env, proofs)?;
 
     let cells: Vec<_> = cells
         .iter()
@@ -188,10 +188,10 @@ fn recover_cells_and_kzg_proofs<'local>(
     env: &mut JNIEnv<'local>,
     ctx: &DASContext,
     cell_ids: JLongArray,
-    cells: JObjectArray<'local>,
+    cells: &JObjectArray<'local>,
 ) -> Result<JObject<'local>, Error> {
     let cell_ids = jlongarray_to_vec_u64(env, cell_ids)?;
-    let cells = jobject_array_to_2d_byte_array(env, &cells)?;
+    let cells = jobject_array_to_2d_byte_array(env, cells)?;
     let cells: Vec<_> = cells
         .iter()
         .map(|cell| slice_to_array_ref(cell, "cell"))
