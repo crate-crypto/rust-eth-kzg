@@ -15,7 +15,7 @@ use crate::{
 /// Input contains the various structures that we can make FK20 proofs over.
 pub enum Input {
     /// This is akin to creating proofs over a polynomial in monomial basis.
-    PolyCoeff(Vec<Scalar>),
+    PolyCoeff(PolyCoeff),
     /// Data: This is akin to creating proofs over a polynomial in lagrange basis.
     /// This variant has the useful property that the output evaluations will
     /// contain the data in the order that it was passed in.
@@ -240,6 +240,7 @@ mod tests {
     use std::collections::HashSet;
 
     use bls12_381::{fixed_base_msm::UsePrecomp, Scalar};
+    use polynomial::poly_coeff::PolyCoeff;
 
     use super::{FK20Prover, Input};
     use crate::{
@@ -313,7 +314,7 @@ mod tests {
     #[test]
     fn check_consistency_of_proofs_against_naive_fk20_implementation() {
         let poly_len = 4096;
-        let poly: Vec<_> = (0..poly_len).map(|i| -Scalar::from(i as u64)).collect();
+        let poly = PolyCoeff((0..poly_len).map(|i| -Scalar::from(i as u64)).collect());
         let coset_size = 64;
         let (commit_key, _) = create_insecure_commit_verification_keys();
 
@@ -350,9 +351,11 @@ mod tests {
 
         let cosets = generate_cosets(NUMBER_OF_POINTS_TO_EVALUATE, COSET_SIZE, true);
 
-        let polynomial: Vec<_> = (0..POLYNOMIAL_LEN)
-            .map(|i| -Scalar::from(i as u64))
-            .collect();
+        let polynomial = PolyCoeff(
+            (0..POLYNOMIAL_LEN)
+                .map(|i| -Scalar::from(i as u64))
+                .collect(),
+        );
 
         // Compute FK20 the naive way
         let (got_proofs, got_set_of_output_points) =

@@ -1,22 +1,22 @@
 use bls12_381::{ff::Field, group::Group, G1Projective, Scalar};
-use crate_crypto_internal_eth_kzg_polynomial::{domain::Domain, poly_coeff::poly_eval};
+use crate_crypto_internal_eth_kzg_polynomial::{domain::Domain, poly_coeff::PolyCoeff};
 use criterion::{criterion_group, criterion_main, Criterion};
 
 pub fn bench_polynomial_evaluation(c: &mut Criterion) {
     const NUM_ELEMENTS: usize = 8192;
-    let polynomial = random_scalars(NUM_ELEMENTS);
+    let polynomial = PolyCoeff(random_scalars(NUM_ELEMENTS));
     let value = Scalar::random(&mut rand::thread_rng());
 
     c.bench_function("poly_eval", |b| {
         b.iter(|| {
-            poly_eval(&polynomial, &value);
+            let _ = polynomial.eval(&value);
         });
     });
 }
 
 pub fn bench_fft(c: &mut Criterion) {
     const NUM_ELEMENTS: usize = 8192;
-    let polynomial = random_scalars(NUM_ELEMENTS);
+    let polynomial = PolyCoeff(random_scalars(NUM_ELEMENTS));
     let domain = Domain::new(NUM_ELEMENTS);
 
     c.bench_function(&format!("fft_scalars of size {NUM_ELEMENTS}"), |b| {

@@ -4,7 +4,7 @@ use bls12_381::{
     ff::Field, g1_batch_normalize, lincomb::g1_lincomb, multi_pairings,
     reduce_bytes_to_scalar_bias, G1Point, G2Prepared, Scalar,
 };
-use polynomial::{domain::Domain, poly_coeff::poly_add, CosetFFT};
+use polynomial::{domain::Domain, poly_coeff::PolyCoeff, CosetFFT};
 use sha2::{Digest, Sha256};
 
 use super::errors::VerifierError;
@@ -332,8 +332,8 @@ fn compute_sum_interpolation_poly(
     bit_reversed_coset_evals: &[Vec<Scalar>],
     bit_reversed_coset_indices: &[CosetIndex],
     r_powers: &[Scalar],
-) -> Vec<Scalar> {
-    let mut random_sum_interpolation_poly = Vec::new();
+) -> PolyCoeff {
+    let mut random_sum_interpolation_poly = PolyCoeff::default();
 
     for ((mut bit_reversed_coset_eval, bit_reversed_coset_index), scale_factor) in
         bit_reversed_coset_evals
@@ -352,12 +352,13 @@ fn compute_sum_interpolation_poly(
 
         // Scale the interpolation polynomial by the challenge
         let scaled_interpolation_poly = ifft_scalars
+            .0
             .into_iter()
             .map(|coeff| coeff * scale_factor)
             .collect::<Vec<_>>();
 
         random_sum_interpolation_poly =
-            poly_add(random_sum_interpolation_poly, scaled_interpolation_poly);
+            random_sum_interpolation_poly.add(&scaled_interpolation_poly.into());
     }
 
     random_sum_interpolation_poly
