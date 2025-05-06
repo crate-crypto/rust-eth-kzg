@@ -215,11 +215,11 @@ pub fn reverse_bit_order<T>(a: &mut [T]) {
     // Iterate through each index and swap with its bit-reversed counterpart
     for k in 0..n {
         // Compute bit-reversed index of k using only log_n bits
-        let rk = reverse_bits(k as usize, log_n);
+        let rk = reverse_bits(k, log_n);
 
         // Swap only if k < rk to avoid double-swapping
         if k < rk {
-            a.swap(rk as usize, k as usize);
+            a.swap(rk as usize, k);
         }
     }
 }
