@@ -13,7 +13,7 @@ pub enum Error {
 
 impl From<jni::errors::Error> for Error {
     fn from(err: jni::errors::Error) -> Self {
-        Self::Jni(err)
+        Error::Jni(err)
     }
 }
 
