@@ -93,7 +93,7 @@ pub(crate) fn serialize_scalars_to_cell(scalars: &[Scalar]) -> Vec<u8> {
         "must have exactly {FIELD_ELEMENTS_PER_CELL} scalars to serialize to a cell"
     );
 
-    scalars.iter().flat_map(Scalar::to_bytes_be).collect()
+    scalars.iter().flat_map(|s| s.to_bytes_be()).collect()
 }
 
 pub(crate) fn deserialize_cells(
