@@ -19,6 +19,7 @@ impl Context {
         // Deserialize the blob into scalars.
         let mut polynomial = deserialize_blob_to_scalars(blob)?;
 
+        // Bit-reverse polynomial into normal order.
         bitreverse_slice(&mut polynomial);
 
         // Compute commitment in lagrange form.

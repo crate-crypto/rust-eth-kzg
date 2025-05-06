@@ -226,18 +226,24 @@ pub mod verifier {
     ) -> Scalar {
         let domain_size = domain.roots.len();
 
+        // Bit-reverse polynomial into normal order.
         // Note: This clone is okay because after eip7594, this crate is no longer on the critical path.
-        let mut roots_brp = domain.roots.clone();
-        bitreverse_slice(&mut roots_brp);
+        let mut polynomial = polynomial.to_vec();
+        bitreverse_slice(&mut polynomial);
 
         // 1 / (z - ω^i)
-        let mut denoms = roots_brp.iter().map(|root| z - *root).collect::<Vec<_>>();
+        let mut denoms = domain
+            .roots
+            .iter()
+            .map(|root| z - *root)
+            .collect::<Vec<_>>();
         batch_inverse(&mut denoms);
 
         // \sum (ω^i * f(ω^i) / (z - ω^i)) * ((z^n - 1) / n)
-        let y = roots_brp
+        let y = domain
+            .roots
             .iter()
-            .zip(polynomial)
+            .zip(&polynomial)
             .zip(&denoms)
             .map(|((root, f_root), denom)| root * *f_root * denom)
             .sum::<Scalar>()
@@ -324,13 +330,9 @@ pub mod prover {
     use maybe_rayon::prelude::*;
     use polynomial::domain::Domain;
 
-    use crate::{
-        cryptography::{bitreverse, bitreverse_slice},
-        TrustedSetup,
-    };
+    use crate::{cryptography::bitreverse_slice, TrustedSetup};
 
-    /// The key that is used to commit to polynomials in lagrange form (bit-reversed
-    /// order)
+    /// The key that is used to commit to polynomials in lagrange form.
     pub struct CommitKey {
         pub g1_lagrange: Vec<G1Point>,
     }
@@ -364,14 +366,12 @@ pub mod prover {
         let point_idx = domain.roots.iter().position(|root| *root == z);
 
         // Compute evaluation and quotient.
-        let (z, mut quotient) = point_idx.map_or_else(
+        let (z, quotient) = point_idx.map_or_else(
             || compute_evaluation_and_quotient_out_of_domain(domain, polynomial, z),
             |point_idx| {
                 compute_evaluation_and_quotient_within_domain(domain, polynomial, point_idx)
             },
         );
-
-        bitreverse_slice(&mut quotient);
 
         (z, quotient)
     }
@@ -383,19 +383,23 @@ pub mod prover {
         polynomial: &[Scalar],
         z: Scalar,
     ) -> (Scalar, Vec<Scalar>) {
-        let mut roots_brp = domain.roots.clone();
-        bitreverse_slice(&mut roots_brp);
+        // Bit-reverse polynomial into normal order.mal order.
+        let mut polynomial = polynomial.to_vec();
+        bitreverse_slice(&mut polynomial);
 
         // 1 / (z - ω^i)
-        let mut denoms = roots_brp.iter().map(|root| z - *root).collect::<Vec<_>>();
+        let mut denoms = (&domain.roots)
+            .maybe_into_par_iter()
+            .map(|root| z - *root)
+            .collect::<Vec<_>>();
         batch_inverse(&mut denoms);
 
         let domain_size = domain.roots.len();
 
         // \sum (ω^i * f(ω^i) / (z - ω^i)) * ((z^n - 1) / n)
-        let y = roots_brp
+        let y = (&domain.roots)
             .maybe_into_par_iter()
-            .zip(polynomial)
+            .zip(&polynomial)
             .zip(&denoms)
             .map(|((root, f_root), denom)| root * *f_root * denom)
             .sum::<Scalar>()
@@ -405,7 +409,7 @@ pub mod prover {
         // (y - f(ω^i)) / (z - ω^i)
         let quotient = denoms
             .maybe_into_par_iter()
-            .zip(polynomial)
+            .zip(&polynomial)
             .map(|(denom, f_root)| (y - *f_root) * denom)
             .collect();
 
@@ -428,30 +432,23 @@ pub mod prover {
     ) -> (Scalar, Vec<Scalar>) {
         let domain_size = domain.roots.len();
 
+        // Bit-reverse polynomial into normal order.
+        let mut polynomial = polynomial.to_vec();
+        bitreverse_slice(&mut polynomial);
+
         // ω^m
         let z = domain.roots[point_idx];
-        // ω^(n-m)
-        let z_inv = domain.roots[(domain_size - point_idx) % domain_size];
-
-        // Because polynomial is in bit-reversed order, and we need to compute
-        // quotient also in bit-reversed order, so we work with bit-reversed point
-        // index from now on.
-        let point_idx_brp = bitreverse(point_idx as u32, domain_size.ilog2()) as usize;
-
-        // Root in bit-reversed order.
-        let mut roots_brp = domain.roots.clone();
-        bitreverse_slice(&mut roots_brp);
 
         // f(ω^m)
-        let y = polynomial[point_idx_brp];
+        let y = polynomial[point_idx];
 
         // 1 / (ω^m - ω^j)
         // Note that we set (ω^m - ω^m) to be one to make the later `batch_inverse` work.
-        let mut denoms = (&roots_brp)
+        let mut denoms = (&domain.roots)
             .maybe_into_par_iter()
             .enumerate()
             .map(|(idx, root)| {
-                (idx == point_idx_brp)
+                (idx == point_idx)
                     .then_some(Scalar::ONE)
                     .unwrap_or_else(|| z - root)
             })
@@ -465,12 +462,15 @@ pub mod prover {
             .map(|(denom, f_root)| (y - f_root) * denom)
             .collect::<Vec<_>>();
 
-        // Compute q(ω^m) = \sum q(ω^j) * (A'(ω_m) / A'(ω_j)) = \sum q(ω^j) * (ω_j / ω_m)
-        quotient[point_idx_brp] = Scalar::ZERO;
-        quotient[point_idx_brp] = -roots_brp
+        // Compute q(ω^m) = \sum q(ω^j) * (A'(ω^m) / A'(ω^j)) = \sum q(ω^j) * ω^{j - m}
+        quotient[point_idx] = Scalar::ZERO;
+        quotient[point_idx] = -(&quotient)
             .maybe_into_par_iter()
-            .zip(&quotient)
-            .map(|(root, quotient)| *quotient * root * z_inv)
+            .enumerate()
+            .map(|(idx, quotient)| {
+                let root_j_mimus_m = domain.roots[(domain_size + idx - point_idx) % domain_size];
+                *quotient * root_j_mimus_m
+            })
             .sum::<Scalar>();
 
         (y, quotient)
