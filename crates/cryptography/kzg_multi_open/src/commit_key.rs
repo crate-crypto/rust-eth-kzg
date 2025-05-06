@@ -58,7 +58,7 @@ mod tests {
 
         // Setup: 3 G1 generator points
         let g1s: Vec<G1Point> = (0..3).map(|_| G1Projective::generator().into()).collect();
-        let ck = CommitKey::new(g1s);
+        let ck = CommitKey::new(g1s.clone());
 
         // Expected = 1*G + 2*G + 3*G = 6*G
         let expected = G1Projective::generator() * Scalar::from(6);
