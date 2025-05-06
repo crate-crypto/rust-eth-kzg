@@ -1,3 +1,6 @@
+#[cfg(all(feature = "singlethreaded", feature = "multithreaded"))]
+compile_error!("`singlethreaded` and `multithreaded` cannot be enabled simultaneously");
+
 use constants::{
     BYTES_PER_BLOB, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, FIELD_ELEMENTS_PER_BLOB,
 };

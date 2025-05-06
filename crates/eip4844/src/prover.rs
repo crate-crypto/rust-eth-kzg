@@ -24,7 +24,7 @@ impl Context {
 
         // Compute commitment in lagrange form.
         let commitment = g1_lincomb(&self.prover.commit_key.g1_lagrange, &polynomial)
-            .expect("number of g1 points is equal to the number of coefficients in the polynomial")
+            .expect("commit_key.g1_lagrange.len() == polynomial.len()")
             .into();
 
         // Serialize the commitment.
@@ -34,6 +34,7 @@ impl Context {
     /// Compute the KZG proof given a blob and a point.
     ///
     /// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#compute_kzg_proof
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip_all))]
     pub fn compute_kzg_proof(
         &self,
         blob: BlobRef,
@@ -49,9 +50,13 @@ impl Context {
         let (y, quotient) = compute_evaluation_and_quotient(&self.prover.domain, &polynomial, z);
 
         // Compute KZG opening proof.
-        let proof = g1_lincomb(&self.prover.commit_key.g1_lagrange, &quotient)
-            .expect("number of g1 points is equal to the number of coefficients in the polynomial")
-            .into();
+        let proof = {
+            #[cfg(feature = "tracing")]
+            let _span = tracing::info_span!("commit quotient").entered();
+            g1_lincomb(&self.prover.commit_key.g1_lagrange, &quotient)
+                .expect("commit_key.g1_lagrange.len() == quotient.len()")
+                .into()
+        };
 
         // Serialize the commitment.
         Ok((serialize_g1_compressed(&proof), y.to_bytes_be()))
@@ -84,9 +89,13 @@ impl Context {
         let (_, quotient) = compute_evaluation_and_quotient(&self.prover.domain, &polynomial, z);
 
         // Compute KZG opening proof.
-        let proof = g1_lincomb(&self.prover.commit_key.g1_lagrange, &quotient)
-            .expect("number of g1 points is equal to the number of coefficients in the polynomial")
-            .into();
+        let proof = {
+            #[cfg(feature = "tracing")]
+            let _span = tracing::info_span!("commit quotient").entered();
+            g1_lincomb(&self.prover.commit_key.g1_lagrange, &quotient)
+                .expect("commit_key.g1_lagrange.len() == quotient.len()")
+                .into()
+        };
 
         // Serialize the commitment.
         Ok(serialize_g1_compressed(&proof))

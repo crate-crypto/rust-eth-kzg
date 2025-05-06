@@ -380,6 +380,7 @@ pub mod prover {
 
     /// Compute evaluation and quotient of the given polynomial at the given point.
     /// The point is guaranteed to be out-of-domain.
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip_all))]
     pub fn compute_evaluation_and_quotient_out_of_domain(
         domain: &Domain,
         polynomial: &[Scalar],
@@ -427,6 +428,7 @@ pub mod prover {
     /// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#compute_quotient_eval_within_domain
     ///
     /// [PCS multiproofs using random evaluation]: https://dankradfeist.de/ethereum/2021/06/18/pcs-multiproofs.html
+    #[cfg_attr(feature = "tracing", tracing::instrument(skip_all))]
     pub fn compute_evaluation_and_quotient_within_domain(
         domain: &Domain,
         polynomial: &[Scalar],
