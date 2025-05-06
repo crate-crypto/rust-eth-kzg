@@ -125,7 +125,7 @@ pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_verifyCellKZGProofBa
 ) -> jboolean {
     let ctx = unsafe { &*(ctx_ptr as *const DASContext) };
 
-    match verify_cell_kzg_proof_batch(&mut env, ctx, commitment, cell_indices, cells, proofs) {
+    match verify_cell_kzg_proof_batch(&mut env, ctx, commitment, cell_indices, cells, &proofs) {
         Ok(result) => result,
         Err(err) => {
             throw_on_error(&mut env, err, "verifyCellKZGProofBatch");
@@ -139,7 +139,7 @@ fn verify_cell_kzg_proof_batch<'local>(
     commitment: JObjectArray<'local>,
     cell_indices: JLongArray,
     cells: JObjectArray<'local>,
-    proofs: JObjectArray<'local>,
+    proofs: &JObjectArray<'local>,
 ) -> Result<jboolean, Error> {
     let commitment = jobject_array_to_2d_byte_array(env, &commitment)?;
     let cell_indices = jlongarray_to_vec_u64(env, cell_indices)?;
