@@ -1,72 +1,70 @@
 {
-    "release-type": "simple",
-    "bump-minor-pre-major": true,
-    "bump-patch-for-minor-pre-major": true,
-    "prerelease": true,
-    "pull-request-title-pattern": "chore: Release (${version})",
-    "group-pull-request-title-pattern": "chore: Release (${version})",
-    "packages": {
-        ".": {
-            "component": "root",
-            "include-component-in-tag": false,
-            "extra-files": [
-                {
-                    "type": "toml",
-                    "path": "Cargo.toml",
-                    "jsonpath": "$.workspace.package.version"
-                },
-                {
-                    "type": "toml",
-                    "path": "Cargo.toml",
-                    "jsonpath": "$.workspace.dependencies.bls12_381.version"
-                },
-                {
-                    "type": "toml",
-                    "path": "Cargo.toml",
-                    "jsonpath": "$.workspace.dependencies.polynomial.version"
-                },
-                {
-                    "type": "toml",
-                    "path": "Cargo.toml",
-                    "jsonpath": "$.workspace.dependencies.erasure_codes.version"
-                },
-                {
-                    "type": "toml",
-                    "path": "Cargo.toml",
-                    "jsonpath": "$.workspace.dependencies.c_eth_kzg.version"
-                },
-                {
-                    "type": "toml",
-                    "path": "Cargo.toml",
-                    "jsonpath": "$.workspace.dependencies.kzg_multi_open.version"
-                },
-                {
-                    "type": "toml",
-                    "path": "Cargo.toml",
-                    "jsonpath": "$.workspace.dependencies.rust_eth_kzg.version"
-                },
-                {
-                    "type": "toml",
-                    "path": "Cargo.toml",
-                    "jsonpath": "$.workspace.dependencies.maybe_rayon.version"
-                },
-                "bindings/nim/nim_code/nim_eth_kzg/nim_eth_kzg.nimble",
-                "bindings/java/java_code/build.gradle",
-                {
-                    "type": "xml",
-                    "path": "bindings/csharp/csharp_code/EthKZG.bindings/EthKZG.csproj",
-                    "xpath": "//Project/PropertyGroup/Version"
-                },
-                {
-                    "type": "json",
-                    "path": "bindings/node/package.json",
-                    "jsonpath": "$.version"
-                }
-            ]
+  "release-type": "simple",
+  "bump-minor-pre-major": true,
+  "bump-patch-for-minor-pre-major": true,
+  "prerelease": true,
+  "pull-request-title-pattern": "chore: Release (${version})",
+  "group-pull-request-title-pattern": "chore: Release (${version})",
+  "packages": {
+    ".": {
+      "component": "root",
+      "include-component-in-tag": false,
+      "extra-files": [
+        {
+          "type": "toml",
+          "path": "Cargo.toml",
+          "jsonpath": "$.workspace.package.version"
+        },
+        {
+          "type": "toml",
+          "path": "Cargo.toml",
+          "jsonpath": "$.workspace.dependencies.bls12_381.version"
+        },
+        {
+          "type": "toml",
+          "path": "Cargo.toml",
+          "jsonpath": "$.workspace.dependencies.polynomial.version"
+        },
+        {
+          "type": "toml",
+          "path": "Cargo.toml",
+          "jsonpath": "$.workspace.dependencies.erasure_codes.version"
+        },
+        {
+          "type": "toml",
+          "path": "Cargo.toml",
+          "jsonpath": "$.workspace.dependencies.c_eth_kzg.version"
+        },
+        {
+          "type": "toml",
+          "path": "Cargo.toml",
+          "jsonpath": "$.workspace.dependencies.kzg_multi_open.version"
+        },
+        {
+          "type": "toml",
+          "path": "Cargo.toml",
+          "jsonpath": "$.workspace.dependencies.rust_eth_kzg.version"
+        },
+        {
+          "type": "toml",
+          "path": "Cargo.toml",
+          "jsonpath": "$.workspace.dependencies.maybe_rayon.version"
+        },
+        "bindings/nim/nim_code/nim_eth_kzg/nim_eth_kzg.nimble",
+        "bindings/java/java_code/build.gradle",
+        {
+          "type": "xml",
+          "path": "bindings/csharp/csharp_code/EthKZG.bindings/EthKZG.csproj",
+          "xpath": "//Project/PropertyGroup/Version"
+        },
+        {
+          "type": "json",
+          "path": "bindings/node/package.json",
+          "jsonpath": "$.version"
         }
-    },
-    "plugins": [
-        "sentence-case"
-    ],
-    "bootstrap-sha": "fbaabee836330683283133cabf72d185161ae845"
+      ]
+    }
+  },
+  "plugins": ["sentence-case"],
+  "bootstrap-sha": "fbaabee836330683283133cabf72d185161ae845"
 }

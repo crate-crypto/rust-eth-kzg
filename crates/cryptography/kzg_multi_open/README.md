@@ -2,7 +2,7 @@
 
 ## Overview
 
-This crate provides a Rust API for KZG multi-opening polynomial commitment scheme (PCS).This allows you to commit to a polynomial over some field with prime order, and later on reveal multiple evaluations of that polynomial, along with an (opening) proof that attests to the correctness of those evaluations.  
+This crate provides a Rust API for KZG multi-opening polynomial commitment scheme (PCS).This allows you to commit to a polynomial over some field with prime order, and later on reveal multiple evaluations of that polynomial, along with an (opening) proof that attests to the correctness of those evaluations.
 
 The opening proofs are efficiently computed using [FK20](https://github.com/khovratovich/Kate/blob/master/Kate_amortized.pdf).
 
@@ -14,5 +14,5 @@ Installation of this crate can be done by adding this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-crate_crypto_kzg_multi_open_fk20 = "0.1.0"
+ekzg-multi-open = "0.1.0"
 ```
