@@ -178,7 +178,7 @@ mod tests {
         // Polynomial of length 3
         let poly = vec![Scalar::from(1), Scalar::from(2), Scalar::from(3)];
 
-        let vk = VerificationKey::new(g1s, g2s, 1, 5);
+        let vk = VerificationKey::new(g1s.clone(), g2s, 1, 5);
 
         // Compute manually: 1 * G + 2 * G + 3 * G = 6 * G
         let g = G1Projective::generator();
