@@ -164,20 +164,21 @@ mod tests {
     use rand::thread_rng;
 
     use super::*;
+    use crate::constants::FIELD_ELEMENTS_PER_BLOB;
 
     /// Returns a randomly generated scalar field element.
     fn random_scalar() -> Scalar {
         Scalar::random(thread_rng())
     }
 
-    /// Returns a random scalar serialized to 32 big-endian bytes.
-    fn scalar_bytes() -> [u8; 32] {
+    /// Returns a random scalar serialized to `BYTES_PER_FIELD_ELEMENT` big-endian bytes.
+    fn scalar_bytes() -> [u8; BYTES_PER_FIELD_ELEMENT] {
         random_scalar().to_bytes_be()
     }
 
-    /// Constructs a valid blob by repeating a random scalar 4096 times.
+    /// Constructs a valid blob by repeating a random scalar `FIELD_ELEMENTS_PER_BLOB` times.
     fn valid_blob() -> Vec<u8> {
-        scalar_bytes().repeat(4096)
+        scalar_bytes().repeat(FIELD_ELEMENTS_PER_BLOB)
     }
 
     /// Constructs a valid cell by repeating a random scalar FIELD_ELEMENTS_PER_CELL times.
@@ -206,7 +207,7 @@ mod tests {
     fn test_deserialize_blob_to_scalars_valid() {
         let blob = valid_blob();
         let scalars = deserialize_blob_to_scalars(&blob).unwrap();
-        assert_eq!(scalars.len(), 4096);
+        assert_eq!(scalars.len(), FIELD_ELEMENTS_PER_BLOB);
     }
 
     #[test]
