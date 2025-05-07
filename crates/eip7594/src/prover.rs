@@ -79,7 +79,7 @@ impl DASContext {
             .commit(ProverInput::Data(scalars));
 
         // Serialize the commitment.
-        Ok(commitment.to_compressed())
+Ok(serialize_g1_compressed(&commitment))
     }
 
     /// Computes the cells and the KZG proofs for the given blob.
