@@ -81,6 +81,9 @@ pub(crate) fn deserialize_compressed_g1(point_bytes: &[u8]) -> Result<G1Point, S
         bytes: point_bytes.to_vec(),
     })
 }
+pub(crate) fn serialize_g1_compressed(point: &G1Point) -> [u8; BYTES_PER_G1_POINT] {
+    point.to_compressed()
+}
 
 /// Deserializes a list of compressed G1 point byte slices.
 ///
