@@ -1,7 +1,7 @@
 use bls12_381::{group::Curve, lincomb::g1_lincomb};
 
 use crate::{
-    kzg_open::compute_evaluation_and_quotient,
+    kzg_open::divide_by_linear,
     serialization::{
         deserialize_blob_to_scalars, deserialize_bytes_to_scalar, deserialize_compressed_g1,
         serialize_g1_compressed,
@@ -49,14 +49,14 @@ impl Context {
         let z = deserialize_bytes_to_scalar(&z)?;
 
         // Compute evaluation and quotient at challenge.
-        let (y, quotient) = compute_evaluation_and_quotient(&polynomial, z);
+        let (quotient, y) = divide_by_linear(&polynomial, z);
 
         // Compute KZG opening proof.
         let proof = {
             #[cfg(feature = "tracing")]
             let _span = tracing::info_span!("commit quotient").entered();
-            g1_lincomb(&self.prover.commit_key.g1s, &quotient)
-                .expect("commit_key.g1s.len() == quotient.len()")
+            g1_lincomb(&self.prover.commit_key.g1s[..quotient.len()], &quotient)
+                .expect("commit_key.g1s[..quotient.len()].len() == quotient.len()")
                 .to_affine()
         };
 
@@ -91,14 +91,14 @@ impl Context {
 
         // Compute evaluation and quotient at z.
         // The quotient is returned in "normal order"
-        let (_, quotient) = compute_evaluation_and_quotient(&polynomial, z);
+        let (quotient, _) = divide_by_linear(&polynomial, z);
 
         // Compute KZG opening proof.
         let proof = {
             #[cfg(feature = "tracing")]
             let _span = tracing::info_span!("commit quotient").entered();
-            g1_lincomb(&self.prover.commit_key.g1s, &quotient)
-                .expect("commit_key.g1s.len() == quotient.len()")
+            g1_lincomb(&self.prover.commit_key.g1s[..quotient.len()], &quotient)
+                .expect("commit_key.g1s[..quotient.len()].len() == quotient.len()")
                 .to_affine()
         };
 
