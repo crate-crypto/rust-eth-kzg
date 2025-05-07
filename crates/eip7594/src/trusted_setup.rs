@@ -6,7 +6,7 @@ use crate::constants::{FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL};
 
 const TRUSTED_SETUP_JSON: &str = include_str!("../data/trusted_setup_4096.json");
 
-/// Represents the Ethereum trusted setup used for KZG commitments on the BLS12-381 curve.
+/// Represents an Ethereum trusted setup used for KZG commitments on the BLS12-381 curve.
 ///
 /// This struct holds hex-encoded group elements in G1 and G2, provided in monomial and lagrange bases.
 /// These elements are used to construct commitment and verification keys for polynomial commitment schemes.
