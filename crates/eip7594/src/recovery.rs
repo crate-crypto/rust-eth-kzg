@@ -54,10 +54,7 @@ pub(crate) fn recover_polynomial_coeff(
         .expect("infallible: could not recover evaluations in domain order");
 
     // Find all of the missing cell indices. This is needed for recovery.
-    let present_cell_indices: HashSet<_> = cell_indices_normal_order.iter().copied().collect();
-    let missing_cell_indices = (0..CELLS_PER_EXT_BLOB)
-        .filter(|i| !present_cell_indices.contains(i))
-        .collect();
+let missing_cell_indices = find_missing_cell_indices(&cell_indices_normal_order);
 
     // Recover the polynomial in monomial form, that one can use to generate the cells.
     let recovered_polynomial_coeff = rs.recover_polynomial_coefficient(
