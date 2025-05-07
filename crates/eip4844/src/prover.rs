@@ -1,13 +1,12 @@
-use bls12_381::lincomb::g1_lincomb;
+use bls12_381::{group::Curve, lincomb::g1_lincomb};
 
 use crate::{
-    cryptography::{
-        bitreverse_slice, compute_fiat_shamir_challenge, prover::compute_evaluation_and_quotient,
-    },
+    kzg_open::compute_evaluation_and_quotient,
     serialization::{
         deserialize_blob_to_scalars, deserialize_bytes_to_scalar, deserialize_compressed_g1,
         serialize_g1_compressed,
     },
+    verifier::{blob_scalar_to_polynomial, compute_fiat_shamir_challenge},
     BlobRef, Context, Error, KZGCommitment, KZGOpeningEvaluation, KZGOpeningPoint, KZGProof,
 };
 
@@ -17,15 +16,15 @@ impl Context {
     /// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/13ac373a2c284dc66b48ddd2ef0a10537e4e0de6/specs/deneb/polynomial-commitments.md#blob_to_kzg_commitment
     pub fn blob_to_kzg_commitment(&self, blob: BlobRef) -> Result<KZGCommitment, Error> {
         // Deserialize the blob into scalars.
-        let mut polynomial = deserialize_blob_to_scalars(blob)?;
+        let blob_scalar = deserialize_blob_to_scalars(blob)?;
 
-        // Bit-reverse polynomial into normal order.
-        bitreverse_slice(&mut polynomial);
+        // Convert blob into monomial form.
+        let polynomial = blob_scalar_to_polynomial(&self.prover.domain, &blob_scalar);
 
-        // Compute commitment in lagrange form.
-        let commitment = g1_lincomb(&self.prover.commit_key.g1_lagrange, &polynomial)
-            .expect("commit_key.g1_lagrange.len() == polynomial.len()")
-            .into();
+        // Compute commitment in monomial form.
+        let commitment = g1_lincomb(&self.prover.commit_key.g1s, &polynomial)
+            .expect("commit_key.g1s.len() == polynomial.len()")
+            .to_affine();
 
         // Serialize the commitment.
         Ok(serialize_g1_compressed(&commitment))
@@ -41,21 +40,24 @@ impl Context {
         z: KZGOpeningPoint,
     ) -> Result<(KZGProof, KZGOpeningEvaluation), Error> {
         // Deserialize the blob into scalars.
-        let polynomial = deserialize_blob_to_scalars(blob)?;
+        let blob_scalar = deserialize_blob_to_scalars(blob)?;
+
+        // Convert blob into monomial form.
+        let polynomial = blob_scalar_to_polynomial(&self.prover.domain, &blob_scalar);
 
         // Deserialize the point into scalar.
         let z = deserialize_bytes_to_scalar(&z)?;
 
         // Compute evaluation and quotient at challenge.
-        let (y, quotient) = compute_evaluation_and_quotient(&self.prover.domain, &polynomial, z);
+        let (y, quotient) = compute_evaluation_and_quotient(&polynomial, z);
 
         // Compute KZG opening proof.
         let proof = {
             #[cfg(feature = "tracing")]
             let _span = tracing::info_span!("commit quotient").entered();
-            g1_lincomb(&self.prover.commit_key.g1_lagrange, &quotient)
-                .expect("commit_key.g1_lagrange.len() == quotient.len()")
-                .into()
+            g1_lincomb(&self.prover.commit_key.g1s, &quotient)
+                .expect("commit_key.g1s.len() == quotient.len()")
+                .to_affine()
         };
 
         // Serialize the commitment.
@@ -75,7 +77,10 @@ impl Context {
         commitment: KZGCommitment,
     ) -> Result<KZGProof, Error> {
         // Deserialize the blob into scalars.
-        let polynomial = deserialize_blob_to_scalars(blob)?;
+        let blob_scalar = deserialize_blob_to_scalars(blob)?;
+
+        // Convert blob into monomial form.
+        let polynomial = blob_scalar_to_polynomial(&self.prover.domain, &blob_scalar);
 
         // Deserialize the KZG commitment.
         // We only do this to check if it is in the correct subgroup
@@ -86,15 +91,15 @@ impl Context {
 
         // Compute evaluation and quotient at z.
         // The quotient is returned in "normal order"
-        let (_, quotient) = compute_evaluation_and_quotient(&self.prover.domain, &polynomial, z);
+        let (_, quotient) = compute_evaluation_and_quotient(&polynomial, z);
 
         // Compute KZG opening proof.
         let proof = {
             #[cfg(feature = "tracing")]
             let _span = tracing::info_span!("commit quotient").entered();
-            g1_lincomb(&self.prover.commit_key.g1_lagrange, &quotient)
-                .expect("commit_key.g1_lagrange.len() == quotient.len()")
-                .into()
+            g1_lincomb(&self.prover.commit_key.g1s, &quotient)
+                .expect("commit_key.g1s.len() == quotient.len()")
+                .to_affine()
         };
 
         // Serialize the commitment.

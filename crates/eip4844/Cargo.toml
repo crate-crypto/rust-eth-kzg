@@ -22,6 +22,7 @@ sha2 = "0.10.8"
 tracing = { version = "0.1.41", default-features = false, features = [
     "attributes",
 ], optional = true }
+itertools = { version = "0.14.0", default-features = false, features = ["use_alloc"] }
 
 [features]
 singlethreaded = []
