@@ -161,13 +161,11 @@ pub mod verifier {
         batch_inverse(&mut denoms);
 
         // \sum (ω^i * f(ω^i) / (z - ω^i)) * ((z^n - 1) / n)
-        let y = izip!(&domain.roots, &polynomial, &denoms)
+        izip!(&domain.roots, &polynomial, &denoms)
             .map(|(root, f_root, denom)| root * f_root * denom)
             .sum::<Scalar>()
             * (z.pow_vartime([domain_size as u64]) - Scalar::ONE)
-            * domain.domain_size_inv;
-
-        y
+            * domain.domain_size_inv
     }
 }
 

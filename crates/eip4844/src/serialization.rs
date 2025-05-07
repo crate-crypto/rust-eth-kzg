@@ -14,7 +14,7 @@ fn deserialize_bytes_to_scalars(bytes: &[u8]) -> Result<Vec<Scalar>, Serializati
 
     bytes
         .chunks_exact(BYTES_PER_FIELD_ELEMENT)
-        .map(|bytes32| deserialize_bytes_to_scalar(bytes32))
+        .map(deserialize_bytes_to_scalar)
         .collect()
 }
 

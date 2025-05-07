@@ -224,7 +224,7 @@ pub fn compute_r_powers_for_verify_kzg_proof_batch(
     hash_input.extend((domain_size as u64).to_be_bytes());
     hash_input.extend((n as u64).to_be_bytes());
     izip!(commitments, zs, ys, proofs).for_each(|(&commitment, z, y, &proof)| {
-        hash_input.extend(chain![commitment, z.to_bytes_be(), y.to_bytes_be(), proof])
+        hash_input.extend(chain![commitment, z.to_bytes_be(), y.to_bytes_be(), proof]);
     });
 
     assert_eq!(hash_input.len(), hash_input_size);
