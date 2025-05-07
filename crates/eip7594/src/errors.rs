@@ -42,6 +42,12 @@ impl From<RecoveryError> for Error {
     }
 }
 
+impl From<RSError> for Error {
+    fn from(value: RSError) -> Self {
+        Self::Recovery(RecoveryError::ReedSolomon(value))
+    }
+}
+
 /// Errors that can occur while calling a method in the Prover API
 #[derive(Debug)]
 pub enum ProverError {
