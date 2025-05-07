@@ -109,7 +109,7 @@ impl TrustedSetup {
         self.to_verification_key(SubgroupCheck::Check);
     }
 
-    /// Converts the G1 monomial basis from the trusted setup into a `CommitKey`.
+    /// Converts the G1 points in monomial basis from the trusted setup into a `CommitKey`.
     ///
     /// Can optionally check subgroup membership.
     fn to_commit_key(&self, subgroup_check: SubgroupCheck) -> CommitKey {
