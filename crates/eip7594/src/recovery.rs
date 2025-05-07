@@ -65,6 +65,15 @@ let missing_cell_indices = find_missing_cell_indices(&cell_indices_normal_order)
     Ok(recovered_polynomial_coeff)
 }
 
+#[inline]
+fn find_missing_cell_indices(present_cell_indices: &[usize]) -> Vec<usize> {
+    let cell_indices: HashSet<_> = present_cell_indices.iter().copied().collect();
+
+    (0..CELLS_PER_EXT_BLOB)
+        .filter(|i| !cell_indices.contains(i))
+        .collect()
+}
+
 /// Validates that the given cell indices and cell data are suitable for polynomial recovery.
 ///
 /// Checks the following:
