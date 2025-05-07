@@ -19,8 +19,8 @@ impl From<&TrustedSetup> for VerificationKey {
 
 impl From<&TrustedSetup> for CommitKey {
     fn from(setup: &TrustedSetup) -> Self {
-        let g1_lagrange = deserialize_g1_points(&setup.g1_lagrange, SubgroupCheck::NoCheck);
-        Self { g1_lagrange }
+        let g1s = deserialize_g1_points(&setup.g1_monomial, SubgroupCheck::NoCheck);
+        Self { g1s }
     }
 }
 

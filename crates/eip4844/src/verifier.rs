@@ -5,10 +5,11 @@ use bls12_381::{
     reduce_bytes_to_scalar_bias, G1Point, Scalar,
 };
 use itertools::{chain, izip, Itertools};
+use polynomial::{domain::Domain, poly_coeff::PolyCoeff};
 use sha2::{Digest, Sha256};
 
 use crate::{
-    kzg_open::verifier::compute_evaluation,
+    kzg_open::bitreverse_slice,
     serialization::{
         deserialize_blob_to_scalars, deserialize_bytes_to_scalar, deserialize_compressed_g1,
     },
@@ -55,7 +56,7 @@ impl Context {
         proof: KZGProof,
     ) -> Result<(), Error> {
         // Deserialize the blob into scalars.
-        let polynomial = deserialize_blob_to_scalars(blob)?;
+        let blob_scalar = deserialize_blob_to_scalars(blob)?;
 
         // Deserialize the KZG commitment.
         let commitment_g1 = deserialize_compressed_g1(&commitment)?;
@@ -67,7 +68,7 @@ impl Context {
         let z = compute_fiat_shamir_challenge(blob, commitment);
 
         // Compute evaluation at z.
-        let y = compute_evaluation(&self.verifier.domain, &polynomial, z);
+        let y = blob_scalar_to_polynomial(&self.verifier.domain, &blob_scalar).eval(&z);
 
         // Verify KZG proof.
         self.verifier.verify_kzg_proof(commitment_g1, z, y, proof)?;
@@ -95,7 +96,7 @@ impl Context {
         }
 
         // Deserialize the blobs into scalars.
-        let polynomials = blobs
+        let blobs_scalar = blobs
             .iter()
             .map(|blob| deserialize_blob_to_scalars(*blob))
             .try_collect::<_, Vec<_>, _>()?;
@@ -113,13 +114,13 @@ impl Context {
             .try_collect::<_, Vec<_>, _>()?;
 
         // Compute each Fiat-Shamir challenge and evaluation for each proof.
-        let (zs, ys) = izip!(blobs, &polynomials, commitments)
-            .map(|(blob, polynomial, commitment)| {
+        let (zs, ys) = izip!(blobs, &blobs_scalar, commitments)
+            .map(|(blob, blob_scalar, commitment)| {
                 // Compute Fiat-Shamir challenge
                 let z = compute_fiat_shamir_challenge(blob, *commitment);
 
                 // Compute evaluation at z.
-                let y = compute_evaluation(&self.verifier.domain, polynomial, z);
+                let y = blob_scalar_to_polynomial(&self.verifier.domain, blob_scalar).eval(&z);
 
                 (z, y)
             })
@@ -137,6 +138,12 @@ impl Context {
 
         Ok(())
     }
+}
+
+pub(crate) fn blob_scalar_to_polynomial(domain: &Domain, blob_scalar: &[Scalar]) -> PolyCoeff {
+    let mut polynomial = blob_scalar.to_vec();
+    bitreverse_slice(&mut polynomial);
+    domain.ifft_scalars(polynomial)
 }
 
 /// Compute Fiat-Shamir challenge of a blob KZG proof.

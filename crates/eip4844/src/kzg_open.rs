@@ -1,3 +1,6 @@
+use bls12_381::{ff::Field, Scalar};
+use polynomial::poly_coeff::PolyCoeff;
+
 pub(crate) fn bitreverse(mut n: u32, l: u32) -> u32 {
     let mut r = 0;
     for _ in 0..l {
@@ -24,15 +27,24 @@ pub(crate) fn bitreverse_slice<T>(a: &mut [T]) {
     }
 }
 
+/// Compute evaluation and quotient by Ruffini's rule.
+pub fn compute_evaluation_and_quotient(polynomial: &PolyCoeff, z: Scalar) -> (Scalar, Vec<Scalar>) {
+    let mut quotient = vec![Scalar::ZERO; polynomial.len()];
+    (0..polynomial.len() - 1)
+        .rev()
+        .for_each(|i| quotient[i] = quotient[i + 1] * z + polynomial[i + 1]);
+    let y = quotient[0] * z + polynomial[0];
+    (y, quotient)
+}
+
 pub mod verifier {
     use bls12_381::{
-        batch_inversion::batch_inverse, ff::Field, group::Curve, lincomb::g1_lincomb,
-        multi_pairings, G1Point, G2Point, G2Prepared, Scalar,
+        group::Curve, lincomb::g1_lincomb, multi_pairings, G1Point, G2Point, G2Prepared, Scalar,
     };
     use itertools::{chain, cloned, izip, Itertools};
     use polynomial::domain::Domain;
 
-    use crate::{kzg_open::bitreverse_slice, trusted_setup::TrustedSetup, VerifierError};
+    use crate::{trusted_setup::TrustedSetup, VerifierError};
 
     /// The key that is used to verify KZG single-point opening proofs.
     pub struct VerificationKey {
@@ -133,59 +145,24 @@ pub mod verifier {
                 .ok_or(VerifierError::InvalidProof)
         }
     }
-
-    /// Compute evaluation of the given polynomial at the given point.
-    pub(crate) fn compute_evaluation(domain: &Domain, polynomial: &[Scalar], z: Scalar) -> Scalar {
-        domain.roots.iter().position(|root| *root == z).map_or_else(
-            || compute_evaluation_out_of_domain(domain, polynomial, z),
-            |position| polynomial[position],
-        )
-    }
-
-    /// Compute evaluation of the given polynomial at the given point.
-    /// The point is guaranteed to be out-of-domain.
-    pub(crate) fn compute_evaluation_out_of_domain(
-        domain: &Domain,
-        polynomial: &[Scalar],
-        z: Scalar,
-    ) -> Scalar {
-        let domain_size = domain.roots.len();
-
-        // Bit-reverse polynomial into normal order.
-        // Note: This clone is okay because after eip7594, this crate is no longer on the critical path.
-        let mut polynomial = polynomial.to_vec();
-        bitreverse_slice(&mut polynomial);
-
-        // 1 / (z - ω^i)
-        let mut denoms = domain.roots.iter().map(|root| z - root).collect_vec();
-        batch_inverse(&mut denoms);
-
-        // \sum (ω^i * f(ω^i) / (z - ω^i)) * ((z^n - 1) / n)
-        izip!(&domain.roots, &polynomial, &denoms)
-            .map(|(root, f_root, denom)| root * f_root * denom)
-            .sum::<Scalar>()
-            * (z.pow_vartime([domain_size as u64]) - Scalar::ONE)
-            * domain.domain_size_inv
-    }
 }
 
 pub mod prover {
-    use bls12_381::{batch_inversion::batch_inverse, ff::Field, G1Point, Scalar};
-    use maybe_rayon::prelude::*;
+    use bls12_381::G1Point;
     use polynomial::domain::Domain;
 
-    use crate::{kzg_open::bitreverse_slice, TrustedSetup};
+    use crate::TrustedSetup;
 
-    /// The key that is used to commit to polynomials in lagrange form.
+    /// The key that is used to commit to polynomials in monomial form.
     pub struct CommitKey {
-        pub g1_lagrange: Vec<G1Point>,
+        pub g1s: Vec<G1Point>,
     }
 
     pub struct Prover {
         /// Domain used to create the opening proofs.
         pub domain: Domain,
         /// Commitment key used for committing to the polynomial
-        /// in lagrange form
+        /// in monomial form
         pub commit_key: CommitKey,
     }
 
@@ -196,131 +173,5 @@ pub mod prover {
                 commit_key: CommitKey::from(trusted_setup),
             }
         }
-    }
-
-    /// Compute evaluation and quotient of the given polynomial at the given point.
-    ///
-    /// Note: The quotient is returned in normal order.
-    pub fn compute_evaluation_and_quotient(
-        domain: &Domain,
-        polynomial: &[Scalar],
-        z: Scalar,
-    ) -> (Scalar, Vec<Scalar>) {
-        // Find the index of point if it's in the domain.
-        let point_idx = domain.roots.iter().position(|root| *root == z);
-
-        // Compute evaluation and quotient.
-        let (z, quotient) = point_idx.map_or_else(
-            || compute_evaluation_and_quotient_out_of_domain(domain, polynomial, z),
-            |point_idx| {
-                compute_evaluation_and_quotient_within_domain(domain, polynomial, point_idx)
-            },
-        );
-
-        (z, quotient)
-    }
-
-    /// Compute evaluation and quotient of the given polynomial at the given point.
-    /// The point is guaranteed to be out-of-domain.
-    #[cfg_attr(feature = "tracing", tracing::instrument(skip_all))]
-    pub fn compute_evaluation_and_quotient_out_of_domain(
-        domain: &Domain,
-        polynomial: &[Scalar],
-        z: Scalar,
-    ) -> (Scalar, Vec<Scalar>) {
-        // Bit-reverse polynomial into normal order.mal order.
-        let mut polynomial = polynomial.to_vec();
-        bitreverse_slice(&mut polynomial);
-
-        // 1 / (z - ω^i)
-        let mut denoms = (&domain.roots)
-            .maybe_into_par_iter()
-            .map(|root| z - root)
-            .collect::<Vec<_>>();
-        batch_inverse(&mut denoms);
-
-        let domain_size = domain.roots.len();
-
-        // \sum (ω^i * f(ω^i) / (z - ω^i)) * ((z^n - 1) / n)
-        let y = (&domain.roots)
-            .maybe_into_par_iter()
-            .zip(&polynomial)
-            .zip(&denoms)
-            .map(|((root, f_root), denom)| root * *f_root * denom)
-            .sum::<Scalar>()
-            * (z.pow_vartime([domain_size as u64]) - Scalar::ONE)
-            * domain.domain_size_inv;
-
-        // (y - f(ω^i)) / (z - ω^i)
-        let quotient = denoms
-            .maybe_into_par_iter()
-            .zip(&polynomial)
-            .map(|(denom, f_root)| (y - *f_root) * denom)
-            .collect();
-
-        (y, quotient)
-    }
-
-    /// Compute evaluation and quotient of the given polynomial at the given point
-    /// index of the domain.
-    ///
-    /// For more details, read [PCS multiproofs using random evaluation] section
-    /// "Dividing when one of the points is zero".
-    ///
-    /// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#compute_quotient_eval_within_domain
-    ///
-    /// [PCS multiproofs using random evaluation]: https://dankradfeist.de/ethereum/2021/06/18/pcs-multiproofs.html
-    #[cfg_attr(feature = "tracing", tracing::instrument(skip_all))]
-    pub fn compute_evaluation_and_quotient_within_domain(
-        domain: &Domain,
-        polynomial: &[Scalar],
-        point_idx: usize,
-    ) -> (Scalar, Vec<Scalar>) {
-        let domain_size = domain.roots.len();
-
-        // Bit-reverse polynomial into normal order.
-        let mut polynomial = polynomial.to_vec();
-        bitreverse_slice(&mut polynomial);
-
-        // ω^m
-        let z = domain.roots[point_idx];
-
-        // f(ω^m)
-        let y = polynomial[point_idx];
-
-        // 1 / (ω^m - ω^j)
-        // Note that we set (ω^m - ω^m) to be one to make the later `batch_inverse` work.
-        let mut denoms = (&domain.roots)
-            .maybe_into_par_iter()
-            .enumerate()
-            .map(|(idx, root)| {
-                if idx == point_idx {
-                    Scalar::ONE
-                } else {
-                    z - root
-                }
-            })
-            .collect::<Vec<_>>();
-        batch_inverse(&mut denoms);
-
-        // (f(ω^m) - f(ω^j)) / (ω^m - ω^j)
-        let mut quotient = denoms
-            .maybe_into_par_iter()
-            .zip(polynomial)
-            .map(|(denom, f_root)| (y - f_root) * denom)
-            .collect::<Vec<_>>();
-
-        // Compute q(ω^m) = \sum q(ω^j) * (A'(ω^m) / A'(ω^j)) = \sum q(ω^j) * ω^{j - m}
-        quotient[point_idx] = Scalar::ZERO;
-        quotient[point_idx] = -(&quotient)
-            .maybe_into_par_iter()
-            .enumerate()
-            .map(|(idx, quotient)| {
-                let root_j_mimus_m = domain.roots[(domain_size + idx - point_idx) % domain_size];
-                *quotient * root_j_mimus_m
-            })
-            .sum::<Scalar>();
-
-        (y, quotient)
     }
 }
