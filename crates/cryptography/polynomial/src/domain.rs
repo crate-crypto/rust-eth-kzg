@@ -6,7 +6,7 @@ use bls12_381::{
 
 use crate::{
     coset_fft::CosetFFT,
-    fft::{fft_g1_inplace, fft_scalar_inplace, precompute_omegas, precompute_twiddle_factors_bo},
+    fft::{fft_inplace, precompute_omegas, precompute_twiddle_factors_bo},
     poly_coeff::PolyCoeff,
 };
 
@@ -123,7 +123,7 @@ impl Domain {
         // domain.
         polynomial.resize(self.size(), Scalar::ZERO);
 
-        fft_scalar_inplace(&self.omegas, &self.twiddle_factors_bo, &mut polynomial);
+        fft_inplace(&self.omegas, &self.twiddle_factors_bo, &mut polynomial);
 
         polynomial.0
     }
@@ -140,7 +140,7 @@ impl Domain {
             *point *= coset_scale;
             coset_scale *= coset.generator;
         }
-        fft_scalar_inplace(&self.omegas, &self.twiddle_factors_bo, &mut points);
+        fft_inplace(&self.omegas, &self.twiddle_factors_bo, &mut points);
 
         points.0
     }
@@ -155,7 +155,7 @@ impl Domain {
         // domain.
         points.resize(self.size(), G1Projective::identity());
 
-        fft_g1_inplace(&self.omegas, &self.twiddle_factors_bo, &mut points);
+        fft_inplace(&self.omegas, &self.twiddle_factors_bo, &mut points);
 
         points
     }
@@ -182,7 +182,7 @@ impl Domain {
         // domain.
         points.resize(self.size(), G1Projective::identity());
 
-        fft_g1_inplace(&self.omegas_inv, &self.twiddle_factors_inv_bo, &mut points);
+        fft_inplace(&self.omegas_inv, &self.twiddle_factors_inv_bo, &mut points);
 
         // Truncate the result if a value of `n` was supplied.
         let out_len = n.unwrap_or(points.len());
@@ -205,7 +205,7 @@ impl Domain {
         // domain.
         points.resize(self.size(), Scalar::ZERO);
 
-        fft_scalar_inplace(&self.omegas_inv, &self.twiddle_factors_inv_bo, &mut points);
+        fft_inplace(&self.omegas_inv, &self.twiddle_factors_inv_bo, &mut points);
 
         for element in &mut points {
             *element *= self.domain_size_inv;
