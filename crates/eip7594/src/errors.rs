@@ -21,7 +21,7 @@ impl Error {
     /// Note: This distinction in practice, is not meaningful for the caller and is mainly
     /// here due to the specs and spec tests making this distinction.
     pub const fn invalid_proof(&self) -> bool {
-        matches!(self, Self::Verifier(VerifierError::Fk20(_)))
+        matches!(self, Self::Verifier(VerifierError::FK20(_)))
     }
 }
 
@@ -142,7 +142,7 @@ pub enum VerifierError {
         proofs_len: usize,
     },
     /// Failure in FK20 batch proof verification.
-    Fk20(kzg_multi_open::VerifierError),
+    FK20(kzg_multi_open::VerifierError),
     /// The polynomial had an unexpected length.
     PolynomialHasInvalidLength {
         /// Actual number of coefficients.
@@ -154,7 +154,7 @@ pub enum VerifierError {
 
 impl From<kzg_multi_open::VerifierError> for VerifierError {
     fn from(value: kzg_multi_open::VerifierError) -> Self {
-        Self::Fk20(value)
+        Self::FK20(value)
     }
 }
 
