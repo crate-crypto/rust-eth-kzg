@@ -164,7 +164,7 @@ pub(crate) fn compute_fiat_shamir_challenge(blob: BlobRef, commitment: KZGCommit
     let field_elements_per_blob = blob.len() / bytes_per_field_element;
 
     let hash_input_size = DOMAIN_SEP.len()
-            + 2 * size_of::<u64>() // polynomial bound
+            + 16 // polynomial bound
             + bytes_per_blob // blob
             + bytes_per_commitment // commitment
             ;
@@ -172,8 +172,7 @@ pub(crate) fn compute_fiat_shamir_challenge(blob: BlobRef, commitment: KZGCommit
     let mut hash_input: Vec<u8> = Vec::with_capacity(hash_input_size);
 
     hash_input.extend(DOMAIN_SEP.as_bytes());
-    hash_input.extend(0u64.to_be_bytes());
-    hash_input.extend((field_elements_per_blob as u64).to_be_bytes());
+    hash_input.extend((field_elements_per_blob as u128).to_be_bytes());
     hash_input.extend(blob);
     hash_input.extend(commitment);
 
@@ -216,8 +215,8 @@ pub fn compute_r_powers_for_verify_kzg_proof_batch(
     let n = commitments.len();
 
     let hash_input_size = DOMAIN_SEP.len()
-        + size_of::<u64>() // polynomial bound
-        + size_of::<u64>() // batch size
+        + 8 // polynomial bound
+        + 8 // batch size
         + n * (
             bytes_per_commitment // commitment
             + bytes_per_field_element // z

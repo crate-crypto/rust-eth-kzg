@@ -1,5 +1,4 @@
-use bls12_381::{ff::Field, Scalar};
-use polynomial::poly_coeff::PolyCoeff;
+use bls12_381::Scalar;
 
 pub(crate) fn bitreverse(mut n: u32, l: u32) -> u32 {
     let mut r = 0;
@@ -27,14 +26,24 @@ pub(crate) fn bitreverse_slice<T>(a: &mut [T]) {
     }
 }
 
-/// Compute evaluation and quotient by Ruffini's rule.
-pub fn compute_evaluation_and_quotient(polynomial: &PolyCoeff, z: Scalar) -> (Scalar, Vec<Scalar>) {
-    let mut quotient = vec![Scalar::ZERO; polynomial.len()];
-    (0..polynomial.len() - 1)
-        .rev()
-        .for_each(|i| quotient[i] = quotient[i + 1] * z + polynomial[i + 1]);
-    let y = quotient[0] * z + polynomial[0];
-    (y, quotient)
+/// Divides poly by X-Z using ruffini's rule, and returns quotient and reminder.
+pub(crate) fn divide_by_linear(poly: &[Scalar], z: Scalar) -> (Vec<Scalar>, Scalar) {
+    let mut quotient: Vec<Scalar> = Vec::with_capacity(poly.len());
+    let mut k = Scalar::from(0u64);
+
+    for coeff in poly.iter().rev() {
+        let t = *coeff + k;
+        quotient.push(t);
+        k = z * t;
+    }
+
+    // Pop off the remainder term
+    let reminder = quotient.pop().expect("!quotient.is_empty()");
+
+    // Reverse the results as monomial form stores coefficients starting with lowest degree
+    quotient.reverse();
+
+    (quotient, reminder)
 }
 
 pub mod verifier {
