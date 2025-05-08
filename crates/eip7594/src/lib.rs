@@ -16,15 +16,16 @@ pub use errors::Error;
 /// TrustedSetup contains the Structured Reference String(SRS)
 /// needed to make and verify proofs.
 pub use trusted_setup::TrustedSetup;
-/// BlobRef denotes a references to an opaque Blob.
+
+/// `BlobRef` denotes a references to an opaque Blob.
 ///
 /// Note: This library never returns a Blob, which is why we
 /// do not have a Blob type.
 pub type BlobRef<'a> = &'a [u8; BYTES_PER_BLOB];
 
-/// Bytes48Ref denotes a reference to an untrusted cryptographic type
+/// `Bytes48Ref` denotes a reference to an untrusted cryptographic type
 /// that can be represented in 48 bytes. This will be either a
-/// purported KZGProof or a purported KZGCommitment.
+/// purported `KZGProof` or a purported `KZGCommitment`.
 pub type Bytes48Ref<'a> = &'a [u8; 48];
 
 /// Cell contains a group of evaluations on a coset that one would like to
@@ -33,22 +34,22 @@ pub type Bytes48Ref<'a> = &'a [u8; 48];
 /// Note: These are heap allocated.
 pub type Cell = Box<[u8; BYTES_PER_CELL]>;
 
-/// CellRef contains a reference to a Cell.
+/// `CellRef` contains a reference to a Cell.
 ///
 /// Note: Similar to Blob, the library takes in references
 /// to Cell and returns heap allocated instances as return types.
 pub type CellRef<'a> = &'a [u8; BYTES_PER_CELL];
 
-/// KZGProof denotes a 48 byte commitment to a polynomial
+/// `KZGProof` denotes a 48 byte commitment to a polynomial
 /// that one can use to prove that a polynomial f(x) was
 /// correctly evaluated on a coset `H` and returned a set of points.
 pub type KZGProof = [u8; BYTES_PER_COMMITMENT];
 
-/// KZGCommitment denotes a 48 byte commitment to a polynomial f(x)
+/// `KZGCommitment` denotes a 48 byte commitment to a polynomial f(x)
 /// that we would like to make and verify opening proofs about.
 pub type KZGCommitment = [u8; BYTES_PER_COMMITMENT];
 
-/// CellIndex is reference to the coset/set of points that were used to create that Cell,
+/// `CellIndex` is reference to the coset/set of points that were used to create that Cell,
 /// on a particular polynomial, f(x).
 ///
 /// Note: Since the verifier and prover both know what cosets will be used

@@ -12,13 +12,10 @@ fn deserialize_bytes_to_scalars(bytes: &[u8]) -> Result<Vec<Scalar>, Serializati
         });
     }
 
-    let bytes32s = bytes.chunks_exact(BYTES_PER_FIELD_ELEMENT);
-
-    let mut scalars = Vec::with_capacity(bytes32s.len());
-    for bytes32 in bytes32s {
-        scalars.push(deserialize_bytes_to_scalar(bytes32)?);
-    }
-    Ok(scalars)
+    bytes
+        .chunks_exact(BYTES_PER_FIELD_ELEMENT)
+        .map(deserialize_bytes_to_scalar)
+        .collect()
 }
 
 pub(crate) fn deserialize_blob_to_scalars(
@@ -39,15 +36,10 @@ pub(crate) fn deserialize_bytes_to_scalar(
     let bytes32 = scalar_bytes.try_into().expect("infallible: expected blob chunks to be exactly {SCALAR_SERIALIZED_SIZE} bytes, since blob was a multiple of {SCALAR_SERIALIZED_SIZE");
 
     // Convert the CtOption into Option
-    let option_scalar: Option<Scalar> = Scalar::from_bytes_be(bytes32).into();
-    option_scalar.map_or_else(
-        || {
-            Err(SerializationError::CouldNotDeserializeScalar {
-                bytes: scalar_bytes.to_vec(),
-            })
-        },
-        Ok,
-    )
+    let option_scalar: Option<Scalar> = Option::from(Scalar::from_bytes_be(bytes32));
+    option_scalar.ok_or_else(|| SerializationError::CouldNotDeserializeScalar {
+        bytes: scalar_bytes.to_vec(),
+    })
 }
 
 pub(crate) fn deserialize_compressed_g1(point_bytes: &[u8]) -> Result<G1Point, SerializationError> {

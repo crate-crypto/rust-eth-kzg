@@ -6,7 +6,7 @@ use std::{
 use bls12_381::{ff::Field, group::Group, G1Projective, Scalar};
 use maybe_rayon::prelude::*;
 
-trait FFTElement:
+pub(crate) trait FFTElement:
     Sized
     + Send
     + Copy
@@ -33,7 +33,11 @@ impl FFTElement for G1Projective {
 }
 
 // Taken and modified from https://github.com/Plonky3/Plonky3/blob/a374139/dft/src/radix_2_dit_parallel.rs#L106.
-fn fft_inplace<T: FFTElement>(omegas: &[Scalar], twiddle_factors_bo: &[Scalar], values: &mut [T]) {
+pub(crate) fn fft_inplace<T: FFTElement>(
+    omegas: &[Scalar],
+    twiddle_factors_bo: &[Scalar],
+    values: &mut [T],
+) {
     let log_n = log2_pow2(values.len()) as usize;
     let mid = log_n.div_ceil(2);
 
@@ -138,22 +142,6 @@ fn dit<T: FFTElement>(a: &mut T, b: &mut T, twiddle: Scalar) {
     *b = *a;
     *a = *a + t;
     *b = *b - t;
-}
-
-pub(crate) fn fft_scalar_inplace(
-    twiddle_factors: &[Scalar],
-    twiddle_factors_bo: &[Scalar],
-    a: &mut [Scalar],
-) {
-    fft_inplace(twiddle_factors, twiddle_factors_bo, a);
-}
-
-pub(crate) fn fft_g1_inplace(
-    twiddle_factors: &[Scalar],
-    twiddle_factors_bo: &[Scalar],
-    a: &mut [G1Projective],
-) {
-    fft_inplace(twiddle_factors, twiddle_factors_bo, a);
 }
 
 /// Reverses the least significant `bits` of the given number `n`.
