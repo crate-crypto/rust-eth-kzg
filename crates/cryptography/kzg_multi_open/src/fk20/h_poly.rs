@@ -70,6 +70,7 @@ pub(crate) fn take_every_nth<T: Clone + Copy>(list: &[T], n: usize) -> Vec<Vec<T
 #[cfg(test)]
 mod tests {
     use bls12_381::{fixed_base_msm::UsePrecomp, Scalar};
+    use polynomial::poly_coeff::PolyCoeff;
 
     use crate::{
         create_insecure_commit_verification_keys,
@@ -90,7 +91,7 @@ mod tests {
 
     #[test]
     fn check_consistency_of_toeplitz_h_polys() {
-        let poly: Vec<_> = (0..4096).map(|i| -Scalar::from(i)).collect();
+        let poly = PolyCoeff((0..4096).map(|i| -Scalar::from(i)).collect());
         let coset_size: usize = 64;
         let (commit_key, _) = create_insecure_commit_verification_keys();
 

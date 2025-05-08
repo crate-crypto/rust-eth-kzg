@@ -108,13 +108,18 @@ fn compute_coset_evaluations(
 #[cfg(test)]
 mod tests {
     use bls12_381::Scalar;
+    use polynomial::poly_coeff::PolyCoeff;
 
     use crate::fk20::naive::shift_polynomial;
 
     #[test]
     fn check_divide_by_monomial_floor() {
         // \floor(x^2 + x + 10 / x) = x + 1
-        let poly = vec![Scalar::from(10u64), Scalar::from(1u64), Scalar::from(1u64)];
+        let poly = PolyCoeff(vec![
+            Scalar::from(10u64),
+            Scalar::from(1u64),
+            Scalar::from(1u64),
+        ]);
         let result = shift_polynomial(&poly, 1);
         assert_eq!(result, vec![Scalar::from(1u64), Scalar::from(1u64)]);
     }

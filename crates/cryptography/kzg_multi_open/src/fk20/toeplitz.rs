@@ -134,10 +134,10 @@ impl CirculantMatrix {
     /// with a vector of scalars using FFT.
     ///
     /// See https://www.johndcook.com/blog/2023/05/12/circulant-matrices/ for more details.
-    fn vector_mul_scalar(self, vector: Vec<Scalar>) -> Vec<Scalar> {
+    fn vector_mul_scalar(self, vector: Vec<Scalar>) -> polynomial::poly_coeff::PolyCoeff {
         let domain = polynomial::domain::Domain::new(vector.len() * 2);
-        let m_fft = domain.fft_scalars(vector);
-        let col_fft = domain.fft_scalars(self.row);
+        let m_fft = domain.fft_scalars(vector.into());
+        let col_fft = domain.fft_scalars(self.row.into());
 
         let mut evaluations = Vec::new();
         for (a, b) in m_fft.into_iter().zip(col_fft) {
@@ -158,7 +158,7 @@ impl CirculantMatrix {
         let domain = polynomial::domain::Domain::new(vector.len() * 2);
         // Compute the fft of the
         let m_fft = domain.fft_g1(vector);
-        let col_fft = domain.fft_scalars(self.row);
+        let col_fft = domain.fft_scalars(self.row.into());
 
         let mut evaluations = Vec::new();
         for (a, b) in m_fft.into_iter().zip(col_fft) {
@@ -177,7 +177,7 @@ impl ToeplitzMatrix {
         let circulant_result = cm.vector_mul_scalar(vector);
 
         // We take the first half of the result, as this is the result of the Toeplitz matrix multiplication
-        circulant_result.into_iter().take(n).collect()
+        circulant_result.0.into_iter().take(n).collect()
     }
 
     pub(crate) fn vector_mul_g1(

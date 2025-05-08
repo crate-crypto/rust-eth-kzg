@@ -1,7 +1,7 @@
 use bls12_381::{G1Point, G2Point};
 use serde::Deserialize;
 
-use crate::cryptography::{prover::CommitKey, verifier::VerificationKey};
+use crate::kzg_open::{prover::CommitKey, verifier::VerificationKey};
 
 const TRUSTED_SETUP_JSON: &str = include_str!("../../eip7594/data/trusted_setup_4096.json");
 
@@ -9,21 +9,18 @@ impl From<&TrustedSetup> for VerificationKey {
     fn from(setup: &TrustedSetup) -> Self {
         let g1_monomial = deserialize_g1_points(&setup.g1_monomial, SubgroupCheck::NoCheck);
         let g2_monomial = deserialize_g2_points(&setup.g2_monomial, SubgroupCheck::NoCheck);
-        let gen_g1 = g1_monomial[0];
-        let gen_g2 = g2_monomial[0];
-        let tau_g2 = g2_monomial[1];
         Self {
-            gen_g1,
-            gen_g2,
-            tau_g2,
+            gen_g1: g1_monomial[0],
+            gen_g2: g2_monomial[0],
+            tau_g2: g2_monomial[1],
         }
     }
 }
 
 impl From<&TrustedSetup> for CommitKey {
     fn from(setup: &TrustedSetup) -> Self {
-        let g1_lagrange = deserialize_g1_points(&setup.g1_lagrange, SubgroupCheck::NoCheck);
-        Self { g1_lagrange }
+        let g1s = deserialize_g1_points(&setup.g1_monomial, SubgroupCheck::NoCheck);
+        Self { g1s }
     }
 }
 
@@ -90,6 +87,7 @@ impl TrustedSetup {
     pub fn from_json(json: &str) -> Self {
         Self::from_json_unchecked(json)
     }
+
     /// Parse a Json string in the format specified by the ethereum trusted setup.
     ///
     /// This method does not check that the points are in the correct subgroup.
