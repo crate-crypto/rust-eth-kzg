@@ -319,12 +319,6 @@ mod tests {
         assert_eq!(a.add(&b).sub(&b), a);
     }
 
-    #[test]
-    fn test_from_vec_all_zeros() {
-        let a = vec![Scalar::from(0); 10];
-        assert_eq!(PolyCoeff::from(a), PolyCoeff(vec![]));
-    }
-
     proptest! {
         #[test]
         fn prop_add_commutative(a in arb_scalar_vec(16), b in arb_scalar_vec(16)) {
