@@ -1,4 +1,4 @@
-use bls12_381::Scalar;
+use bls12_381::{ff::Field, Scalar};
 
 pub(crate) fn bitreverse(mut n: u32, l: u32) -> u32 {
     let mut r = 0;
@@ -37,13 +37,13 @@ pub(crate) fn divide_by_linear(poly: &[Scalar], z: Scalar) -> (Vec<Scalar>, Scal
         k = z * t;
     }
 
-    // Pop off the remainder term
-    let reminder = quotient.pop().expect("!quotient.is_empty()");
+    // Remainder is the highest-degree term computed; remove it from quotient
+    let remainder = quotient.pop().unwrap_or(Scalar::ZERO);
 
     // Reverse the results as monomial form stores coefficients starting with lowest degree
     quotient.reverse();
 
-    (quotient, reminder)
+    (quotient, remainder)
 }
 
 pub mod verifier {

@@ -1,4 +1,8 @@
-use bls12_381::{group::Curve, lincomb::g1_lincomb};
+use bls12_381::{
+    group::{Curve, Group},
+    lincomb::g1_lincomb,
+    G1Projective,
+};
 
 use crate::{
     kzg_open::divide_by_linear,
@@ -22,9 +26,16 @@ impl Context {
         let polynomial = blob_scalar_to_polynomial(&self.prover.domain, &blob_scalar);
 
         // Compute commitment in monomial form.
-        let commitment = g1_lincomb(&self.prover.commit_key.g1s, &polynomial)
-            .expect("commit_key.g1s.len() == polynomial.len()")
-            .to_affine();
+        //
+        // - If the commitment key is empty or the polynomial is empty, return the identity.
+        // - Otherwise, compute the linear combination of the commitment key and the polynomial.
+        let commitment = if self.prover.commit_key.g1s.is_empty() || polynomial.is_empty() {
+            G1Projective::identity().into()
+        } else {
+            g1_lincomb(&self.prover.commit_key.g1s, &polynomial)
+                .expect("commit_key.g1s.len() == polynomial.len()")
+                .to_affine()
+        };
 
         // Serialize the commitment.
         Ok(serialize_g1_compressed(&commitment))
