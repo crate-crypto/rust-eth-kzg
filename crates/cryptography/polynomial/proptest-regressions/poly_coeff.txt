@@ -1,0 +1,10 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 4cfac49a3380eabe8f24b9a5364dadadc34809ac9e6ca137eee99e94fca46115 # shrinks to a = [], b = [Scalar(0x0000000000000000000000000000000000000000000000000000000000000000)]
+cc e8c2dbfeb3ac5f1830b78c593da87d2a377482f7a3f72148fad77dcd3317e609 # shrinks to a = [Scalar(0x0000000000000000000000000000000000000000000000000000000000000000), Scalar(0x0000000000000000000000000000000000000000000000000000000000000000)], b = []
+cc a56a71038399f41f416e4d9ddd9ffa449f0d25b24833667c6c6ccf4a4915c894 # shrinks to a = [], b = []
+cc 0df0d6bcd50dc972d975ea34fd9bdaa18367321aa210d7faab71e180985af6fd # shrinks to a = [], b = [], c = []
