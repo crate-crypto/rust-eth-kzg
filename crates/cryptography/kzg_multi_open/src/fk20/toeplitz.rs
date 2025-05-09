@@ -52,6 +52,29 @@ pub struct ToeplitzMatrix {
     col: Vec<Scalar>,
 }
 
+impl ToeplitzMatrix {
+    /// Constructs a Toeplitz matrix from its first row and column.
+    ///
+    /// A Toeplitz matrix is fully determined by its first row and column:
+    /// - `row[0]` must equal `col[0]` (the shared top-left entry),
+    /// - `row` defines the elements on and above the main diagonal,
+    /// - `col` defines the elements below the main diagonal.
+    ///
+    /// # Panics
+    /// Panics if either `row` or `col` is empty, or if `row[0] != col[0]`.
+    pub fn new(row: Vec<Scalar>, col: Vec<Scalar>) -> Self {
+        assert!(
+            !row.is_empty() && !col.is_empty(),
+            "row and col must be non-empty"
+        );
+        assert_eq!(
+            row[0], col[0],
+            "Toeplitz matrix must satisfy row[0] == col[0] (shared top-left entry)"
+        );
+        Self { row, col }
+    }
+}
+
 /// A circulant matrix is a special kind of Toeplitz matrix where each row is rotated one
 /// element to the right relative to the preceding row. This structure allows for an even
 /// more efficient representation than a general Toeplitz matrix.
@@ -98,19 +121,8 @@ pub struct ToeplitzMatrix {
 #[derive(Debug, Clone)]
 pub(crate) struct CirculantMatrix {
     /// A vector representing the first row of the matrix. This single row defines
-    ///   the entire circulant matrix.
+    /// the entire circulant matrix.
     pub(crate) row: Vec<Scalar>,
-}
-
-impl ToeplitzMatrix {
-    pub fn new(row: Vec<Scalar>, col: Vec<Scalar>) -> Self {
-        assert!(
-            !row.is_empty() && !col.is_empty(),
-            "cannot initialize ToeplitzMatrix with an empty row or column"
-        );
-
-        Self { row, col }
-    }
 }
 
 impl CirculantMatrix {
@@ -129,143 +141,135 @@ impl CirculantMatrix {
 }
 
 #[cfg(test)]
-impl CirculantMatrix {
-    /// This method performs an efficient multiplication of the circulant matrix
-    /// with a vector of scalars using FFT.
-    ///
-    /// See https://www.johndcook.com/blog/2023/05/12/circulant-matrices/ for more details.
-    fn vector_mul_scalar(self, vector: Vec<Scalar>) -> polynomial::poly_coeff::PolyCoeff {
-        let domain = polynomial::domain::Domain::new(vector.len() * 2);
-        let m_fft = domain.fft_scalars(vector.into());
-        let col_fft = domain.fft_scalars(self.row.into());
+mod tests {
+    use bls12_381::G1Projective;
 
-        let mut evaluations = Vec::new();
-        for (a, b) in m_fft.into_iter().zip(col_fft) {
-            evaluations.push(a * b);
+    use super::*;
+
+    impl ToeplitzMatrix {
+        fn vector_mul_scalars(self, vector: Vec<Scalar>) -> Vec<Scalar> {
+            let n = vector.len();
+            assert_eq!(vector.len(), self.col.len());
+            let cm = CirculantMatrix::from_toeplitz(self);
+            let circulant_result = cm.vector_mul_scalar(vector);
+
+            // We take the first half of the result, as this is the result of the Toeplitz matrix multiplication
+            circulant_result.0.into_iter().take(n).collect()
         }
 
-        domain.ifft_scalars(evaluations)
-    }
+        pub(crate) fn vector_mul_g1(self, vector: Vec<G1Projective>) -> Vec<G1Projective> {
+            let n = vector.len();
+            let cm = CirculantMatrix::from_toeplitz(self);
+            let circulant_result = cm.vector_mul_g1(vector);
 
-    /// This method performs an efficient multiplication of the circulant matrix
-    /// with a vector of G1 points using FFT.
-    ///
-    /// See https://www.johndcook.com/blog/2023/05/12/circulant-matrices/ for more details.
-    fn vector_mul_g1(self, vector: Vec<bls12_381::G1Projective>) -> Vec<bls12_381::G1Projective> {
-        assert!(vector.len().is_power_of_two());
-
-        // Compute the circulant domain
-        let domain = polynomial::domain::Domain::new(vector.len() * 2);
-        // Compute the fft of the
-        let m_fft = domain.fft_g1(vector);
-        let col_fft = domain.fft_scalars(self.row.into());
-
-        let mut evaluations = Vec::new();
-        for (a, b) in m_fft.into_iter().zip(col_fft) {
-            evaluations.push(a * b);
+            // We take the first half of the result, as this is the result of the Toeplitz matrix multiplication
+            circulant_result.into_iter().take(n).collect()
         }
-        domain.ifft_g1(evaluations)
-    }
-}
-
-#[cfg(test)]
-impl ToeplitzMatrix {
-    fn vector_mul_scalars(self, vector: Vec<Scalar>) -> Vec<Scalar> {
-        let n = vector.len();
-        assert_eq!(vector.len(), self.col.len());
-        let cm = CirculantMatrix::from_toeplitz(self);
-        let circulant_result = cm.vector_mul_scalar(vector);
-
-        // We take the first half of the result, as this is the result of the Toeplitz matrix multiplication
-        circulant_result.0.into_iter().take(n).collect()
     }
 
-    pub(crate) fn vector_mul_g1(
-        self,
-        vector: Vec<bls12_381::G1Projective>,
-    ) -> Vec<bls12_381::G1Projective> {
-        let n = vector.len();
-        let cm = CirculantMatrix::from_toeplitz(self);
-        let circulant_result = cm.vector_mul_g1(vector);
+    impl CirculantMatrix {
+        /// This method performs an efficient multiplication of the circulant matrix
+        /// with a vector of scalars using FFT.
+        ///
+        /// See https://www.johndcook.com/blog/2023/05/12/circulant-matrices/ for more details.
+        fn vector_mul_scalar(self, vector: Vec<Scalar>) -> polynomial::poly_coeff::PolyCoeff {
+            let domain = polynomial::domain::Domain::new(vector.len() * 2);
+            let m_fft = domain.fft_scalars(vector.into());
+            let col_fft = domain.fft_scalars(self.row.into());
 
-        // We take the first half of the result, as this is the result of the Toeplitz matrix multiplication
-        circulant_result.into_iter().take(n).collect()
+            let mut evaluations = Vec::new();
+            for (a, b) in m_fft.into_iter().zip(col_fft) {
+                evaluations.push(a * b);
+            }
+
+            domain.ifft_scalars(evaluations)
+        }
+
+        /// This method performs an efficient multiplication of the circulant matrix
+        /// with a vector of G1 points using FFT.
+        ///
+        /// See https://www.johndcook.com/blog/2023/05/12/circulant-matrices/ for more details.
+        fn vector_mul_g1(self, vector: Vec<G1Projective>) -> Vec<G1Projective> {
+            assert!(vector.len().is_power_of_two());
+
+            // Compute the circulant domain
+            let domain = polynomial::domain::Domain::new(vector.len() * 2);
+            // Compute the fft of the
+            let m_fft = domain.fft_g1(vector);
+            let col_fft = domain.fft_scalars(self.row.into());
+
+            let mut evaluations = Vec::new();
+            for (a, b) in m_fft.into_iter().zip(col_fft) {
+                evaluations.push(a * b);
+            }
+            domain.ifft_g1(evaluations)
+        }
     }
-}
 
-#[cfg(test)]
-/// This structure stores a matrix as a vector of vectors, where each inner
-/// vector represents a row of the matrix.
-///
-/// This should should only be used for tests.
-#[derive(Debug, Clone)]
-struct DenseMatrix {
-    inner: Vec<Vec<Scalar>>,
-}
+    /// This structure stores a matrix as a vector of vectors, where each inner
+    /// vector represents a row of the matrix.
+    ///
+    /// This should should only be used for tests.
+    #[derive(Debug, Clone)]
+    struct DenseMatrix {
+        inner: Vec<Vec<Scalar>>,
+    }
 
-#[cfg(test)]
-impl DenseMatrix {
-    /// Converts a `ToeplitzMatrix` into a `DenseMatrix`
-    fn from_toeplitz(toeplitz: &ToeplitzMatrix) -> Self {
-        use bls12_381::ff::Field;
+    impl DenseMatrix {
+        /// Converts a `ToeplitzMatrix` into a `DenseMatrix`
+        fn from_toeplitz(toeplitz: &ToeplitzMatrix) -> Self {
+            use bls12_381::ff::Field;
 
-        let rows = toeplitz.col.len();
-        let cols = toeplitz.row.len();
-        let mut matrix = vec![vec![Scalar::ZERO; toeplitz.col.len()]; toeplitz.row.len()];
+            let rows = toeplitz.col.len();
+            let cols = toeplitz.row.len();
+            let mut matrix = vec![vec![Scalar::ZERO; toeplitz.col.len()]; toeplitz.row.len()];
 
-        for (i, r) in matrix.iter_mut().enumerate().take(rows) {
-            for (j, rc) in r.iter_mut().enumerate().take(cols) {
-                // Determine the value based on the distance from the diagonal
-                if i <= j {
-                    *rc = toeplitz.row[j - i];
-                } else {
-                    *rc = toeplitz.col[i - j];
+            for (i, r) in matrix.iter_mut().enumerate().take(rows) {
+                for (j, rc) in r.iter_mut().enumerate().take(cols) {
+                    // Determine the value based on the distance from the diagonal
+                    if i <= j {
+                        *rc = toeplitz.row[j - i];
+                    } else {
+                        *rc = toeplitz.col[i - j];
+                    }
                 }
             }
+
+            Self { inner: matrix }
         }
 
-        Self { inner: matrix }
-    }
+        /// Computes a matrix vector multiplication between `DenseMatrix` and `vector`
+        fn vector_mul_scalar(self, vector: &[Scalar]) -> Vec<Scalar> {
+            fn inner_product(lhs: &[Scalar], rhs: &[Scalar]) -> Scalar {
+                lhs.iter().zip(rhs).map(|(a, b)| a * b).sum()
+            }
 
-    /// Computes a matrix vector multiplication between `DenseMatrix` and `vector`
-    fn vector_mul_scalar(self, vector: &[Scalar]) -> Vec<Scalar> {
-        fn inner_product(lhs: &[Scalar], rhs: &[Scalar]) -> Scalar {
-            lhs.iter().zip(rhs).map(|(a, b)| a * b).sum()
+            self.vector_mul(vector, inner_product)
         }
+        /// Performs a generalized matrix-vector multiplication.
+        ///
+        /// This method allows for matrix-vector multiplication with custom types and
+        /// inner product operations.
+        fn vector_mul<T>(
+            self,
+            vector: &[T],
+            inner_product: fn(lhs: &[T], rhs: &[Scalar]) -> T,
+        ) -> Vec<T> {
+            let row_length = self.inner[0].len();
+            assert_eq!(
+                row_length,
+                vector.len(),
+                "Matrix row and vector length do not match, matrix: {}, vector: {}",
+                row_length,
+                vector.len()
+            );
 
-        self.vector_mul(vector, inner_product)
+            self.inner
+                .into_iter()
+                .map(|row| inner_product(vector, &row))
+                .collect()
+        }
     }
-    /// Performs a generalized matrix-vector multiplication.
-    ///
-    /// This method allows for matrix-vector multiplication with custom types and
-    /// inner product operations.
-    fn vector_mul<T>(
-        self,
-        vector: &[T],
-        inner_product: fn(lhs: &[T], rhs: &[Scalar]) -> T,
-    ) -> Vec<T> {
-        let row_length = self.inner[0].len();
-        assert_eq!(
-            row_length,
-            vector.len(),
-            "Matrix row and vector length do not match, matrix: {}, vector: {}",
-            row_length,
-            vector.len()
-        );
-
-        self.inner
-            .into_iter()
-            .map(|row| inner_product(vector, &row))
-            .collect()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use bls12_381::Scalar;
-
-    use super::DenseMatrix;
-    use crate::fk20::toeplitz::ToeplitzMatrix;
 
     fn is_toeplitz(dense_matrix: &DenseMatrix) -> bool {
         let num_rows = dense_matrix.inner.len();
@@ -364,5 +368,13 @@ mod tests {
         let got = tm.vector_mul_scalars(vector.clone());
         let expected = dm.vector_mul_scalar(&vector);
         assert_eq!(got, expected);
+    }
+
+    #[test]
+    #[should_panic]
+    fn toeplitz_matrix_panics_on_mismatched_top_left() {
+        let row = vec![Scalar::from(1u64), Scalar::from(2u64)];
+        let col = vec![Scalar::from(9u64), Scalar::from(3u64)]; // col[0] != row[0]
+        let _ = ToeplitzMatrix::new(row, col);
     }
 }

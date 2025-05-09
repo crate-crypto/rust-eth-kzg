@@ -168,7 +168,7 @@ mod tests {
         fixed_base_msm::UsePrecomp, g1_batch_normalize, group::Group, G1Projective, Scalar,
     };
 
-    use crate::fk20::{batch_toeplitz::BatchToeplitzMatrixVecMul, toeplitz::ToeplitzMatrix};
+    use super::*;
 
     #[test]
     fn smoke_aggregated_matrix_vector_mul() {
