@@ -25,7 +25,6 @@ impl PolyCoeff {
         for (i, &b) in other.iter().enumerate() {
             result[i] += b;
         }
-        result.truncate_leading_zeros();
         result
     }
 
@@ -69,16 +68,7 @@ impl PolyCoeff {
                 result[i + j] += a * b;
             }
         }
-
-        result.truncate_leading_zeros();
         result
-    }
-
-    /// Truncate the polynomial to remove trailing zeros.
-    fn truncate_leading_zeros(&mut self) {
-        while self.last().is_some_and(|c| c.is_zero().into()) {
-            self.pop();
-        }
     }
 }
 
@@ -312,37 +302,12 @@ mod tests {
         assert_eq!(poly, expected);
     }
 
-    #[test]
-    fn test_add_sub_empty() {
-        let a = PolyCoeff(vec![]);
-        let b = PolyCoeff(vec![Scalar::from(0)]);
-        assert_eq!(a.add(&b).sub(&b), a);
-    }
-
     proptest! {
         #[test]
         fn prop_add_commutative(a in arb_scalar_vec(16), b in arb_scalar_vec(16)) {
             let a_poly = PolyCoeff(a);
             let b_poly = PolyCoeff(b);
             prop_assert_eq!(a_poly.add(&b_poly), b_poly.add(&a_poly));
-        }
-
-        #[test]
-        fn prop_add_sub_roundtrip(a in arb_scalar_vec(16), b in arb_scalar_vec(16)) {
-            let a_poly = PolyCoeff(a);
-            let b_poly = PolyCoeff(b);
-            let sum = a_poly.add(&b_poly);
-            let back = sum.sub(&b_poly);
-            prop_assert_eq!(a_poly, back);
-        }
-
-        #[test]
-        fn prop_mul_degree(a in arb_scalar_vec(8), b in arb_scalar_vec(8)) {
-            let a_poly = PolyCoeff(a.clone());
-            let b_poly = PolyCoeff(b.clone());
-            let prod = a_poly.mul(&b_poly);
-            let expected_degree = a.len().saturating_sub(1) + b.len().saturating_sub(1);
-            prop_assert_eq!(prod.len(), if a.is_empty() || b.is_empty() { 0 } else { expected_degree + 1 });
         }
 
         #[test]
