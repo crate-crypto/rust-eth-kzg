@@ -18,9 +18,11 @@ pub struct BatchToeplitzMatrixVecMul {
     /// This contains the number of matrix-vector multiplications that
     /// we can do in a batch.
     batch_size: usize,
+    /// Precomputed FFTs of the fixed input vectors, stored as fixed-base MSM tables.
+    /// These allow efficient scalar multiplications during the matrix-vector product phase.
     precomputed_fft_vectors: Vec<FixedBaseMSM>,
-    // This is the length of the vector that we are multiplying the matrices with.
-    // and subsequently will be the length of the final result of the matrix-vector multiplication.
+    /// This is the length of the vector that we are multiplying the matrices with.
+    /// and subsequently will be the length of the final result of the matrix-vector multiplication.
     size_of_vector: usize,
     /// This is the domain used in the circulant matrix-vector multiplication.
     /// It will be double the size of the length of a pre-computed vector.
@@ -44,13 +46,13 @@ impl BatchToeplitzMatrixVecMul {
         let circulant_domain = Domain::new(size_of_vector * 2);
 
         // Precompute the FFT of the vectors, since they do not change per matrix-vector multiplication
-        let vectors: Vec<Vec<G1Point>> = vectors
+        let vectors: Vec<_> = vectors
             .maybe_par_iter()
             .map(|vector| {
                 let vector_projective = vector
                     .iter()
                     .map(|point| G1Projective::from(*point))
-                    .collect::<Vec<_>>();
+                    .collect();
                 g1_batch_normalize(&circulant_domain.fft_g1(vector_projective))
             })
             .collect();
@@ -62,25 +64,25 @@ impl BatchToeplitzMatrixVecMul {
         // for the fixed base multi-scalar multiplication.
         //
         // This is a trade-off between storage and computation, where storage grows exponentially.
-        let precomputed_table: Vec<_> = transposed_msm_vectors
+        let precomputed_fft_vectors = transposed_msm_vectors
             .maybe_into_par_iter()
             .map(|v| FixedBaseMSM::new(v, use_precomp))
             .collect();
 
         Self {
+            batch_size,
+            precomputed_fft_vectors,
             size_of_vector,
             circulant_domain,
-            precomputed_fft_vectors: precomputed_table,
-            batch_size,
         }
     }
 
-    // Computes the aggregated sum of many Toeplitz matrix-vector multiplications.
-    //
-    // ie this method computes \sum_{i}^{n} A_i* x_i (where x_i is fixed)
-    //
-    // Note: This is faster than computing the matrix vector multiplication for each Toeplitz matrix using circulant
-    // matrix-vector multiplication and then summing the results since only one IFFT is done as opposed to `n`
+    /// Computes the aggregated sum of many Toeplitz matrix-vector multiplications.
+    ///
+    /// ie this method computes \sum_{i}^{n} A_i* x_i (where x_i is fixed)
+    ///
+    /// Note: This is faster than computing the matrix vector multiplication for each Toeplitz matrix using circulant
+    /// matrix-vector multiplication and then summing the results since only one IFFT is done as opposed to `n`
     pub fn sum_matrix_vector_mul(&self, matrices: Vec<ToeplitzMatrix>) -> Vec<G1Projective> {
         assert_eq!(
             matrices.len(),
@@ -98,13 +100,13 @@ impl BatchToeplitzMatrixVecMul {
         //
         // Transpose the circulant matrices so that we convert a group of hadamard products into a group of
         // inner products.
-        let col_ffts: Vec<_> = circulant_matrices
+        let col_ffts = circulant_matrices
             .maybe_into_par_iter()
             .map(|matrix| self.circulant_domain.fft_scalars(matrix.row.into()))
             .collect();
         let msm_scalars = transpose(col_ffts);
 
-        let result: Vec<_> = {
+        let result = {
             #[cfg(feature = "tracing")]
             let _span =
                 tracing::info_span!("compute fixed-base msm on matrix-vec-mul result").entered();
