@@ -70,10 +70,10 @@ impl BatchToeplitzMatrixVecMul {
             .collect();
 
         Self {
+            batch_size,
+            precomputed_fft_vectors,
             size_of_vector,
             circulant_domain,
-            precomputed_fft_vectors,
-            batch_size,
         }
     }
 
