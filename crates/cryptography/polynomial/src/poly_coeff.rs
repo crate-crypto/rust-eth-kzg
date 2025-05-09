@@ -18,24 +18,20 @@ impl PolyCoeff {
     /// Polynomials may have different lengths; the shorter one is padded with zeros.
     #[must_use]
     pub fn add(&self, other: &Self) -> Self {
-        let (small, large) = if self.0.len() < other.0.len() {
-            (&self.0, other.0.clone())
-        } else {
-            (&other.0, self.0.clone())
-        };
-
-        let mut result = large;
-        for i in 0..small.len() {
-            result[i] += small[i];
+        let mut result = self.clone();
+        if other.len() > result.len() {
+            result.resize(other.len(), Scalar::ZERO);
         }
-
-        Self(result)
+        for (i, &b) in other.iter().enumerate() {
+            result[i] += b;
+        }
+        result
     }
 
     /// Computes the additive inverse `-self` and returns the result.
     #[must_use]
     pub fn neg(&self) -> Self {
-        Self(self.0.iter().map(|c| -*c).collect())
+        Self(self.iter().map(|c| -*c).collect())
     }
 
     /// Subtracts `other` from `self`, returning `self - other`.
@@ -63,13 +59,16 @@ impl PolyCoeff {
     /// The result has degree `self.degree() + other.degree()`.
     #[must_use]
     pub fn mul(&self, other: &Self) -> Self {
-        let mut result = vec![Scalar::ZERO; self.0.len() + other.0.len() - 1];
-        for (i, a) in self.0.iter().enumerate() {
-            for (j, b) in other.0.iter().enumerate() {
+        let mut result = Self(vec![
+            Scalar::ZERO;
+            (self.len() + other.len()).saturating_sub(1)
+        ]);
+        for (i, a) in self.iter().enumerate() {
+            for (j, b) in other.iter().enumerate() {
                 result[i + j] += a * b;
             }
         }
-        Self(result)
+        result
     }
 }
 
@@ -169,8 +168,14 @@ pub fn lagrange_interpolate(points: &[(Scalar, Scalar)]) -> Option<PolyCoeff> {
 #[cfg(test)]
 mod tests {
     use bls12_381::ff::Field;
+    use proptest::prelude::*;
 
     use super::*;
+
+    /// Small helper function to generate a vector of `Scalar`s
+    fn arb_scalar_vec(max_len: usize) -> impl Strategy<Value = Vec<Scalar>> {
+        prop::collection::vec(any::<u64>().prop_map(Scalar::from), 0..=max_len)
+    }
 
     fn naive_poly_eval(poly: &PolyCoeff, value: &Scalar) -> Scalar {
         let mut result = Scalar::ZERO;
@@ -274,5 +279,47 @@ mod tests {
             Scalar::from(3u64),
         ]);
         assert_eq!(poly, expected);
+    }
+
+    proptest! {
+        #[test]
+        fn prop_add_commutative(a in arb_scalar_vec(16), b in arb_scalar_vec(16)) {
+            let a_poly = PolyCoeff(a);
+            let b_poly = PolyCoeff(b);
+            prop_assert_eq!(a_poly.add(&b_poly), b_poly.add(&a_poly));
+        }
+
+        #[test]
+        fn prop_eval_horner_vs_naive(poly in arb_scalar_vec(12), x in any::<u64>()) {
+            let poly = PolyCoeff(poly);
+            let x = Scalar::from(x);
+            let mut expected = Scalar::ZERO;
+            for (i, coeff) in poly.iter().enumerate() {
+                expected += coeff * x.pow_vartime([i as u64]);
+            }
+            prop_assert_eq!(poly.eval(&x), expected);
+        }
+
+        #[test]
+        fn prop_neg_neg_identity(poly in arb_scalar_vec(12)) {
+            let p = PolyCoeff(poly);
+            prop_assert_eq!(p.neg().neg(), p);
+        }
+
+        #[test]
+        fn prop_distributivity(
+            a in arb_scalar_vec(8),
+            b in arb_scalar_vec(8),
+            c in arb_scalar_vec(8),
+        ) {
+            let a_poly = PolyCoeff(a);
+            let b_poly = PolyCoeff(b);
+            let c_poly = PolyCoeff(c);
+
+            let left = a_poly.add(&b_poly).mul(&c_poly);
+            let right = a_poly.mul(&c_poly).add(&b_poly.mul(&c_poly));
+
+            prop_assert_eq!(left, right);
+        }
     }
 }
