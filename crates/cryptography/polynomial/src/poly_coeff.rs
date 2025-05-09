@@ -98,9 +98,7 @@ impl DerefMut for PolyCoeff {
 
 impl From<Vec<Scalar>> for PolyCoeff {
     fn from(value: Vec<Scalar>) -> Self {
-        let mut res = Self(value);
-        res.truncate_leading_zeros();
-        res
+        Self(value)
     }
 }
 

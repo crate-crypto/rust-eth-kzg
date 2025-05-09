@@ -460,10 +460,7 @@ mod tests {
         let z =
             rs.construct_vanishing_poly_from_block_erasures(&BlockErasureIndices(indices.clone()));
 
-        // The length of the vanishing polynomial should be: `POLY_LEN * EXPANSION_FACTOR`
-        //
-        // But after truncating the leading zeroes, we should have 257 coefficients
-        assert_eq!(z.len(), 257);
+        assert_eq!(z.len(), POLY_LEN * EXPANSION_FACTOR);
 
         // Evaluate vanishing polynomial on the evaluation domain
         let evals = rs.evaluation_domain.fft_scalars(z);
