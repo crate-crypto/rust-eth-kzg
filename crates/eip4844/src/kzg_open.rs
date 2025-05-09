@@ -37,8 +37,8 @@ pub(crate) fn divide_by_linear(poly: &[Scalar], z: Scalar) -> (Vec<Scalar>, Scal
         k = z * t;
     }
 
-    // Remainder is the highest-degree term computed; remove it from quotient
-    let remainder = quotient.pop().unwrap_or(Scalar::ZERO);
+// Pop off the remainder term
+    let remainder = quotient.pop().expect("!quotient.is_empty()");
 
     // Reverse the results as monomial form stores coefficients starting with lowest degree
     quotient.reverse();
