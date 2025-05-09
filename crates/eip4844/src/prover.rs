@@ -26,16 +26,9 @@ impl Context {
         let polynomial = blob_scalar_to_polynomial(&self.prover.domain, &blob_scalar);
 
         // Compute commitment in monomial form.
-        //
-        // - If the commitment key is empty or the polynomial is empty, return the identity.
-        // - Otherwise, compute the linear combination of the commitment key and the polynomial.
-        let commitment = if self.prover.commit_key.g1s.is_empty() || polynomial.is_empty() {
-            G1Projective::identity().into()
-        } else {
-            g1_lincomb(&self.prover.commit_key.g1s, &polynomial)
-                .expect("commit_key.g1s.len() == polynomial.len()")
-                .to_affine()
-        };
+        let commitment = g1_lincomb(&self.prover.commit_key.g1s, &polynomial)
+            .expect("commit_key.g1s.len() == polynomial.len()")
+            .to_affine();
 
         // Serialize the commitment.
         Ok(serialize_g1_compressed(&commitment))
