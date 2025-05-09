@@ -194,7 +194,7 @@ mod tests {
 
             // Compute the circulant domain
             let domain = polynomial::domain::Domain::new(vector.len() * 2);
-            // Compute the fft of the
+            // Compute the fft of the vector
             let m_fft = domain.fft_g1(vector);
             let col_fft = domain.fft_scalars(self.row.into());
 
