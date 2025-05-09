@@ -105,86 +105,65 @@ pub fn vanishing_poly(roots: &[Scalar]) -> PolyCoeff {
     poly
 }
 
-/// Interpolates a set of points to a given polynomial in monomial form.
+/// Interpolates a polynomial in monomial form from a list of points (x_i, y_i).
 ///
-/// Given a list of points (x_i, y_i), this method will return the lowest degree polynomial
-/// in monomial form that passes through all the points.
+/// Uses the classic Lagrange interpolation formula. The result is the unique
+/// polynomial of degree < n that passes through all points.
 ///
-///
-/// A simple O(n^2) algorithm (lagrange interpolation)
-///
-/// Note: This method is only used for testing. Our domain will always be the roots
-/// of unity, so we use IFFT to interpolate.
+/// Time complexity is O(n^2). Intended for small inputs and testing only.
 pub fn lagrange_interpolate(points: &[(Scalar, Scalar)]) -> Option<PolyCoeff> {
-    let max_degree_plus_one = points.len();
-    assert!(
-        max_degree_plus_one >= 2,
-        "should interpolate for degree >= 1"
-    );
-    let mut coeffs = vec![Scalar::ZERO; max_degree_plus_one];
-    // external iterator
-    for (k, p_k) in points.iter().enumerate() {
-        let (x_k, y_k) = p_k;
-        // coeffs from 0 to max_degree - 1
-        let mut contribution = vec![Scalar::ZERO; max_degree_plus_one];
-        let mut denominator = Scalar::ONE;
-        let mut max_contribution_degree = 0;
-        // internal iterator
-        for (j, p_j) in points.iter().enumerate() {
-            let (x_j, _) = p_j;
-            if j == k {
+    // Number of interpolation points. The resulting polynomial has degree < n.
+    let n = points.len();
+
+    // Ensure there are at least two points to interpolate
+    assert!(n >= 2, "interpolation requires at least 2 points");
+
+    // Initialize the result polynomial to zero: result(x) = 0
+    let mut result = vec![Scalar::ZERO; n];
+
+    // Loop over each interpolation point (x_i, y_i)
+    for (i, &(x_i, y_i)) in points.iter().enumerate() {
+        // Start with the constant polynomial 1 for the Lagrange basis polynomial L_i(x)
+        let mut basis = vec![Scalar::ONE];
+
+        // This will accumulate the denominator: product of (x_i - x_j) for j ≠ i
+        let mut denom = Scalar::ONE;
+
+        // Construct L_i(x) = product over j ≠ i of (x - x_j)
+        for (j, &(x_j, _)) in points.iter().enumerate() {
+            if i == j {
                 continue;
             }
 
-            let mut diff = *x_k;
-            diff -= x_j;
-            denominator *= diff;
+            // Multiply the denominator by (x_i - x_j)
+            denom *= x_i - x_j;
 
-            if max_contribution_degree == 0 {
-                max_contribution_degree = 1;
-                *contribution
-                    .get_mut(0)
-                    .expect("must have enough coefficients") -= x_j;
-                *contribution
-                    .get_mut(1)
-                    .expect("must have enough coefficients") += Scalar::from(1u64);
-            } else {
-                let mul_by_minus_x_j: Vec<Scalar> = contribution
-                    .iter()
-                    .map(|el| {
-                        let mut tmp = *el;
-                        tmp *= x_j;
-
-                        -tmp
-                    })
-                    .collect();
-
-                contribution.insert(0, Scalar::ZERO);
-                contribution.truncate(max_degree_plus_one);
-
-                assert_eq!(mul_by_minus_x_j.len(), max_degree_plus_one);
-                for (i, c) in contribution.iter_mut().enumerate() {
-                    let other = mul_by_minus_x_j
-                        .get(i)
-                        .expect("should have enough elements");
-                    *c += other;
-                }
+            // Multiply the current basis polynomial by (x - x_j)
+            // If basis(x) = a_0 + a_1 * x + ... + a_d * x^d,
+            // then basis(x) * (x - x_j) becomes a polynomial of degree d+1:
+            //     new_coeff[k] = -x_j * a_k     for x^k
+            //     new_coeff[k+1] = a_k          for x^{k+1}
+            let mut next = vec![Scalar::ZERO; basis.len() + 1];
+            for (k, &coeff_k) in basis.iter().enumerate() {
+                next[k] -= coeff_k * x_j;
+                next[k + 1] += coeff_k;
             }
+
+            // Replace the basis with the updated polynomial
+            basis = next;
         }
 
-        denominator = denominator
-            .invert()
-            .expect("unexpected zero in denominator");
-        for (i, this_contribution) in contribution.into_iter().enumerate() {
-            let c = coeffs.get_mut(i).expect("should have enough coefficients");
-            let mut tmp = this_contribution;
-            tmp *= denominator;
-            tmp *= y_k;
-            *c += tmp;
+        // Compute the scaling factor = y_i / denom
+        let scale = y_i * denom.invert().expect("denominator must be non-zero");
+
+        // Add scale * basis(x) to the result polynomial
+        for (res_k, basis_k) in result.iter_mut().zip(basis) {
+            *res_k += scale * basis_k;
         }
     }
 
-    Some(coeffs.into())
+    // Wrap the result in PolyCoeff and return
+    Some(PolyCoeff(result))
 }
 
 #[cfg(test)]
