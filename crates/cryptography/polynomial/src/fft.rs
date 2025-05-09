@@ -1,6 +1,6 @@
 use std::{
     iter::successors,
-    ops::{Add, Mul, Neg, Sub},
+    ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign},
 };
 
 use bls12_381::{ff::Field, group::Group, G1Projective, Scalar};
@@ -13,7 +13,9 @@ pub(crate) trait FFTElement:
     + PartialEq
     + Eq
     + Add<Output = Self>
+    + AddAssign
     + Sub<Output = Self>
+    + SubAssign
     + Mul<Scalar, Output = Self>
     + Neg<Output = Self>
 {
@@ -32,7 +34,15 @@ impl FFTElement for G1Projective {
     }
 }
 
-// Taken and modified from https://github.com/Plonky3/Plonky3/blob/a374139/dft/src/radix_2_dit_parallel.rs#L106.
+/// Computes the in-place FFT over `values` using a mixed Radix-2 decimation-in-time strategy.
+///
+/// This version splits the work into two halves:
+/// - The first half applies standard DIT layers with precomputed omegas.
+/// - The second half processes layers in reverse order using bit-reversed twiddles.
+///
+/// The `omegas` and `twiddle_factors_bo` must be precomputed correctly.
+///
+/// Taken and modified from https://github.com/Plonky3/Plonky3/blob/a374139/dft/src/radix_2_dit_parallel.rs#L106.
 pub(crate) fn fft_inplace<T: FFTElement>(
     omegas: &[Scalar],
     twiddle_factors_bo: &[Scalar],
@@ -53,6 +63,10 @@ pub(crate) fn fft_inplace<T: FFTElement>(
     bitreverse_slice(values);
 }
 
+/// Applies the first half of the FFT layers to `values` in-place.
+///
+/// This step performs standard Radix-2 DIT layers up to `mid`.
+/// Each chunk of size `2^mid` is processed independently and potentially in parallel.
 #[allow(clippy::needless_range_loop)]
 fn first_half<T: FFTElement>(values: &mut [T], mid: usize, omegas: &[Scalar]) {
     values.maybe_par_chunks_mut(1 << mid).for_each(|chunk| {
@@ -66,6 +80,11 @@ fn first_half<T: FFTElement>(values: &mut [T], mid: usize, omegas: &[Scalar]) {
     });
 }
 
+/// Applies a single DIT butterfly layer using multiplicative powers of `omega`.
+///
+/// The array is split into blocks of size `2 * half_block_size`.
+/// Each block is split into two halves, and butterfly operations are applied.
+/// If `backwards` is true, blocks are traversed in reverse order.
 #[inline]
 fn dit_layer<T: FFTElement>(
     blocks: &mut [T],
@@ -90,6 +109,10 @@ fn dit_layer<T: FFTElement>(
     }
 }
 
+/// Applies the second half of the FFT layers using bit-reversed twiddle factors.
+///
+/// This step handles the layers from `mid` to `log_n`.
+/// Each chunk of `2^{log_n - mid}` elements uses a slice of `twiddles_bo` for butterflies.
 fn second_half<T: FFTElement>(values: &mut [T], mid: usize, twiddles_bo: &[Scalar]) {
     let log_n = log2_pow2(values.len()) as usize;
     values
@@ -106,6 +129,11 @@ fn second_half<T: FFTElement>(values: &mut [T], mid: usize, twiddles_bo: &[Scala
         });
 }
 
+/// Applies a single DIT butterfly layer using externally provided twiddle factors.
+///
+/// This is used during the second half of the FFT, where twiddles are given in bit-reversed order.
+/// Each block is processed with its corresponding twiddle.
+/// If `backwards` is true, blocks are processed in reverse order.
 #[inline]
 fn dit_layer_bo<T: FFTElement>(
     blocks: &mut [T],
@@ -113,21 +141,25 @@ fn dit_layer_bo<T: FFTElement>(
     twiddles_bo: &[Scalar],
     backwards: bool,
 ) {
-    let process_block = |block: &mut [T], twiddle| {
-        let (a, b) = block.split_at_mut(half_block_size);
-        a.iter_mut().zip(b).for_each(|(a, b)| dit(a, b, twiddle));
-    };
+    let iter = blocks
+        .chunks_mut(2 * half_block_size)
+        .zip(twiddles_bo)
+        .map(|(blk, &w)| {
+            let (a, b) = blk.split_at_mut(half_block_size);
+            a.iter_mut().zip(b).for_each(|(a, b)| dit(a, b, w));
+        });
 
-    let blocks_and_twiddles = blocks.chunks_mut(2 * half_block_size).zip(twiddles_bo);
     if backwards {
-        blocks_and_twiddles
-            .rev()
-            .for_each(|(block, twiddle)| process_block(block, *twiddle));
+        iter.rev().for_each(drop);
     } else {
-        blocks_and_twiddles.for_each(|(block, twiddle)| process_block(block, *twiddle));
+        iter.for_each(drop);
     }
 }
 
+/// Performs a single Radix-2 butterfly computation.
+///
+/// Computes the updated values of `*a` and `*b` in-place.
+/// Handles special cases where twiddle is 1, -1, or the input is zero.
 #[inline]
 fn dit<T: FFTElement>(a: &mut T, b: &mut T, twiddle: Scalar) {
     let t = if twiddle == Scalar::ONE {
@@ -140,8 +172,8 @@ fn dit<T: FFTElement>(a: &mut T, b: &mut T, twiddle: Scalar) {
         *b * twiddle
     };
     *b = *a;
-    *a = *a + t;
-    *b = *b - t;
+    *a += t;
+    *b -= t;
 }
 
 fn bitreverse(mut n: u32, l: u32) -> u32 {
