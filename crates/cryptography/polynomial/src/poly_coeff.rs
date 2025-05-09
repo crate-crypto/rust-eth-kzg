@@ -308,15 +308,15 @@ mod tests {
     proptest! {
         #[test]
         fn prop_add_commutative(a in arb_scalar_vec(16), b in arb_scalar_vec(16)) {
-            let a_poly = PolyCoeff(a.clone());
-            let b_poly = PolyCoeff(b.clone());
+            let a_poly = PolyCoeff(a);
+            let b_poly = PolyCoeff(b);
             prop_assert_eq!(a_poly.add(&b_poly), b_poly.add(&a_poly));
         }
 
         #[test]
         fn prop_add_sub_roundtrip(a in arb_scalar_vec(16), b in arb_scalar_vec(16)) {
-            let a_poly = PolyCoeff(a.clone());
-            let b_poly = PolyCoeff(b.clone());
+            let a_poly = PolyCoeff(a);
+            let b_poly = PolyCoeff(b);
             let sum = a_poly.add(&b_poly);
             let back = sum.sub(&b_poly);
             prop_assert_eq!(a_poly, back);
@@ -333,7 +333,7 @@ mod tests {
 
         #[test]
         fn prop_eval_horner_vs_naive(poly in arb_scalar_vec(12), x in any::<u64>()) {
-            let poly = PolyCoeff(poly.clone());
+            let poly = PolyCoeff(poly);
             let x = Scalar::from(x);
             let mut expected = Scalar::ZERO;
             for (i, coeff) in poly.iter().enumerate() {
@@ -344,7 +344,7 @@ mod tests {
 
         #[test]
         fn prop_neg_neg_identity(poly in arb_scalar_vec(12)) {
-            let p = PolyCoeff(poly.clone());
+            let p = PolyCoeff(poly);
             prop_assert_eq!(p.neg().neg(), p);
         }
 
@@ -354,9 +354,9 @@ mod tests {
             b in arb_scalar_vec(8),
             c in arb_scalar_vec(8),
         ) {
-            let a_poly = PolyCoeff(a.clone());
-            let b_poly = PolyCoeff(b.clone());
-            let c_poly = PolyCoeff(c.clone());
+            let a_poly = PolyCoeff(a);
+            let b_poly = PolyCoeff(b);
+            let c_poly = PolyCoeff(c);
 
             let left = a_poly.add(&b_poly).mul(&c_poly);
             let right = a_poly.mul(&c_poly).add(&b_poly.mul(&c_poly));
