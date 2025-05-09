@@ -18,24 +18,21 @@ impl PolyCoeff {
     /// Polynomials may have different lengths; the shorter one is padded with zeros.
     #[must_use]
     pub fn add(&self, other: &Self) -> Self {
-        let (small, large) = if self.0.len() < other.0.len() {
-            (&self.0, other.0.clone())
-        } else {
-            (&other.0, self.0.clone())
-        };
-
-        let mut result = large;
-        for i in 0..small.len() {
-            result[i] += small[i];
+        let mut result = self.clone();
+        if other.len() > result.len() {
+            result.resize(other.len(), Scalar::ZERO);
         }
-
-        Self(result)
+        for (i, &b) in other.iter().enumerate() {
+            result[i] += b;
+        }
+        result.truncate_leading_zeros();
+        result
     }
 
     /// Computes the additive inverse `-self` and returns the result.
     #[must_use]
     pub fn neg(&self) -> Self {
-        Self(self.0.iter().map(|c| -*c).collect())
+        Self(self.iter().map(|c| -*c).collect())
     }
 
     /// Subtracts `other` from `self`, returning `self - other`.
@@ -63,13 +60,25 @@ impl PolyCoeff {
     /// The result has degree `self.degree() + other.degree()`.
     #[must_use]
     pub fn mul(&self, other: &Self) -> Self {
-        let mut result = vec![Scalar::ZERO; self.0.len() + other.0.len() - 1];
-        for (i, a) in self.0.iter().enumerate() {
-            for (j, b) in other.0.iter().enumerate() {
+        let mut result = Self(vec![
+            Scalar::ZERO;
+            (self.len() + other.len()).saturating_sub(1)
+        ]);
+        for (i, a) in self.iter().enumerate() {
+            for (j, b) in other.iter().enumerate() {
                 result[i + j] += a * b;
             }
         }
-        Self(result)
+
+        result.truncate_leading_zeros();
+        result
+    }
+
+    /// Truncate the polynomial to remove trailing zeros.
+    fn truncate_leading_zeros(&mut self) {
+        while self.last().is_some_and(|c| c.is_zero().into()) {
+            self.pop();
+        }
     }
 }
 
@@ -89,7 +98,9 @@ impl DerefMut for PolyCoeff {
 
 impl From<Vec<Scalar>> for PolyCoeff {
     fn from(value: Vec<Scalar>) -> Self {
-        Self(value)
+        let mut res = Self(value);
+        res.truncate_leading_zeros();
+        res
     }
 }
 
@@ -105,93 +116,77 @@ pub fn vanishing_poly(roots: &[Scalar]) -> PolyCoeff {
     poly
 }
 
-/// Interpolates a set of points to a given polynomial in monomial form.
+/// Interpolates a polynomial in monomial form from a list of points (x_i, y_i).
 ///
-/// Given a list of points (x_i, y_i), this method will return the lowest degree polynomial
-/// in monomial form that passes through all the points.
+/// Uses the classic Lagrange interpolation formula. The result is the unique
+/// polynomial of degree < n that passes through all points.
 ///
-///
-/// A simple O(n^2) algorithm (lagrange interpolation)
-///
-/// Note: This method is only used for testing. Our domain will always be the roots
-/// of unity, so we use IFFT to interpolate.
+/// Time complexity is O(n^2). Intended for small inputs and testing only.
 pub fn lagrange_interpolate(points: &[(Scalar, Scalar)]) -> Option<PolyCoeff> {
-    let max_degree_plus_one = points.len();
-    assert!(
-        max_degree_plus_one >= 2,
-        "should interpolate for degree >= 1"
-    );
-    let mut coeffs = vec![Scalar::ZERO; max_degree_plus_one];
-    // external iterator
-    for (k, p_k) in points.iter().enumerate() {
-        let (x_k, y_k) = p_k;
-        // coeffs from 0 to max_degree - 1
-        let mut contribution = vec![Scalar::ZERO; max_degree_plus_one];
-        let mut denominator = Scalar::ONE;
-        let mut max_contribution_degree = 0;
-        // internal iterator
-        for (j, p_j) in points.iter().enumerate() {
-            let (x_j, _) = p_j;
-            if j == k {
+    // Number of interpolation points. The resulting polynomial has degree < n.
+    let n = points.len();
+
+    // Ensure there are at least two points to interpolate
+    assert!(n >= 2, "interpolation requires at least 2 points");
+
+    // Initialize the result polynomial to zero: result(x) = 0
+    let mut result = vec![Scalar::ZERO; n];
+
+    // Loop over each interpolation point (x_i, y_i)
+    for (i, &(x_i, y_i)) in points.iter().enumerate() {
+        // Start with the constant polynomial 1 for the Lagrange basis polynomial L_i(x)
+        let mut basis = vec![Scalar::ONE];
+
+        // This will accumulate the denominator: product of (x_i - x_j) for j ≠ i
+        let mut denom = Scalar::ONE;
+
+        // Construct L_i(x) = product over j ≠ i of (x - x_j)
+        for (j, &(x_j, _)) in points.iter().enumerate() {
+            if i == j {
                 continue;
             }
 
-            let mut diff = *x_k;
-            diff -= x_j;
-            denominator *= diff;
+            // Multiply the denominator by (x_i - x_j)
+            denom *= x_i - x_j;
 
-            if max_contribution_degree == 0 {
-                max_contribution_degree = 1;
-                *contribution
-                    .get_mut(0)
-                    .expect("must have enough coefficients") -= x_j;
-                *contribution
-                    .get_mut(1)
-                    .expect("must have enough coefficients") += Scalar::from(1u64);
-            } else {
-                let mul_by_minus_x_j: Vec<Scalar> = contribution
-                    .iter()
-                    .map(|el| {
-                        let mut tmp = *el;
-                        tmp *= x_j;
-
-                        -tmp
-                    })
-                    .collect();
-
-                contribution.insert(0, Scalar::ZERO);
-                contribution.truncate(max_degree_plus_one);
-
-                assert_eq!(mul_by_minus_x_j.len(), max_degree_plus_one);
-                for (i, c) in contribution.iter_mut().enumerate() {
-                    let other = mul_by_minus_x_j
-                        .get(i)
-                        .expect("should have enough elements");
-                    *c += other;
-                }
+            // Multiply the current basis polynomial by (x - x_j)
+            // If basis(x) = a_0 + a_1 * x + ... + a_d * x^d,
+            // then basis(x) * (x - x_j) becomes a polynomial of degree d+1:
+            //     new_coeff[k] = -x_j * a_k     for x^k
+            //     new_coeff[k+1] = a_k          for x^{k+1}
+            let mut next = vec![Scalar::ZERO; basis.len() + 1];
+            for (k, &coeff_k) in basis.iter().enumerate() {
+                next[k] -= coeff_k * x_j;
+                next[k + 1] += coeff_k;
             }
+
+            // Replace the basis with the updated polynomial
+            basis = next;
         }
 
-        denominator = denominator
-            .invert()
-            .expect("unexpected zero in denominator");
-        for (i, this_contribution) in contribution.into_iter().enumerate() {
-            let c = coeffs.get_mut(i).expect("should have enough coefficients");
-            let mut tmp = this_contribution;
-            tmp *= denominator;
-            tmp *= y_k;
-            *c += tmp;
+        // Compute the scaling factor = y_i / denom
+        let scale = y_i * denom.invert().expect("denominator must be non-zero");
+
+        // Add scale * basis(x) to the result polynomial
+        for (res_k, basis_k) in result.iter_mut().zip(basis) {
+            *res_k += scale * basis_k;
         }
     }
 
-    Some(coeffs.into())
+    // Wrap the result in PolyCoeff and return
+    Some(PolyCoeff(result))
 }
 
 #[cfg(test)]
 mod tests {
     use bls12_381::ff::Field;
+    use proptest::prelude::*;
 
     use super::*;
+
+    fn arb_scalar_vec(max_len: usize) -> impl Strategy<Value = Vec<Scalar>> {
+        prop::collection::vec(any::<u64>().prop_map(Scalar::from), 0..=max_len)
+    }
 
     fn naive_poly_eval(poly: &PolyCoeff, value: &Scalar) -> Scalar {
         let mut result = Scalar::ZERO;
@@ -295,5 +290,78 @@ mod tests {
             Scalar::from(3u64),
         ]);
         assert_eq!(poly, expected);
+    }
+
+    #[test]
+    fn test_add_sub_empty() {
+        let a = PolyCoeff(vec![]);
+        let b = PolyCoeff(vec![Scalar::from(0)]);
+        assert_eq!(a.add(&b).sub(&b), a);
+    }
+
+    #[test]
+    fn test_from_vec_all_zeros() {
+        let a = vec![Scalar::from(0); 10];
+        assert_eq!(PolyCoeff::from(a), PolyCoeff(vec![]));
+    }
+
+    proptest! {
+        #[test]
+        fn prop_add_commutative(a in arb_scalar_vec(16), b in arb_scalar_vec(16)) {
+            let a_poly = PolyCoeff(a.clone());
+            let b_poly = PolyCoeff(b.clone());
+            prop_assert_eq!(a_poly.add(&b_poly), b_poly.add(&a_poly));
+        }
+
+        #[test]
+        fn prop_add_sub_roundtrip(a in arb_scalar_vec(16), b in arb_scalar_vec(16)) {
+            let a_poly = PolyCoeff(a.clone());
+            let b_poly = PolyCoeff(b.clone());
+            let sum = a_poly.add(&b_poly);
+            let back = sum.sub(&b_poly);
+            prop_assert_eq!(a_poly, back);
+        }
+
+        #[test]
+        fn prop_mul_degree(a in arb_scalar_vec(8), b in arb_scalar_vec(8)) {
+            let a_poly = PolyCoeff(a.clone());
+            let b_poly = PolyCoeff(b.clone());
+            let prod = a_poly.mul(&b_poly);
+            let expected_degree = a.len().saturating_sub(1) + b.len().saturating_sub(1);
+            prop_assert_eq!(prod.len(), if a.is_empty() || b.is_empty() { 0 } else { expected_degree + 1 });
+        }
+
+        #[test]
+        fn prop_eval_horner_vs_naive(poly in arb_scalar_vec(12), x in any::<u64>()) {
+            let poly = PolyCoeff(poly.clone());
+            let x = Scalar::from(x);
+            let mut expected = Scalar::ZERO;
+            for (i, coeff) in poly.iter().enumerate() {
+                expected += coeff * x.pow_vartime([i as u64]);
+            }
+            prop_assert_eq!(poly.eval(&x), expected);
+        }
+
+        #[test]
+        fn prop_neg_neg_identity(poly in arb_scalar_vec(12)) {
+            let p = PolyCoeff(poly.clone());
+            prop_assert_eq!(p.neg().neg(), p);
+        }
+
+        #[test]
+        fn prop_distributivity(
+            a in arb_scalar_vec(8),
+            b in arb_scalar_vec(8),
+            c in arb_scalar_vec(8),
+        ) {
+            let a_poly = PolyCoeff(a.clone());
+            let b_poly = PolyCoeff(b.clone());
+            let c_poly = PolyCoeff(c.clone());
+
+            let left = a_poly.add(&b_poly).mul(&c_poly);
+            let right = a_poly.mul(&c_poly).add(&b_poly.mul(&c_poly));
+
+            prop_assert_eq!(left, right);
+        }
     }
 }
