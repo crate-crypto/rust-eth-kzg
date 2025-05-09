@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.7.0](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.6.0...v0.7.0) (2025-05-09)
+
+
+### ⚠ BREAKING CHANGES
+
+* rename crates ([#348](https://github.com/crate-crypto/rust-eth-kzg/issues/348))
+
+### Features
+
+* Add crate `eip4844` and the corresponding APIs and tests ([#345](https://github.com/crate-crypto/rust-eth-kzg/issues/345)) ([8f02280](https://github.com/crate-crypto/rust-eth-kzg/commit/8f0228007119ee6c5c8443ad07eea8ebc0884d40))
+* Addressing review of `eip4844` in [#362](https://github.com/crate-crypto/rust-eth-kzg/issues/362) ([#363](https://github.com/crate-crypto/rust-eth-kzg/issues/363)) ([325a508](https://github.com/crate-crypto/rust-eth-kzg/commit/325a508483b85f79a40efc000659589db8a78211))
+* Refactor `eip4844` ([#362](https://github.com/crate-crypto/rust-eth-kzg/issues/362)) ([a0be708](https://github.com/crate-crypto/rust-eth-kzg/commit/a0be708ef182ab83f0d972da0dc1e53deb5bb3af))
+
+
+### Miscellaneous Chores
+
+* Rename crates ([#348](https://github.com/crate-crypto/rust-eth-kzg/issues/348)) ([3c1ea83](https://github.com/crate-crypto/rust-eth-kzg/commit/3c1ea83cb3c500ebfff8f4d52ff15b6e38fd177d))
+
 ## [0.6.0](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.5.4...v0.6.0) (2025-05-02)
 
 
