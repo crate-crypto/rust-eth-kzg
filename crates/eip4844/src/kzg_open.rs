@@ -1,4 +1,4 @@
-use bls12_381::{ff::Field, Scalar};
+use bls12_381::Scalar;
 
 pub(crate) fn bitreverse(mut n: u32, l: u32) -> u32 {
     let mut r = 0;
