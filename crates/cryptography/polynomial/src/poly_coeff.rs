@@ -184,6 +184,7 @@ mod tests {
 
     use super::*;
 
+    /// Small helper function to generate a vector of `Scalar`s
     fn arb_scalar_vec(max_len: usize) -> impl Strategy<Value = Vec<Scalar>> {
         prop::collection::vec(any::<u64>().prop_map(Scalar::from), 0..=max_len)
     }
