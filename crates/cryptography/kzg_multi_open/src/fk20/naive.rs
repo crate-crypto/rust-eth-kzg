@@ -46,10 +46,14 @@ pub(crate) fn compute_h_poly(polynomial: &PolyCoeff, coset_size: usize) -> Vec<&
         "expected num_proofs to be a power of two, found {num_proofs}"
     );
 
-    // Each h_i(x) is the slice f[i * coset_size..]
-    (1..=num_proofs)
-        .map(|i| shift_polynomial(polynomial, i * coset_size))
-        .collect()
+    let mut h_polys = Vec::with_capacity(num_proofs);
+    for index in 1..=num_proofs {
+        let degree = index * coset_size;
+        let h_poly_i = shift_polynomial(polynomial, degree);
+        h_polys.push(h_poly_i);
+    }
+
+    h_polys
 }
 
 /// Computes FK20 proofs over multiple cosets without using a toeplitz matrix.
