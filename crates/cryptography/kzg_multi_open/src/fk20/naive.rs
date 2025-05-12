@@ -224,9 +224,10 @@ mod tests {
         // The total number of coefficients is 8
         // The polynomial evaluations should be a permutation of the input poly’s FFT
         let domain = Domain::new(8);
-        let mut expected = domain.fft_scalars(poly.clone());
+        let mut expected = domain.fft_scalars(poly);
         reverse_bit_order(&mut expected);
-        let expected_chunks: Vec<Vec<_>> = expected.chunks_exact(2).map(|c| c.to_vec()).collect();
+        let expected_chunks: Vec<Vec<_>> =
+            expected.chunks_exact(2).map(<[Scalar]>::to_vec).collect();
 
         assert_eq!(evals, expected_chunks);
     }
