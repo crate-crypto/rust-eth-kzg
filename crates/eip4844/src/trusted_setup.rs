@@ -110,31 +110,26 @@ pub(crate) fn deserialize_g1_points<T: AsRef<str>>(
     g1_points_hex_str: &[T],
     check: SubgroupCheck,
 ) -> Vec<G1Point> {
-    let mut g1_points = Vec::new();
-    for g1_hex_str in g1_points_hex_str {
-        let g1_hex_str = g1_hex_str.as_ref();
+    g1_points_hex_str
+        .iter()
+        .map(|hex_str| {
+            let hex_str = hex_str
+                .as_ref()
+                .strip_prefix("0x")
+                .expect("expected hex points to be prefixed with `0x`");
 
-        let g1_hex_str_without_0x = g1_hex_str
-            .strip_prefix("0x")
-            .expect("expected hex points to be prefixed with `0x`");
-        let g1_point_bytes: [u8; 48] = hex::decode(g1_hex_str_without_0x)
-            .expect("trusted setup has malformed g1 points")
-            .try_into()
-            .expect("expected 48 bytes for G1 point");
+            let bytes: [u8; 48] = hex::decode(hex_str)
+                .expect("trusted setup has malformed g1 points")
+                .try_into()
+                .expect("expected 48 bytes for G1 point");
 
-        let point = match check {
-            SubgroupCheck::Check => {
-                G1Point::from_compressed(&g1_point_bytes).expect("invalid g1 point")
+            match check {
+                SubgroupCheck::Check => G1Point::from_compressed(&bytes),
+                SubgroupCheck::NoCheck => G1Point::from_compressed_unchecked(&bytes),
             }
-            SubgroupCheck::NoCheck => {
-                G1Point::from_compressed_unchecked(&g1_point_bytes).expect("invalid g1 point")
-            }
-        };
-
-        g1_points.push(point);
-    }
-
-    g1_points
+            .expect("invalid g1 point")
+        })
+        .collect()
 }
 
 /// Deserialize G2 points from hex strings without checking that the element
@@ -143,27 +138,24 @@ pub(crate) fn deserialize_g2_points<T: AsRef<str>>(
     g2_points_hex_str: &[T],
     subgroup_check: SubgroupCheck,
 ) -> Vec<G2Point> {
-    let mut g2_points = Vec::new();
-    for g2_hex_str in g2_points_hex_str {
-        let g2_hex_str = g2_hex_str.as_ref();
-        let g2_hex_str_without_0x = g2_hex_str
-            .strip_prefix("0x")
-            .expect("expected hex points to be prefixed with `0x`");
-        let g2_point_bytes: [u8; 96] = hex::decode(g2_hex_str_without_0x)
-            .expect("trusted setup has malformed g2 points")
-            .try_into()
-            .expect("expected 96 bytes for G2 point");
+    g2_points_hex_str
+        .iter()
+        .map(|hex_str| {
+            let hex_str = hex_str
+                .as_ref()
+                .strip_prefix("0x")
+                .expect("expected hex points to be prefixed with `0x`");
 
-        let point = match subgroup_check {
-            SubgroupCheck::Check => {
-                G2Point::from_compressed(&g2_point_bytes).expect("invalid g2 point")
-            }
-            SubgroupCheck::NoCheck => {
-                G2Point::from_compressed_unchecked(&g2_point_bytes).expect("invalid g2 point")
-            }
-        };
-        g2_points.push(point);
-    }
+            let bytes: [u8; 96] = hex::decode(hex_str)
+                .expect("trusted setup has malformed g2 points")
+                .try_into()
+                .expect("expected 96 bytes for G2 point");
 
-    g2_points
+            match subgroup_check {
+                SubgroupCheck::Check => G2Point::from_compressed(&bytes),
+                SubgroupCheck::NoCheck => G2Point::from_compressed_unchecked(&bytes),
+            }
+            .expect("invalid g2 point")
+        })
+        .collect()
 }
