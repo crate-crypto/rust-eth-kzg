@@ -1,6 +1,6 @@
 use bls12_381::{
-    ff::Field, fixed_base_msm::UsePrecomp, g1_batch_normalize, g2_batch_normalize, group::Group,
-    G1Projective, G2Projective, Scalar,
+    fixed_base_msm::UsePrecomp, g1_batch_normalize, g2_batch_normalize, traits::*, G1Projective,
+    G2Projective, Scalar,
 };
 use criterion::{criterion_group, criterion_main, Criterion};
 use ekzg_multi_open::{

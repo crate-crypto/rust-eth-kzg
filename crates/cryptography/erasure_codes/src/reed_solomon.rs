@@ -1,10 +1,6 @@
 use std::ops::Deref;
 
-use bls12_381::{
-    batch_inversion::batch_inverse,
-    ff::{Field, PrimeField},
-    Scalar,
-};
+use bls12_381::{batch_inversion::batch_inverse, traits::*, Scalar};
 use polynomial::{
     domain::Domain,
     poly_coeff::{vanishing_poly, PolyCoeff},
@@ -404,7 +400,7 @@ impl ReedSolomon {
 
 #[cfg(test)]
 mod tests {
-    use bls12_381::{ff::Field, Scalar};
+    use bls12_381::{traits::*, Scalar};
     use polynomial::poly_coeff::PolyCoeff;
 
     use crate::{reed_solomon::ErasurePattern, BlockErasureIndices, ReedSolomon};

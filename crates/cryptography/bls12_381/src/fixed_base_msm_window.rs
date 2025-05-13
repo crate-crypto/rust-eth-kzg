@@ -1,10 +1,8 @@
 use blstrs::G1Affine;
-use ff::PrimeField;
-use group::Group;
 
 use crate::{
     batch_addition::multi_batch_addition_binary_tree_stride, booth_encoding::get_booth_index,
-    g1_batch_normalize, G1Projective, Scalar,
+    g1_batch_normalize, traits::*, G1Projective, Scalar,
 };
 
 /// A precomputed window-based structure for fast fixed-base multi-scalar multiplication (MSM) in G1.
@@ -172,14 +170,10 @@ impl FixedBaseMSMPrecompWindow {
 
 #[cfg(test)]
 mod tests {
-    use ff::Field;
-    use group::prime::PrimeCurveAffine;
-
     use super::*;
 
     #[test]
     fn precomp_lookup_table() {
-        use group::Group;
         let lookup_table = FixedBaseMSMPrecompWindow::precompute_points(7, G1Affine::generator());
 
         for (i, l) in lookup_table.iter().enumerate().skip(1) {

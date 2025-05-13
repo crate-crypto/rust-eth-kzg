@@ -1,4 +1,4 @@
-use ff::Field;
+use crate::traits::*;
 
 /// Given a vector of field elements {v_i}, compute the vector {v_i^(-1)}
 ///

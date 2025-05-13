@@ -1,4 +1,4 @@
-use bls12_381::{group::Curve, lincomb::g1_lincomb};
+use bls12_381::{lincomb::g1_lincomb, traits::*};
 
 use crate::{
     kzg_open::divide_by_linear,

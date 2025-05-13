@@ -1,8 +1,4 @@
-use bls12_381::{
-    ff::{Field, PrimeField},
-    group::Group,
-    G1Projective, Scalar,
-};
+use bls12_381::{traits::*, G1Projective, Scalar};
 
 use crate::{
     coset_fft::CosetFFT,

@@ -1,12 +1,11 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 use ekzg_bls12_381::{
     batch_inversion,
-    ff::Field,
     fixed_base_msm::FixedBaseMSMPrecompBLST,
     fixed_base_msm_window::FixedBaseMSMPrecompWindow,
     g1_batch_normalize, g2_batch_normalize,
-    group::Group,
     lincomb::{g1_lincomb, g1_lincomb_unchecked, g2_lincomb, g2_lincomb_unchecked},
+    traits::*,
     G1Projective, G2Projective, Scalar,
 };
 

@@ -1,5 +1,5 @@
-use group::{prime::PrimeCurveAffine, Curve, Group};
 use pairing::{MillerLoopResult, MultiMillerLoop};
+use traits::*;
 
 pub mod batch_addition;
 pub mod batch_inversion;
@@ -13,6 +13,11 @@ pub mod lincomb;
 // Re-export ff and group, so other crates do not need to directly import(and independently version) them
 pub use ff;
 pub use group;
+
+pub mod traits {
+    pub use ff::{Field, PrimeField};
+    pub use group::{prime::PrimeCurveAffine, Curve, Group};
+}
 
 /// Affine representation of a point in the BLS12-381 G1 curve group.
 pub type G1Point = blstrs::G1Affine;

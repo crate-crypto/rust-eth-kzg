@@ -1,8 +1,8 @@
 use std::mem::size_of;
 
 use bls12_381::{
-    ff::Field, g1_batch_normalize, lincomb::g1_lincomb, multi_pairings,
-    reduce_bytes_to_scalar_bias, G1Point, G2Prepared, Scalar,
+    g1_batch_normalize, lincomb::g1_lincomb, multi_pairings, reduce_bytes_to_scalar_bias,
+    traits::*, G1Point, G2Prepared, Scalar,
 };
 use polynomial::{domain::Domain, poly_coeff::PolyCoeff, CosetFFT};
 use sha2::{Digest, Sha256};

@@ -1,9 +1,6 @@
 use std::iter::successors;
 
-use bls12_381::{
-    ff::{Field, PrimeField},
-    reduce_bytes_to_scalar_bias, G1Point, Scalar,
-};
+use bls12_381::{reduce_bytes_to_scalar_bias, traits::*, G1Point, Scalar};
 use itertools::{chain, izip, Itertools};
 use polynomial::{domain::Domain, poly_coeff::PolyCoeff};
 use sha2::{Digest, Sha256};

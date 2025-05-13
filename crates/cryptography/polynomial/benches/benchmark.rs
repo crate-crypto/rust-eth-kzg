@@ -1,4 +1,4 @@
-use bls12_381::{ff::Field, group::Group, G1Projective, Scalar};
+use bls12_381::{traits::*, G1Projective, Scalar};
 use criterion::{criterion_group, criterion_main, Criterion};
 use ekzg_polynomial::{domain::Domain, poly_coeff::PolyCoeff};
 

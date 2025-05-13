@@ -1,4 +1,4 @@
-use bls12_381::{ff::Field, G1Projective, Scalar};
+use bls12_381::{traits::*, G1Projective, Scalar};
 use polynomial::poly_coeff::PolyCoeff;
 
 use super::batch_toeplitz::BatchToeplitzMatrixVecMul;

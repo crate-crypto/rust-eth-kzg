@@ -1,6 +1,4 @@
-use group::{prime::PrimeCurveAffine, Group};
-
-use crate::{G1Point, G1Projective, G2Point, G2Projective, Scalar};
+use crate::{traits::*, G1Point, G1Projective, G2Point, G2Projective, Scalar};
 
 /// A multi-scalar multiplication algorithm over G1 elements
 ///
@@ -110,7 +108,6 @@ mod tests {
     use rand::{rngs::StdRng, SeedableRng};
 
     use super::*;
-    use crate::ff::Field;
 
     #[test]
     fn blst_footgun() {

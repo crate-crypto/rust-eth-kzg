@@ -3,7 +3,7 @@ use std::{
     ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign},
 };
 
-use bls12_381::{ff::Field, group::Group, G1Projective, Scalar};
+use bls12_381::{traits::*, G1Projective, Scalar};
 use maybe_rayon::prelude::*;
 
 pub(crate) trait FFTElement:

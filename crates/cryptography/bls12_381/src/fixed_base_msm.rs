@@ -1,9 +1,9 @@
 use blst::blst_p1_affine;
 use blstrs::{Fp, G1Affine};
-use ff::PrimeField;
 
 use crate::{
-    fixed_base_msm_window::FixedBaseMSMPrecompWindow, lincomb::g1_lincomb, G1Projective, Scalar,
+    fixed_base_msm_window::FixedBaseMSMPrecompWindow, lincomb::g1_lincomb, traits::*, G1Projective,
+    Scalar,
 };
 
 /// A precomputed structure for performing fixed-base multi-scalar multiplication (MSM) in G1 using BLST.
@@ -194,8 +194,6 @@ impl FixedBaseMSMPrecompBLST {
 
 #[cfg(test)]
 mod tests {
-    use ff::Field;
-    use group::Group;
     use rand::{rngs::StdRng, thread_rng, SeedableRng};
 
     use super::*;

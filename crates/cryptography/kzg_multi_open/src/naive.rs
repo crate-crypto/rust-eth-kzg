@@ -1,4 +1,4 @@
-use bls12_381::{ff::Field, multi_pairings, G1Point, G1Projective, G2Point, G2Prepared, Scalar};
+use bls12_381::{multi_pairings, traits::*, G1Point, G1Projective, G2Point, G2Prepared, Scalar};
 use polynomial::poly_coeff::{lagrange_interpolate, vanishing_poly, PolyCoeff};
 
 use crate::{commit_key::CommitKey, verification_key::VerificationKey};

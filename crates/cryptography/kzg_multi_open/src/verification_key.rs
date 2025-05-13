@@ -72,7 +72,7 @@ impl VerificationKey {
 
 #[cfg(test)]
 mod tests {
-    use bls12_381::{group::Group, G1Projective, Scalar};
+    use bls12_381::{traits::*, G1Projective, Scalar};
 
     use super::*;
 

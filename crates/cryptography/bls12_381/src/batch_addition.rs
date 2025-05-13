@@ -1,8 +1,9 @@
 use blstrs::{Fp, G1Affine, G1Projective};
-use ff::Field;
-use group::{prime::PrimeCurveAffine, Group};
 
-use crate::batch_inversion::{batch_inverse, batch_inverse_scratch_pad};
+use crate::{
+    batch_inversion::{batch_inverse, batch_inverse_scratch_pad},
+    traits::*,
+};
 
 /// Adds two elliptic curve points (affine coordinates) using the point addition/doubling formula.
 ///
