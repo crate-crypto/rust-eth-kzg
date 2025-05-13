@@ -109,10 +109,7 @@ fn compute_coset_evaluations(
 
 #[cfg(test)]
 mod tests {
-    use bls12_381::{
-        group::{Curve, Group},
-        G1Projective,
-    };
+    use bls12_381::{traits::*, G1Projective};
 
     use super::*;
 

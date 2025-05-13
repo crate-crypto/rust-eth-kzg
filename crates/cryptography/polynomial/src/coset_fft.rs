@@ -1,4 +1,4 @@
-use bls12_381::{ff::Field, Scalar};
+use bls12_381::{traits::*, Scalar};
 
 /// Represents a coset FFT configuration over a finite field.
 ///

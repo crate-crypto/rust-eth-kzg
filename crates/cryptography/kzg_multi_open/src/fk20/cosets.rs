@@ -1,4 +1,4 @@
-use bls12_381::{ff::Field, Scalar};
+use bls12_381::{traits::*, Scalar};
 use polynomial::domain::Domain;
 
 /// Reverses the least significant `bits` of the given number `n`.
@@ -235,7 +235,7 @@ pub(crate) fn generate_cosets(
 mod tests {
     use std::collections::HashSet;
 
-    use bls12_381::Scalar;
+    use bls12_381::{traits::*, Scalar};
     use polynomial::domain::Domain;
     use rand::{seq::SliceRandom, thread_rng};
 
@@ -430,8 +430,6 @@ mod tests {
 
     #[test]
     fn show_data_distribution_on_recover_evaluations_in_domain_order() {
-        use bls12_381::ff::Field;
-
         const DOMAIN_SIZE: usize = 32;
         const POINTS_PER_COSET: usize = 4;
         const NUM_COSETS: usize = 8;

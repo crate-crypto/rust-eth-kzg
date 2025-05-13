@@ -29,7 +29,6 @@ multithreaded = ["rayon", "kzg_multi_open/multithreaded"]
 tracing = ["dep:tracing", "kzg_multi_open/tracing"]
 
 [dev-dependencies]
-ff = "0.13.0"
 criterion = "0.5.1"
 rand = "0.8.4"
 hex = { workspace = true }

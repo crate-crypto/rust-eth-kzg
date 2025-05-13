@@ -48,7 +48,7 @@ pub(crate) fn divide_by_linear(poly: &[Scalar], z: Scalar) -> (Vec<Scalar>, Scal
 
 pub mod verifier {
     use bls12_381::{
-        group::Curve, lincomb::g1_lincomb, multi_pairings, G1Point, G2Point, G2Prepared, Scalar,
+        lincomb::g1_lincomb, multi_pairings, traits::*, G1Point, G2Point, G2Prepared, Scalar,
     };
     use itertools::{chain, cloned, izip, Itertools};
     use polynomial::domain::Domain;

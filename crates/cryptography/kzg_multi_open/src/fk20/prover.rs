@@ -1,6 +1,4 @@
-use bls12_381::{
-    fixed_base_msm::UsePrecomp, g1_batch_normalize, group::prime::PrimeCurveAffine, G1Point, Scalar,
-};
+use bls12_381::{fixed_base_msm::UsePrecomp, g1_batch_normalize, traits::*, G1Point, Scalar};
 use polynomial::{domain::Domain, poly_coeff::PolyCoeff};
 
 use super::h_poly::compute_h_poly_commitments;

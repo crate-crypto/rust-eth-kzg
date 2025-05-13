@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use bls12_381::{ff::Field, Scalar};
+use bls12_381::{traits::*, Scalar};
 use eip4844::{
     constants::{BYTES_PER_BLOB, FIELD_ELEMENTS_PER_BLOB},
     Context, TrustedSetup,

@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-use bls12_381::{ff::Field, Scalar};
+use bls12_381::{traits::*, Scalar};
 
 /// A polynomial in monomial form over the field `Scalar`.
 ///
@@ -167,7 +167,6 @@ pub fn lagrange_interpolate(points: &[(Scalar, Scalar)]) -> Option<PolyCoeff> {
 
 #[cfg(test)]
 mod tests {
-    use bls12_381::ff::Field;
     use proptest::prelude::*;
 
     use super::*;

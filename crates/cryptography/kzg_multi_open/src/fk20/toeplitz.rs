@@ -142,7 +142,7 @@ impl CirculantMatrix {
 
 #[cfg(test)]
 mod tests {
-    use bls12_381::G1Projective;
+    use bls12_381::{traits::*, G1Projective};
 
     use super::*;
 
@@ -218,8 +218,6 @@ mod tests {
     impl DenseMatrix {
         /// Converts a `ToeplitzMatrix` into a `DenseMatrix`
         fn from_toeplitz(toeplitz: &ToeplitzMatrix) -> Self {
-            use bls12_381::ff::Field;
-
             let rows = toeplitz.col.len();
             let cols = toeplitz.row.len();
             let mut matrix = vec![vec![Scalar::ZERO; toeplitz.col.len()]; toeplitz.row.len()];

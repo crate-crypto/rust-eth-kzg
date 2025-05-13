@@ -50,14 +50,12 @@ mod tests {
     use std::ops::Neg;
 
     use blstrs::{G1Projective, Scalar};
-    use ff::{Field, PrimeField};
 
     use super::get_booth_index;
-    use crate::G1Point;
+    use crate::{traits::*, G1Point};
 
     #[test]
     fn smoke_scalar_mul() {
-        use group::prime::PrimeCurveAffine;
         let gen = G1Point::generator();
         let s = -Scalar::ONE;
 

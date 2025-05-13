@@ -159,8 +159,7 @@ pub(crate) fn serialize_cells(coset_evaluations: &[Vec<Scalar>]) -> [Cell; CELLS
 
 #[cfg(test)]
 mod tests {
-    use bls12_381::{group::Group, G1Point, G1Projective, Scalar};
-    use ff::Field;
+    use bls12_381::{traits::*, G1Point, G1Projective, Scalar};
     use rand::thread_rng;
 
     use super::*;

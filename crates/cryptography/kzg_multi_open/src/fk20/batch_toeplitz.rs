@@ -167,7 +167,7 @@ pub(crate) fn transpose<T: Clone>(v: Vec<Vec<T>>) -> Vec<Vec<T>> {
 #[cfg(test)]
 mod tests {
     use bls12_381::{
-        fixed_base_msm::UsePrecomp, g1_batch_normalize, group::Group, G1Projective, Scalar,
+        fixed_base_msm::UsePrecomp, g1_batch_normalize, traits::*, G1Projective, Scalar,
     };
 
     use super::*;

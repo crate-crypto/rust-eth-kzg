@@ -51,6 +51,7 @@ similar_names = "allow"
 cast_sign_loss = "allow"
 redundant_pub_crate = "allow"
 inline_always = "allow"
+wildcard_imports = "allow"
 
 [workspace.dependencies]
 # These names are essentially a way to achieve scoping when we publish to crates.io
