@@ -17,7 +17,7 @@ mod trusted_setup;
 pub use errors::{Error, SerializationError, VerifierError};
 pub use trusted_setup::TrustedSetup;
 
-use crate::kzg_open::{prover::Prover, verifier::Verifier};
+use crate::kzg_open::{Prover, Verifier};
 
 /// BlobRef denotes a references to an opaque Blob.
 ///

@@ -1,7 +1,7 @@
 use bls12_381::{G1Point, G2Point};
 use serde::Deserialize;
 
-use crate::kzg_open::{prover::CommitKey, verifier::VerificationKey};
+use crate::kzg_open::{CommitKey, VerificationKey};
 
 const TRUSTED_SETUP_JSON: &str = include_str!("../../eip7594/data/trusted_setup_4096.json");
 
