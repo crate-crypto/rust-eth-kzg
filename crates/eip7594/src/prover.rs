@@ -96,11 +96,9 @@ impl DASContext {
         let _span = tracing::info_span!("compute_cells_and_kzg_proofs").entered();
 
         // Deserialization
-        //
         let scalars = deserialize_blob_to_scalars(blob)?;
 
         // Computation
-        //
         let (proofs, cells) = self
             .prover_ctx
             .kzg_multipoint_prover
@@ -112,11 +110,9 @@ impl DASContext {
     /// Computes the cells for the given blob.
     pub fn compute_cells(&self, blob: BlobRef) -> Result<[Cell; CELLS_PER_EXT_BLOB], Error> {
         // Deserialization
-        //
         let scalars = deserialize_blob_to_scalars(blob)?;
 
         // Computation
-        //
         let extended_blob = self
             .prover_ctx
             .kzg_multipoint_prover
@@ -137,11 +133,9 @@ impl DASContext {
         cells: Vec<CellRef>,
     ) -> Result<([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]), Error> {
         // Recover polynomial
-        //
         let poly_coeff = recover_polynomial_coeff(&self.prover_ctx.rs, cell_indices, cells)?;
 
         // Compute proofs and evaluation sets
-        //
         let (proofs, coset_evaluations) = self
             .prover_ctx
             .kzg_multipoint_prover
