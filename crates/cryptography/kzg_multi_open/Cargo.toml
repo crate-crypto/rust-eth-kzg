@@ -24,7 +24,7 @@ tracing = { version = "0.1.41", default-features = false, features = [
 
 [dev-dependencies]
 criterion = "0.5.1"
-rand = "0.8.4"
+rand = { workspace = true }
 
 [features]
 singlethreaded = ["bls12_381/blst-no-threads"]
