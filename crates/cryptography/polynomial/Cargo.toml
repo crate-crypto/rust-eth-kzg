@@ -22,7 +22,7 @@ maybe_rayon = { workspace = true }
 
 [dev-dependencies]
 criterion = "0.5.1"
-rand = "0.8.4"
+rand = { workspace = true }
 proptest = "1.6"
 
 [features]

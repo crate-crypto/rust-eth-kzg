@@ -17,7 +17,7 @@ fn main() {
 
     let output_file = PathBuf::from(&path_to_crate_dir)
         .join(DIR_FOR_HEADER)
-        .join(format!("{}.h", package_name))
+        .join(format!("{package_name}.h"))
         .display()
         .to_string();
 

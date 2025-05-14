@@ -22,7 +22,9 @@ sha2 = "0.10.8"
 tracing = { version = "0.1.41", default-features = false, features = [
     "attributes",
 ], optional = true }
-itertools = { version = "0.14.0", default-features = false, features = ["use_alloc"] }
+itertools = { version = "0.14.0", default-features = false, features = [
+    "use_alloc",
+] }
 
 [features]
 singlethreaded = []
@@ -31,7 +33,7 @@ tracing = ["dep:tracing"]
 
 [dev-dependencies]
 criterion = "0.5.1"
-rand = "0.8.4"
+rand = { workspace = true }
 hex = { workspace = true }
 # Serde-yaml has been deprecated, however since we only
 # use it for tests, we will not update it.
