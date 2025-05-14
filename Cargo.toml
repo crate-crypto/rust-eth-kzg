@@ -66,6 +66,7 @@ kzg_multi_open = { package = "ekzg-multi-open", version = "0.6.0", path = "crate
 c_eth_kzg = { version = "0.6.0", path = "bindings/c" }
 hex = "0.4.3"
 rayon = "1.10.0"
+rand = "0.8.4"
 
 [profile.release]
 lto = true
