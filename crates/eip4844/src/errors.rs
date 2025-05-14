@@ -1,7 +1,9 @@
-/// Errors that can occur either during proving, verification or serialization.
+/// Top-level error type for EIP-4844 verification and serialization operations.
 #[derive(Debug)]
 pub enum Error {
+    /// Error encountered during verification of a blob proof.
     Verifier(VerifierError),
+    /// Error encountered while (de)serializing blobs, scalars, or group elements.
     Serialization(SerializationError),
 }
 
@@ -17,24 +19,59 @@ impl From<SerializationError> for Error {
     }
 }
 
-/// Errors that can occur while calling a method in the Verifier API
+/// Errors that can occur when verifying a blob proof using the Verifier API.
 #[derive(Debug)]
 pub enum VerifierError {
+    /// The proof failed verification.
     InvalidProof,
+    /// Inputs to batch verification did not have consistent lengths.
     BatchVerificationInputsMustHaveSameLength {
+        /// Number of blobs provided as input.
         blobs_len: usize,
+        /// Number of corresponding KZG commitments.
         commitments_len: usize,
+        /// Number of provided KZG proofs.
         proofs_len: usize,
     },
 }
 
-/// Errors that can occur during deserialization of untrusted input from the public API
-/// or the trusted setup.
+/// Errors that can occur during deserialization of input data, either from
+/// the public interface (e.g. blobs, commitments, proofs) or the trusted setup.
 #[derive(Debug)]
 pub enum SerializationError {
-    CouldNotDeserializeScalar { bytes: Vec<u8> },
-    CouldNotDeserializeG1Point { bytes: Vec<u8> },
-    ScalarHasInvalidLength { bytes: Vec<u8>, length: usize },
-    BlobHasInvalidLength { bytes: Vec<u8>, length: usize },
-    G1PointHasInvalidLength { bytes: Vec<u8>, length: usize },
+    /// Failed to deserialize a scalar from the input byte sequence.
+    CouldNotDeserializeScalar {
+        /// Raw bytes that failed to deserialize.
+        bytes: Vec<u8>,
+    },
+
+    /// Failed to deserialize a G1 group element from the input byte sequence.
+    CouldNotDeserializeG1Point {
+        /// Raw bytes that failed to deserialize.
+        bytes: Vec<u8>,
+    },
+
+    /// Input byte slice used to deserialize a scalar had the wrong length.
+    ScalarHasInvalidLength {
+        /// Raw bytes with invalid length.
+        bytes: Vec<u8>,
+        /// Actual length of the byte slice.
+        length: usize,
+    },
+
+    /// Input byte slice used to deserialize a blob had the wrong length.
+    BlobHasInvalidLength {
+        /// Raw bytes with invalid length.
+        bytes: Vec<u8>,
+        /// Actual length of the byte slice.
+        length: usize,
+    },
+
+    /// Input byte slice used to deserialize a G1 point had the wrong length.
+    G1PointHasInvalidLength {
+        /// Raw bytes with invalid length.
+        bytes: Vec<u8>,
+        /// Actual length of the byte slice.
+        length: usize,
+    },
 }

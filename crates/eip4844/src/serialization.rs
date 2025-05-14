@@ -1,7 +1,9 @@
 use bls12_381::{G1Point, Scalar};
 
-use crate::constants::{BYTES_PER_BLOB, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1_POINT};
-pub use crate::errors::SerializationError;
+use crate::{
+    constants::{BYTES_PER_BLOB, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1_POINT},
+    errors::SerializationError,
+};
 
 fn deserialize_bytes_to_scalars(bytes: &[u8]) -> Result<Vec<Scalar>, SerializationError> {
     // Check that the bytes are a multiple of the scalar size
