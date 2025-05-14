@@ -192,6 +192,14 @@ pub fn reverse_bit_order<T>(a: &mut [T]) {
     // If we are looking for optimizations, it would be nice to have a look at the following:
     // https://github.com/Plonky3/Plonky3/blob/a374139abead1008f84a439e95bb495e81ea4be5/matrix/src/util.rs#L36-L57
 
+    // If the slice is empty, there is nothing to do
+    //
+    // WARNING: We should not go further if the slice is empty because it will panic:
+    // The len is not a power of two.
+    if a.is_empty() {
+        return;
+    }
+
     let n = a.len();
 
     // Ensure the length is a power of two for valid bit-reversal indexing
@@ -351,5 +359,12 @@ mod tests {
                 "Mismatch after double reversal for len={n}"
             );
         }
+    }
+
+    #[test]
+    fn test_reverse_bit_order_empty_slice() {
+        let mut arr: [u32; 0] = [];
+        reverse_bit_order(&mut arr);
+        assert_eq!(arr, []); // Should remain unchanged and not panic
     }
 }
