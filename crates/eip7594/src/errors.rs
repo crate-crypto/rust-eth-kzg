@@ -20,7 +20,7 @@ impl Error {
     ///
     /// Note: This distinction in practice, is not meaningful for the caller and is mainly
     /// here due to the specs and spec tests making this distinction.
-    pub const fn invalid_proof(&self) -> bool {
+    pub const fn is_fk20_verification_failure(&self) -> bool {
         matches!(self, Self::Verifier(VerifierError::FK20(_)))
     }
 }
