@@ -2,7 +2,7 @@ use bls12_381::{traits::*, G1Projective, Scalar};
 
 use crate::{
     coset_fft::CosetFFT,
-    fft::{fft_inplace, precompute_omegas, precompute_twiddle_factors_bo},
+    fft::{fft_inplace, log2_pow2, precompute_omegas, precompute_twiddle_factors_bo},
     poly_coeff::PolyCoeff,
 };
 
@@ -84,14 +84,14 @@ impl Domain {
     fn compute_generator_for_size(size: usize) -> Scalar {
         assert!(size.is_power_of_two());
 
-        let log_size_of_group = size.trailing_zeros();
+        let log_size_of_group = log2_pow2(size);
         assert!(
             log_size_of_group <= Self::two_adicity(),
             "two adicity is 32 but group size needed is 2^{log_size_of_group}"
         );
 
         // We now want to compute the generator which has order `size`
-        let exponent: u64 = 1 << (u64::from(Self::two_adicity()) - u64::from(log_size_of_group));
+        let exponent = 1 << (u64::from(Self::two_adicity()) - u64::from(log_size_of_group));
 
         Self::largest_root_of_unity().pow_vartime([exponent])
     }

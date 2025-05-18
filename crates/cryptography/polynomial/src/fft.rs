@@ -253,7 +253,7 @@ pub fn reverse_bit_order<T>(a: &mut [T]) {
 }
 
 /// We assume that `n` is a power of 2.
-const fn log2_pow2(n: usize) -> u32 {
+pub(crate) const fn log2_pow2(n: usize) -> u32 {
     n.trailing_zeros()
 }
 
