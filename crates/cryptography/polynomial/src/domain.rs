@@ -7,7 +7,7 @@ use crate::{
 };
 
 /// A struct representing a set of points that are roots of unity,
-/// which allows us to efficiently evaluate and interpolate polynomial
+/// which allows us to efficiently evaluate and interpolate polynomials
 /// over these points using FFT.
 #[derive(Debug, Clone)]
 pub struct Domain {
