@@ -161,7 +161,7 @@ Because $D(X) = f(X)$, we recover the original message polynomial.
 In many practical settings, erasures are *structured*, such as missing the same position in every block. Suppose we divide the codeword into blocks of size $B$:
 
 $$
-[\text{Block}_0, \text{Block}_1, ..., \text{Block}_{m-1}]
+\left [ \text{Block}_0, \text{Block}_1, \dots, \text{Block}_{m-1} \right ]
 $$
 
 If the same index $i$ is missing in every block, we can use this structure to construct $Z(X)$ more efficiently.
