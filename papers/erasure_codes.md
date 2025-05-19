@@ -15,9 +15,9 @@ Given a message as a polynomial $f(X)$ of degree less than $n$, we want to expan
 
 We choose an evaluation domain $\mathcal{D} = {\omega^0, \omega^1, \dots, \omega^{N-1}}$, where $\omega$ is a primitive $N$-th root of unity. The codeword is:
 
-\begin{equation}
+$$
 [f(\omega^0), f(\omega^1), \dots, f(\omega^{N-1})]
-\end{equation}
+$$
 
 This is computed efficiently using an FFT.
 
@@ -28,17 +28,17 @@ Suppose some positions in the codeword are missing. We denote the received evalu
 * $E(x_i) = 0$ if missing.
 
 To recover $f(X)$, we construct a vanishing polynomial $Z(X)$ such that:
-\begin{equation}
+$$
 Z(x_i) = 0 \quad \text{if and only if } x_i \text{ was an erasure}
-\end{equation}
+$$
 
 We then compute the product polynomial $D(X) \cdot Z(X)$ by multiplying $E(X)$ with $Z(X)$ in the evaluation domain. This eliminates the unknowns (because $0 \cdot Z = 0$), and lets us reconstruct $D(X) \cdot Z(X)$ via inverse FFT.
 
 Once we have the product in coefficient form, we evaluate it again over a *coset* domain to safely divide out \$Z(X)\$:
 
-\begin{equation}
+$$
 D(X) = \frac{(E \cdot Z)(X)}{Z(X)}
-\end{equation}
+$$
 
 Here, all operations are done in domains where $Z(X)$ has no roots, to avoid division by zero.
 
@@ -47,51 +47,50 @@ The key idea is that $f(X)$ and $D(X)$ agree at all non-erased positions: since 
 Finally, we inverse FFT the values of $D(X)$ to recover the coefficient form of $f(X)$.
 
 
-:::info
-
 ### Example: Recovering from two erasures — Step by step
 
 Let’s walk through a small Reed-Solomon recovery example.
 
-### Setup
+#### Setup
 
 Suppose we encode a degree-2 polynomial $f(X)$ (i.e., 3 coefficients) into a codeword of length 6, using an expansion factor $r = 2$. So we evaluate $f$ over a domain:
-\begin{equation}
+$$
 \mathcal{D} = \{x_0, x_1, x_2, x_3, x_4, x_5\}
-\end{equation}
+$$
 
 The encoded codeword is:
-\begin{equation}
+$$
 f(\mathcal{D}) = [f(x_0), f(x_1), f(x_2), f(x_3), f(x_4), f(x_5)] = [a, b, c, d, e, f]
-\end{equation}
+$$
 
 Now suppose we lose values at $x_1$ and $x_4$. So the received codeword is:
-\begin{equation}
+$$
 E(X) = [a, 0, c, d, 0, f]
-\end{equation}
+$$
 
-### Step 1: Construct the vanishing polynomial $Z(X)$
+#### Step 1: Construct the vanishing polynomial $Z(X)$
 
 We define $Z(X)$ to vanish exactly at the erasure points $x_1$ and $x_4$:
-\begin{equation}
+$$
 Z(X) = (X - x_1)(X - x_4)
-\end{equation}
+$$
 
 So:
-\begin{aligned}
-Z(x_1) &= 0 \\
-Z(x_4) &= 0 \\
-Z(x_i) &\neq 0 \quad \text{for } i \in \{0,2,3,5\}
-\end{aligned}
+$$
+Z(x_1) = 0 \\
+Z(x_4) = 0 \\
+Z(x_i) \neq 0 \quad \text{for } i \in \{0,2,3,5\}
+$$
 
-### Step 2: Multiply evaluations pointwise
+#### Step 2: Multiply evaluations pointwise
 
 We define:
-\begin{equation}
+$$
 (E \cdot Z)(x_i) = E(x_i) \cdot Z(x_i)
-\end{equation}
+$$
 
 Let’s annotate each value in the pointwise product:
+$$
 \begin{aligned}
 (E \cdot Z)(x_0) &= a \cdot Z(x_0) \\
 (E \cdot Z)(x_1) &= 0 \cdot Z(x_1) = 0 \\
@@ -100,52 +99,55 @@ Let’s annotate each value in the pointwise product:
 (E \cdot Z)(x_4) &= 0 \cdot Z(x_4) = 0 \\
 (E \cdot Z)(x_5) &= f \cdot Z(x_5)
 \end{aligned}
+$$
 
 So the result is:
-\begin{equation}
+$$
 (E \cdot Z)(X) = [a \cdot Z(x_0), 0, c \cdot Z(x_2), d \cdot Z(x_3), 0, f \cdot Z(x_5)]
-\end{equation}
+$$
 
-### Step 3: Interpolate $(E \cdot Z)(X)$ via IFFT
+#### Step 3: Interpolate $(E \cdot Z)(X)$ via IFFT
 
 We apply inverse FFT to these values over $\mathcal{D}$ to obtain the coefficient representation of the product polynomial:
-\begin{equation}
+$$
 D(X) \cdot Z(X)
-\end{equation}
+$$
 
 This is the polynomial whose values on $\mathcal{D}$ are the known product evaluations. It "hides" the original $f(X)$ within itself.
 
-### Step 4: Evaluate on a coset to divide
+#### Step 4: Evaluate on a coset to divide
 
 Now, we evaluate both $D(X) \cdot Z(X)$ and $Z(X)$ on a coset domain $\mathcal{D}' = g \cdot \mathcal{D}$ to avoid zeros in $Z(X)$:
+$$
 \begin{aligned}
 \text{Let } \mathcal{D}' &= \{g x_0, g x_1, \dots, g x_5\} \\
 \text{Compute } &\quad (D \cdot Z)(\mathcal{D}') \\
 \text{Compute } &\quad Z(\mathcal{D}')
 \end{aligned}
+$$
 
 
 Since none of $g x_i$ equals $x_1$ or $x_4$, we are guaranteed that $Z(g x_i) \neq 0$. So we can safely divide pointwise:
-\begin{equation}
+$$
 D(\mathcal{D}') = \frac{(D \cdot Z)(\mathcal{D}')}{Z(\mathcal{D}')}
-\end{equation}
+$$
 
-### Step 5: Recover $f(X)$ from $D(\mathcal{D}')$
+#### Step 5: Recover $f(X)$ from $D(\mathcal{D}')$
 We now perform inverse FFT on $D(\mathcal{D}')$ over the coset domain to get $D(X)$ in coefficient form:
-\begin{equation}
+$$
 D(X) = f(X)
-\end{equation}
+$$
 
 Because $D(X) = f(X)$, we recover the original message polynomial.
 
 
-### Visual recap
+#### Visual recap
 
+$$
 \begin{aligned}
 \underbrace{E(X)}_{\text{some values zeroed}} \cdot \underbrace{Z(X)}_{\text{zero at erased positions}} &\xrightarrow{\text{IFFT}} D(X)Z(X)\\ & \xrightarrow{\text{coset FFT + pointwise division}} D(X) = f(X)
 \end{aligned}
-
-:::
+$$
 
 
 
@@ -153,119 +155,115 @@ Because $D(X) = f(X)$, we recover the original message polynomial.
 
 In many practical settings, erasures are *structured*, such as missing the same position in every block. Suppose we divide the codeword into blocks of size $B$:
 
-\begin{equation}
+$$
 [\text{Block}_0, \text{Block}_1, \dots, \text{Block}_{m-1}]
-\end{equation}
+$$
 
 If the same index $i$ is missing in every block, we can use this structure to construct $Z(X)$ more efficiently.
 
 Let $R_i$ be the $i$-th root in a smaller domain of size $B$ (the block size). We define the small vanishing polynomial as:
 
-\begin{equation}
+$$
 z(X) = \prod_{j \in \text{ missing indices}} (X - R_j)
-\end{equation}
+$$
 
 We then "expand" $z(X)$ to the full domain by inserting zeros in stride: every $k$-th coefficient in $Z(X)$ gets a value from $z(X)$.
 
 This makes $Z(X)$ vanish at the same positions in every block. For example, if blocks are size 4 and we miss index 1 in every block, $Z(X)$ vanishes at:
-\begin{equation}
+$$
 {1, 5, 9, 13, \dots}
-\end{equation}
+$$
 
 This saves a significant amount of computation when decoding large messages with repeating erasure patterns.
 
 
 
-
-
-:::info
-
 ### Example: Block-synchronized erasure recovery — Step by step
 
 Let’s consider a structured erasure scenario where the same position is erased in every block.
 
-### Setup
+## Setup
 
 We take a polynomial $f(X)$ of degree less than 4, and encode it using an expansion factor $r = 2$, so we get a codeword of length:
-\begin{equation}
+$$
 N = n \cdot r = 4 \cdot 2 = 8
-\end{equation}
+$$
 
 Suppose we divide this codeword into 2 blocks of size $B = 4$:
-\begin{aligned}
-\text{Block}_0 &= [f(x_0), f(x_1), f(x_2), f(x_3)] \\
-\text{Block}_1 &= [f(x_4), f(x_5), f(x_6), f(x_7)]
-\end{aligned}
+$$
+\text{Block}_0 = [f(x_0), f(x_1), f(x_2), f(x_3)] \\
+\text{Block}_1 = [f(x_4), f(x_5), f(x_6), f(x_7)]
+$$
 
 Now imagine the first entry of **every block** is missing. That is:
-\begin{equation}
+$$
 \text{Erased positions: } x_0 \text{ and } x_4
-\end{equation}
+$$
 
 Our received codeword becomes:
-\begin{equation}
+$$
 E(X) = [0, f(x_1), f(x_2), f(x_3), 0, f(x_5), f(x_6), f(x_7)]
-\end{equation}
+$$
 
 This is a **block-synchronized erasure** at index $0$ within each block.
 
-### Step 1: Construct $z(X)$ over the block domain
+#### Step 1: Construct $z(X)$ over the block domain
 
 Let the block domain (of size 4) be:
-\begin{equation}
+$$
 \mathcal{B} = \{R_0, R_1, R_2, R_3\}
-\end{equation}
+$$
 
 We define a small vanishing polynomial $z(X)$ over the block:
-\begin{equation}
+$$
 z(X) = X - R_0
-\end{equation}
+$$
 
 because only index 0 is missing within each block. This polynomial satisfies:
-\begin{equation}
+$$
 z(R_0) = 0, \quad z(R_1), z(R_2), z(R_3) \neq 0
-\end{equation}
+$$
 
-### Step 2: Expand $z(X)$ to $Z(X)$ over the full domain
+#### Step 2: Expand $z(X)$ to $Z(X)$ over the full domain
 
 We now **lift** $z(X)$ into a polynomial $Z(X)$ that vanishes on index 0 of every block in the full domain. This is done by spacing the coefficients of $z(X)$ apart by block strides (i.e., interleaving zeros between them). If we define:
-\begin{equation}
+$$
 z(X) = c_0 + c_1 X
-\end{equation}
+$$
 
 Then $Z(X)$ is defined over size 8 by expanding $z(X)$ in strides of 2 (number of blocks):
-\begin{equation}
+$$
 Z(X) = c_0 + 0 \cdot X + c_1 X^2 + 0 \cdot X^3 + \cdots
-\end{equation}
+$$
 
 This causes $Z(X)$ to vanish at all the original evaluation points $x_i$ such that $i \mod 4 = 0$ (i.e., index 0 in every block). That is:
-\begin{equation}
+$$
 Z(x_0) = 0, \quad Z(x_4) = 0, \quad Z(x_i) \neq 0 \text{ for all other } i
-\end{equation}
+$$
 
-### Step 3: Multiply with received codeword
+#### Step 3: Multiply with received codeword
 
 We now compute:
-\begin{equation}
+$$
 (E \cdot Z)(x_i) = E(x_i) \cdot Z(x_i)
-\end{equation}
+$$
 
 At the erased positions (like $x_0$ and $x_4$), $E(x_i) = 0$, and $Z(x_i) = 0$, so:
-\begin{equation}
+$$
 (E \cdot Z)(x_0) = (E \cdot Z)(x_4) = 0
-\end{equation}
+$$
 
 At known positions (e.g., $x_1$, $x_2$, ...), $E(x_i) = f(x_i)$ and $Z(x_i) \neq 0$, so the product carries meaningful information.
 
-### Step 4: Inverse FFT to recover $D(X) \cdot Z(X)$
+#### Step 4: Inverse FFT to recover $D(X) \cdot Z(X)$
 
 We now apply inverse FFT to the vector $(E \cdot Z)(x_i)$ to interpolate the product polynomial:
 
-\begin{equation}
+$$
 D(X) \cdot Z(X)
-\end{equation}
+$$
 
-### Step 5: Evaluate on a coset and divide
+#### Step 5: Evaluate on a coset and divide
 
 We choose a coset domain $\mathcal{D}' = g \cdot \mathcal{D}$ and evaluate both $D(X) \cdot Z(X)$ and $Z(X)$ over that coset:
 \begin{aligned}
@@ -274,28 +272,26 @@ Z(\mathcal{D}') &= \text{FFT over coset}
 \end{aligned}
 
 Because the coset does not contain roots of $Z(X)$, division is safe:
-\begin{equation}
+$$
 D(\mathcal{D}') = \frac{(D \cdot Z)(\mathcal{D}')}{Z(\mathcal{D}')}
-\end{equation}
+$$
 
-### Step 6: Final inverse FFT to get $f(X)$
+#### Step 6: Final inverse FFT to get $f(X)$
 
 Finally, we inverse FFT $D(\mathcal{D}')$ to get the coefficients of $D(X)$.
 
 Since $D(X)$ agrees with $f(X)$ on all known evaluations, and we constructed $Z(X)$ to remove the effect of erasures, we recover:
 
-\begin{equation}
+$$
 D(X) = f(X)
-\end{equation}
+$$
 
 
-### Conclusion
+#### Conclusion
 
 We used a **small vanishing polynomial** $z(X)$ and expanded it in a block-aware way to build $Z(X)$ over the full domain, allowing efficient recovery in the presence of repeating erasures.
 
 This strategy reduces the cost of vanishing polynomial construction and FFT operations, making decoding highly scalable.
-
-:::
 
 
 
@@ -310,9 +306,9 @@ To ensure correct recovery, we need to respect the limits on how many erasures o
 
 For arbitrary erasure locations, the code can recover as long as we still have at least $n$ known evaluations—just enough to uniquely interpolate a degree-$(n - 1)$ polynomial. Since the full codeword has length $N = n \cdot r$, we can tolerate up to:
 
-\begin{equation}
+$$
 N - n = n(r - 1)
-\end{equation}
+$$
 
 random erasures.
 
@@ -321,38 +317,38 @@ This is the classical Reed-Solomon bound: a degree-$(n - 1)$ polynomial is uniqu
 ### Block-synchronized erasures
 
 Now suppose the codeword is structured into $m$ blocks, each of size $B$, such that:
-\begin{equation}
+$$
 m = \frac{N}{B}
-\end{equation}
+$$
 
 Assume erasures are synchronized across blocks—for instance, the same $k$ indices are missing from every block. In total, this results in $k \cdot m$ erased values.
 
 To remain recoverable, we must still satisfy:
 
-\begin{equation}
+$$
 k \cdot m < N - n
-\end{equation}
+$$
 
 Solving for $k$ gives:
 
-\begin{equation}
+$$
 k < \frac{N - n}{m}
-\end{equation}
+$$
 
 Now recall that $N = n \cdot r$ and $m = N / B$, so:
-\begin{equation}
+$$
 \frac{N - n}{m} = \frac{n(r - 1)}{N / B} = \frac{n(r - 1) \cdot B}{n r} = \frac{(r - 1) \cdot B}{r}
-\end{equation}
+$$
 Thus we arrive at:
 
-\begin{equation}
+$$
 k < \frac{(r - 1) \cdot B}{r}
-\end{equation}
+$$
 
 And since this bound must be a strict inequality for recovery to succeed, the maximum integer $k$ we can tolerate is:
-\begin{equation}
+$$
 k < \frac{B}{r}
-\end{equation}
+$$
 
 This means that, for block-synchronized erasures, we can tolerate up to $B / r$ missing indices per block.
 
@@ -387,9 +383,9 @@ To safely divide $(E \cdot Z)(X)$ by $Z(X)$, we need to avoid the roots of $Z(X)
 
 This is where *coset FFTs* come in. We evaluate both numerator and denominator over a shifted domain:
 
-\begin{equation}
+$$
 \mathcal{D}' = {g \cdot \omega^i}_{i = 0}^{N - 1}
-\end{equation}
+$$
 
 where $g$ is a coset generator not in the original domain. This ensures $Z(X) \neq 0$ on all points in $\mathcal{D}'$.
 
