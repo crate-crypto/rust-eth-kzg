@@ -158,12 +158,13 @@ Because $D(X) = f(X)$, we recover the original message polynomial.
 
 ## Structured erasures: Block synchronization
 
-In many practical settings, erasures are *structured*, such as missing the same position in every block. Suppose we divide the codeword into blocks of size $B$, resulting in an array like:
+In many practical settings, erasures are *structured*, such as missing the same position in every block. Suppose we divide the codeword into blocks of size $B$:
 
-$[\text{Block}_0, \text{Block}_1, \dots, \text{Block}_{m-1}]$
+$$
+[\text{Block}_0, \text{Block}_1, ..., \text{Block}_{m-1}]
+$$
 
 If the same index $i$ is missing in every block, we can use this structure to construct $Z(X)$ more efficiently.
-
 
 Let $R_i$ be the $i$-th root in a smaller domain of size $B$ (the block size). We define the small vanishing polynomial as:
 
