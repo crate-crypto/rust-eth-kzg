@@ -194,6 +194,7 @@ impl FixedBaseMSMPrecompBLST {
 
 #[cfg(test)]
 mod tests {
+    use proptest::prelude::*;
     use rand::{rngs::StdRng, thread_rng, SeedableRng};
 
     use super::*;
@@ -298,5 +299,81 @@ mod tests {
         let scalars = random_scalars(7); // length mismatch
         let msm = FixedBaseMSMPrecompBLST::new(&generators, 4);
         let _ = msm.msm(scalars); // should panic
+    }
+
+    proptest! {
+        #[test]
+        fn prop_blst_precomp_msm_matches_naive(
+            len in 1usize..64,
+            seed in any::<u64>()
+        ) {
+            // Create a seeded RNG
+            let mut rng = StdRng::seed_from_u64(seed);
+
+            // Generate a vector of `len` random G1Affine curve points
+            // These are the fixed generator points for the MSM
+            let generators: Vec<G1Affine> = (0..len).map(|_| G1Projective::random(&mut rng).into()).collect();
+
+            // Generate `len` random scalars to multiply the generators with
+            // We avoid zero scalars to ensure valid non-trivial multiplications
+            let scalars: Vec<Scalar> = (0..len).map(|_| {
+                let mut s = Scalar::random(&mut rng);
+                if s.is_zero_vartime() {
+                    s = Scalar::ONE;
+                }
+                s
+            }).collect();
+
+            // Compute the expected result using the naive scalar multiplication
+            let expected: G1Projective = generators.iter()
+                .zip(&scalars)
+                .map(|(g, s)| G1Projective::from(*g) * s)
+                .sum();
+
+            // Create a fixed-base MSM with precomputation (window size = 4)
+            let msm = FixedBaseMSMPrecompBLST::new(&generators, 4);
+            // Perform the actual MSM using the precomputed table
+            let result = msm.msm(scalars);
+
+            // Check that the optimized MSM result matches the naive computation
+            prop_assert_eq!(result, expected);
+        }
+
+        #[test]
+        fn prop_fixed_base_msm_matches_naive_for_both_modes(
+            len in 1usize..64,
+            seed in any::<u64>(),
+            wbits in 2usize..8,
+        ) {
+            // Create a seeded RNG
+            let mut rng = StdRng::seed_from_u64(seed);
+
+            // Generate a vector of `len` random G1Affine curve points
+            // These are the fixed generator points for the MSM
+            let generators: Vec<G1Affine> = (0..len).map(|_| G1Projective::random(&mut rng).into()).collect();
+
+            // Generate `len` random scalars to multiply the generators with
+            // We avoid zero scalars to ensure valid non-trivial multiplications
+            let scalars: Vec<Scalar> = (0..len).map(|_| {
+                let mut s = Scalar::random(&mut rng);
+                if s.is_zero_vartime() {
+                    s = Scalar::ONE;
+                }
+                s
+            }).collect();
+
+            // Compute the expected result using the naive scalar multiplication
+            let expected = g1_lincomb(&generators, &scalars).unwrap();
+
+            // Run fixed-base MSM with no precomputation
+            // This simply multiplies each generator by its scalar and sums the result
+            let fbm_noprecomp = FixedBaseMSM::new(generators.clone(), UsePrecomp::No);
+            prop_assert_eq!(fbm_noprecomp.msm(&scalars), expected);
+
+            // Run fixed-base MSM with precomputation
+            // This uses a precomputed lookup table based on the specified `wbits` value
+            let fbm_precomp = FixedBaseMSM::new(generators, UsePrecomp::Yes { width: wbits });
+            prop_assert_eq!(fbm_precomp.msm(&scalars), expected);
+        }
     }
 }
