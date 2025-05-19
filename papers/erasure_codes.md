@@ -209,8 +209,10 @@ $$
 Suppose we divide this codeword into 2 blocks of size $B = 4$:
 
 $$
-\text{Block}_0 = [f(x_0), f(x_1), f(x_2), f(x_3)] \\
-\text{Block}_1 = [f(x_4), f(x_5), f(x_6), f(x_7)]
+\begin{aligned}
+\text{Block}_0 &= [f(x_0), f(x_1), f(x_2), f(x_3)] \\
+\text{Block}_1 &= [f(x_4), f(x_5), f(x_6), f(x_7)]
+\end{aligned}
 $$
 
 Now imagine the first entry of **every block** is missing. That is:
@@ -336,7 +338,7 @@ To ensure correct recovery, we need to respect the limits on how many erasures o
 
 ### Random erasures
 
-For arbitrary erasure locations, the code can recover as long as we still have at least $n$ known evaluations—just enough to uniquely interpolate a degree-$(n - 1)$ polynomial. Since the full codeword has length $N = n \cdot r$, we can tolerate up to:
+For arbitrary erasure locations, the code can recover as long as we still have at least $n$ known evaluations—just enough to uniquely interpolate a degree- $(n - 1)$ polynomial. Since the full codeword has length $N = n \cdot r$, we can tolerate up to:
 
 $$
 N - n = n(r - 1)
@@ -349,6 +351,7 @@ This is the classical Reed-Solomon bound: a degree-$(n - 1)$ polynomial is uniqu
 ### Block-synchronized erasures
 
 Now suppose the codeword is structured into $m$ blocks, each of size $B$, such that:
+
 $$
 m = \frac{N}{B}
 $$
@@ -368,9 +371,12 @@ k < \frac{N - n}{m}
 $$
 
 Now recall that $N = n \cdot r$ and $m = N / B$, so:
+
 $$
 \frac{N - n}{m} = \frac{n(r - 1)}{N / B} = \frac{n(r - 1) \cdot B}{n r} = \frac{(r - 1) \cdot B}{r}
 $$
+
+
 Thus we arrive at:
 
 $$
@@ -378,6 +384,7 @@ k < \frac{(r - 1) \cdot B}{r}
 $$
 
 And since this bound must be a strict inequality for recovery to succeed, the maximum integer $k$ we can tolerate is:
+
 $$
 k < \frac{B}{r}
 $$
