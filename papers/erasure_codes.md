@@ -55,16 +55,19 @@ Let’s walk through a small Reed-Solomon recovery example.
 #### Setup
 
 Suppose we encode a degree-2 polynomial $f(X)$ (i.e., 3 coefficients) into a codeword of length 6, using an expansion factor $r = 2$. So we evaluate $f$ over a domain:
+
 $$
 \mathcal{D} = \{x_0, x_1, x_2, x_3, x_4, x_5\}
 $$
 
 The encoded codeword is:
+
 $$
 f(\mathcal{D}) = [f(x_0), f(x_1), f(x_2), f(x_3), f(x_4), f(x_5)] = [a, b, c, d, e, f]
 $$
 
 Now suppose we lose values at $x_1$ and $x_4$. So the received codeword is:
+
 $$
 E(X) = [a, 0, c, d, 0, f]
 $$
@@ -72,25 +75,31 @@ $$
 #### Step 1: Construct the vanishing polynomial $Z(X)$
 
 We define $Z(X)$ to vanish exactly at the erasure points $x_1$ and $x_4$:
+
 $$
 Z(X) = (X - x_1)(X - x_4)
 $$
 
 So:
+
 $$
-Z(x_1) = 0 \\
-Z(x_4) = 0 \\
-Z(x_i) \neq 0 \quad \text{for } i \in \{0,2,3,5\}
+\begin{aligned}
+Z(x_1) &= 0 \\
+Z(x_4) &= 0 \\
+Z(x_i) &\neq 0 \quad \text{for } i \in \{0,2,3,5\}
+\end{aligned}
 $$
 
 #### Step 2: Multiply evaluations pointwise
 
 We define:
+
 $$
 (E \cdot Z)(x_i) = E(x_i) \cdot Z(x_i)
 $$
 
 Let’s annotate each value in the pointwise product:
+
 $$
 \begin{aligned}
 (E \cdot Z)(x_0) &= a \cdot Z(x_0) \\
@@ -103,6 +112,7 @@ $$
 $$
 
 So the result is:
+
 $$
 (E \cdot Z)(X) = [a \cdot Z(x_0), 0, c \cdot Z(x_2), d \cdot Z(x_3), 0, f \cdot Z(x_5)]
 $$
@@ -110,6 +120,7 @@ $$
 #### Step 3: Interpolate $(E \cdot Z)(X)$ via IFFT
 
 We apply inverse FFT to these values over $\mathcal{D}$ to obtain the coefficient representation of the product polynomial:
+
 $$
 D(X) \cdot Z(X)
 $$
@@ -119,6 +130,7 @@ This is the polynomial whose values on $\mathcal{D}$ are the known product evalu
 #### Step 4: Evaluate on a coset to divide
 
 Now, we evaluate both $D(X) \cdot Z(X)$ and $Z(X)$ on a coset domain $\mathcal{D}' = g \cdot \mathcal{D}$ to avoid zeros in $Z(X)$:
+
 $$
 \begin{aligned}
 \text{Let } \mathcal{D}' &= \{g x_0, g x_1, \dots, g x_5\} \\
@@ -129,12 +141,14 @@ $$
 
 
 Since none of $g x_i$ equals $x_1$ or $x_4$, we are guaranteed that $Z(g x_i) \neq 0$. So we can safely divide pointwise:
+
 $$
 D(\mathcal{D}') = \frac{(D \cdot Z)(\mathcal{D}')}{Z(\mathcal{D}')}
 $$
 
 #### Step 5: Recover $f(X)$ from $D(\mathcal{D}')$
 We now perform inverse FFT on $D(\mathcal{D}')$ over the coset domain to get $D(X)$ in coefficient form:
+
 $$
 D(X) = f(X)
 $$
@@ -171,6 +185,7 @@ $$
 We then "expand" $z(X)$ to the full domain by inserting zeros in stride: every $k$-th coefficient in $Z(X)$ gets a value from $z(X)$.
 
 This makes $Z(X)$ vanish at the same positions in every block. For example, if blocks are size 4 and we miss index 1 in every block, $Z(X)$ vanishes at:
+
 $$
 {1, 5, 9, 13, \dots}
 $$
@@ -186,22 +201,26 @@ Let’s consider a structured erasure scenario where the same position is erased
 ## Setup
 
 We take a polynomial $f(X)$ of degree less than 4, and encode it using an expansion factor $r = 2$, so we get a codeword of length:
+
 $$
 N = n \cdot r = 4 \cdot 2 = 8
 $$
 
 Suppose we divide this codeword into 2 blocks of size $B = 4$:
+
 $$
 \text{Block}_0 = [f(x_0), f(x_1), f(x_2), f(x_3)] \\
 \text{Block}_1 = [f(x_4), f(x_5), f(x_6), f(x_7)]
 $$
 
 Now imagine the first entry of **every block** is missing. That is:
+
 $$
 \text{Erased positions: } x_0 \text{ and } x_4
 $$
 
 Our received codeword becomes:
+
 $$
 E(X) = [0, f(x_1), f(x_2), f(x_3), 0, f(x_5), f(x_6), f(x_7)]
 $$
@@ -211,16 +230,19 @@ This is a **block-synchronized erasure** at index $0$ within each block.
 #### Step 1: Construct $z(X)$ over the block domain
 
 Let the block domain (of size 4) be:
+
 $$
 \mathcal{B} = \{R_0, R_1, R_2, R_3\}
 $$
 
 We define a small vanishing polynomial $z(X)$ over the block:
+
 $$
 z(X) = X - R_0
 $$
 
 because only index 0 is missing within each block. This polynomial satisfies:
+
 $$
 z(R_0) = 0, \quad z(R_1), z(R_2), z(R_3) \neq 0
 $$
@@ -228,16 +250,19 @@ $$
 #### Step 2: Expand $z(X)$ to $Z(X)$ over the full domain
 
 We now **lift** $z(X)$ into a polynomial $Z(X)$ that vanishes on index 0 of every block in the full domain. This is done by spacing the coefficients of $z(X)$ apart by block strides (i.e., interleaving zeros between them). If we define:
+
 $$
 z(X) = c_0 + c_1 X
 $$
 
 Then $Z(X)$ is defined over size 8 by expanding $z(X)$ in strides of 2 (number of blocks):
+
 $$
 Z(X) = c_0 + 0 \cdot X + c_1 X^2 + 0 \cdot X^3 + \cdots
 $$
 
 This causes $Z(X)$ to vanish at all the original evaluation points $x_i$ such that $i \mod 4 = 0$ (i.e., index 0 in every block). That is:
+
 $$
 Z(x_0) = 0, \quad Z(x_4) = 0, \quad Z(x_i) \neq 0 \text{ for all other } i
 $$
@@ -245,11 +270,13 @@ $$
 #### Step 3: Multiply with received codeword
 
 We now compute:
+
 $$
 (E \cdot Z)(x_i) = E(x_i) \cdot Z(x_i)
 $$
 
 At the erased positions (like $x_0$ and $x_4$), $E(x_i) = 0$, and $Z(x_i) = 0$, so:
+
 $$
 (E \cdot Z)(x_0) = (E \cdot Z)(x_4) = 0
 $$
@@ -267,12 +294,16 @@ $$
 #### Step 5: Evaluate on a coset and divide
 
 We choose a coset domain $\mathcal{D}' = g \cdot \mathcal{D}$ and evaluate both $D(X) \cdot Z(X)$ and $Z(X)$ over that coset:
+
+$$
 \begin{aligned}
 (D \cdot Z)(\mathcal{D}') &= \text{FFT over coset} \\
 Z(\mathcal{D}') &= \text{FFT over coset}
 \end{aligned}
+$$
 
 Because the coset does not contain roots of $Z(X)$, division is safe:
+
 $$
 D(\mathcal{D}') = \frac{(D \cdot Z)(\mathcal{D}')}{Z(\mathcal{D}')}
 $$
