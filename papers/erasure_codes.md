@@ -28,6 +28,7 @@ Suppose some positions in the codeword are missing. We denote the received evalu
 * $E(x_i) = 0$ if missing.
 
 To recover $f(X)$, we construct a vanishing polynomial $Z(X)$ such that:
+
 $$
 Z(x_i) = 0 \quad \text{if and only if } x_i \text{ was an erasure}
 $$
