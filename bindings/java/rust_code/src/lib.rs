@@ -161,7 +161,7 @@ fn verify_cell_kzg_proof_batch<'local>(
 
     match ctx.verify_cell_kzg_proof_batch(commitments, &cell_indices, cells, proofs) {
         Ok(()) => Ok(jboolean::from(true)),
-        Err(x) if x.invalid_proof() => Ok(jboolean::from(false)),
+        Err(x) if x.is_fk20_verification_failure() => Ok(jboolean::from(false)),
         Err(err) => Err(Error::Cryptography(err)),
     }
 }

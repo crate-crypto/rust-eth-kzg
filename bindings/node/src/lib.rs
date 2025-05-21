@@ -235,7 +235,7 @@ impl DASContextJs {
     let valid = ctx.verify_cell_kzg_proof_batch(commitments, &cell_indices, cells, proofs);
     match valid {
       Ok(_) => Ok(true),
-      Err(x) if x.invalid_proof() => Ok(false),
+      Err(x) if x.is_fk20_verification_failure() => Ok(false),
       Err(err) => Err(Error::from_reason(format!(
         "failed to compute verify_cell_kzg_proof_batch: {:?}",
         err
