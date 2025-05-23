@@ -320,5 +320,28 @@ mod tests {
 
             prop_assert_eq!(left, right);
         }
+
+        #[test]
+        fn prop_vanishing_poly_is_zero_on_roots(roots in arb_scalar_vec(8)) {
+            // Create a new vector to hold only the distinct elements (no duplicates)
+            let mut unique_roots = Vec::new();
+
+            // Loop through each scalar in the input
+            for r in &roots {
+                // If `r` has not already been added to `unique_roots`, add it
+                if !unique_roots.iter().any(|x| x == r) {
+                    unique_roots.push(*r);
+                }
+            }
+
+            // Compute the vanishing polynomial Z(x) = ∏ (x - r_i)
+            // This polynomial will have the `unique_roots` as its roots
+            let poly = vanishing_poly(&unique_roots);
+
+            // Check that the polynomial evaluates to zero at each root
+            for root in &unique_roots {
+                prop_assert_eq!(poly.eval(root), Scalar::ZERO);
+            }
+        }
     }
 }
