@@ -170,6 +170,9 @@ impl FixedBaseMSMPrecompWindow {
 
 #[cfg(test)]
 mod tests {
+    use proptest::prelude::*;
+    use rand::SeedableRng;
+
     use super::*;
 
     #[test]
@@ -278,5 +281,42 @@ mod tests {
         let msm = FixedBaseMSMPrecompWindow::new(&generators, 7);
         // This should panic because lengths don't match
         let _ = msm.msm(&scalars);
+    }
+
+    proptest! {
+        #[test]
+        fn prop_msm_window_precomp_matches_naive(
+            len in 1usize..32,
+            seed in any::<u64>(),
+            wbits in 2usize..8,
+        ) {
+            let mut rng = rand::rngs::StdRng::seed_from_u64(seed);
+
+            // Generate random G1 affine points
+            let generators: Vec<G1Affine> = (0..len)
+                .map(|_| G1Projective::random(&mut rng).into())
+                .collect();
+
+            // Generate non-zero random scalars
+            let scalars: Vec<Scalar> = (0..len).map(|_| {
+                let mut s = Scalar::random(&mut rng);
+                if s.is_zero_vartime() {
+                    s = Scalar::ONE;
+                }
+                s
+            }).collect();
+
+            // Expected result via naive scalar multiplication
+            let expected: G1Projective = generators.iter()
+                .zip(&scalars)
+                .map(|(g, s)| G1Projective::from(*g) * s)
+                .sum();
+
+            // MSM using precomputed window table
+            let msm = FixedBaseMSMPrecompWindow::new(&generators, wbits);
+            let result = msm.msm(&scalars);
+
+            prop_assert_eq!(result, expected);
+        }
     }
 }
