@@ -29,3 +29,18 @@ impl CosetFFT {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use bls12_381::Scalar;
+
+    use super::*;
+
+    #[test]
+    #[should_panic]
+    fn test_coset_fft_new_panics_on_zero_generator() {
+        let zero = Scalar::ZERO;
+        // This should panic because zero has no multiplicative inverse
+        let _ = CosetFFT::new(zero);
+    }
+}
