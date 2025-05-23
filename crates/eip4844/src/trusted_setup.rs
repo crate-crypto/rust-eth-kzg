@@ -118,7 +118,7 @@ pub(crate) fn deserialize_g1_points<T: AsRef<str>>(
                 .strip_prefix("0x")
                 .expect("expected hex points to be prefixed with `0x`");
 
-            let bytes: [u8; 48] = hex::decode(hex_str)
+            let bytes = hex::decode(hex_str)
                 .expect("trusted setup has malformed g1 points")
                 .try_into()
                 .expect("expected 48 bytes for G1 point");
