@@ -85,7 +85,9 @@ impl TrustedSetup {
     }
     */
     pub fn from_json(json: &str) -> Self {
-        Self::from_json_unchecked(json)
+        let trusted_setup = Self::from_json_unchecked(json);
+        trusted_setup.validate_trusted_setup();
+        trusted_setup
     }
 
     /// Parse a Json string in the format specified by the ethereum trusted setup.
@@ -96,6 +98,15 @@ impl TrustedSetup {
         // and we want to fail fast if the trusted setup is malformed.
         serde_json::from_str(json)
             .expect("could not parse json string into a TrustedSetup structure")
+    }
+
+    /// This validates that the points in the trusted setup are in the correct subgroup.
+    ///
+    /// Panics if any of the points are not in the correct subgroup
+    fn validate_trusted_setup(&self) {
+        deserialize_g1_points(&self.g1_monomial, SubgroupCheck::Check);
+        deserialize_g1_points(&self.g1_lagrange, SubgroupCheck::Check);
+        deserialize_g2_points(&self.g2_monomial, SubgroupCheck::Check);
     }
 
     /// Loads the official trusted setup file being used on mainnet from the embedded data folder.
