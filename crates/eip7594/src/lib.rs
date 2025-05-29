@@ -61,30 +61,52 @@ use constants::{BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT};
 use prover::ProverContext;
 use verifier::VerifierContext;
 
-/// The context that will be used to create and verify opening proofs.
+/// DASContext manages the shared environment for creating and
+/// verifying KZG cell proofs used in PeerDAS (EIP-7594).
+///
+/// It holds:
+/// - The prover context (for generating proofs),
+/// - The verifier context (for checking proofs),
+///
+/// both initialized from the same trusted setup (SRS). This context is required
+/// for sampling and validating data availability across blobs and cells without downloading all data.
 #[derive(Debug)]
 pub struct DASContext {
+    /// Prover-side context:
+    /// prepares and generates KZG cell proofs for blobs and cells.
     pub prover_ctx: ProverContext,
+
+    /// Verifier-side context:
+    /// verifies KZG cell proofs and ensures data integrity in PeerDAS.
     pub verifier_ctx: VerifierContext,
 }
 
 impl Default for DASContext {
     fn default() -> Self {
-        let trusted_setup = TrustedSetup::default();
-
-        Self::new(&trusted_setup, UsePrecomp::No)
+        Self::new(&TrustedSetup::default(), UsePrecomp::No)
     }
 }
 
 impl DASContext {
-    pub fn new(
-        trusted_setup: &TrustedSetup,
-        // This parameter indicates whether we should allocate memory
-        // in order to speed up proof creation. Heuristics show that
-        // if pre-computations are desired, one should set the
-        // width value to `8` for optimal storage and performance tradeoffs.
-        use_precomp: UsePrecomp,
-    ) -> Self {
+    /// Creates a new DASContext with both prover and verifier
+    /// initialized from the given trusted setup (SRS).
+    ///
+    /// This context is used for generating and verifying KZG cell
+    /// proofs as part of PeerDAS (EIP-7594), which enables
+    /// data availability sampling without downloading all blob data.
+    ///
+    /// The `use_precomp` parameter controls whether prover-side
+    /// precomputations are enabled. Enabling precomputations
+    /// (typically with width 8) increases memory use but improves
+    /// proof generation speed, making it suitable for performance-sensitive
+    /// environments.
+    ///
+    /// # Arguments
+    /// * `trusted_setup` — The shared structured reference string (SRS)
+    ///   used to configure both prover and verifier contexts.
+    /// * `use_precomp` — Whether to enable prover-side precomputations
+    ///   for faster proof creation at the cost of extra memory.
+    pub fn new(trusted_setup: &TrustedSetup, use_precomp: UsePrecomp) -> Self {
         Self {
             prover_ctx: ProverContext::new(trusted_setup, use_precomp),
             verifier_ctx: VerifierContext::new(trusted_setup),
