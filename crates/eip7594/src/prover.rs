@@ -17,22 +17,48 @@ use crate::{
     BlobRef, Cell, CellIndex, CellRef, DASContext, KZGCommitment, KZGProof,
 };
 
-/// Context object that is used to call functions in the prover API.
-/// This includes, computing the commitments, proofs and cells.
+/// `ProverContext` manages the prover-side setup.
+///
+/// It handles all operations required to:
+/// - create KZG commitments,
+/// - generate multi-opening proofs,
+/// - construct the erasure-encoded cells used in data availability sampling (DAS).
+///
+/// This includes integrating a KZG multi-point prover and a Reed-Solomon erasure
+/// coding engine, both configured from the trusted setup.
+///
+/// Use this context when computing proofs or preparing data for DAS-related protocols.
 #[derive(Debug)]
 pub struct ProverContext {
+    /// KZG multi-point prover for generating commitments
+    /// and multi-opening proofs over blob data.
     kzg_multipoint_prover: Prover,
+
+    /// Reed-Solomon encoder used to extend blobs with
+    /// erasure-coded cells for recovery and sampling.
     rs: ReedSolomon,
 }
 
 impl Default for ProverContext {
     fn default() -> Self {
-        let trusted_setup = TrustedSetup::default();
-        Self::new(&trusted_setup, UsePrecomp::No)
+        Self::new(&TrustedSetup::default(), UsePrecomp::No)
     }
 }
 
 impl ProverContext {
+    /// Creates a new `ProverContext` using the given trusted setup (SRS)
+    /// and optional prover-side precomputations.
+    ///
+    /// This initializes both the KZG multi-point prover, which handles
+    /// commitments and multi-opening proofs over blob data, and the
+    /// Reed-Solomon encoder, which extends blob data with erasure-coded
+    /// cells for data recovery and availability sampling (DAS).
+    ///
+    /// # Arguments
+    /// * `trusted_setup` — The shared structured reference string (SRS)
+    ///   providing the cryptographic material for KZG operations.
+    /// * `use_precomp` — Whether to enable prover-side precomputations
+    ///   for faster proof generation (at the cost of extra memory).
     pub fn new(trusted_setup: &TrustedSetup, use_precomp: UsePrecomp) -> Self {
         let commit_key = CommitKey::from(trusted_setup);
 
