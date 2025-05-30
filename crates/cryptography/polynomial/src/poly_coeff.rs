@@ -16,6 +16,11 @@ impl PolyCoeff {
     /// Adds two polynomials `self + other` and returns the result.
     ///
     /// Polynomials may have different lengths; the shorter one is padded with zeros.
+    ///
+    /// WARNINGS:
+    /// - For `a + b - b` to be equal to `a`, the number of coefficients must be the same,
+    ///   otherwise we have an additional `Scalar::ZERO` in the result, but this is not a use
+    ///   case we should encounter in this crate.
     #[must_use]
     pub fn add(&self, other: &Self) -> Self {
         let mut result = self.clone();
@@ -37,6 +42,11 @@ impl PolyCoeff {
     /// Subtracts `other` from `self`, returning `self - other`.
     ///
     /// Internally implemented as `self + (-other)`.
+    ///
+    /// WARNINGS:
+    /// - For `a + b - b` to be equal to `a`, the number of coefficients must be the same,
+    ///   otherwise we have an additional `Scalar::ZERO` in the result, but this is not a use
+    ///   case we should encounter in this crate.
     #[must_use]
     pub fn sub(&self, other: &Self) -> Self {
         self.add(&other.neg())
