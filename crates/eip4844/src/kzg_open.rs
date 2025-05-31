@@ -53,7 +53,7 @@ pub mod verifier {
     use itertools::{chain, cloned, izip, Itertools};
     use polynomial::domain::Domain;
 
-    use crate::{trusted_setup::TrustedSetup, VerifierError};
+    use crate::VerifierError;
 
     /// The key that is used to verify KZG single-point opening proofs.
     pub struct VerificationKey {
@@ -70,10 +70,10 @@ pub mod verifier {
     }
 
     impl Verifier {
-        pub fn new(domain_size: usize, trusted_setup: &TrustedSetup) -> Self {
+        pub fn new(domain_size: usize, verification_key: VerificationKey) -> Self {
             Self {
                 domain: Domain::new(domain_size),
-                verification_key: VerificationKey::from(trusted_setup),
+                verification_key: verification_key,
             }
         }
 
@@ -160,8 +160,6 @@ pub mod prover {
     use bls12_381::G1Point;
     use polynomial::domain::Domain;
 
-    use crate::TrustedSetup;
-
     /// The key that is used to commit to polynomials in monomial form.
     pub struct CommitKey {
         pub g1s: Vec<G1Point>,
@@ -176,10 +174,10 @@ pub mod prover {
     }
 
     impl Prover {
-        pub fn new(domain_size: usize, trusted_setup: &TrustedSetup) -> Self {
+        pub fn new(domain_size: usize, commit_key: CommitKey) -> Self {
             Self {
                 domain: Domain::new(domain_size),
-                commit_key: CommitKey::from(trusted_setup),
+                commit_key,
             }
         }
     }
