@@ -2,11 +2,11 @@ use std::iter::successors;
 
 use bls12_381::{reduce_bytes_to_scalar_bias, traits::*, G1Point, Scalar};
 use itertools::{chain, izip, Itertools};
+use kzg_single_open::bitreverse_slice;
 use polynomial::{domain::Domain, poly_coeff::PolyCoeff};
 use sha2::{Digest, Sha256};
 
 use crate::{
-    kzg_open::bitreverse_slice,
     serialization::{
         deserialize_blob_to_scalars, deserialize_bytes_to_scalar, deserialize_compressed_g1,
     },

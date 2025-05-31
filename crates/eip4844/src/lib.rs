@@ -10,17 +10,14 @@ mod prover;
 pub(crate) mod verifier;
 
 pub mod constants;
-mod kzg_open;
 mod serialization;
-mod trusted_setup;
 
 pub use errors::{Error, SerializationError, VerifierError};
-//
+use kzg_single_open::{
+    prover::{CommitKey, Prover},
+    verifier::{VerificationKey, Verifier},
+};
 pub use rust_eth_kzg::TrustedSetup;
-
-use crate::kzg_open::{prover::CommitKey, verifier::VerificationKey};
-//
-use crate::kzg_open::{prover::Prover, verifier::Verifier};
 
 /// BlobRef denotes a references to an opaque Blob.
 ///
