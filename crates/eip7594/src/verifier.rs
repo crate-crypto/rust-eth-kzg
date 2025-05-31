@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 
 use kzg_multi_open::{verification_key::VerificationKey, Verifier};
+use serialization::{deserialize_cells, deserialize_compressed_g1_points};
 
 pub use crate::errors::VerifierError;
 use crate::{
     constants::{CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_EXT_BLOB},
     errors::Error,
-    serialization::{deserialize_cells, deserialize_compressed_g1_points},
     trusted_setup::TrustedSetup,
     Bytes48Ref, CellIndex, CellRef, DASContext,
 };

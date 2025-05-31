@@ -14,6 +14,7 @@ workspace = true
 [dependencies]
 kzg_multi_open = { workspace = true }
 bls12_381 = { workspace = true }
+serialization = { workspace = true }
 hex = { workspace = true }
 erasure_codes = { workspace = true }
 rayon = { workspace = true, optional = true }
