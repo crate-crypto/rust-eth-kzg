@@ -73,7 +73,7 @@ pub mod verifier {
         pub fn new(domain_size: usize, verification_key: VerificationKey) -> Self {
             Self {
                 domain: Domain::new(domain_size),
-                verification_key: verification_key,
+                verification_key,
             }
         }
 
