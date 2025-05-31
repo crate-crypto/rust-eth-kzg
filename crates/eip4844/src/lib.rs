@@ -15,9 +15,11 @@ mod serialization;
 mod trusted_setup;
 
 pub use errors::{Error, SerializationError, VerifierError};
-use kzg_open::{prover::CommitKey, verifier::VerificationKey};
-pub use trusted_setup::TrustedSetup;
+//
+pub use rust_eth_kzg::TrustedSetup;
 
+use crate::kzg_open::{prover::CommitKey, verifier::VerificationKey};
+//
 use crate::kzg_open::{prover::Prover, verifier::Verifier};
 
 /// BlobRef denotes a references to an opaque Blob.
