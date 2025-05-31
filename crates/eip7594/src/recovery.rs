@@ -3,13 +3,13 @@ use std::collections::HashSet;
 use bls12_381::Scalar;
 use erasure_codes::{BlockErasureIndices, ReedSolomon};
 use kzg_multi_open::recover_evaluations_in_domain_order;
+use serialization::deserialize_cells;
 
 use crate::{
     constants::{
         BYTES_PER_CELL, CELLS_PER_EXT_BLOB, EXPANSION_FACTOR, FIELD_ELEMENTS_PER_EXT_BLOB,
     },
     errors::{Error, RecoveryError},
-    serialization::deserialize_cells,
     CellIndex, CellRef,
 };
 

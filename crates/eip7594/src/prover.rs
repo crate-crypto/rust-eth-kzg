@@ -1,6 +1,10 @@
 use bls12_381::fixed_base_msm::UsePrecomp;
 use erasure_codes::ReedSolomon;
 use kzg_multi_open::{commit_key::CommitKey, Prover, ProverInput};
+use serialization::{
+    deserialize_blob_to_scalars, serialize_cells, serialize_cells_and_proofs,
+    serialize_g1_compressed,
+};
 
 use crate::{
     constants::{
@@ -9,10 +13,6 @@ use crate::{
     },
     errors::Error,
     recovery::recover_polynomial_coeff,
-    serialization::{
-        deserialize_blob_to_scalars, serialize_cells, serialize_cells_and_proofs,
-        serialize_g1_compressed,
-    },
     trusted_setup::TrustedSetup,
     BlobRef, Cell, CellIndex, CellRef, DASContext, KZGCommitment, KZGProof,
 };

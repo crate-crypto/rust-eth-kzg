@@ -1,13 +1,15 @@
-use bls12_381::{G1Point, Scalar};
+pub mod constants;
+pub mod errors;
+pub mod types;
 
-pub use crate::errors::SerializationError;
-use crate::{
-    constants::{
-        BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1_POINT,
-        CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_CELL,
-    },
-    Cell, KZGProof,
+use bls12_381::{G1Point, Scalar};
+use constants::{
+    BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_FIELD_ELEMENT, BYTES_PER_G1_POINT,
+    CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_CELL,
 };
+use types::*;
+
+pub use crate::errors::Error as SerializationError;
 
 /// Deserializes a byte slice into a vector of `Scalar`s.
 ///
@@ -31,9 +33,7 @@ fn deserialize_bytes_to_scalars(bytes: &[u8]) -> Result<Vec<Scalar>, Serializati
 ///
 /// The blob must be exactly `BYTES_PER_BLOB` long (4096 field elements).
 /// Returns an error if the length is incorrect or parsing fails.
-pub(crate) fn deserialize_blob_to_scalars(
-    blob_bytes: &[u8],
-) -> Result<Vec<Scalar>, SerializationError> {
+pub fn deserialize_blob_to_scalars(blob_bytes: &[u8]) -> Result<Vec<Scalar>, SerializationError> {
     if blob_bytes.len() != BYTES_PER_BLOB {
         return Err(SerializationError::BlobHasInvalidLength {
             length: blob_bytes.len(),
@@ -83,7 +83,7 @@ pub(crate) fn deserialize_compressed_g1(point_bytes: &[u8]) -> Result<G1Point, S
 }
 
 /// Serializes a G1 point into its compressed representation.
-pub(crate) fn serialize_g1_compressed(point: &G1Point) -> [u8; BYTES_PER_G1_POINT] {
+pub fn serialize_g1_compressed(point: &G1Point) -> [u8; BYTES_PER_G1_POINT] {
     point.to_compressed()
 }
 
@@ -91,7 +91,7 @@ pub(crate) fn serialize_g1_compressed(point: &G1Point) -> [u8; BYTES_PER_G1_POIN
 ///
 /// Returns a vector of `G1Point`s or fails on the first invalid point.
 /// Each input slice must be exactly 48 bytes.
-pub(crate) fn deserialize_compressed_g1_points(
+pub fn deserialize_compressed_g1_points(
     points: Vec<&[u8; BYTES_PER_G1_POINT]>,
 ) -> Result<Vec<G1Point>, SerializationError> {
     points
@@ -118,7 +118,7 @@ pub(crate) fn serialize_scalars_to_cell(scalars: &[Scalar]) -> Vec<u8> {
 ///
 /// Each cell must be `BYTES_PER_CELL` bytes long.
 /// Returns an error if parsing any cell fails.
-pub(crate) fn deserialize_cells(
+pub fn deserialize_cells(
     cells: Vec<&[u8; BYTES_PER_CELL]>,
 ) -> Result<Vec<Vec<Scalar>>, SerializationError> {
     cells
@@ -131,7 +131,7 @@ pub(crate) fn deserialize_cells(
 ///
 /// Converts evaluation sets to `Cell`s and G1 points to `KZGProof`s.
 /// Expects exactly `CELLS_PER_EXT_BLOB` items in both inputs.
-pub(crate) fn serialize_cells_and_proofs(
+pub fn serialize_cells_and_proofs(
     coset_evaluations: &[Vec<Scalar>],
     proofs: &[G1Point],
 ) -> ([Cell; CELLS_PER_EXT_BLOB], [KZGProof; CELLS_PER_EXT_BLOB]) {
@@ -145,7 +145,7 @@ pub(crate) fn serialize_cells_and_proofs(
 ///
 /// Each set must contain exactly `FIELD_ELEMENTS_PER_CELL` scalars.
 /// Returns a fixed-size array with length `CELLS_PER_EXT_BLOB`.
-pub(crate) fn serialize_cells(coset_evaluations: &[Vec<Scalar>]) -> [Cell; CELLS_PER_EXT_BLOB] {
+pub fn serialize_cells(coset_evaluations: &[Vec<Scalar>]) -> [Cell; CELLS_PER_EXT_BLOB] {
     // Serialize the evaluation sets into `Cell`s.
     std::array::from_fn(|i| {
         let evals = &coset_evaluations[i];
@@ -155,6 +155,76 @@ pub(crate) fn serialize_cells(coset_evaluations: &[Vec<Scalar>]) -> [Cell; CELLS
             .try_into()
             .expect("infallible: serialized cell must be BYTES_PER_CELL long")
     })
+}
+
+/// Serialization methods that are used for the trusted setup
+pub mod trusted_setup {
+    use bls12_381::{G1Point, G2Point};
+
+    /// An enum used to specify whether to check that the points are in the correct subgroup
+    #[derive(Debug, Copy, Clone)]
+    pub enum SubgroupCheck {
+        /// Enforce subgroup membership checks during deserialization.
+        Check,
+        /// Skip subgroup checks (use only when inputs are trusted).
+        NoCheck,
+    }
+
+    /// Deserialize G1 points from hex strings without checking that the element
+    /// is in the correct subgroup.
+    pub fn deserialize_g1_points<T: AsRef<str>>(
+        g1_points_hex_str: &[T],
+        check: SubgroupCheck,
+    ) -> Vec<G1Point> {
+        g1_points_hex_str
+            .iter()
+            .map(|hex_str| {
+                let hex_str = hex_str
+                    .as_ref()
+                    .strip_prefix("0x")
+                    .expect("expected hex points to be prefixed with `0x`");
+
+                let bytes = hex::decode(hex_str)
+                    .expect("trusted setup has malformed g1 points")
+                    .try_into()
+                    .expect("expected 48 bytes for G1 point");
+
+                match check {
+                    SubgroupCheck::Check => G1Point::from_compressed(&bytes),
+                    SubgroupCheck::NoCheck => G1Point::from_compressed_unchecked(&bytes),
+                }
+                .expect("invalid g1 point")
+            })
+            .collect()
+    }
+
+    /// Deserialize G2 points from hex strings without checking that the element
+    /// is in the correct subgroup.
+    pub fn deserialize_g2_points<T: AsRef<str>>(
+        g2_points_hex_str: &[T],
+        subgroup_check: SubgroupCheck,
+    ) -> Vec<G2Point> {
+        g2_points_hex_str
+            .iter()
+            .map(|hex_str| {
+                let hex_str = hex_str
+                    .as_ref()
+                    .strip_prefix("0x")
+                    .expect("expected hex points to be prefixed with `0x`");
+
+                let bytes: [u8; 96] = hex::decode(hex_str)
+                    .expect("trusted setup has malformed g2 points")
+                    .try_into()
+                    .expect("expected 96 bytes for G2 point");
+
+                match subgroup_check {
+                    SubgroupCheck::Check => G2Point::from_compressed(&bytes),
+                    SubgroupCheck::NoCheck => G2Point::from_compressed_unchecked(&bytes),
+                }
+                .expect("invalid g2 point")
+            })
+            .collect()
+    }
 }
 
 #[cfg(test)]
