@@ -41,7 +41,7 @@ impl TrustedSetupJSON {
     /// Converts the `TrustedSetupJSON` into a `TrustedSetup` with subgroup checks.
     ///
     /// Panics if any of the points are not in the correct subgroup
-    fn to_trusted_setup(self) -> TrustedSetup {
+    fn to_trusted_setup(&self) -> TrustedSetup {
         let g1_monomial = deserialize_g1_points(&self.g1_monomial, SubgroupCheck::Check);
         let g2_monomial = deserialize_g2_points(&self.g2_monomial, SubgroupCheck::Check);
         TrustedSetup {
@@ -55,7 +55,7 @@ impl TrustedSetupJSON {
     /// Panics if:
     ///     - The hex string does not start with 0x
     ///     - The hex string does not represent a valid point in the G1/G2 group
-    fn to_trusted_setup_unchecked(self) -> TrustedSetup {
+    fn to_trusted_setup_unchecked(&self) -> TrustedSetup {
         let g1_monomial = deserialize_g1_points(&self.g1_monomial, SubgroupCheck::NoCheck);
         let g2_monomial = deserialize_g2_points(&self.g2_monomial, SubgroupCheck::NoCheck);
         TrustedSetup {
@@ -90,19 +90,19 @@ impl Default for TrustedSetup {
 
 impl From<&TrustedSetup> for CommitKey {
     fn from(setup: &TrustedSetup) -> Self {
-        CommitKey::new(setup.g1_monomial.to_vec())
+        Self::new(setup.g1_monomial.clone())
     }
 }
 
 impl From<&TrustedSetup> for VerificationKey {
     fn from(setup: &TrustedSetup) -> Self {
-        let g2_points = setup.g2_monomial.to_vec();
+        let g2_points = setup.g2_monomial.clone();
         let num_g2_points = g2_points.len();
         // The setup needs as many g1 elements for the verification key as g2 elements, in order
         // to commit to the remainder/interpolation polynomial.
         let g1_points = setup.g1_monomial[..num_g2_points].to_vec();
 
-        VerificationKey::new(
+        Self::new(
             g1_points,
             g2_points,
             FIELD_ELEMENTS_PER_CELL,
