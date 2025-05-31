@@ -13,6 +13,7 @@ workspace = true
 
 [dependencies]
 bls12_381 = { workspace = true }
+rust_eth_kzg = { workspace = true }
 polynomial = { workspace = true }
 maybe_rayon = { workspace = true }
 hex = { workspace = true }

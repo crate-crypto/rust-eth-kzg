@@ -73,7 +73,9 @@ pub mod verifier {
         pub fn new(domain_size: usize, trusted_setup: &TrustedSetup) -> Self {
             Self {
                 domain: Domain::new(domain_size),
-                verification_key: VerificationKey::from(trusted_setup),
+                verification_key: VerificationKey::from(&rust_eth_kzg::VerificationKey::from(
+                    trusted_setup,
+                )),
             }
         }
 
@@ -179,7 +181,7 @@ pub mod prover {
         pub fn new(domain_size: usize, trusted_setup: &TrustedSetup) -> Self {
             Self {
                 domain: Domain::new(domain_size),
-                commit_key: CommitKey::from(trusted_setup),
+                commit_key: CommitKey::from(&rust_eth_kzg::CommitKey::from(trusted_setup)),
             }
         }
     }
