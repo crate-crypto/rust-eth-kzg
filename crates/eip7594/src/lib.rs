@@ -13,6 +13,8 @@ pub use bls12_381::fixed_base_msm::UsePrecomp;
 // Exported types
 //
 pub use errors::Error;
+// TODO: re-exporting these so that eip4844 can re-use this
+pub use kzg_multi_open::{commit_key::CommitKey, verification_key::VerificationKey};
 /// TrustedSetup contains the Structured Reference String(SRS)
 /// needed to make and verify proofs.
 pub use trusted_setup::TrustedSetup;
