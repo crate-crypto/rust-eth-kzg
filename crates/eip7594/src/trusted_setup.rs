@@ -1,3 +1,4 @@
+use bls12_381::{G1Point, G2Point};
 use kzg_multi_open::{commit_key::CommitKey, verification_key::VerificationKey};
 use serde::Deserialize;
 use serialization::trusted_setup::{deserialize_g1_points, deserialize_g2_points, SubgroupCheck};
@@ -7,27 +8,28 @@ use crate::constants::{FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL};
 const TRUSTED_SETUP_JSON: &str = include_str!("../data/trusted_setup_4096.json");
 
 /// Represents an Ethereum trusted setup used for KZG commitments on the BLS12-381 curve.
+#[derive(Deserialize, Debug, PartialEq, Eq)]
+pub struct TrustedSetup {
+    /// G1 Monomial represents a list of group elements in the G1 group on the bls12-381 curve.
+    pub g1_monomial: Vec<G1Point>,
+    /// G2 Monomial represents a list of group elements in the G2 group on the bls12-381 curve.
+    pub g2_monomial: Vec<G2Point>,
+}
+
+/// Represents a serialized Ethereum trusted setup used for KZG commitments on the BLS12-381 curve.
 ///
 /// This struct holds hex-encoded group elements in G1 and G2, provided in monomial and lagrange bases.
 /// These elements are used to construct commitment and verification keys for polynomial commitment schemes.
 ///
 /// The setup is typically loaded from a JSON file matching the format used in Ethereum consensus specifications.
 #[derive(Deserialize, Debug, PartialEq, Eq)]
-pub struct TrustedSetup {
+struct TrustedSetupJSON {
     /// G1 Monomial represents a list of uncompressed
     /// hex encoded group elements in the G1 group on the bls12-381 curve.
     ///
     /// Ethereum has multiple trusted setups, however the one being
     /// used currently contains 4096 G1 elements.
     pub g1_monomial: Vec<String>,
-    /// G1 Lagrange represents a list of uncompressed
-    /// hex encoded group elements in the G1 group on the bls12-381 curve.
-    ///
-    /// These are related to `G1 Monomial` in that they are what one
-    /// would get if we did an inverse FFT on the `G1 monomial` elements.
-    ///
-    /// The length of this vector is equal to the length of G1_Monomial.
-    pub g1_lagrange: Vec<String>,
     /// G2 Monomial represents a list of uncompressed hex encoded
     /// group elements in the G2 group on the bls12-381 curve.
     ///
@@ -35,21 +37,77 @@ pub struct TrustedSetup {
     pub g2_monomial: Vec<String>,
 }
 
+impl TrustedSetupJSON {
+    /// Converts the `TrustedSetupJSON` into a `TrustedSetup` with subgroup checks.
+    ///
+    /// Panics if any of the points are not in the correct subgroup
+    fn to_trusted_setup(self) -> TrustedSetup {
+        let g1_monomial = deserialize_g1_points(&self.g1_monomial, SubgroupCheck::Check);
+        let g2_monomial = deserialize_g2_points(&self.g2_monomial, SubgroupCheck::Check);
+        TrustedSetup {
+            g1_monomial,
+            g2_monomial,
+        }
+    }
+
+    /// Converts the `TrustedSetupJSON` into a `TrustedSetup` without doing subgroup checks.
+    ///
+    /// Panics if:
+    ///     - The hex string does not start with 0x
+    ///     - The hex string does not represent a valid point in the G1/G2 group
+    fn to_trusted_setup_unchecked(self) -> TrustedSetup {
+        let g1_monomial = deserialize_g1_points(&self.g1_monomial, SubgroupCheck::NoCheck);
+        let g2_monomial = deserialize_g2_points(&self.g2_monomial, SubgroupCheck::NoCheck);
+        TrustedSetup {
+            g1_monomial,
+            g2_monomial,
+        }
+    }
+
+    /// Parse a JSON string in the format specified by the ethereum trusted setup.
+    ///
+    /// This method does not check that the points are in the correct subgroup.
+    fn from_json_unchecked(json: &str) -> Self {
+        // Note: it is fine to panic here since this method is called on startup
+        // and we want to fail fast if the trusted setup is malformed.
+        serde_json::from_str(json)
+            .expect("could not parse json string into a TrustedSetup structure")
+    }
+
+    /// Loads the official trusted setup file being used on mainnet from the embedded data folder.
+    fn from_embed() -> Self {
+        Self::from_json_unchecked(TRUSTED_SETUP_JSON)
+    }
+}
+
 impl Default for TrustedSetup {
     fn default() -> Self {
-        Self::from_embed()
+        let trusted_setup_json = TrustedSetupJSON::from_embed();
+        // We have a test that checks the embedded trusted setup is well-formed.
+        trusted_setup_json.to_trusted_setup_unchecked()
     }
 }
 
 impl From<&TrustedSetup> for CommitKey {
     fn from(setup: &TrustedSetup) -> Self {
-        setup.to_commit_key(SubgroupCheck::NoCheck)
+        CommitKey::new(setup.g1_monomial.to_vec())
     }
 }
 
 impl From<&TrustedSetup> for VerificationKey {
     fn from(setup: &TrustedSetup) -> Self {
-        setup.to_verification_key(SubgroupCheck::NoCheck)
+        let g2_points = setup.g2_monomial.to_vec();
+        let num_g2_points = g2_points.len();
+        // The setup needs as many g1 elements for the verification key as g2 elements, in order
+        // to commit to the remainder/interpolation polynomial.
+        let g1_points = setup.g1_monomial[..num_g2_points].to_vec();
+
+        VerificationKey::new(
+            g1_points,
+            g2_points,
+            FIELD_ELEMENTS_PER_CELL,
+            FIELD_ELEMENTS_PER_BLOB,
+        )
     }
 }
 
@@ -76,59 +134,18 @@ impl TrustedSetup {
       ]
     }
     */
+    /// Note: That we do not need the g1_lagrange points so they are skipped.
     pub fn from_json(json: &str) -> Self {
-        let trusted_setup = Self::from_json_unchecked(json);
-        trusted_setup.validate_trusted_setup();
-        trusted_setup
+        let trusted_setup_json = TrustedSetupJSON::from_json_unchecked(json);
+        trusted_setup_json.to_trusted_setup()
     }
 
     /// Parse a Json string in the format specified by the ethereum trusted setup.
     ///
     /// This method does not check that the points are in the correct subgroup.
     pub fn from_json_unchecked(json: &str) -> Self {
-        // Note: it is fine to panic here since this method is called on startup
-        // and we want to fail fast if the trusted setup is malformed.
-        serde_json::from_str(json)
-            .expect("could not parse json string into a TrustedSetup structure")
-    }
-
-    /// This validates that the points in the trusted setup are in the correct subgroup.
-    ///
-    /// Panics if any of the points are not in the correct subgroup
-    fn validate_trusted_setup(&self) {
-        self.to_commit_key(SubgroupCheck::Check);
-        self.to_verification_key(SubgroupCheck::Check);
-    }
-
-    /// Converts the G1 points in monomial basis from the trusted setup into a `CommitKey`.
-    ///
-    /// Can optionally check subgroup membership.
-    fn to_commit_key(&self, subgroup_check: SubgroupCheck) -> CommitKey {
-        let points = deserialize_g1_points(&self.g1_monomial, subgroup_check);
-        CommitKey::new(points)
-    }
-
-    /// Converts G1 and G2 monomials from the trusted setup into a `VerificationKey`.
-    ///
-    /// Uses only as many G1 points as there are G2 points. Can optionally enforce subgroup checks.
-    fn to_verification_key(&self, subgroup_check: SubgroupCheck) -> VerificationKey {
-        let g2_points = deserialize_g2_points(&self.g2_monomial, subgroup_check);
-        let num_g2_points = g2_points.len();
-        // The setup needs as many g1 elements for the verification key as g2 elements, in order
-        // to commit to the remainder/interpolation polynomial.
-        let g1_points = deserialize_g1_points(&self.g1_monomial[..num_g2_points], subgroup_check);
-
-        VerificationKey::new(
-            g1_points,
-            g2_points,
-            FIELD_ELEMENTS_PER_CELL,
-            FIELD_ELEMENTS_PER_BLOB,
-        )
-    }
-
-    /// Loads the official trusted setup file being used on mainnet from the embedded data folder.
-    fn from_embed() -> Self {
-        Self::from_json_unchecked(TRUSTED_SETUP_JSON)
+        let trusted_setup = TrustedSetupJSON::from_json_unchecked(json);
+        trusted_setup.to_trusted_setup_unchecked()
     }
 }
 
@@ -138,7 +155,7 @@ mod tests {
 
     #[test]
     fn test_embedded_setup_has_points_in_correct_subgroup() {
-        let setup = TrustedSetup::default();
-        setup.validate_trusted_setup();
+        let setup = TrustedSetupJSON::from_embed();
+        setup.to_trusted_setup();
     }
 }
