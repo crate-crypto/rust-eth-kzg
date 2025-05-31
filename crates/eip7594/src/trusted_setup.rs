@@ -1,6 +1,6 @@
-use bls12_381::{G1Point, G2Point};
 use kzg_multi_open::{commit_key::CommitKey, verification_key::VerificationKey};
 use serde::Deserialize;
+use serialization::trusted_setup::{deserialize_g1_points, deserialize_g2_points, SubgroupCheck};
 
 use crate::constants::{FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL};
 
@@ -39,15 +39,6 @@ impl Default for TrustedSetup {
     fn default() -> Self {
         Self::from_embed()
     }
-}
-
-/// An enum used to specify whether to check that the points are in the correct subgroup
-#[derive(Debug, Copy, Clone)]
-enum SubgroupCheck {
-    /// Enforce subgroup membership checks during deserialization.
-    Check,
-    /// Skip subgroup checks (use only when inputs are trusted).
-    NoCheck,
 }
 
 impl From<&TrustedSetup> for CommitKey {
@@ -139,62 +130,6 @@ impl TrustedSetup {
     fn from_embed() -> Self {
         Self::from_json_unchecked(TRUSTED_SETUP_JSON)
     }
-}
-
-/// Deserialize G1 points from hex strings without checking that the element
-/// is in the correct subgroup.
-fn deserialize_g1_points<T: AsRef<str>>(
-    g1_points_hex_str: &[T],
-    check: SubgroupCheck,
-) -> Vec<G1Point> {
-    g1_points_hex_str
-        .iter()
-        .map(|hex_str| {
-            let hex_str = hex_str
-                .as_ref()
-                .strip_prefix("0x")
-                .expect("expected hex points to be prefixed with `0x`");
-
-            let bytes = hex::decode(hex_str)
-                .expect("trusted setup has malformed g1 points")
-                .try_into()
-                .expect("expected 48 bytes for G1 point");
-
-            match check {
-                SubgroupCheck::Check => G1Point::from_compressed(&bytes),
-                SubgroupCheck::NoCheck => G1Point::from_compressed_unchecked(&bytes),
-            }
-            .expect("invalid g1 point")
-        })
-        .collect()
-}
-
-/// Deserialize G2 points from hex strings without checking that the element
-/// is in the correct subgroup.
-fn deserialize_g2_points<T: AsRef<str>>(
-    g2_points_hex_str: &[T],
-    subgroup_check: SubgroupCheck,
-) -> Vec<G2Point> {
-    g2_points_hex_str
-        .iter()
-        .map(|hex_str| {
-            let hex_str = hex_str
-                .as_ref()
-                .strip_prefix("0x")
-                .expect("expected hex points to be prefixed with `0x`");
-
-            let bytes: [u8; 96] = hex::decode(hex_str)
-                .expect("trusted setup has malformed g2 points")
-                .try_into()
-                .expect("expected 96 bytes for G2 point");
-
-            match subgroup_check {
-                SubgroupCheck::Check => G2Point::from_compressed(&bytes),
-                SubgroupCheck::NoCheck => G2Point::from_compressed_unchecked(&bytes),
-            }
-            .expect("invalid g2 point")
-        })
-        .collect()
 }
 
 #[cfg(test)]
