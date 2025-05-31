@@ -13,6 +13,7 @@ workspace = true
 
 [dependencies]
 kzg_multi_open = { workspace = true }
+kzg_single_open = { workspace = true }
 bls12_381 = { workspace = true }
 serialization = { workspace = true }
 hex = { workspace = true }

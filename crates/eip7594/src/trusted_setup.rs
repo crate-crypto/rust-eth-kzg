@@ -111,6 +111,24 @@ impl From<&TrustedSetup> for VerificationKey {
     }
 }
 
+impl From<&TrustedSetup> for kzg_single_open::verifier::VerificationKey {
+    fn from(setup: &TrustedSetup) -> Self {
+        Self {
+            gen_g1: setup.g1_monomial[0],
+            gen_g2: setup.g2_monomial[0],
+            tau_g2: setup.g2_monomial[1],
+        }
+    }
+}
+
+impl From<&TrustedSetup> for kzg_single_open::prover::CommitKey {
+    fn from(setup: &TrustedSetup) -> Self {
+        Self {
+            g1s: setup.g1_monomial.clone(),
+        }
+    }
+}
+
 impl TrustedSetup {
     /// Parse a Json string in the format specified by the ethereum trusted setup.
     ///

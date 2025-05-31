@@ -1,6 +1,8 @@
+mod errors;
 use bls12_381::Scalar;
+pub use errors::VerifierError;
 
-pub(crate) fn bitreverse(mut n: u32, l: u32) -> u32 {
+pub fn bitreverse(mut n: u32, l: u32) -> u32 {
     let mut r = 0;
     for _ in 0..l {
         r = (r << 1) | (n & 1);
@@ -9,7 +11,7 @@ pub(crate) fn bitreverse(mut n: u32, l: u32) -> u32 {
     r
 }
 
-pub(crate) fn bitreverse_slice<T>(a: &mut [T]) {
+pub fn bitreverse_slice<T>(a: &mut [T]) {
     if a.is_empty() {
         return;
     }
@@ -27,7 +29,7 @@ pub(crate) fn bitreverse_slice<T>(a: &mut [T]) {
 }
 
 /// Divides poly by X-Z using ruffini's rule, and returns quotient and reminder.
-pub(crate) fn divide_by_linear(poly: &[Scalar], z: Scalar) -> (Vec<Scalar>, Scalar) {
+pub fn divide_by_linear(poly: &[Scalar], z: Scalar) -> (Vec<Scalar>, Scalar) {
     let mut quotient: Vec<Scalar> = Vec::with_capacity(poly.len());
     let mut k = Scalar::from(0u64);
 

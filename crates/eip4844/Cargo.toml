@@ -16,6 +16,7 @@ bls12_381 = { workspace = true }
 polynomial = { workspace = true }
 maybe_rayon = { workspace = true }
 rust_eth_kzg = { workspace = true }
+kzg_single_open = { workspace = true }
 hex = { workspace = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

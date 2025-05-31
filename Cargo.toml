@@ -13,6 +13,7 @@ members = [
     "crates/serialization",
 
     "crates/cryptography/bls12_381",
+    "crates/cryptography/kzg_single_open",
     "crates/cryptography/kzg_multi_open",
     "crates/cryptography/polynomial",
     "crates/cryptography/erasure_codes",
@@ -62,7 +63,9 @@ bls12_381 = { package = "ekzg-bls12-381", version = "0.6.0", path = "crates/cryp
 polynomial = { package = "ekzg-polynomial", version = "0.6.0", path = "crates/cryptography/polynomial" }
 erasure_codes = { package = "ekzg-erasure-codes", version = "0.6.0", path = "crates/cryptography/erasure_codes" }
 rust_eth_kzg = { version = "0.6.0", path = "crates/eip7594" }
+eip4844 = { version = "0.6.0", path = "crates/eip4844" }
 maybe_rayon = { package = "ekzg-maybe-rayon", version = "0.6.0", path = "crates/maybe_rayon" }
+kzg_single_open = { package = "ekzg-single-open", version = "0.6.0", path = "crates/cryptography/kzg_single_open" }
 kzg_multi_open = { package = "ekzg-multi-open", version = "0.6.0", path = "crates/cryptography/kzg_multi_open" }
 c_eth_kzg = { version = "0.6.0", path = "bindings/c" }
 serialization = { package = "ekzg-serialization", version = "0.6.0", path = "crates/serialization" }
