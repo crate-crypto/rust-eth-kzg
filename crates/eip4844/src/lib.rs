@@ -15,6 +15,7 @@ mod serialization;
 mod trusted_setup;
 
 pub use errors::{Error, SerializationError, VerifierError};
+use kzg_open::{prover::CommitKey, verifier::VerificationKey};
 pub use trusted_setup::TrustedSetup;
 
 use crate::kzg_open::{prover::Prover, verifier::Verifier};
@@ -57,8 +58,11 @@ impl Default for Context {
 impl Context {
     pub fn new(trusted_setup: &TrustedSetup) -> Self {
         Self {
-            prover: Prover::new(FIELD_ELEMENTS_PER_BLOB, trusted_setup),
-            verifier: Verifier::new(FIELD_ELEMENTS_PER_BLOB, trusted_setup),
+            prover: Prover::new(FIELD_ELEMENTS_PER_BLOB, CommitKey::from(trusted_setup)),
+            verifier: Verifier::new(
+                FIELD_ELEMENTS_PER_BLOB,
+                VerificationKey::from(trusted_setup),
+            ),
         }
     }
 }
