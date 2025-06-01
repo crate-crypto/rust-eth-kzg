@@ -161,7 +161,7 @@ fn verify_cell_kzg_proof_batch<'local>(
 
     match ctx.verify_cell_kzg_proof_batch(commitments, &cell_indices, cells, proofs) {
         Ok(()) => Ok(jboolean::from(true)),
-        Err(x) if x.is_fk20_verification_failure() => Ok(jboolean::from(false)),
+        Err(x) if x.is_proof_invalid() => Ok(jboolean::from(false)),
         Err(err) => Err(Error::Cryptography(err)),
     }
 }
@@ -200,6 +200,222 @@ fn recover_cells_and_kzg_proofs<'local>(
     let (recovered_cells, recovered_proofs) = ctx.recover_cells_and_kzg_proofs(cell_ids, cells)?;
     let recovered_cells = recovered_cells.map(|cell| *cell);
     cells_and_proofs_to_jobject(env, &recovered_cells, &recovered_proofs)
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_computeKzgProof<'local>(
+    mut env: JNIEnv<'local>,
+    _class: JClass,
+    ctx_ptr: jlong,
+    blob: JByteArray<'local>,
+    z: JByteArray<'local>,
+) -> JObjectArray<'local> {
+    let ctx = unsafe { &*(ctx_ptr as *const DASContext) };
+    match compute_kzg_proof(&mut env, ctx, blob, z) {
+        Ok(result) => result,
+        Err(err) => {
+            throw_on_error(&mut env, err, "computeKzgProof");
+            JObjectArray::default()
+        }
+    }
+}
+fn compute_kzg_proof<'local>(
+    env: &mut JNIEnv<'local>,
+    ctx: &DASContext,
+    blob: JByteArray<'local>,
+    z: JByteArray<'local>,
+) -> Result<JObjectArray<'local>, Error> {
+    let blob = env.convert_byte_array(blob)?;
+    let blob = slice_to_array_ref(&blob, "blob")?;
+
+    let z = env.convert_byte_array(z)?;
+    let z = slice_to_array_ref(&z, "z")?;
+
+    let (proof, y) = ctx.compute_kzg_proof(blob, *z)?;
+
+    // Create a 2D byte array with proof and y
+    let byte_array_class = env.find_class("[B")?;
+    let result_array = env.new_object_array(2, byte_array_class, env.new_byte_array(0)?)?;
+
+    let proof_array = env.byte_array_from_slice(&proof)?;
+    let y_array = env.byte_array_from_slice(&y)?;
+
+    env.set_object_array_element(&result_array, 0, proof_array)?;
+    env.set_object_array_element(&result_array, 1, y_array)?;
+
+    Ok(result_array)
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_computeBlobKzgProof<'local>(
+    mut env: JNIEnv<'local>,
+    _class: JClass,
+    ctx_ptr: jlong,
+    blob: JByteArray<'local>,
+    commitment: JByteArray<'local>,
+) -> JByteArray<'local> {
+    let ctx = unsafe { &*(ctx_ptr as *const DASContext) };
+    match compute_blob_kzg_proof(&env, ctx, blob, commitment) {
+        Ok(proof) => proof,
+        Err(err) => {
+            throw_on_error(&mut env, err, "computeBlobKzgProof");
+            JByteArray::default()
+        }
+    }
+}
+fn compute_blob_kzg_proof<'local>(
+    env: &JNIEnv<'local>,
+    ctx: &DASContext,
+    blob: JByteArray<'local>,
+    commitment: JByteArray<'local>,
+) -> Result<JByteArray<'local>, Error> {
+    let blob = env.convert_byte_array(blob)?;
+    let blob = slice_to_array_ref(&blob, "blob")?;
+
+    let commitment = env.convert_byte_array(commitment)?;
+    let commitment = slice_to_array_ref(&commitment, "commitment")?;
+
+    let proof = ctx.compute_blob_kzg_proof(blob, commitment)?;
+    env.byte_array_from_slice(&proof).map_err(Error::from)
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_verifyKzgProof<'local>(
+    mut env: JNIEnv<'local>,
+    _class: JClass,
+    ctx_ptr: jlong,
+    commitment: JByteArray<'local>,
+    z: JByteArray<'local>,
+    y: JByteArray<'local>,
+    proof: JByteArray<'local>,
+) -> jboolean {
+    let ctx = unsafe { &*(ctx_ptr as *const DASContext) };
+
+    match verify_kzg_proof(&mut env, ctx, commitment, z, y, proof) {
+        Ok(result) => result,
+        Err(err) => {
+            throw_on_error(&mut env, err, "verifyKzgProof");
+            jboolean::default()
+        }
+    }
+}
+fn verify_kzg_proof<'local>(
+    env: &mut JNIEnv,
+    ctx: &DASContext,
+    commitment: JByteArray<'local>,
+    z: JByteArray<'local>,
+    y: JByteArray<'local>,
+    proof: JByteArray<'local>,
+) -> Result<jboolean, Error> {
+    let commitment = env.convert_byte_array(commitment)?;
+    let commitment = slice_to_array_ref(&commitment, "commitment")?;
+
+    let z = env.convert_byte_array(z)?;
+    let z = slice_to_array_ref(&z, "z")?;
+
+    let y = env.convert_byte_array(y)?;
+    let y = slice_to_array_ref(&y, "y")?;
+
+    let proof = env.convert_byte_array(proof)?;
+    let proof = slice_to_array_ref(&proof, "proof")?;
+
+    match ctx.verify_kzg_proof(commitment, *z, *y, proof) {
+        Ok(()) => Ok(jboolean::from(true)),
+        Err(x) if x.is_proof_invalid() => Ok(jboolean::from(false)),
+        Err(err) => Err(Error::Cryptography(err)),
+    }
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_verifyBlobKzgProof<'local>(
+    mut env: JNIEnv<'local>,
+    _class: JClass,
+    ctx_ptr: jlong,
+    blob: JByteArray<'local>,
+    commitment: JByteArray<'local>,
+    proof: JByteArray<'local>,
+) -> jboolean {
+    let ctx = unsafe { &*(ctx_ptr as *const DASContext) };
+
+    match verify_blob_kzg_proof(&mut env, ctx, blob, commitment, proof) {
+        Ok(result) => result,
+        Err(err) => {
+            throw_on_error(&mut env, err, "verifyBlobKzgProof");
+            jboolean::default()
+        }
+    }
+}
+fn verify_blob_kzg_proof<'local>(
+    env: &mut JNIEnv,
+    ctx: &DASContext,
+    blob: JByteArray<'local>,
+    commitment: JByteArray<'local>,
+    proof: JByteArray<'local>,
+) -> Result<jboolean, Error> {
+    let blob = env.convert_byte_array(blob)?;
+    let blob = slice_to_array_ref(&blob, "blob")?;
+
+    let commitment = env.convert_byte_array(commitment)?;
+    let commitment = slice_to_array_ref(&commitment, "commitment")?;
+
+    let proof = env.convert_byte_array(proof)?;
+    let proof = slice_to_array_ref(&proof, "proof")?;
+
+    match ctx.verify_blob_kzg_proof(blob, commitment, proof) {
+        Ok(()) => Ok(jboolean::from(true)),
+        Err(x) if x.is_proof_invalid() => Ok(jboolean::from(false)),
+        Err(err) => Err(Error::Cryptography(err)),
+    }
+}
+
+#[no_mangle]
+pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_verifyBlobKzgProofBatch<'local>(
+    mut env: JNIEnv<'local>,
+    _class: JClass,
+    ctx_ptr: jlong,
+    blobs: JObjectArray<'local>,
+    commitments: JObjectArray<'local>,
+    proofs: JObjectArray<'local>,
+) -> jboolean {
+    let ctx = unsafe { &*(ctx_ptr as *const DASContext) };
+
+    match verify_blob_kzg_proof_batch(&mut env, ctx, &blobs, &commitments, &proofs) {
+        Ok(result) => result,
+        Err(err) => {
+            throw_on_error(&mut env, err, "verifyBlobKzgProofBatch");
+            jboolean::default()
+        }
+    }
+}
+fn verify_blob_kzg_proof_batch<'local>(
+    env: &mut JNIEnv,
+    ctx: &DASContext,
+    blobs: &JObjectArray<'local>,
+    commitments: &JObjectArray<'local>,
+    proofs: &JObjectArray<'local>,
+) -> Result<jboolean, Error> {
+    let blobs = jobject_array_to_2d_byte_array(env, blobs)?;
+    let commitments = jobject_array_to_2d_byte_array(env, commitments)?;
+    let proofs = jobject_array_to_2d_byte_array(env, proofs)?;
+
+    let blobs: Vec<_> = blobs
+        .iter()
+        .map(|blob| slice_to_array_ref(blob, "blob"))
+        .collect::<Result<_, _>>()?;
+    let commitments: Vec<_> = commitments
+        .iter()
+        .map(|commitment| slice_to_array_ref(commitment, "commitment"))
+        .collect::<Result<_, _>>()?;
+    let proofs: Vec<_> = proofs
+        .iter()
+        .map(|proof| slice_to_array_ref(proof, "proof"))
+        .collect::<Result<_, _>>()?;
+
+    match ctx.verify_blob_kzg_proof_batch(blobs, commitments, proofs) {
+        Ok(()) => Ok(jboolean::from(true)),
+        Err(x) if x.is_proof_invalid() => Ok(jboolean::from(false)),
+        Err(err) => Err(Error::Cryptography(err)),
+    }
 }
 
 /// Converts a JLongArray to a Vec<u64>

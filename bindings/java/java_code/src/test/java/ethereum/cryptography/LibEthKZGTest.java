@@ -109,4 +109,70 @@ public class LibEthKZGTest {
         }
     }
 
+    @ParameterizedTest
+    @MethodSource("ethereum.cryptography.TestUtils#getComputeKzgProofTests")
+    public void computeKzgProofTests(final ComputeKzgProofTest test) {
+        try {
+            byte[][] result = context.computeKzgProof(test.getInput().getBlob(), test.getInput().getZ());
+            assertArrayEquals(test.getOutput()[0], result[0]); // proof
+            assertArrayEquals(test.getOutput()[1], result[1]); // y
+        } catch (IllegalArgumentException ex) {
+            assertNull(test.getOutput());
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("ethereum.cryptography.TestUtils#getComputeBlobKzgProofTests")
+    public void computeBlobKzgProofTests(final ComputeBlobKzgProofTest test) {
+        try {
+            byte[] proof = context.computeBlobKzgProof(test.getInput().getBlob(), test.getInput().getCommitment());
+            assertArrayEquals(test.getOutput(), proof);
+        } catch (IllegalArgumentException ex) {
+            assertNull(test.getOutput());
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("ethereum.cryptography.TestUtils#getVerifyKzgProofTests")
+    public void verifyKzgProofTests(final VerifyKzgProofTest test) {
+        try {
+            boolean valid = context.verifyKzgProof(
+                test.getInput().getCommitment(),
+                test.getInput().getZ(),
+                test.getInput().getY(),
+                test.getInput().getProof());
+            assertEquals(test.getOutput(), valid);
+        } catch (IllegalArgumentException ex) {
+            assertNull(test.getOutput());
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("ethereum.cryptography.TestUtils#getVerifyBlobKzgProofTests")
+    public void verifyBlobKzgProofTests(final VerifyBlobKzgProofTest test) {
+        try {
+            boolean valid = context.verifyBlobKzgProof(
+                test.getInput().getBlob(),
+                test.getInput().getCommitment(),
+                test.getInput().getProof());
+            assertEquals(test.getOutput(), valid);
+        } catch (IllegalArgumentException ex) {
+            assertNull(test.getOutput());
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("ethereum.cryptography.TestUtils#getVerifyBlobKzgProofBatchTests")
+    public void verifyBlobKzgProofBatchTests(final VerifyBlobKzgProofBatchTest test) {
+        try {
+            boolean valid = context.verifyBlobKzgProofBatch(
+                test.getInput().getBlobs(),
+                test.getInput().getCommitments(),
+                test.getInput().getProofs());
+            assertEquals(test.getOutput(), valid);
+        } catch (IllegalArgumentException ex) {
+            assertNull(test.getOutput());
+        }
+    }
+
 }
