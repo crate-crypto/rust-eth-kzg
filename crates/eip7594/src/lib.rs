@@ -1,6 +1,3 @@
-#[cfg(all(feature = "singlethreaded", feature = "multithreaded"))]
-compile_error!("`singlethreaded` and `multithreaded` cannot be enabled simultaneously");
-
 mod eip4844_methods;
 mod errors;
 mod prover;
