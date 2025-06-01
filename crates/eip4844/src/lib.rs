@@ -1,16 +1,18 @@
-// #[cfg(all(feature = "singlethreaded", feature = "multithreaded"))]
-// compile_error!("`singlethreaded` and `multithreaded` cannot be enabled simultaneously");
-use serialization::constants::FIELD_ELEMENTS_PER_BLOB;
-
 mod errors;
 mod prover;
 mod trusted_setup;
-pub(crate) mod verifier;
+mod verifier;
 
+/// Re-exported types
 pub use errors::{Error, SerializationError, VerifierError};
-use kzg_single_open::{prover::Prover, verifier::Verifier};
 pub use serialization::{constants, types::*};
 pub use trusted_setup::TrustedSetup;
+
+#[rustfmt::skip]
+// Note: adding rustfmt::skip so that `cargo fmt` does not mix the
+// public re-exported types with the following private imports.
+use kzg_single_open::{prover::Prover, verifier::Verifier};
+use serialization::constants::FIELD_ELEMENTS_PER_BLOB;
 use trusted_setup::{commit_key_from_setup, verification_key_from_setup};
 
 #[derive(Debug)]
