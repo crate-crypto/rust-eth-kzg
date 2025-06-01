@@ -16,6 +16,11 @@ const BLOB_TO_KZG_COMMITMENT_TESTS = "../../test_vectors/blob_to_kzg_commitment/
 const COMPUTE_CELLS_AND_KZG_PROOFS_TESTS = "../../test_vectors/compute_cells_and_kzg_proofs/*/*/data.yaml";
 const VERIFY_CELL_KZG_PROOF_BATCH_TESTS = "../../test_vectors/verify_cell_kzg_proof_batch/*/*/data.yaml";
 const RECOVER_CELLS_AND_KZG_PROOFS_TEST = "../../test_vectors/recover_cells_and_kzg_proofs/*/*/data.yaml";
+const COMPUTE_KZG_PROOF_TESTS = "../../test_vectors/compute_kzg_proof/*/*/data.yaml";
+const COMPUTE_BLOB_KZG_PROOF_TESTS = "../../test_vectors/compute_blob_kzg_proof/*/*/data.yaml";
+const VERIFY_KZG_PROOF_TESTS = "../../test_vectors/verify_kzg_proof/*/*/data.yaml";
+const VERIFY_BLOB_KZG_PROOF_TESTS = "../../test_vectors/verify_blob_kzg_proof/*/*/data.yaml";
+const VERIFY_BLOB_KZG_PROOF_BATCH_TESTS = "../../test_vectors/verify_blob_kzg_proof_batch/*/*/data.yaml";
 
 type BlobToKzgCommitmentTest = TestMeta<{ blob: string }, string>;
 type ComputeCellsAndKzgProofsTest = TestMeta<{ blob: string }, string[][]>;
@@ -24,6 +29,11 @@ type VerifyCellKzgProofBatchTest = TestMeta<
   boolean
 >;
 type RecoverCellsAndKzgProofsTest = TestMeta<{ cell_indices: number[]; cells: string[] }, string[][]>;
+type ComputeKzgProofTest = TestMeta<{ blob: string; z: string }, string[]>;
+type ComputeBlobKzgProofTest = TestMeta<{ blob: string; commitment: string }, string>;
+type VerifyKzgProofTest = TestMeta<{ commitment: string; z: string; y: string; proof: string }, boolean>;
+type VerifyBlobKzgProofTest = TestMeta<{ blob: string; commitment: string; proof: string }, boolean>;
+type VerifyBlobKzgProofBatchTest = TestMeta<{ blobs: string[]; commitments: string[]; proofs: string[] }, boolean>;
 
 /**
  * Converts hex string to binary Uint8Array
@@ -183,6 +193,127 @@ describe("Spec tests", () => {
 
       try {
         valid = ctx.verifyCellKzgProofBatch(commitments, cellIndices, cells, proofs);
+      } catch (err) {
+        expect(test.output).toBeNull();
+        return;
+      }
+
+      expect(valid).toEqual(test.output);
+    });
+  });
+
+  it("reference tests for computeKzgProof should pass", () => {
+    const tests = globSync(COMPUTE_KZG_PROOF_TESTS);
+    expect(tests.length).toBeGreaterThan(0);
+
+    tests.forEach((testFile: string) => {
+      const test: ComputeKzgProofTest = yaml.load(readFileSync(testFile, "ascii"));
+
+      let result: Uint8Array[];
+      const blob = bytesFromHex(test.input.blob);
+      const z = bytesFromHex(test.input.z);
+
+      try {
+        result = ctx.computeKzgProof(blob, z);
+      } catch (err) {
+        expect(test.output).toBeNull();
+        return;
+      }
+
+      expect(test.output).not.toBeNull();
+      expect(result.length).toBe(2);
+      const expectedProof = bytesFromHex(test.output[0]);
+      const expectedY = bytesFromHex(test.output[1]);
+      assertBytesEqual(result[0], expectedProof);
+      assertBytesEqual(result[1], expectedY);
+    });
+  });
+
+  it("reference tests for computeBlobKzgProof should pass", () => {
+    const tests = globSync(COMPUTE_BLOB_KZG_PROOF_TESTS);
+    expect(tests.length).toBeGreaterThan(0);
+
+    tests.forEach((testFile: string) => {
+      const test: ComputeBlobKzgProofTest = yaml.load(readFileSync(testFile, "ascii"));
+
+      let proof: Uint8Array;
+      const blob = bytesFromHex(test.input.blob);
+      const commitment = bytesFromHex(test.input.commitment);
+
+      try {
+        proof = ctx.computeBlobKzgProof(blob, commitment);
+      } catch (err) {
+        expect(test.output).toBeNull();
+        return;
+      }
+
+      expect(test.output).not.toBeNull();
+      const expectedProof = bytesFromHex(test.output);
+      assertBytesEqual(proof, expectedProof);
+    });
+  });
+
+  it("reference tests for verifyKzgProof should pass", () => {
+    const tests = globSync(VERIFY_KZG_PROOF_TESTS);
+    expect(tests.length).toBeGreaterThan(0);
+
+    tests.forEach((testFile: string) => {
+      const test: VerifyKzgProofTest = yaml.load(readFileSync(testFile, "ascii"));
+
+      let valid: boolean;
+      const commitment = bytesFromHex(test.input.commitment);
+      const z = bytesFromHex(test.input.z);
+      const y = bytesFromHex(test.input.y);
+      const proof = bytesFromHex(test.input.proof);
+
+      try {
+        valid = ctx.verifyKzgProof(commitment, z, y, proof);
+      } catch (err) {
+        expect(test.output).toBeNull();
+        return;
+      }
+
+      expect(valid).toEqual(test.output);
+    });
+  });
+
+  it("reference tests for verifyBlobKzgProof should pass", () => {
+    const tests = globSync(VERIFY_BLOB_KZG_PROOF_TESTS);
+    expect(tests.length).toBeGreaterThan(0);
+
+    tests.forEach((testFile: string) => {
+      const test: VerifyBlobKzgProofTest = yaml.load(readFileSync(testFile, "ascii"));
+
+      let valid: boolean;
+      const blob = bytesFromHex(test.input.blob);
+      const commitment = bytesFromHex(test.input.commitment);
+      const proof = bytesFromHex(test.input.proof);
+
+      try {
+        valid = ctx.verifyBlobKzgProof(blob, commitment, proof);
+      } catch (err) {
+        expect(test.output).toBeNull();
+        return;
+      }
+
+      expect(valid).toEqual(test.output);
+    });
+  });
+
+  it("reference tests for verifyBlobKzgProofBatch should pass", () => {
+    const tests = globSync(VERIFY_BLOB_KZG_PROOF_BATCH_TESTS);
+    expect(tests.length).toBeGreaterThan(0);
+
+    tests.forEach((testFile: string) => {
+      const test: VerifyBlobKzgProofBatchTest = yaml.load(readFileSync(testFile, "ascii"));
+
+      let valid: boolean;
+      const blobs = test.input.blobs.map(bytesFromHex);
+      const commitments = test.input.commitments.map(bytesFromHex);
+      const proofs = test.input.proofs.map(bytesFromHex);
+
+      try {
+        valid = ctx.verifyBlobKzgProofBatch(blobs, commitments, proofs);
       } catch (err) {
         expect(test.output).toBeNull();
         return;

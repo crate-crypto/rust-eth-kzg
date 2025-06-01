@@ -235,7 +235,7 @@ impl DASContextJs {
     let valid = ctx.verify_cell_kzg_proof_batch(commitments, &cell_indices, cells, proofs);
     match valid {
       Ok(_) => Ok(true),
-      Err(x) if x.is_fk20_verification_failure() => Ok(false),
+      Err(x) if x.is_proof_invalid() => Ok(false),
       Err(err) => Err(Error::from_reason(format!(
         "failed to compute verify_cell_kzg_proof_batch: {:?}",
         err
@@ -252,6 +252,184 @@ impl DASContextJs {
     proofs: Vec<Uint8Array>,
   ) -> Result<bool> {
     self.verify_cell_kzg_proof_batch(commitments, cell_indices, cells, proofs)
+  }
+
+  #[napi]
+  pub fn compute_kzg_proof(&self, blob: Uint8Array, z: Uint8Array) -> Result<Vec<Uint8Array>> {
+    let blob = blob.as_ref();
+    let z = z.as_ref();
+    let ctx = &self.inner;
+
+    let blob = slice_to_array_ref(blob, "blob")?;
+    let z = slice_to_array_ref(z, "z")?;
+
+    let (proof, y) = ctx.compute_kzg_proof(blob, *z).map_err(|err| {
+      Error::from_reason(format!("failed to compute compute_kzg_proof: {:?}", err))
+    })?;
+
+    Ok(vec![Uint8Array::from(&proof), Uint8Array::from(&y)])
+  }
+
+  #[napi]
+  pub async fn async_compute_kzg_proof(
+    &self,
+    blob: Uint8Array,
+    z: Uint8Array,
+  ) -> Result<Vec<Uint8Array>> {
+    self.compute_kzg_proof(blob, z)
+  }
+
+  #[napi]
+  pub fn compute_blob_kzg_proof(
+    &self,
+    blob: Uint8Array,
+    commitment: Uint8Array,
+  ) -> Result<Uint8Array> {
+    let blob = blob.as_ref();
+    let commitment = commitment.as_ref();
+    let ctx = &self.inner;
+
+    let blob = slice_to_array_ref(blob, "blob")?;
+    let commitment = slice_to_array_ref(commitment, "commitment")?;
+
+    let proof = ctx.compute_blob_kzg_proof(blob, commitment).map_err(|err| {
+      Error::from_reason(format!(
+        "failed to compute compute_blob_kzg_proof: {:?}",
+        err
+      ))
+    })?;
+
+    Ok(Uint8Array::from(&proof))
+  }
+
+  #[napi]
+  pub async fn async_compute_blob_kzg_proof(
+    &self,
+    blob: Uint8Array,
+    commitment: Uint8Array,
+  ) -> Result<Uint8Array> {
+    self.compute_blob_kzg_proof(blob, commitment)
+  }
+
+  #[napi]
+  pub fn verify_kzg_proof(
+    &self,
+    commitment: Uint8Array,
+    z: Uint8Array,
+    y: Uint8Array,
+    proof: Uint8Array,
+  ) -> Result<bool> {
+    let commitment = commitment.as_ref();
+    let z = z.as_ref();
+    let y = y.as_ref();
+    let proof = proof.as_ref();
+    let ctx = &self.inner;
+
+    let commitment = slice_to_array_ref(commitment, "commitment")?;
+    let z = slice_to_array_ref(z, "z")?;
+    let y = slice_to_array_ref(y, "y")?;
+    let proof = slice_to_array_ref(proof, "proof")?;
+
+    let valid = ctx.verify_kzg_proof(commitment, *z, *y, proof);
+    match valid {
+      Ok(_) => Ok(true),
+      Err(x) if x.is_proof_invalid() => Ok(false),
+      Err(err) => Err(Error::from_reason(format!(
+        "failed to compute verify_kzg_proof: {:?}",
+        err
+      ))),
+    }
+  }
+
+  #[napi]
+  pub async fn async_verify_kzg_proof(
+    &self,
+    commitment: Uint8Array,
+    z: Uint8Array,
+    y: Uint8Array,
+    proof: Uint8Array,
+  ) -> Result<bool> {
+    self.verify_kzg_proof(commitment, z, y, proof)
+  }
+
+  #[napi]
+  pub fn verify_blob_kzg_proof(
+    &self,
+    blob: Uint8Array,
+    commitment: Uint8Array,
+    proof: Uint8Array,
+  ) -> Result<bool> {
+    let blob = blob.as_ref();
+    let commitment = commitment.as_ref();
+    let proof = proof.as_ref();
+    let ctx = &self.inner;
+
+    let blob = slice_to_array_ref(blob, "blob")?;
+    let commitment = slice_to_array_ref(commitment, "commitment")?;
+    let proof = slice_to_array_ref(proof, "proof")?;
+
+    let valid = ctx.verify_blob_kzg_proof(blob, commitment, proof);
+    match valid {
+      Ok(_) => Ok(true),
+      Err(x) if x.is_proof_invalid() => Ok(false),
+      Err(err) => Err(Error::from_reason(format!(
+        "failed to compute verify_blob_kzg_proof: {:?}",
+        err
+      ))),
+    }
+  }
+
+  #[napi]
+  pub async fn async_verify_blob_kzg_proof(
+    &self,
+    blob: Uint8Array,
+    commitment: Uint8Array,
+    proof: Uint8Array,
+  ) -> Result<bool> {
+    self.verify_blob_kzg_proof(blob, commitment, proof)
+  }
+
+  #[napi]
+  pub fn verify_blob_kzg_proof_batch(
+    &self,
+    blobs: Vec<Uint8Array>,
+    commitments: Vec<Uint8Array>,
+    proofs: Vec<Uint8Array>,
+  ) -> Result<bool> {
+    let blobs: Vec<_> = blobs
+      .iter()
+      .map(|blob| slice_to_array_ref(blob, "blob"))
+      .collect::<Result<_, _>>()?;
+    let commitments: Vec<_> = commitments
+      .iter()
+      .map(|commitment| slice_to_array_ref(commitment, "commitment"))
+      .collect::<Result<_, _>>()?;
+    let proofs: Vec<_> = proofs
+      .iter()
+      .map(|proof| slice_to_array_ref(proof, "proof"))
+      .collect::<Result<_, _>>()?;
+
+    let ctx = &self.inner;
+
+    let valid = ctx.verify_blob_kzg_proof_batch(blobs, commitments, proofs);
+    match valid {
+      Ok(_) => Ok(true),
+      Err(x) if x.is_proof_invalid() => Ok(false),
+      Err(err) => Err(Error::from_reason(format!(
+        "failed to compute verify_blob_kzg_proof_batch: {:?}",
+        err
+      ))),
+    }
+  }
+
+  #[napi]
+  pub async fn async_verify_blob_kzg_proof_batch(
+    &self,
+    blobs: Vec<Uint8Array>,
+    commitments: Vec<Uint8Array>,
+    proofs: Vec<Uint8Array>,
+  ) -> Result<bool> {
+    self.verify_blob_kzg_proof_batch(blobs, commitments, proofs)
   }
 }
 
