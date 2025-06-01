@@ -1,4 +1,6 @@
-use crate::constants::{BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT};
+use crate::constants::{
+    BYTES_PER_BLOB, BYTES_PER_CELL, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT,
+};
 
 /// `BlobRef` denotes a references to an opaque Blob.
 ///
@@ -31,3 +33,6 @@ pub type KZGProof = [u8; BYTES_PER_COMMITMENT];
 /// `KZGCommitment` denotes a 48 byte commitment to a polynomial f(x)
 /// that we would like to make and verify opening proofs about.
 pub type KZGCommitment = [u8; BYTES_PER_COMMITMENT];
+
+/// `SerializedScalar` denotes a 32 byte field element.
+pub type SerializedScalar = [u8; BYTES_PER_FIELD_ELEMENT];
