@@ -1,7 +1,7 @@
 #[cfg(all(feature = "singlethreaded", feature = "multithreaded"))]
 compile_error!("`singlethreaded` and `multithreaded` cannot be enabled simultaneously");
 
-use constants::{
+use serialization::constants::{
     BYTES_PER_BLOB, BYTES_PER_COMMITMENT, BYTES_PER_FIELD_ELEMENT, FIELD_ELEMENTS_PER_BLOB,
 };
 
@@ -10,13 +10,11 @@ mod prover;
 mod trusted_setup;
 pub(crate) mod verifier;
 
-pub mod constants;
-mod serialization;
-
 pub use errors::{Error, SerializationError, VerifierError};
 use kzg_single_open::{prover::Prover, verifier::Verifier};
 pub use trusted_setup::TrustedSetup;
 use trusted_setup::{commit_key_from_setup, verification_key_from_setup};
+
 /// BlobRef denotes a references to an opaque Blob.
 ///
 /// Note: This library never returns a Blob, which is why we

@@ -15,6 +15,7 @@ workspace = true
 bls12_381 = { workspace = true }
 trusted_setup = { workspace = true }
 polynomial = { workspace = true }
+serialization = { workspace = true }
 maybe_rayon = { workspace = true }
 kzg_single_open = { workspace = true }
 hex = { workspace = true }

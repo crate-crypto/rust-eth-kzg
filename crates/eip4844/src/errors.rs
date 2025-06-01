@@ -1,4 +1,5 @@
 pub use kzg_single_open::VerifierError;
+pub use serialization::SerializationError;
 
 /// Top-level error type for EIP-4844 verification and serialization operations.
 #[derive(Debug)]
@@ -19,45 +20,4 @@ impl From<SerializationError> for Error {
     fn from(value: SerializationError) -> Self {
         Self::Serialization(value)
     }
-}
-
-/// Errors that can occur during deserialization of input data, either from
-/// the public interface (e.g. blobs, commitments, proofs) or the trusted setup.
-#[derive(Debug)]
-pub enum SerializationError {
-    /// Failed to deserialize a scalar from the input byte sequence.
-    CouldNotDeserializeScalar {
-        /// Raw bytes that failed to deserialize.
-        bytes: Vec<u8>,
-    },
-
-    /// Failed to deserialize a G1 group element from the input byte sequence.
-    CouldNotDeserializeG1Point {
-        /// Raw bytes that failed to deserialize.
-        bytes: Vec<u8>,
-    },
-
-    /// Input byte slice used to deserialize a scalar had the wrong length.
-    ScalarHasInvalidLength {
-        /// Raw bytes with invalid length.
-        bytes: Vec<u8>,
-        /// Actual length of the byte slice.
-        length: usize,
-    },
-
-    /// Input byte slice used to deserialize a blob had the wrong length.
-    BlobHasInvalidLength {
-        /// Raw bytes with invalid length.
-        bytes: Vec<u8>,
-        /// Actual length of the byte slice.
-        length: usize,
-    },
-
-    /// Input byte slice used to deserialize a G1 point had the wrong length.
-    G1PointHasInvalidLength {
-        /// Raw bytes with invalid length.
-        bytes: Vec<u8>,
-        /// Actual length of the byte slice.
-        length: usize,
-    },
 }

@@ -1,11 +1,11 @@
 use bls12_381::{lincomb::g1_lincomb, traits::*};
 use kzg_single_open::divide_by_linear;
+use serialization::{
+    deserialize_blob_to_scalars, deserialize_bytes_to_scalar, deserialize_compressed_g1,
+    serialize_g1_compressed,
+};
 
 use crate::{
-    serialization::{
-        deserialize_blob_to_scalars, deserialize_bytes_to_scalar, deserialize_compressed_g1,
-        serialize_g1_compressed,
-    },
     verifier::{blob_scalar_to_polynomial, compute_fiat_shamir_challenge},
     BlobRef, Context, Error, KZGCommitment, KZGOpeningEvaluation, KZGOpeningPoint, KZGProof,
 };

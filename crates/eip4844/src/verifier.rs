@@ -4,12 +4,12 @@ use bls12_381::{reduce_bytes_to_scalar_bias, traits::*, G1Point, Scalar};
 use itertools::{chain, izip, Itertools};
 use kzg_single_open::bitreverse_slice;
 use polynomial::{domain::Domain, poly_coeff::PolyCoeff};
+use serialization::{
+    deserialize_blob_to_scalars, deserialize_bytes_to_scalar, deserialize_compressed_g1,
+};
 use sha2::{Digest, Sha256};
 
 use crate::{
-    serialization::{
-        deserialize_blob_to_scalars, deserialize_bytes_to_scalar, deserialize_compressed_g1,
-    },
     BlobRef, Context, Error, KZGCommitment, KZGOpeningEvaluation, KZGOpeningPoint, KZGProof,
     VerifierError,
 };
