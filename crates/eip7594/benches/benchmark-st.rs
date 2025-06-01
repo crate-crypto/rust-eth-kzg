@@ -8,9 +8,7 @@ use rust_eth_kzg::{
 const POLYNOMIAL_LEN: usize = 4096;
 
 fn dummy_blob() -> [u8; BYTES_PER_BLOB] {
-    let polynomial: Vec<_> = (0..POLYNOMIAL_LEN)
-        .map(|i| -Scalar::from(i as u64))
-        .collect();
+    let polynomial = (0..POLYNOMIAL_LEN).map(|i| -Scalar::from(i as u64));
     let blob: Vec<_> = polynomial
         .into_iter()
         .flat_map(|scalar| scalar.to_bytes_be())
@@ -45,7 +43,7 @@ pub fn bench_compute_cells_and_kzg_proofs(c: &mut Criterion) {
         bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 },
     );
     c.bench_function("computing cells_and_kzg_proofs", |b| {
-        b.iter(|| ctx.compute_cells_and_kzg_proofs(&blob))
+        b.iter(|| ctx.compute_cells_and_kzg_proofs(&blob));
     });
 }
 
@@ -59,8 +57,8 @@ pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
     let half_cell_indices = &cell_indices[..CELLS_PER_EXT_BLOB / 2];
     let half_cells = &cells[..CELLS_PER_EXT_BLOB / 2];
     let half_cells = half_cells
-        .into_iter()
-        .map(|cell| cell.as_ref())
+        .iter()
+        .map(std::convert::AsRef::as_ref)
         .collect::<Vec<_>>();
 
     let ctx = DASContext::new(
@@ -68,7 +66,7 @@ pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
         bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 },
     );
     c.bench_function("worse-case recover_cells_and_kzg_proofs", |b| {
-        b.iter(|| ctx.recover_cells_and_kzg_proofs(half_cell_indices.to_vec(), half_cells.to_vec()))
+        b.iter(|| ctx.recover_cells_and_kzg_proofs(half_cell_indices.to_vec(), half_cells.clone()));
     });
 }
 
@@ -79,8 +77,8 @@ pub fn bench_verify_cell_kzg_proof_batch(c: &mut Criterion) {
 
     let commitments = vec![&commitment; CELLS_PER_EXT_BLOB];
     let cell_indices: Vec<CellIndex> = (0..CELLS_PER_EXT_BLOB).map(|x| x as CellIndex).collect();
-    let cell_refs: Vec<CellRef> = cells.iter().map(|cell| cell.as_ref()).collect();
-    let proof_refs: Vec<Bytes48Ref> = proofs.iter().map(|proof| proof).collect();
+    let cell_refs: Vec<CellRef> = cells.iter().map(std::convert::AsRef::as_ref).collect();
+    let proof_refs: Vec<Bytes48Ref> = proofs.iter().collect();
 
     let ctx = DASContext::new(
         &trusted_setup,
@@ -90,23 +88,23 @@ pub fn bench_verify_cell_kzg_proof_batch(c: &mut Criterion) {
         b.iter(|| {
             ctx.verify_cell_kzg_proof_batch(
                 commitments.clone(),
-                cell_indices.clone(),
+                &cell_indices,
                 cell_refs.clone(),
                 proof_refs.clone(),
             )
-        })
+        });
     });
 }
 
 pub fn bench_init_context(c: &mut Criterion) {
-    c.bench_function(&format!("Initialize context"), |b| {
+    c.bench_function("Initialize context", |b| {
         b.iter(|| {
             let trusted_setup = TrustedSetup::default();
             DASContext::new(
                 &trusted_setup,
                 bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 },
             )
-        })
+        });
     });
 }
 

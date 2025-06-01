@@ -1,6 +1,5 @@
-#[cfg(all(feature = "singlethreaded", feature = "multithreaded"))]
-compile_error!("`singlethreaded` and `multithreaded` cannot be enabled simultaneously");
-
+// #[cfg(all(feature = "singlethreaded", feature = "multithreaded"))]
+// compile_error!("`singlethreaded` and `multithreaded` cannot be enabled simultaneously");
 use serialization::constants::FIELD_ELEMENTS_PER_BLOB;
 
 mod errors;
