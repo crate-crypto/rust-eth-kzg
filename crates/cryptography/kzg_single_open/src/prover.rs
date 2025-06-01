@@ -2,6 +2,7 @@ use bls12_381::{lincomb::g1_lincomb, traits::*, G1Point, Scalar};
 use polynomial::domain::Domain;
 
 /// The key that is used to commit to polynomials in monomial form.
+#[derive(Debug)]
 pub struct CommitKey {
     pub g1s: Vec<G1Point>,
 }
@@ -12,6 +13,7 @@ impl CommitKey {
     }
 }
 
+#[derive(Debug)]
 pub struct Prover {
     /// Domain used to create the opening proofs.
     pub domain: Domain,

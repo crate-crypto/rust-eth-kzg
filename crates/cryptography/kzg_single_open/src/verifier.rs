@@ -7,12 +7,14 @@ use polynomial::domain::Domain;
 use crate::VerifierError;
 
 /// The key that is used to verify KZG single-point opening proofs.
+#[derive(Debug)]
 pub struct VerificationKey {
     pub gen_g1: G1Point,
     pub gen_g2: G2Point,
     pub tau_g2: G2Point,
 }
 
+#[derive(Debug)]
 pub struct Verifier {
     /// Domain used to create the opening proofs.
     pub domain: Domain,
