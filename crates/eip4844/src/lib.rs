@@ -14,6 +14,7 @@ pub use serialization::{constants, types::*};
 pub use trusted_setup::TrustedSetup;
 use trusted_setup::{commit_key_from_setup, verification_key_from_setup};
 
+#[derive(Debug)]
 pub struct Context {
     prover: Prover,
     verifier: Verifier,
