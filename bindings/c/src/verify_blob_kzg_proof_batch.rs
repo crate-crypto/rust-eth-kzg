@@ -5,6 +5,7 @@ use crate::{
     verification_result_to_bool_cresult, CResult, DASContext,
 };
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn _verify_blob_kzg_proof_batch(
     ctx: *const DASContext,
     blobs_length: u64,
