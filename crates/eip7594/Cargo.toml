@@ -1,6 +1,6 @@
 [package]
 name = "rust_eth_kzg"
-description = "This crate provides an implementation of the cryptography needed for EIP-7594"
+description = "This crate provides an implementation of the cryptography needed for EIP-7594 and EIP4844"
 version = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
