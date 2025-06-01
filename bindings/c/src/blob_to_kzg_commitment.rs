@@ -21,7 +21,7 @@ pub(crate) fn _blob_to_kzg_commitment(
     //
     let commitment = ctx
         .blob_to_kzg_commitment(blob)
-        .map_err(|err| CResult::with_error(&format!("{:?}", err)))?;
+        .map_err(|err| CResult::with_error(&format!("{err:?}")))?;
 
     assert!(
         commitment.len() == BYTES_PER_COMMITMENT,

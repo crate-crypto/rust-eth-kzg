@@ -275,7 +275,7 @@ fn verification_result_to_bool_cresult(
     match verification_result {
         Ok(_) => Ok(true),
         Err(x) if x.is_proof_invalid() => Ok(false),
-        Err(err) => Err(CResult::with_error(&format!("{:?}", err))),
+        Err(err) => Err(CResult::with_error(&format!("{err:?}"))),
     }
 }
 

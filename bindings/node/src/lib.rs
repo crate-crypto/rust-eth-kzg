@@ -83,10 +83,7 @@ impl DASContextJs {
     let blob = slice_to_array_ref(blob, "blob")?;
 
     let commitment = ctx.blob_to_kzg_commitment(blob).map_err(|err| {
-      Error::from_reason(format!(
-        "failed to compute blob_to_kzg_commitment: {:?}",
-        err
-      ))
+      Error::from_reason(format!("failed to compute blob_to_kzg_commitment: {err:?}",))
     })?;
     Ok(Uint8Array::from(&commitment))
   }
@@ -105,8 +102,7 @@ impl DASContextJs {
 
     let (cells, proofs) = ctx.compute_cells_and_kzg_proofs(blob).map_err(|err| {
       Error::from_reason(format!(
-        "failed to compute compute_cells_and_kzg_proofs: {:?}",
-        err
+        "failed to compute compute_cells_and_kzg_proofs: {err:?}"
       ))
     })?;
 
@@ -142,7 +138,7 @@ impl DASContextJs {
 
     let cells = ctx
       .compute_cells(blob)
-      .map_err(|err| Error::from_reason(format!("failed to compute compute_cells: {:?}", err)))?;
+      .map_err(|err| Error::from_reason(format!("failed to compute compute_cells: {err:?}")))?;
 
     let cells_uint8array = cells
       .into_iter()
@@ -178,8 +174,7 @@ impl DASContextJs {
       .recover_cells_and_kzg_proofs(cell_indices, cells)
       .map_err(|err| {
         Error::from_reason(format!(
-          "failed to compute recover_cells_and_kzg_proofs: {:?}",
-          err
+          "failed to compute recover_cells_and_kzg_proofs: {err:?}"
         ))
       })?;
 
@@ -237,8 +232,7 @@ impl DASContextJs {
       Ok(_) => Ok(true),
       Err(x) if x.is_proof_invalid() => Ok(false),
       Err(err) => Err(Error::from_reason(format!(
-        "failed to compute verify_cell_kzg_proof_batch: {:?}",
-        err
+        "failed to compute verify_cell_kzg_proof_batch: {err:?}"
       ))),
     }
   }
@@ -263,9 +257,9 @@ impl DASContextJs {
     let blob = slice_to_array_ref(blob, "blob")?;
     let z = slice_to_array_ref(z, "z")?;
 
-    let (proof, y) = ctx.compute_kzg_proof(blob, *z).map_err(|err| {
-      Error::from_reason(format!("failed to compute compute_kzg_proof: {:?}", err))
-    })?;
+    let (proof, y) = ctx
+      .compute_kzg_proof(blob, *z)
+      .map_err(|err| Error::from_reason(format!("failed to compute compute_kzg_proof: {err:?}")))?;
 
     Ok(vec![Uint8Array::from(&proof), Uint8Array::from(&y)])
   }
@@ -295,10 +289,7 @@ impl DASContextJs {
     let proof = ctx
       .compute_blob_kzg_proof(blob, commitment)
       .map_err(|err| {
-        Error::from_reason(format!(
-          "failed to compute compute_blob_kzg_proof: {:?}",
-          err
-        ))
+        Error::from_reason(format!("failed to compute compute_blob_kzg_proof: {err:?}"))
       })?;
 
     Ok(Uint8Array::from(&proof))
@@ -337,8 +328,7 @@ impl DASContextJs {
       Ok(_) => Ok(true),
       Err(x) if x.is_proof_invalid() => Ok(false),
       Err(err) => Err(Error::from_reason(format!(
-        "failed to compute verify_kzg_proof: {:?}",
-        err
+        "failed to compute verify_kzg_proof: {err:?}"
       ))),
     }
   }
@@ -375,8 +365,7 @@ impl DASContextJs {
       Ok(_) => Ok(true),
       Err(x) if x.is_proof_invalid() => Ok(false),
       Err(err) => Err(Error::from_reason(format!(
-        "failed to compute verify_blob_kzg_proof: {:?}",
-        err
+        "failed to compute verify_blob_kzg_proof: {err:?}"
       ))),
     }
   }
@@ -418,8 +407,7 @@ impl DASContextJs {
       Ok(_) => Ok(true),
       Err(x) if x.is_proof_invalid() => Ok(false),
       Err(err) => Err(Error::from_reason(format!(
-        "failed to compute verify_blob_kzg_proof_batch: {:?}",
-        err
+        "failed to compute verify_blob_kzg_proof_batch: {err:?}"
       ))),
     }
   }

@@ -28,7 +28,7 @@ pub(crate) fn _recover_cells_and_proofs(
     //
     let (recovered_cells, recovered_proofs) = ctx
         .recover_cells_and_kzg_proofs(cell_indices.to_vec(), cells)
-        .map_err(|err| CResult::with_error(&format!("{:?}", err)))?;
+        .map_err(|err| CResult::with_error(&format!("{err:?}")))?;
     let recovered_cells_unboxed = recovered_cells.map(|cell| cell.to_vec());
 
     // Write to output

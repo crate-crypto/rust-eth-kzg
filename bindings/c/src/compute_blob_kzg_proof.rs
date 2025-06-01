@@ -23,7 +23,7 @@ pub(crate) fn _compute_blob_kzg_proof(
     //
     let proof = ctx
         .compute_blob_kzg_proof(blob, commitment)
-        .map_err(|err| CResult::with_error(&format!("{:?}", err)))?;
+        .map_err(|err| CResult::with_error(&format!("{err:?}")))?;
 
     assert!(
         proof.len() == BYTES_PER_COMMITMENT,
