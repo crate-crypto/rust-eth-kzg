@@ -292,12 +292,14 @@ impl DASContextJs {
     let blob = slice_to_array_ref(blob, "blob")?;
     let commitment = slice_to_array_ref(commitment, "commitment")?;
 
-    let proof = ctx.compute_blob_kzg_proof(blob, commitment).map_err(|err| {
-      Error::from_reason(format!(
-        "failed to compute compute_blob_kzg_proof: {:?}",
-        err
-      ))
-    })?;
+    let proof = ctx
+      .compute_blob_kzg_proof(blob, commitment)
+      .map_err(|err| {
+        Error::from_reason(format!(
+          "failed to compute compute_blob_kzg_proof: {:?}",
+          err
+        ))
+      })?;
 
     Ok(Uint8Array::from(&proof))
   }
