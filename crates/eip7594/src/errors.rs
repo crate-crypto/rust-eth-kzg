@@ -23,8 +23,14 @@ impl Error {
     ///
     /// Note: This distinction in practice, is not meaningful for the caller and is mainly
     /// here due to the specs and spec tests making this distinction.
-    pub const fn is_fk20_verification_failure(&self) -> bool {
-        matches!(self, Self::Verifier(VerifierError::FK20(_)))
+    pub const fn is_proof_invalid(&self) -> bool {
+        matches!(
+            self,
+            Self::Verifier(VerifierError::FK20(_))
+                | Self::EIP4844(eip4844::Error::Verifier(
+                    eip4844::VerifierError::InvalidProof
+                ))
+        )
     }
 }
 
