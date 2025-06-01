@@ -6,7 +6,7 @@ use kzg_single_open::bitreverse_slice;
 use polynomial::{domain::Domain, poly_coeff::PolyCoeff};
 use serialization::{
     deserialize_blob_to_scalars, deserialize_bytes_to_scalar, deserialize_compressed_g1,
-    types::{KZGCommitment, KZGProof as KZGProof4844, SerializedScalar},
+    types::{Bytes48Ref, KZGCommitment, SerializedScalar},
 };
 use sha2::{Digest, Sha256};
 
@@ -18,18 +18,18 @@ impl Context {
     /// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#verify_kzg_proof
     pub fn verify_kzg_proof(
         &self,
-        commitment: KZGCommitment,
+        commitment: Bytes48Ref,
         // `z` denotes the point that has been evaluated on some polynomial, ie `f(z)`
         z: SerializedScalar,
         // `y` denotes the output of evaluating some point on some polynomial, ie `y = f(z)`
         y: SerializedScalar,
-        proof: KZGProof4844,
+        proof: Bytes48Ref,
     ) -> Result<(), Error> {
         // Deserialize the KZG commitment.
-        let commitment = deserialize_compressed_g1(&commitment)?;
+        let commitment = deserialize_compressed_g1(commitment)?;
 
         // Deserialize the KZG proof.
-        let proof = deserialize_compressed_g1(&proof)?;
+        let proof = deserialize_compressed_g1(proof)?;
 
         // Deserialize the point into scalar.
         let z = deserialize_bytes_to_scalar(&z)?;
@@ -49,20 +49,20 @@ impl Context {
     pub fn verify_blob_kzg_proof(
         &self,
         blob: BlobRef,
-        commitment: KZGCommitment,
-        proof: KZGProof4844,
+        commitment: Bytes48Ref,
+        proof: Bytes48Ref,
     ) -> Result<(), Error> {
         // Deserialize the blob into scalars.
         let blob_scalar = deserialize_blob_to_scalars(blob)?;
 
         // Deserialize the KZG commitment.
-        let commitment_g1 = deserialize_compressed_g1(&commitment)?;
+        let commitment_g1 = deserialize_compressed_g1(commitment)?;
 
         // Deserialize the KZG proof.
-        let proof = deserialize_compressed_g1(&proof)?;
+        let proof = deserialize_compressed_g1(proof)?;
 
         // Compute Fiat-Shamir challenge
-        let z = compute_fiat_shamir_challenge(blob, commitment);
+        let z = compute_fiat_shamir_challenge(blob, *commitment);
 
         // Compute evaluation at z.
         let y = blob_scalar_to_polynomial(&self.verifier.domain, &blob_scalar).eval(&z);
@@ -76,11 +76,12 @@ impl Context {
     /// Verify a batch of KZG proofs to the commitment of a blob.
     ///
     /// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#verify_blob_kzg_proof_batch
+    #[allow(clippy::needless_pass_by_value)]
     pub fn verify_blob_kzg_proof_batch(
         &self,
-        blobs: &[BlobRef],
-        commitments: &[KZGCommitment],
-        proofs: &[KZGProof4844],
+        blobs: Vec<BlobRef>,
+        commitments: Vec<Bytes48Ref>,
+        proofs: Vec<Bytes48Ref>,
     ) -> Result<(), Error> {
         let same_length = (blobs.len() == commitments.len()) & (blobs.len() == proofs.len());
         if !same_length {
@@ -101,22 +102,22 @@ impl Context {
         // Deserialize the KZG commitments.
         let commitments_g1 = commitments
             .iter()
-            .map(|commitment| deserialize_compressed_g1(commitment))
+            .map(|commitment| deserialize_compressed_g1(*commitment))
             .try_collect::<_, Vec<_>, _>()?;
 
         // Deserialize the KZG proofs.
         let proofs_g1 = proofs
             .iter()
-            .map(|proof| deserialize_compressed_g1(proof))
+            .map(|proof| deserialize_compressed_g1(*proof))
             .try_collect::<_, Vec<_>, _>()?;
 
         // Compute each Fiat-Shamir challenge and evaluation for each proof.
-        let (zs, ys) = izip!(blobs, &blobs_scalar, commitments)
+        let (zs, ys) = izip!(&blobs, &blobs_scalar, &commitments)
             .map(|(blob, blob_scalar, commitment)| {
                 // Compute Fiat-Shamir challenge
-                let z = compute_fiat_shamir_challenge(blob, *commitment);
+                let z = compute_fiat_shamir_challenge(blob, **commitment);
 
-                // Compute evaluation at z.
+                // Compute evaluation at z
                 let y = blob_scalar_to_polynomial(&self.verifier.domain, blob_scalar).eval(&z);
 
                 (z, y)
@@ -126,8 +127,13 @@ impl Context {
         let domain_size = self.verifier.domain.roots.len();
 
         // Compute powers Fiat-Shamir challenge for KZG batch verification.
-        let r_powers =
-            compute_r_powers_for_verify_kzg_proof_batch(domain_size, commitments, &zs, &ys, proofs);
+        let r_powers = compute_r_powers_for_verify_kzg_proof_batch(
+            domain_size,
+            &commitments,
+            &zs,
+            &ys,
+            &proofs,
+        );
 
         // Verify KZG proof in batch.
         self.verifier
@@ -194,10 +200,10 @@ pub(crate) fn compute_fiat_shamir_challenge(blob: BlobRef, commitment: KZGCommit
 /// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#verify_kzg_proof_batch
 pub fn compute_r_powers_for_verify_kzg_proof_batch(
     domain_size: usize,
-    commitments: &[KZGCommitment],
+    commitments: &[Bytes48Ref],
     zs: &[Scalar],
     ys: &[Scalar],
-    proofs: &[KZGProof4844],
+    proofs: &[Bytes48Ref],
 ) -> Vec<Scalar> {
     // DomSepProtocol is a Domain Separator to identify the protocol.
     //
@@ -226,8 +232,13 @@ pub fn compute_r_powers_for_verify_kzg_proof_batch(
     hash_input.extend(DOMAIN_SEP.as_bytes());
     hash_input.extend((domain_size as u64).to_be_bytes());
     hash_input.extend((n as u64).to_be_bytes());
-    izip!(commitments, zs, ys, proofs).for_each(|(&commitment, z, y, &proof)| {
-        hash_input.extend(chain![commitment, z.to_bytes_be(), y.to_bytes_be(), proof]);
+    izip!(commitments, zs, ys, proofs).for_each(|(commitment, z, y, proof)| {
+        hash_input.extend(chain![
+            **commitment,
+            z.to_bytes_be(),
+            y.to_bytes_be(),
+            **proof
+        ]);
     });
 
     assert_eq!(hash_input.len(), hash_input_size);

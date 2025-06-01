@@ -2,7 +2,7 @@ use bls12_381::{lincomb::g1_lincomb, traits::*};
 use serialization::{
     deserialize_blob_to_scalars, deserialize_bytes_to_scalar, deserialize_compressed_g1,
     serialize_g1_compressed,
-    types::{KZGCommitment, KZGProof as KZGProof4844, SerializedScalar},
+    types::{Bytes48Ref, KZGCommitment, KZGProof as KZGProof4844, SerializedScalar},
 };
 
 use crate::{
@@ -65,7 +65,7 @@ impl Context {
     pub fn compute_blob_kzg_proof(
         &self,
         blob: BlobRef,
-        commitment: KZGCommitment,
+        commitment: Bytes48Ref,
     ) -> Result<KZGProof4844, Error> {
         // Deserialize the blob into scalars.
         let blob_scalar = deserialize_blob_to_scalars(blob)?;
@@ -75,10 +75,10 @@ impl Context {
 
         // Deserialize the KZG commitment.
         // We only do this to check if it is in the correct subgroup
-        let _ = deserialize_compressed_g1(&commitment)?;
+        let _ = deserialize_compressed_g1(commitment)?;
 
         // Compute Fiat-Shamir challenge
-        let z = compute_fiat_shamir_challenge(blob, commitment);
+        let z = compute_fiat_shamir_challenge(blob, *commitment);
 
         // Compute evaluation and commitment to quotient at z.
         let (proof, _) = self.prover.compute_kzg_proof(&polynomial, z);

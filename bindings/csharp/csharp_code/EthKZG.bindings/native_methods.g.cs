@@ -176,6 +176,108 @@ namespace EthKZG.Native
         [DllImport(__DllName, EntryPoint = "eth_kzg_constant_cells_per_ext_blob", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
         internal static extern ulong eth_kzg_constant_cells_per_ext_blob();
 
+        /// <summary>
+        ///  Computes the KZG proof given a blob and a point.
+        ///
+        ///  # Safety
+        ///
+        ///  - The caller must ensure that the pointers are valid.
+        ///  - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
+        ///  - The caller must ensure that `z` points to a region of memory that is at least `BYTES_PER_FIELD_ELEMENT` bytes.
+        ///  - The caller must ensure that `out_proof` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+        ///  - The caller must ensure that `out_y` points to a region of memory that is at least `BYTES_PER_FIELD_ELEMENT` bytes.
+        ///
+        ///  # Undefined behavior
+        ///
+        ///  - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+        ///    If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
+        /// </summary>
+        [DllImport(__DllName, EntryPoint = "eth_kzg_compute_kzg_proof", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern CResult eth_kzg_compute_kzg_proof(DASContext* ctx, byte* blob, byte* z, byte* out_proof, byte* out_y);
+
+        /// <summary>
+        ///  Computes the KZG proof given a blob and its corresponding commitment.
+        ///
+        ///  # Safety
+        ///
+        ///  - The caller must ensure that the pointers are valid.
+        ///  - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
+        ///  - The caller must ensure that `commitment` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+        ///  - The caller must ensure that `out_proof` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+        ///
+        ///  # Undefined behavior
+        ///
+        ///  - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+        ///    If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
+        /// </summary>
+        [DllImport(__DllName, EntryPoint = "eth_kzg_compute_blob_kzg_proof", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern CResult eth_kzg_compute_blob_kzg_proof(DASContext* ctx, byte* blob, byte* commitment, byte* out_proof);
+
+        /// <summary>
+        ///  Verifies the KZG proof to the commitment.
+        ///
+        ///  # Safety
+        ///
+        ///  - The caller must ensure that the pointers are valid.
+        ///  - The caller must ensure that `commitment` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+        ///  - The caller must ensure that `z` points to a region of memory that is at least `BYTES_PER_FIELD_ELEMENT` bytes.
+        ///  - The caller must ensure that `y` points to a region of memory that is at least `BYTES_PER_FIELD_ELEMENT` bytes.
+        ///  - The caller must ensure that `proof` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+        ///  - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
+        ///
+        ///  # Undefined behavior
+        ///
+        ///  - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+        ///    If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
+        /// </summary>
+        [DllImport(__DllName, EntryPoint = "eth_kzg_verify_kzg_proof", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern CResult eth_kzg_verify_kzg_proof(DASContext* ctx, byte* commitment, byte* z, byte* y, byte* proof, bool* verified);
+
+        /// <summary>
+        ///  Verifies the KZG proof to the commitment of a blob.
+        ///
+        ///  # Safety
+        ///
+        ///  - The caller must ensure that the pointers are valid.
+        ///  - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
+        ///  - The caller must ensure that `commitment` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+        ///  - The caller must ensure that `proof` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+        ///  - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
+        ///
+        ///  # Undefined behavior
+        ///
+        ///  - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+        ///    If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
+        /// </summary>
+        [DllImport(__DllName, EntryPoint = "eth_kzg_verify_blob_kzg_proof", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern CResult eth_kzg_verify_blob_kzg_proof(DASContext* ctx, byte* blob, byte* commitment, byte* proof, bool* verified);
+
+        /// <summary>
+        ///  Verifies a batch of KZG proofs to the commitments of blobs.
+        ///
+        ///  # Safety
+        ///
+        ///  - If the length parameter for a pointer is set to zero, then this implementation will not check if its pointer is
+        ///    null. This is because the caller might have passed in a null pointer, if the length is zero. Instead an empty slice
+        ///    will be created.
+        ///
+        ///  - The caller must ensure that the pointers are valid.
+        ///  - The caller must ensure that `blobs` points to a region of memory that is at least `blobs_length` blobs
+        ///    and that each blob is at least `BYTES_PER_BLOB` bytes.
+        ///  - The caller must ensure that `commitments` points to a region of memory that is at least `commitments_length` commitments
+        ///    and that each commitment is at least `BYTES_PER_COMMITMENT` bytes.
+        ///  - The caller must ensure that `proofs` points to a region of memory that is at least `proofs_length` proofs
+        ///    and that each proof is at least `BYTES_PER_COMMITMENT` bytes.
+        ///  - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
+        ///
+        ///  # Undefined behavior
+        ///
+        ///  - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+        ///    If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
+        /// </summary>
+        [DllImport(__DllName, EntryPoint = "eth_kzg_verify_blob_kzg_proof_batch", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
+        internal static extern CResult eth_kzg_verify_blob_kzg_proof_batch(DASContext* ctx, ulong blobs_length, byte** blobs, ulong commitments_length, byte** commitments, ulong proofs_length, byte** proofs, bool* verified);
+
 
     }
 

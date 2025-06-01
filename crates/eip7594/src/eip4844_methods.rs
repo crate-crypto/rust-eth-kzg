@@ -1,6 +1,6 @@
-use eip4844::{BlobRef, KZGCommitment, KZGProof, SerializedScalar};
+use eip4844::{BlobRef, KZGProof, SerializedScalar};
 
-use crate::{DASContext, Error};
+use crate::{Bytes48Ref, DASContext, Error};
 
 // EIP-4844 methods re-exported
 //
@@ -26,7 +26,7 @@ impl DASContext {
     pub fn compute_blob_kzg_proof(
         &self,
         blob: BlobRef,
-        commitment: KZGCommitment,
+        commitment: Bytes48Ref,
     ) -> Result<KZGProof, Error> {
         self.eip4844_ctx
             .compute_blob_kzg_proof(blob, commitment)
@@ -38,10 +38,10 @@ impl DASContext {
     /// Note: This method has been re-exported from the eip4844 crate.
     pub fn verify_kzg_proof(
         &self,
-        commitment: KZGCommitment,
+        commitment: Bytes48Ref,
         z: SerializedScalar,
         y: SerializedScalar,
-        proof: KZGProof,
+        proof: Bytes48Ref,
     ) -> Result<(), Error> {
         self.eip4844_ctx
             .verify_kzg_proof(commitment, z, y, proof)
@@ -54,8 +54,8 @@ impl DASContext {
     pub fn verify_blob_kzg_proof(
         &self,
         blob: BlobRef,
-        commitment: KZGCommitment,
-        proof: KZGProof,
+        commitment: Bytes48Ref,
+        proof: Bytes48Ref,
     ) -> Result<(), Error> {
         self.eip4844_ctx
             .verify_blob_kzg_proof(blob, commitment, proof)
@@ -67,9 +67,9 @@ impl DASContext {
     /// Note: This method has been re-exported from the eip4844 crate.
     pub fn verify_blob_kzg_proof_batch(
         &self,
-        blobs: &[BlobRef],
-        commitments: &[KZGCommitment],
-        proofs: &[KZGProof],
+        blobs: Vec<BlobRef>,
+        commitments: Vec<Bytes48Ref>,
+        proofs: Vec<Bytes48Ref>,
     ) -> Result<(), Error> {
         self.eip4844_ctx
             .verify_blob_kzg_proof_batch(blobs, commitments, proofs)
