@@ -75,6 +75,46 @@ JNIEXPORT jboolean JNICALL Java_ethereum_cryptography_LibEthKZG_verifyCellKZGPro
 JNIEXPORT jobject JNICALL Java_ethereum_cryptography_LibEthKZG_recoverCellsAndKZGProofs
   (JNIEnv *, jclass, jlong, jlongArray, jobjectArray);
 
+/*
+ * Class:     ethereum_cryptography_LibEthKZG
+ * Method:    computeKzgProof
+ * Signature: (J[B[B)[[B
+ */
+JNIEXPORT jobjectArray JNICALL Java_ethereum_cryptography_LibEthKZG_computeKzgProof
+  (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray);
+
+/*
+ * Class:     ethereum_cryptography_LibEthKZG
+ * Method:    computeBlobKzgProof
+ * Signature: (J[B[B)[B
+ */
+JNIEXPORT jbyteArray JNICALL Java_ethereum_cryptography_LibEthKZG_computeBlobKzgProof
+  (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray);
+
+/*
+ * Class:     ethereum_cryptography_LibEthKZG
+ * Method:    verifyKzgProof
+ * Signature: (J[B[B[B[B)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ethereum_cryptography_LibEthKZG_verifyKzgProof
+  (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray, jbyteArray, jbyteArray);
+
+/*
+ * Class:     ethereum_cryptography_LibEthKZG
+ * Method:    verifyBlobKzgProof
+ * Signature: (J[B[B[B)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ethereum_cryptography_LibEthKZG_verifyBlobKzgProof
+  (JNIEnv *, jclass, jlong, jbyteArray, jbyteArray, jbyteArray);
+
+/*
+ * Class:     ethereum_cryptography_LibEthKZG
+ * Method:    verifyBlobKzgProofBatch
+ * Signature: (J[[B[[B[[B)Z
+ */
+JNIEXPORT jboolean JNICALL Java_ethereum_cryptography_LibEthKZG_verifyBlobKzgProofBatch
+  (JNIEnv *, jclass, jlong, jobjectArray, jobjectArray, jobjectArray);
+
 #ifdef __cplusplus
 }
 #endif

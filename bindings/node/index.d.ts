@@ -11,7 +11,6 @@ export const MAX_NUM_COLUMNS: number
 export const BYTES_PER_CELL: number
 export interface DasContextOptions {
   usePrecomp: boolean
-  numThreads: number
 }
 export class CellsAndProofs {
   cells: Array<Uint8Array>
@@ -31,4 +30,14 @@ export class DasContextJs {
   asyncRecoverCellsAndKzgProofs(cellIndices: Array<bigint>, cells: Array<Uint8Array>): Promise<CellsAndProofs>
   verifyCellKzgProofBatch(commitments: Array<Uint8Array>, cellIndices: Array<bigint>, cells: Array<Uint8Array>, proofs: Array<Uint8Array>): boolean
   asyncVerifyCellKzgProofBatch(commitments: Array<Uint8Array>, cellIndices: Array<bigint>, cells: Array<Uint8Array>, proofs: Array<Uint8Array>): Promise<boolean>
+  computeKzgProof(blob: Uint8Array, z: Uint8Array): Array<Uint8Array>
+  asyncComputeKzgProof(blob: Uint8Array, z: Uint8Array): Promise<Array<Uint8Array>>
+  computeBlobKzgProof(blob: Uint8Array, commitment: Uint8Array): Uint8Array
+  asyncComputeBlobKzgProof(blob: Uint8Array, commitment: Uint8Array): Promise<Uint8Array>
+  verifyKzgProof(commitment: Uint8Array, z: Uint8Array, y: Uint8Array, proof: Uint8Array): boolean
+  asyncVerifyKzgProof(commitment: Uint8Array, z: Uint8Array, y: Uint8Array, proof: Uint8Array): Promise<boolean>
+  verifyBlobKzgProof(blob: Uint8Array, commitment: Uint8Array, proof: Uint8Array): boolean
+  asyncVerifyBlobKzgProof(blob: Uint8Array, commitment: Uint8Array, proof: Uint8Array): Promise<boolean>
+  verifyBlobKzgProofBatch(blobs: Array<Uint8Array>, commitments: Array<Uint8Array>, proofs: Array<Uint8Array>): boolean
+  asyncVerifyBlobKzgProofBatch(blobs: Array<Uint8Array>, commitments: Array<Uint8Array>, proofs: Array<Uint8Array>): Promise<boolean>
 }

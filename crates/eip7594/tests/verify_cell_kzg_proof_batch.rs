@@ -129,7 +129,7 @@ fn test_verify_cell_kzg_proof_batch() {
                 // We arrive at this point if the proof verified as true
                 assert!(test.output.unwrap());
             }
-            Err(x) if x.is_fk20_verification_failure() => {
+            Err(x) if x.is_proof_invalid() => {
                 assert!(!test.output.unwrap());
             }
             Err(_) => {

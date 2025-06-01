@@ -274,7 +274,7 @@ fn verification_result_to_bool_cresult(
 ) -> Result<bool, CResult> {
     match verification_result {
         Ok(_) => Ok(true),
-        Err(x) if x.is_fk20_verification_failure() => Ok(false),
+        Err(x) if x.is_proof_invalid() => Ok(false),
         Err(err) => Err(CResult::with_error(&format!("{:?}", err))),
     }
 }

@@ -144,6 +144,70 @@ public class LibEthKZG implements AutoCloseable{
         return recoverCellsAndKZGProofs(contextPtr, cellIDs, cellsArr);
     }
 
+    /**
+     * Computes the KZG proof given a blob and a point.
+     *
+     * @param blob The input blob.
+     * @param z    The evaluation point.
+     * @return A two-element array where the first element is the KZG proof and the second is the evaluation result.
+     */
+    public byte[][] computeKzgProof(byte[] blob, byte[] z) {
+        checkContextHasNotBeenFreed();
+        return computeKzgProof(contextPtr, blob, z);
+    }
+
+    /**
+     * Computes the KZG proof given a blob and its corresponding commitment.
+     *
+     * @param blob       The input blob.
+     * @param commitment The KZG commitment.
+     * @return The KZG proof as a byte array.
+     */
+    public byte[] computeBlobKzgProof(byte[] blob, byte[] commitment) {
+        checkContextHasNotBeenFreed();
+        return computeBlobKzgProof(contextPtr, blob, commitment);
+    }
+
+    /**
+     * Verifies the KZG proof to the commitment.
+     *
+     * @param commitment The KZG commitment.
+     * @param z          The evaluation point.
+     * @param y          The evaluation result.
+     * @param proof      The KZG proof.
+     * @return true if the proof is valid, false otherwise.
+     */
+    public boolean verifyKzgProof(byte[] commitment, byte[] z, byte[] y, byte[] proof) {
+        checkContextHasNotBeenFreed();
+        return verifyKzgProof(contextPtr, commitment, z, y, proof);
+    }
+
+    /**
+     * Verifies the KZG proof to the commitment of a blob.
+     *
+     * @param blob       The input blob.
+     * @param commitment The KZG commitment.
+     * @param proof      The KZG proof.
+     * @return true if the proof is valid, false otherwise.
+     */
+    public boolean verifyBlobKzgProof(byte[] blob, byte[] commitment, byte[] proof) {
+        checkContextHasNotBeenFreed();
+        return verifyBlobKzgProof(contextPtr, blob, commitment, proof);
+    }
+
+    /**
+     * Verifies a batch of KZG proofs to the commitments of blobs.
+     *
+     * @param blobs       Array of blobs.
+     * @param commitments Array of commitments.
+     * @param proofs      Array of proofs.
+     * @return true if all proofs are valid, false otherwise.
+     */
+    public boolean verifyBlobKzgProofBatch(byte[][] blobs, byte[][] commitments, byte[][] proofs) {
+        checkContextHasNotBeenFreed();
+        return verifyBlobKzgProofBatch(contextPtr, blobs, commitments, proofs);
+    }
+
     /*
      * Below are the native methods and the code related to loading the native
      * library
@@ -163,6 +227,16 @@ public class LibEthKZG implements AutoCloseable{
             long context_ptr, byte[][] commitments, long[] cellIndices, byte[][] cells, byte[][] proofs);
 
     private static native CellsAndProofs recoverCellsAndKZGProofs(long context_ptr, long[] cellIDs, byte[][] cells);
+
+    private static native byte[][] computeKzgProof(long context_ptr, byte[] blob, byte[] z);
+
+    private static native byte[] computeBlobKzgProof(long context_ptr, byte[] blob, byte[] commitment);
+
+    private static native boolean verifyKzgProof(long context_ptr, byte[] commitment, byte[] z, byte[] y, byte[] proof);
+
+    private static native boolean verifyBlobKzgProof(long context_ptr, byte[] blob, byte[] commitment, byte[] proof);
+
+    private static native boolean verifyBlobKzgProofBatch(long context_ptr, byte[][] blobs, byte[][] commitments, byte[][] proofs);
 
     private static final String LIBRARY_NAME = "java_eth_kzg";
     private static final String PLATFORM_NATIVE_LIBRARY_NAME = System.mapLibraryName(LIBRARY_NAME);

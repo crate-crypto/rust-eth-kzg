@@ -283,6 +283,214 @@ public sealed unsafe class EthKZG : IDisposable
         return (outCells, outProofs);
     }
 
+    // EIP-4844 methods
+
+    public unsafe (byte[], byte[]) ComputeKzgProof(byte[] blob, byte[] z)
+    {
+        // Length checks
+        if (blob.Length != BytesPerBlob)
+        {
+            throw new ArgumentException($"blob has an invalid length. Expected {BytesPerBlob}, got {blob.Length}");
+        }
+
+        if (z.Length != BytesPerFieldElement)
+        {
+            throw new ArgumentException($"z has an invalid length. Expected {BytesPerFieldElement}, got {z.Length}");
+        }
+
+        byte[] proof = new byte[BytesPerProof];
+        byte[] y = new byte[BytesPerFieldElement];
+
+        fixed (byte* blobPtr = blob)
+        fixed (byte* zPtr = z)
+        fixed (byte* proofPtr = proof)
+        fixed (byte* yPtr = y)
+        {
+            CResult result = eth_kzg_compute_kzg_proof(_context, blobPtr, zPtr, proofPtr, yPtr);
+            ThrowOnError(result);
+        }
+
+        return (proof, y);
+    }
+
+    public unsafe byte[] ComputeBlobKzgProof(byte[] blob, byte[] commitment)
+    {
+        // Length checks
+        if (blob.Length != BytesPerBlob)
+        {
+            throw new ArgumentException($"blob has an invalid length. Expected {BytesPerBlob}, got {blob.Length}");
+        }
+
+        if (commitment.Length != BytesPerCommitment)
+        {
+            throw new ArgumentException($"commitment has an invalid length. Expected {BytesPerCommitment}, got {commitment.Length}");
+        }
+
+        byte[] proof = new byte[BytesPerProof];
+
+        fixed (byte* blobPtr = blob)
+        fixed (byte* commitmentPtr = commitment)
+        fixed (byte* proofPtr = proof)
+        {
+            CResult result = eth_kzg_compute_blob_kzg_proof(_context, blobPtr, commitmentPtr, proofPtr);
+            ThrowOnError(result);
+        }
+
+        return proof;
+    }
+
+    public unsafe bool VerifyKzgProof(byte[] commitment, byte[] z, byte[] y, byte[] proof)
+    {
+        // Length checks
+        if (commitment.Length != BytesPerCommitment)
+        {
+            throw new ArgumentException($"commitment has an invalid length. Expected {BytesPerCommitment}, got {commitment.Length}");
+        }
+
+        if (z.Length != BytesPerFieldElement)
+        {
+            throw new ArgumentException($"z has an invalid length. Expected {BytesPerFieldElement}, got {z.Length}");
+        }
+
+        if (y.Length != BytesPerFieldElement)
+        {
+            throw new ArgumentException($"y has an invalid length. Expected {BytesPerFieldElement}, got {y.Length}");
+        }
+
+        if (proof.Length != BytesPerProof)
+        {
+            throw new ArgumentException($"proof has an invalid length. Expected {BytesPerProof}, got {proof.Length}");
+        }
+
+        bool verified = false;
+
+        fixed (byte* commitmentPtr = commitment)
+        fixed (byte* zPtr = z)
+        fixed (byte* yPtr = y)
+        fixed (byte* proofPtr = proof)
+        {
+            CResult result = eth_kzg_verify_kzg_proof(_context, commitmentPtr, zPtr, yPtr, proofPtr, &verified);
+            ThrowOnError(result);
+        }
+
+        return verified;
+    }
+
+    public unsafe bool VerifyBlobKzgProof(byte[] blob, byte[] commitment, byte[] proof)
+    {
+        // Length checks
+        if (blob.Length != BytesPerBlob)
+        {
+            throw new ArgumentException($"blob has an invalid length. Expected {BytesPerBlob}, got {blob.Length}");
+        }
+
+        if (commitment.Length != BytesPerCommitment)
+        {
+            throw new ArgumentException($"commitment has an invalid length. Expected {BytesPerCommitment}, got {commitment.Length}");
+        }
+
+        if (proof.Length != BytesPerProof)
+        {
+            throw new ArgumentException($"proof has an invalid length. Expected {BytesPerProof}, got {proof.Length}");
+        }
+
+        bool verified = false;
+
+        fixed (byte* blobPtr = blob)
+        fixed (byte* commitmentPtr = commitment)
+        fixed (byte* proofPtr = proof)
+        {
+            CResult result = eth_kzg_verify_blob_kzg_proof(_context, blobPtr, commitmentPtr, proofPtr, &verified);
+            ThrowOnError(result);
+        }
+
+        return verified;
+    }
+
+    public unsafe bool VerifyBlobKzgProofBatch(byte[][] blobs, byte[][] commitments, byte[][] proofs)
+    {
+        // Length checks
+        if (blobs.Length != commitments.Length || blobs.Length != proofs.Length)
+        {
+            throw new ArgumentException($"blobs, commitments, and proofs must have the same length");
+        }
+
+        for (int i = 0; i < blobs.Length; i++)
+        {
+            if (blobs[i].Length != BytesPerBlob)
+            {
+                throw new ArgumentException($"blob at index {i} has an invalid length. Expected {BytesPerBlob}, got {blobs[i].Length}");
+            }
+        }
+
+        for (int i = 0; i < commitments.Length; i++)
+        {
+            if (commitments[i].Length != BytesPerCommitment)
+            {
+                throw new ArgumentException($"commitment at index {i} has an invalid length. Expected {BytesPerCommitment}, got {commitments[i].Length}");
+            }
+        }
+
+        for (int i = 0; i < proofs.Length; i++)
+        {
+            if (proofs[i].Length != BytesPerProof)
+            {
+                throw new ArgumentException($"proof at index {i} has an invalid length. Expected {BytesPerProof}, got {proofs[i].Length}");
+            }
+        }
+
+        int numBlobs = blobs.Length;
+        int numCommitments = commitments.Length;
+        int numProofs = proofs.Length;
+
+        byte*[] blobPtrs = new byte*[numBlobs];
+        byte*[] commitmentPtrs = new byte*[numCommitments];
+        byte*[] proofPtrs = new byte*[numProofs];
+
+        bool verified = false;
+
+        fixed (byte** blobPtrPtr = blobPtrs)
+        fixed (byte** commitmentPtrPtr = commitmentPtrs)
+        fixed (byte** proofPtrPtr = proofPtrs)
+        {
+            // Get the pointer for each blob
+            for (int i = 0; i < numBlobs; i++)
+            {
+                fixed (byte* blobPtr = blobs[i])
+                {
+                    blobPtrPtr[i] = blobPtr;
+                }
+            }
+
+            // Get the pointer for each commitment
+            for (int i = 0; i < numCommitments; i++)
+            {
+                fixed (byte* commitmentPtr = commitments[i])
+                {
+                    commitmentPtrPtr[i] = commitmentPtr;
+                }
+            }
+
+            // Get the pointer for each proof
+            for (int i = 0; i < numProofs; i++)
+            {
+                fixed (byte* proofPtr = proofs[i])
+                {
+                    proofPtrPtr[i] = proofPtr;
+                }
+            }
+
+            CResult result = eth_kzg_verify_blob_kzg_proof_batch(_context, 
+                Convert.ToUInt64(numBlobs), blobPtrPtr,
+                Convert.ToUInt64(numCommitments), commitmentPtrPtr, 
+                Convert.ToUInt64(numProofs), proofPtrPtr, 
+                &verified);
+            ThrowOnError(result);
+        }
+
+        return verified;
+    }
+
     private static void ThrowOnError(CResult result)
     {
         switch (result.status)

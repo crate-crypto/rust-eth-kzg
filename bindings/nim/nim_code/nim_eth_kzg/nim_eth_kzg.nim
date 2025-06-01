@@ -185,3 +185,78 @@ proc recoverCellsAndProofs*(ctx: KZGCtx,
   )
 
   verify_result(res, ret)
+
+proc computeKZGProof*(ctx: KZGCtx, blob: Blob, z: array[BYTES_PER_FIELD_ELEMENT, byte]): Result[tuple[proof: KZGProof, y: array[BYTES_PER_FIELD_ELEMENT, byte]], string] {.gcsafe.} =
+  var proof: KZGProof
+  var y: array[BYTES_PER_FIELD_ELEMENT, byte]
+
+  let res = eth_kzg_compute_kzg_proof(
+    ctx.ctx_ptr,
+    blob.bytes.getPtr,
+    z.getPtr,
+    proof.bytes.getPtr,
+    y.getPtr
+  )
+  verify_result(res, (proof: proof, y: y))
+
+proc computeBlobKZGProof*(ctx: KZGCtx, blob: Blob, commitment: KZGCommitment): Result[KZGProof, string] {.gcsafe.} =
+  var proof: KZGProof
+
+  let res = eth_kzg_compute_blob_kzg_proof(
+    ctx.ctx_ptr,
+    blob.bytes.getPtr,
+    commitment.bytes.getPtr,
+    proof.bytes.getPtr
+  )
+  verify_result(res, proof)
+
+proc verifyKZGProof*(ctx: KZGCtx, 
+                     commitment: KZGCommitment, 
+                     z: array[BYTES_PER_FIELD_ELEMENT, byte], 
+                     y: array[BYTES_PER_FIELD_ELEMENT, byte], 
+                     proof: KZGProof): Result[bool, string] {.gcsafe.} =
+  var verified: bool
+
+  let res = eth_kzg_verify_kzg_proof(
+    ctx.ctx_ptr,
+    commitment.bytes.getPtr,
+    z.getPtr,
+    y.getPtr,
+    proof.bytes.getPtr,
+    verified.getPtr
+  )
+  verify_result(res, verified)
+
+proc verifyBlobKZGProof*(ctx: KZGCtx, blob: Blob, commitment: KZGCommitment, proof: KZGProof): Result[bool, string] {.gcsafe.} =
+  var verified: bool
+
+  let res = eth_kzg_verify_blob_kzg_proof(
+    ctx.ctx_ptr,
+    blob.bytes.getPtr,
+    commitment.bytes.getPtr,
+    proof.bytes.getPtr,
+    verified.getPtr
+  )
+  verify_result(res, verified)
+
+proc verifyBlobKZGProofBatch*(ctx: KZGCtx, 
+                              blobs: openArray[Blob], 
+                              commitments: openArray[KZGCommitment], 
+                              proofs: openArray[KZGProof]): Result[bool, string] {.gcsafe.} =
+  var verified: bool
+
+  let blobsPtr = toPtrPtr(blobs)
+  let commitmentsPtr = toPtrPtr(commitments)
+  let proofsPtr = toPtrPtr(proofs)
+
+  let res = eth_kzg_verify_blob_kzg_proof_batch(
+    ctx.ctx_ptr,
+    uint64(len(blobs)),
+    blobsPtr,
+    uint64(len(commitments)),
+    commitmentsPtr,
+    uint64(len(proofs)),
+    proofsPtr,
+    verified.getPtr
+  )
+  verify_result(res, verified)
