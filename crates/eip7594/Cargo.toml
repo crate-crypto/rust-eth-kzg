@@ -12,8 +12,8 @@ repository = { workspace = true }
 workspace = true
 
 [dependencies]
+trusted_setup = { workspace = true }
 kzg_multi_open = { workspace = true }
-kzg_single_open = { workspace = true }
 bls12_381 = { workspace = true }
 serialization = { workspace = true }
 hex = { workspace = true }

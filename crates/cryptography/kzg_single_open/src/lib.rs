@@ -167,6 +167,12 @@ pub mod prover {
         pub g1s: Vec<G1Point>,
     }
 
+    impl CommitKey {
+        pub const fn new(g1s: Vec<G1Point>) -> Self {
+            Self { g1s }
+        }
+    }
+
     pub struct Prover {
         /// Domain used to create the opening proofs.
         pub domain: Domain,

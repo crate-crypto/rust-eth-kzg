@@ -7,10 +7,11 @@ members = [
     "bindings/nim/rust_code",
     "bindings/csharp/rust_code",
 
+    "crates/serialization",
+    "crates/trusted_setup",
+    "crates/maybe_rayon",
     "crates/eip4844",
     "crates/eip7594",
-    "crates/maybe_rayon",
-    "crates/serialization",
 
     "crates/cryptography/bls12_381",
     "crates/cryptography/kzg_single_open",
@@ -65,6 +66,7 @@ erasure_codes = { package = "ekzg-erasure-codes", version = "0.6.0", path = "cra
 rust_eth_kzg = { version = "0.6.0", path = "crates/eip7594" }
 eip4844 = { version = "0.6.0", path = "crates/eip4844" }
 maybe_rayon = { package = "ekzg-maybe-rayon", version = "0.6.0", path = "crates/maybe_rayon" }
+trusted_setup = { package = "ekzg-trusted-setup", version = "0.6.0", path = "crates/trusted_setup" }
 kzg_single_open = { package = "ekzg-single-open", version = "0.6.0", path = "crates/cryptography/kzg_single_open" }
 kzg_multi_open = { package = "ekzg-multi-open", version = "0.6.0", path = "crates/cryptography/kzg_multi_open" }
 c_eth_kzg = { version = "0.6.0", path = "bindings/c" }
