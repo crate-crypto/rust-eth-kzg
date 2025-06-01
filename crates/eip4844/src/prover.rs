@@ -48,7 +48,7 @@ impl Context {
         // Deserialize the point into scalar.
         let z = deserialize_bytes_to_scalar(&z)?;
 
-        // Compute evaluation and quotient at challenge.
+        // Compute evaluation and commitment to quotient at challenge.
         let (proof, y) = self.prover.compute_kzg_proof(&polynomial, z);
 
         // Serialize the commitment.
@@ -80,8 +80,7 @@ impl Context {
         // Compute Fiat-Shamir challenge
         let z = compute_fiat_shamir_challenge(blob, commitment);
 
-        // Compute evaluation and quotient at z.
-        // The quotient is returned in "normal order"
+        // Compute evaluation and commitment to quotient at z.
         let (proof, _) = self.prover.compute_kzg_proof(&polynomial, z);
 
         // Serialize the commitment.

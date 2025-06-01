@@ -29,7 +29,8 @@ impl Prover {
     }
 
     pub fn compute_kzg_proof(&self, polynomial: &[Scalar], z: Scalar) -> (G1Point, Scalar) {
-        // Compute evaluation and quotient at challenge.
+        // Compute evaluation and quotient at point `z`.
+        // The quotient is in "normal order"
         let (quotient, y) = divide_by_linear(polynomial, z);
 
         // Compute KZG opening proof.
