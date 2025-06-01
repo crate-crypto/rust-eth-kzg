@@ -1,6 +1,6 @@
 [package]
 name = "rust_eth_kzg"
-description = "This crate provides an implementation of the cryptography needed for EIP-7594"
+description = "This crate provides an implementation of the cryptography needed for EIP-7594 and EIP4844"
 version = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
@@ -18,6 +18,7 @@ bls12_381 = { workspace = true }
 serialization = { workspace = true }
 hex = { workspace = true }
 erasure_codes = { workspace = true }
+eip4844 = { workspace = true }
 rayon = { workspace = true, optional = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -26,9 +27,13 @@ tracing = { version = "0.1.41", default-features = false, features = [
 ], optional = true }
 
 [features]
-singlethreaded = ["kzg_multi_open/singlethreaded"]
-multithreaded = ["rayon", "kzg_multi_open/multithreaded"]
-tracing = ["dep:tracing", "kzg_multi_open/tracing"]
+singlethreaded = ["kzg_multi_open/singlethreaded", "eip4844/singlethreaded"]
+multithreaded = [
+    "rayon",
+    "kzg_multi_open/multithreaded",
+    "eip4844/multithreaded",
+]
+tracing = ["dep:tracing", "kzg_multi_open/tracing", "eip4844/tracing"]
 
 [dev-dependencies]
 criterion = "0.5.1"

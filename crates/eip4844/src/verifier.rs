@@ -73,7 +73,7 @@ impl Context {
         Ok(())
     }
 
-    /// Verify a batch of KZG proof to a the commitment of a blob.
+    /// Verify a batch of KZG proofs to the commitment of a blob.
     ///
     /// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/017a8495f7671f5fff2075a9bfc9238c1a0982f8/specs/deneb/polynomial-commitments.md#verify_blob_kzg_proof_batch
     pub fn verify_blob_kzg_proof_batch(
