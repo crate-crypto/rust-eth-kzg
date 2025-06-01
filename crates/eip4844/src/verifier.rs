@@ -4,15 +4,13 @@ use bls12_381::{reduce_bytes_to_scalar_bias, traits::*, G1Point, Scalar};
 use itertools::{chain, izip, Itertools};
 use kzg_single_open::bitreverse_slice;
 use polynomial::{domain::Domain, poly_coeff::PolyCoeff};
+use serialization::{
+    deserialize_blob_to_scalars, deserialize_bytes_to_scalar, deserialize_compressed_g1,
+    types::{KZGCommitment, KZGProof as KZGProof4844, SerializedScalar},
+};
 use sha2::{Digest, Sha256};
 
-use crate::{
-    serialization::{
-        deserialize_blob_to_scalars, deserialize_bytes_to_scalar, deserialize_compressed_g1,
-    },
-    BlobRef, Context, Error, KZGCommitment, KZGOpeningEvaluation, KZGOpeningPoint, KZGProof,
-    VerifierError,
-};
+use crate::{BlobRef, Context, Error, VerifierError};
 
 impl Context {
     /// Verify the KZG proof to the commitment.
@@ -21,9 +19,11 @@ impl Context {
     pub fn verify_kzg_proof(
         &self,
         commitment: KZGCommitment,
-        z: KZGOpeningPoint,
-        y: KZGOpeningEvaluation,
-        proof: KZGProof,
+        // `z` denotes the point that has been evaluated on some polynomial, ie `f(z)`
+        z: SerializedScalar,
+        // `y` denotes the output of evaluating some point on some polynomial, ie `y = f(z)`
+        y: SerializedScalar,
+        proof: KZGProof4844,
     ) -> Result<(), Error> {
         // Deserialize the KZG commitment.
         let commitment = deserialize_compressed_g1(&commitment)?;
@@ -50,7 +50,7 @@ impl Context {
         &self,
         blob: BlobRef,
         commitment: KZGCommitment,
-        proof: KZGProof,
+        proof: KZGProof4844,
     ) -> Result<(), Error> {
         // Deserialize the blob into scalars.
         let blob_scalar = deserialize_blob_to_scalars(blob)?;
@@ -80,7 +80,7 @@ impl Context {
         &self,
         blobs: &[BlobRef],
         commitments: &[KZGCommitment],
-        proofs: &[KZGProof],
+        proofs: &[KZGProof4844],
     ) -> Result<(), Error> {
         let same_length = (blobs.len() == commitments.len()) & (blobs.len() == proofs.len());
         if !same_length {
@@ -197,7 +197,7 @@ pub fn compute_r_powers_for_verify_kzg_proof_batch(
     commitments: &[KZGCommitment],
     zs: &[Scalar],
     ys: &[Scalar],
-    proofs: &[KZGProof],
+    proofs: &[KZGProof4844],
 ) -> Vec<Scalar> {
     // DomSepProtocol is a Domain Separator to identify the protocol.
     //

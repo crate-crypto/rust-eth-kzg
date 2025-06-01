@@ -47,9 +47,7 @@ pub fn deserialize_blob_to_scalars(blob_bytes: &[u8]) -> Result<Vec<Scalar>, Ser
 ///
 /// This expects the input to be exactly 32 bytes.
 /// Fails if the bytes do not correspond to a valid field element.
-pub(crate) fn deserialize_bytes_to_scalar(
-    scalar_bytes: &[u8],
-) -> Result<Scalar, SerializationError> {
+pub fn deserialize_bytes_to_scalar(scalar_bytes: &[u8]) -> Result<Scalar, SerializationError> {
     let bytes32 = scalar_bytes.try_into().expect("infallible: expected blob chunks to be exactly {SCALAR_SERIALIZED_SIZE} bytes, since blob was a multiple of {SCALAR_SERIALIZED_SIZE");
 
     // Convert the CtOption into Option
@@ -68,7 +66,7 @@ pub(crate) fn deserialize_bytes_to_scalar(
 ///
 /// Returns an error if the length is incorrect or the bytes are invalid.
 /// Wraps the `from_compressed` function from the BLS12-381 crate.
-pub(crate) fn deserialize_compressed_g1(point_bytes: &[u8]) -> Result<G1Point, SerializationError> {
+pub fn deserialize_compressed_g1(point_bytes: &[u8]) -> Result<G1Point, SerializationError> {
     let Ok(point_bytes) = point_bytes.try_into() else {
         return Err(SerializationError::G1PointHasInvalidLength {
             length: point_bytes.len(),

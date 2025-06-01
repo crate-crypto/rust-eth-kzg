@@ -1,13 +1,14 @@
 use bls12_381::{lincomb::g1_lincomb, traits::*};
 use kzg_single_open::divide_by_linear;
+use serialization::{
+    deserialize_blob_to_scalars, deserialize_bytes_to_scalar, deserialize_compressed_g1,
+    serialize_g1_compressed,
+    types::{KZGCommitment, KZGProof as KZGProof4844, SerializedScalar},
+};
 
 use crate::{
-    serialization::{
-        deserialize_blob_to_scalars, deserialize_bytes_to_scalar, deserialize_compressed_g1,
-        serialize_g1_compressed,
-    },
     verifier::{blob_scalar_to_polynomial, compute_fiat_shamir_challenge},
-    BlobRef, Context, Error, KZGCommitment, KZGOpeningEvaluation, KZGOpeningPoint, KZGProof,
+    BlobRef, Context, Error,
 };
 
 impl Context {
@@ -37,8 +38,8 @@ impl Context {
     pub fn compute_kzg_proof(
         &self,
         blob: BlobRef,
-        z: KZGOpeningPoint,
-    ) -> Result<(KZGProof, KZGOpeningEvaluation), Error> {
+        z: SerializedScalar,
+    ) -> Result<(KZGProof4844, SerializedScalar), Error> {
         // Deserialize the blob into scalars.
         let blob_scalar = deserialize_blob_to_scalars(blob)?;
 
@@ -75,7 +76,7 @@ impl Context {
         &self,
         blob: BlobRef,
         commitment: KZGCommitment,
-    ) -> Result<KZGProof, Error> {
+    ) -> Result<KZGProof4844, Error> {
         // Deserialize the blob into scalars.
         let blob_scalar = deserialize_blob_to_scalars(blob)?;
 

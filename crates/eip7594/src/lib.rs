@@ -1,7 +1,6 @@
 #[cfg(all(feature = "singlethreaded", feature = "multithreaded"))]
 compile_error!("`singlethreaded` and `multithreaded` cannot be enabled simultaneously");
 
-pub mod constants;
 mod errors;
 mod prover;
 mod recovery;
@@ -10,7 +9,7 @@ mod verifier;
 
 // Exported types
 //
-pub use ::serialization::types::*;
+pub use ::serialization::{constants, types::*};
 pub use bls12_381::fixed_base_msm::UsePrecomp;
 pub use errors::Error;
 /// TrustedSetup contains the Structured Reference String(SRS)
