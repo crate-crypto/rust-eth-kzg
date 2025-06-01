@@ -170,3 +170,113 @@ proc eth_kzg_constant_bytes_per_cell*(): uint64 {.importc: "eth_kzg_constant_byt
 proc eth_kzg_constant_bytes_per_proof*(): uint64 {.importc: "eth_kzg_constant_bytes_per_proof".}
 
 proc eth_kzg_constant_cells_per_ext_blob*(): uint64 {.importc: "eth_kzg_constant_cells_per_ext_blob".}
+
+## Computes the KZG proof given a blob and a point.
+#
+# # Safety
+#
+# - The caller must ensure that the pointers are valid.
+# - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
+# - The caller must ensure that `z` points to a region of memory that is at least `BYTES_PER_FIELD_ELEMENT` bytes.
+# - The caller must ensure that `out_proof` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+# - The caller must ensure that `out_y` points to a region of memory that is at least `BYTES_PER_FIELD_ELEMENT` bytes.
+#
+# # Undefined behavior
+#
+# - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+#   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
+proc eth_kzg_compute_kzg_proof*(ctx: ptr DASContext,
+                                blob: pointer,
+                                z: pointer,
+                                out_proof: pointer,
+                                out_y: pointer): CResult {.importc: "eth_kzg_compute_kzg_proof".}
+
+## Computes the KZG proof given a blob and its corresponding commitment.
+#
+# # Safety
+#
+# - The caller must ensure that the pointers are valid.
+# - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
+# - The caller must ensure that `commitment` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+# - The caller must ensure that `out_proof` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+#
+# # Undefined behavior
+#
+# - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+#   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
+proc eth_kzg_compute_blob_kzg_proof*(ctx: ptr DASContext,
+                                     blob: pointer,
+                                     commitment: pointer,
+                                     out_proof: pointer): CResult {.importc: "eth_kzg_compute_blob_kzg_proof".}
+
+## Verifies the KZG proof to the commitment.
+#
+# # Safety
+#
+# - The caller must ensure that the pointers are valid.
+# - The caller must ensure that `commitment` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+# - The caller must ensure that `z` points to a region of memory that is at least `BYTES_PER_FIELD_ELEMENT` bytes.
+# - The caller must ensure that `y` points to a region of memory that is at least `BYTES_PER_FIELD_ELEMENT` bytes.
+# - The caller must ensure that `proof` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+# - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
+#
+# # Undefined behavior
+#
+# - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+#   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
+proc eth_kzg_verify_kzg_proof*(ctx: ptr DASContext,
+                               commitment: pointer,
+                               z: pointer,
+                               y: pointer,
+                               proof: pointer,
+                               verified: pointer): CResult {.importc: "eth_kzg_verify_kzg_proof".}
+
+## Verifies the KZG proof to the commitment of a blob.
+#
+# # Safety
+#
+# - The caller must ensure that the pointers are valid.
+# - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
+# - The caller must ensure that `commitment` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+# - The caller must ensure that `proof` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+# - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
+#
+# # Undefined behavior
+#
+# - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+#   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
+proc eth_kzg_verify_blob_kzg_proof*(ctx: ptr DASContext,
+                                    blob: pointer,
+                                    commitment: pointer,
+                                    proof: pointer,
+                                    verified: pointer): CResult {.importc: "eth_kzg_verify_blob_kzg_proof".}
+
+## Verifies a batch of KZG proofs to the commitments of blobs.
+#
+# # Safety
+#
+# - If the length parameter for a pointer is set to zero, then this implementation will not check if its pointer is
+#   null. This is because the caller might have passed in a null pointer, if the length is zero. Instead an empty slice
+#   will be created.
+#
+# - The caller must ensure that the pointers are valid.
+# - The caller must ensure that `blobs` points to a region of memory that is at least `blobs_length` blobs
+#   and that each blob is at least `BYTES_PER_BLOB` bytes.
+# - The caller must ensure that `commitments` points to a region of memory that is at least `commitments_length` commitments
+#   and that each commitment is at least `BYTES_PER_COMMITMENT` bytes.
+# - The caller must ensure that `proofs` points to a region of memory that is at least `proofs_length` proofs
+#   and that each proof is at least `BYTES_PER_COMMITMENT` bytes.
+# - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
+#
+# # Undefined behavior
+#
+# - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+#   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
+proc eth_kzg_verify_blob_kzg_proof_batch*(ctx: ptr DASContext,
+                                          blobs_length: uint64,
+                                          blobs: ptr pointer,
+                                          commitments_length: uint64,
+                                          commitments: ptr pointer,
+                                          proofs_length: uint64,
+                                          proofs: ptr pointer,
+                                          verified: pointer): CResult {.importc: "eth_kzg_verify_blob_kzg_proof_batch".}

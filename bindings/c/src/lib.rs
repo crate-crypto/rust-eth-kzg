@@ -11,6 +11,21 @@ use verify_cells_and_kzg_proofs_batch::_verify_cell_kzg_proof_batch;
 mod recover_cells_and_kzg_proofs;
 use recover_cells_and_kzg_proofs::_recover_cells_and_proofs;
 
+mod compute_kzg_proof;
+use compute_kzg_proof::_compute_kzg_proof;
+
+mod compute_blob_kzg_proof;
+use compute_blob_kzg_proof::_compute_blob_kzg_proof;
+
+mod verify_kzg_proof;
+use verify_kzg_proof::_verify_kzg_proof;
+
+mod verify_blob_kzg_proof;
+use verify_blob_kzg_proof::_verify_blob_kzg_proof;
+
+mod verify_blob_kzg_proof_batch;
+use verify_blob_kzg_proof_batch::_verify_blob_kzg_proof_batch;
+
 pub(crate) mod pointer_utils;
 
 use std::ops::Deref;
@@ -387,4 +402,168 @@ pub extern "C" fn eth_kzg_constant_bytes_per_proof() -> u64 {
 #[no_mangle]
 pub extern "C" fn eth_kzg_constant_cells_per_ext_blob() -> u64 {
     CELLS_PER_EXT_BLOB as u64
+}
+
+/// Computes the KZG proof given a blob and a point.
+///
+/// # Safety
+///
+/// - The caller must ensure that the pointers are valid.
+/// - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
+/// - The caller must ensure that `z` points to a region of memory that is at least `BYTES_PER_FIELD_ELEMENT` bytes.
+/// - The caller must ensure that `out_proof` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+/// - The caller must ensure that `out_y` points to a region of memory that is at least `BYTES_PER_FIELD_ELEMENT` bytes.
+///
+/// # Undefined behavior
+///
+/// - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+///   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
+#[no_mangle]
+#[must_use]
+pub extern "C" fn eth_kzg_compute_kzg_proof(
+    ctx: *const DASContext,
+    blob: *const u8,
+    z: *const u8,
+    out_proof: *mut u8,
+    out_y: *mut u8,
+) -> CResult {
+    match _compute_kzg_proof(ctx, blob, z, out_proof, out_y) {
+        Ok(_) => CResult::with_ok(),
+        Err(err) => err,
+    }
+}
+
+/// Computes the KZG proof given a blob and its corresponding commitment.
+///
+/// # Safety
+///
+/// - The caller must ensure that the pointers are valid.
+/// - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
+/// - The caller must ensure that `commitment` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+/// - The caller must ensure that `out_proof` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+///
+/// # Undefined behavior
+///
+/// - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+///   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
+#[no_mangle]
+#[must_use]
+pub extern "C" fn eth_kzg_compute_blob_kzg_proof(
+    ctx: *const DASContext,
+    blob: *const u8,
+    commitment: *const u8,
+    out_proof: *mut u8,
+) -> CResult {
+    match _compute_blob_kzg_proof(ctx, blob, commitment, out_proof) {
+        Ok(_) => CResult::with_ok(),
+        Err(err) => err,
+    }
+}
+
+/// Verifies the KZG proof to the commitment.
+///
+/// # Safety
+///
+/// - The caller must ensure that the pointers are valid.
+/// - The caller must ensure that `commitment` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+/// - The caller must ensure that `z` points to a region of memory that is at least `BYTES_PER_FIELD_ELEMENT` bytes.
+/// - The caller must ensure that `y` points to a region of memory that is at least `BYTES_PER_FIELD_ELEMENT` bytes.
+/// - The caller must ensure that `proof` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+/// - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
+///
+/// # Undefined behavior
+///
+/// - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+///   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
+#[no_mangle]
+#[must_use]
+pub extern "C" fn eth_kzg_verify_kzg_proof(
+    ctx: *const DASContext,
+    commitment: *const u8,
+    z: *const u8,
+    y: *const u8,
+    proof: *const u8,
+    verified: *mut bool,
+) -> CResult {
+    match _verify_kzg_proof(ctx, commitment, z, y, proof, verified) {
+        Ok(_) => CResult::with_ok(),
+        Err(err) => err,
+    }
+}
+
+/// Verifies the KZG proof to the commitment of a blob.
+///
+/// # Safety
+///
+/// - The caller must ensure that the pointers are valid.
+/// - The caller must ensure that `blob` points to a region of memory that is at least `BYTES_PER_BLOB` bytes.
+/// - The caller must ensure that `commitment` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+/// - The caller must ensure that `proof` points to a region of memory that is at least `BYTES_PER_COMMITMENT` bytes.
+/// - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
+///
+/// # Undefined behavior
+///
+/// - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+///   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
+#[no_mangle]
+#[must_use]
+pub extern "C" fn eth_kzg_verify_blob_kzg_proof(
+    ctx: *const DASContext,
+    blob: *const u8,
+    commitment: *const u8,
+    proof: *const u8,
+    verified: *mut bool,
+) -> CResult {
+    match _verify_blob_kzg_proof(ctx, blob, commitment, proof, verified) {
+        Ok(_) => CResult::with_ok(),
+        Err(err) => err,
+    }
+}
+
+/// Verifies a batch of KZG proofs to the commitments of blobs.
+///
+/// # Safety
+///
+/// - If the length parameter for a pointer is set to zero, then this implementation will not check if its pointer is
+///   null. This is because the caller might have passed in a null pointer, if the length is zero. Instead an empty slice
+///   will be created.
+///
+/// - The caller must ensure that the pointers are valid.
+/// - The caller must ensure that `blobs` points to a region of memory that is at least `blobs_length` blobs
+///   and that each blob is at least `BYTES_PER_BLOB` bytes.
+/// - The caller must ensure that `commitments` points to a region of memory that is at least `commitments_length` commitments
+///   and that each commitment is at least `BYTES_PER_COMMITMENT` bytes.
+/// - The caller must ensure that `proofs` points to a region of memory that is at least `proofs_length` proofs
+///   and that each proof is at least `BYTES_PER_COMMITMENT` bytes.
+/// - The caller must ensure that `verified` points to a region of memory that is at least 1 byte.
+///
+/// # Undefined behavior
+///
+/// - This implementation will check if the ctx pointer is null, but it will not check if the other arguments are null.
+///   If the other arguments are null, this method will dereference a null pointer and result in undefined behavior.
+#[no_mangle]
+#[must_use]
+pub extern "C" fn eth_kzg_verify_blob_kzg_proof_batch(
+    ctx: *const DASContext,
+    blobs_length: u64,
+    blobs: *const *const u8,
+    commitments_length: u64,
+    commitments: *const *const u8,
+    proofs_length: u64,
+    proofs: *const *const u8,
+    verified: *mut bool,
+) -> CResult {
+    match _verify_blob_kzg_proof_batch(
+        ctx,
+        blobs_length,
+        blobs,
+        commitments_length,
+        commitments,
+        proofs_length,
+        proofs,
+        verified,
+    ) {
+        Ok(_) => CResult::with_ok(),
+        Err(err) => err,
+    }
 }
