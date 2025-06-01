@@ -1,7 +1,7 @@
 #[cfg(all(feature = "singlethreaded", feature = "multithreaded"))]
 compile_error!("`singlethreaded` and `multithreaded` cannot be enabled simultaneously");
 
-use serialization::constants::{BYTES_PER_BLOB, BYTES_PER_COMMITMENT, FIELD_ELEMENTS_PER_BLOB};
+use serialization::constants::FIELD_ELEMENTS_PER_BLOB;
 
 mod errors;
 mod prover;
@@ -13,17 +13,6 @@ use kzg_single_open::{prover::Prover, verifier::Verifier};
 pub use serialization::{constants, types::*};
 pub use trusted_setup::TrustedSetup;
 use trusted_setup::{commit_key_from_setup, verification_key_from_setup};
-
-/// BlobRef denotes a references to an opaque Blob.
-///
-/// Note: This library never returns a Blob, which is why we
-/// do not have a Blob type.
-pub type BlobRef<'a> = &'a [u8; BYTES_PER_BLOB];
-
-/// KZGProof denotes a 48 byte commitment to a polynomial
-/// that one can use to prove that a polynomial f(x) was
-/// correctly evaluated on a coset `H` and returned a set of points.
-pub type KZGProof = [u8; BYTES_PER_COMMITMENT];
 
 pub struct Context {
     prover: Prover,
