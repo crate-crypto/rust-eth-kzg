@@ -1,13 +1,13 @@
 use std::collections::HashMap;
 
-use kzg_multi_open::{verification_key::VerificationKey, Verifier};
+use kzg_multi_open::Verifier;
 use serialization::{deserialize_cells, deserialize_compressed_g1_points};
 
 pub use crate::errors::VerifierError;
 use crate::{
     constants::{CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_EXT_BLOB},
     errors::Error,
-    trusted_setup::TrustedSetup,
+    trusted_setup::{verification_key_from_setup, TrustedSetup},
     Bytes48Ref, CellIndex, CellRef, DASContext,
 };
 
@@ -26,7 +26,7 @@ impl Default for VerifierContext {
 
 impl VerifierContext {
     pub fn new(trusted_setup: &TrustedSetup) -> Self {
-        let verification_key = VerificationKey::from(trusted_setup);
+        let verification_key = verification_key_from_setup(trusted_setup);
 
         let multipoint_verifier = Verifier::new(
             verification_key,

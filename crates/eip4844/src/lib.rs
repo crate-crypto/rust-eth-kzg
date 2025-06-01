@@ -7,17 +7,15 @@ use constants::{
 
 mod errors;
 mod prover;
+mod trusted_setup;
 pub(crate) mod verifier;
 
 pub mod constants;
 mod serialization;
 
 pub use errors::{Error, SerializationError, VerifierError};
-use kzg_single_open::{
-    prover::{CommitKey, Prover},
-    verifier::{VerificationKey, Verifier},
-};
-pub use rust_eth_kzg::TrustedSetup;
+use kzg_single_open::{prover::Prover, verifier::Verifier};
+use trusted_setup::{commit_key_from_setup, verification_key_from_setup, TrustedSetup};
 
 /// BlobRef denotes a references to an opaque Blob.
 ///
@@ -57,10 +55,13 @@ impl Default for Context {
 impl Context {
     pub fn new(trusted_setup: &TrustedSetup) -> Self {
         Self {
-            prover: Prover::new(FIELD_ELEMENTS_PER_BLOB, CommitKey::from(trusted_setup)),
+            prover: Prover::new(
+                FIELD_ELEMENTS_PER_BLOB,
+                commit_key_from_setup(trusted_setup),
+            ),
             verifier: Verifier::new(
                 FIELD_ELEMENTS_PER_BLOB,
-                VerificationKey::from(trusted_setup),
+                verification_key_from_setup(trusted_setup),
             ),
         }
     }

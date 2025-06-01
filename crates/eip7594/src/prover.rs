@@ -1,6 +1,6 @@
 use bls12_381::fixed_base_msm::UsePrecomp;
 use erasure_codes::ReedSolomon;
-use kzg_multi_open::{commit_key::CommitKey, Prover, ProverInput};
+use kzg_multi_open::{Prover, ProverInput};
 use serialization::{
     deserialize_blob_to_scalars, serialize_cells, serialize_cells_and_proofs,
     serialize_g1_compressed,
@@ -13,7 +13,7 @@ use crate::{
     },
     errors::Error,
     recovery::recover_polynomial_coeff,
-    trusted_setup::TrustedSetup,
+    trusted_setup::{commit_key_from_setup, TrustedSetup},
     BlobRef, Cell, CellIndex, CellRef, DASContext, KZGCommitment, KZGProof,
 };
 
@@ -60,7 +60,7 @@ impl ProverContext {
     /// * `use_precomp` — Whether to enable prover-side precomputations
     ///   for faster proof generation (at the cost of extra memory).
     pub fn new(trusted_setup: &TrustedSetup, use_precomp: UsePrecomp) -> Self {
-        let commit_key = CommitKey::from(trusted_setup);
+        let commit_key = commit_key_from_setup(trusted_setup);
 
         // The number of points that we will make an opening proof for,
         // ie a proof will attest to the value of a polynomial at these points.
