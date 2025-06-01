@@ -67,8 +67,6 @@ const BATCH_INVERSE_THRESHOLD: usize = 16;
 /// It returns non-sense value if the trace of addition has any identity point,
 /// which has negligible chance to happen if the points are not close to each
 /// other.
-// TODO(benedikt): top down balanced tree idea - benedikt
-// TODO: search tree for sorted array
 #[allow(dead_code)]
 pub(crate) fn batch_addition_binary_tree_stride(mut points: Vec<G1Affine>) -> G1Projective {
     // We return the identity element if the input is empty
