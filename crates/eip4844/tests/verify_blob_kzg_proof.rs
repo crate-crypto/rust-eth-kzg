@@ -102,7 +102,7 @@ fn test_verify_blob_kzg_proof() {
             continue;
         };
 
-        match ctx.verify_blob_kzg_proof(blob, commitment, proof) {
+        match ctx.verify_blob_kzg_proof(blob, &commitment, &proof) {
             Ok(()) => {
                 // We arrive at this point if the proof verified as true
                 assert!(test.output.unwrap());

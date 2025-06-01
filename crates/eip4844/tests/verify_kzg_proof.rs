@@ -115,7 +115,7 @@ fn test_verify_kzg_proof() {
             continue;
         };
 
-        match ctx.verify_kzg_proof(commitment, z, y, proof) {
+        match ctx.verify_kzg_proof(&commitment, z, y, &proof) {
             Ok(()) => {
                 // We arrive at this point if the proof verified as true
                 assert!(test.output.unwrap());

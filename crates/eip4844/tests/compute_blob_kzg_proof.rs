@@ -88,7 +88,7 @@ fn test_compute_blob_kzg_proof() {
                 continue;
             };
 
-        match ctx.compute_blob_kzg_proof(blob, commitment) {
+        match ctx.compute_blob_kzg_proof(blob, &commitment) {
             Ok(proof) => {
                 let expected_proof = test.output.expect("output is none");
 

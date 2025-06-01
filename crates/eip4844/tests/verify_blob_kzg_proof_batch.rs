@@ -1,7 +1,7 @@
 use std::fs;
 
 use common::collect_test_files;
-use eip4844::{constants::BYTES_PER_BLOB, Error, KZGCommitment, KZGProof, VerifierError};
+use eip4844::{Error, VerifierError};
 use serde_::TestVector;
 
 mod common;
@@ -77,40 +77,43 @@ fn test_verify_blob_kzg_proof_batch() {
         let yaml_data = fs::read_to_string(test_file).expect("unable to read test file");
         let test = TestVector::from_str(&yaml_data);
 
-        let Ok(blobs) = test
+        let blobs = test
             .blobs
             .iter()
-            .map(|blob| <&[u8; BYTES_PER_BLOB]>::try_from(blob.as_slice()))
-            .collect::<Result<Vec<_>, _>>()
-        else {
+            .map(Vec::as_slice)
+            .map(TryInto::try_into)
+            .collect::<Result<Vec<_>, _>>();
+        let Ok(blobs) = blobs else {
             // Blob does not have a valid size
             assert!(test.output.is_none());
             continue;
         };
 
-        let Ok(commitments) = test
+        let commitments = test
             .commitments
             .iter()
-            .map(|commitment| KZGCommitment::try_from(commitment.as_slice()))
-            .collect::<Result<Vec<_>, _>>()
-        else {
+            .map(Vec::as_slice)
+            .map(TryInto::try_into)
+            .collect::<Result<Vec<_>, _>>();
+        let Ok(commitments) = commitments else {
             // Commitment does not have a valid size
             assert!(test.output.is_none());
             continue;
         };
 
-        let Ok(proofs) = test
+        let proofs = test
             .proofs
             .iter()
-            .map(|proof| KZGProof::try_from(proof.as_slice()))
-            .collect::<Result<Vec<_>, _>>()
-        else {
+            .map(Vec::as_slice)
+            .map(TryInto::try_into)
+            .collect::<Result<Vec<_>, _>>();
+        let Ok(proofs) = proofs else {
             // Proof does not have a valid size
             assert!(test.output.is_none());
             continue;
         };
 
-        match ctx.verify_blob_kzg_proof_batch(&blobs, &commitments, &proofs) {
+        match ctx.verify_blob_kzg_proof_batch(blobs, commitments, proofs) {
             Ok(()) => {
                 // We arrive at this point if the proof verified as true
                 assert!(test.output.unwrap());
