@@ -15,8 +15,8 @@ mod serialization;
 
 pub use errors::{Error, SerializationError, VerifierError};
 use kzg_single_open::{prover::Prover, verifier::Verifier};
-use trusted_setup::{commit_key_from_setup, verification_key_from_setup, TrustedSetup};
-
+pub use trusted_setup::TrustedSetup;
+use trusted_setup::{commit_key_from_setup, verification_key_from_setup};
 /// BlobRef denotes a references to an opaque Blob.
 ///
 /// Note: This library never returns a Blob, which is why we
