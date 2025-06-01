@@ -1,0 +1,21 @@
+[package]
+name = "ekzg-trusted-setup"
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
+version.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+bls12_381 = { workspace = true }
+serialization = { workspace = true }
+hex = { workspace = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = { version = "0.1.41", default-features = false, features = [
+    "attributes",
+], optional = true }
+
+[lints]
+workspace = true
