@@ -50,6 +50,11 @@
           "path": "Cargo.toml",
           "jsonpath": "$.workspace.dependencies.maybe_rayon.version"
         },
+        {
+          "type": "toml",
+          "path": "Cargo.toml",
+          "jsonpath": "$.workspace.dependencies.eip4844.version"
+        },
         "bindings/nim/nim_code/nim_eth_kzg/nim_eth_kzg.nimble",
         "bindings/java/java_code/build.gradle",
         {
@@ -65,6 +70,8 @@
       ]
     }
   },
-  "plugins": ["sentence-case"],
+  "plugins": [
+    "sentence-case"
+  ],
   "bootstrap-sha": "fbaabee836330683283133cabf72d185161ae845"
 }
