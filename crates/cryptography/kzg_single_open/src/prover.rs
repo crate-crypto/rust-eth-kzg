@@ -30,7 +30,7 @@ impl Prover {
 
     pub fn compute_kzg_proof(&self, polynomial: &[Scalar], z: Scalar) -> (G1Point, Scalar) {
         // Compute evaluation and quotient at challenge.
-        let (quotient, y) = divide_by_linear(&polynomial, z);
+        let (quotient, y) = divide_by_linear(polynomial, z);
 
         // Compute KZG opening proof.
         let proof = g1_lincomb(&self.commit_key.g1s[..quotient.len()], &quotient)
