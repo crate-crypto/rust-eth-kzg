@@ -1,6 +1,7 @@
 #[cfg(all(feature = "singlethreaded", feature = "multithreaded"))]
 compile_error!("`singlethreaded` and `multithreaded` cannot be enabled simultaneously");
 
+mod eip4844_methods;
 mod errors;
 mod prover;
 mod recovery;
@@ -9,9 +10,9 @@ mod verifier;
 
 // Exported types
 //
-pub use ::serialization::{constants, types::*};
 pub use bls12_381::fixed_base_msm::UsePrecomp;
 pub use errors::Error;
+pub use serialization::{constants, types::*};
 /// TrustedSetup contains the Structured Reference String(SRS)
 /// needed to make and verify proofs.
 pub use trusted_setup::TrustedSetup;
@@ -31,11 +32,14 @@ use verifier::VerifierContext;
 /// verifying KZG cell proofs used in PeerDAS (EIP-7594).
 ///
 /// It holds:
-/// - The prover context (for generating proofs),
-/// - The verifier context (for checking proofs),
+/// - The EIP-7594 prover context (for generating proofs)
+/// - The EIP-7594 verifier context (for checking proofs)
+/// - The EIP-4844 context (for basic KZG operations). This is re-exported for convenience.
 ///
-/// both initialized from the same trusted setup (SRS). This context is required
-/// for sampling and validating data availability across blobs and cells without downloading all data.
+/// All initialized from the same trusted setup (SRS).
+///
+/// The EIP-7594 context is required for sampling and validating data
+/// availability across blobs and cells without downloading all of the data.
 #[derive(Debug)]
 pub struct DASContext {
     /// Prover-side context:
@@ -45,6 +49,10 @@ pub struct DASContext {
     /// Verifier-side context:
     /// verifies KZG cell proofs and ensures data integrity in PeerDAS.
     pub verifier_ctx: VerifierContext,
+
+    /// EIP-4844 context:
+    /// provides core KZG commitment operations for blob verification (proto-danksharding variant)
+    eip4844_ctx: eip4844::Context,
 }
 
 impl Default for DASContext {
@@ -71,11 +79,13 @@ impl DASContext {
     /// * `trusted_setup` — The shared structured reference string (SRS)
     ///   used to configure both prover and verifier contexts.
     /// * `use_precomp` — Whether to enable prover-side precomputations
-    ///   for faster proof creation at the cost of extra memory.
+    ///   for faster proof creation at the cost of extra memory. The cost in
+    ///   memory is exponential in the `width`.
     pub fn new(trusted_setup: &TrustedSetup, use_precomp: UsePrecomp) -> Self {
         Self {
             prover_ctx: ProverContext::new(trusted_setup, use_precomp),
             verifier_ctx: VerifierContext::new(trusted_setup),
+            eip4844_ctx: eip4844::Context::new(trusted_setup),
         }
     }
 }

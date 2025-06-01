@@ -18,6 +18,7 @@ bls12_381 = { workspace = true }
 serialization = { workspace = true }
 hex = { workspace = true }
 erasure_codes = { workspace = true }
+eip4844 = { workspace = true }
 rayon = { workspace = true, optional = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

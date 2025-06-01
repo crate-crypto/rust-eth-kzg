@@ -14,6 +14,8 @@ pub enum Error {
     Recovery(RecoveryError),
     /// Error that occurred while serializing or deserializing data.
     Serialization(SerializationError),
+    /// Error that occurred from the EIP-4844 implementation.
+    EIP4844(eip4844::Error),
 }
 
 impl Error {
@@ -53,6 +55,12 @@ impl From<RecoveryError> for Error {
 impl From<RSError> for Error {
     fn from(value: RSError) -> Self {
         Self::Recovery(RecoveryError::ReedSolomon(value))
+    }
+}
+
+impl From<eip4844::Error> for Error {
+    fn from(value: eip4844::Error) -> Self {
+        Self::EIP4844(value)
     }
 }
 
