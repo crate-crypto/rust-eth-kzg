@@ -168,7 +168,7 @@ pub mod prover {
     }
 
     impl CommitKey {
-        pub fn new(g1s: Vec<G1Point>) -> Self {
+        pub const fn new(g1s: Vec<G1Point>) -> Self {
             Self { g1s }
         }
     }
