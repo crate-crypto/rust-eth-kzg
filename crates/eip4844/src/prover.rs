@@ -1,5 +1,4 @@
 use bls12_381::{lincomb::g1_lincomb, traits::*};
-use kzg_single_open::divide_by_linear;
 use serialization::{
     deserialize_blob_to_scalars, deserialize_bytes_to_scalar, deserialize_compressed_g1,
     serialize_g1_compressed,
@@ -50,16 +49,7 @@ impl Context {
         let z = deserialize_bytes_to_scalar(&z)?;
 
         // Compute evaluation and quotient at challenge.
-        let (quotient, y) = divide_by_linear(&polynomial, z);
-
-        // Compute KZG opening proof.
-        let proof = {
-            #[cfg(feature = "tracing")]
-            let _span = tracing::info_span!("commit quotient").entered();
-            g1_lincomb(&self.prover.commit_key.g1s[..quotient.len()], &quotient)
-                .expect("commit_key.g1s[..quotient.len()].len() == quotient.len()")
-                .to_affine()
-        };
+        let (proof, y) = self.prover.compute_kzg_proof(&polynomial, z);
 
         // Serialize the commitment.
         Ok((serialize_g1_compressed(&proof), y.to_bytes_be()))
@@ -92,16 +82,7 @@ impl Context {
 
         // Compute evaluation and quotient at z.
         // The quotient is returned in "normal order"
-        let (quotient, _) = divide_by_linear(&polynomial, z);
-
-        // Compute KZG opening proof.
-        let proof = {
-            #[cfg(feature = "tracing")]
-            let _span = tracing::info_span!("commit quotient").entered();
-            g1_lincomb(&self.prover.commit_key.g1s[..quotient.len()], &quotient)
-                .expect("commit_key.g1s[..quotient.len()].len() == quotient.len()")
-                .to_affine()
-        };
+        let (proof, _) = self.prover.compute_kzg_proof(&polynomial, z);
 
         // Serialize the commitment.
         Ok(serialize_g1_compressed(&proof))
