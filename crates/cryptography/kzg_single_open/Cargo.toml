@@ -1,6 +1,7 @@
 [package]
 name = "ekzg-single-open"
 authors.workspace = true
+description = "This crate provides a single-opening algorithm for KZG10"
 edition.workspace = true
 license.workspace = true
 version.workspace = true
