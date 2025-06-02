@@ -55,6 +55,16 @@
           "path": "Cargo.toml",
           "jsonpath": "$.workspace.dependencies.eip4844.version"
         },
+        {
+          "type": "toml",
+          "path": "Cargo.toml",
+          "jsonpath": "$.workspace.dependencies.kzg_single_open.version"
+        },
+        {
+          "type": "toml",
+          "path": "Cargo.toml",
+          "jsonpath": "$.workspace.dependencies.trusted_setup.version"
+        },
         "bindings/nim/nim_code/nim_eth_kzg/nim_eth_kzg.nimble",
         "bindings/java/java_code/build.gradle",
         {
