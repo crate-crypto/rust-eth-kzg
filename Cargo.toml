@@ -70,7 +70,7 @@ trusted_setup = { package = "ekzg-trusted-setup", version = "0.7.0", path = "cra
 kzg_single_open = { package = "ekzg-single-open", version = "0.7.0", path = "crates/cryptography/kzg_single_open" }
 kzg_multi_open = { package = "ekzg-multi-open", version = "0.7.0", path = "crates/cryptography/kzg_multi_open" }
 c_eth_kzg = { version = "0.7.0", path = "bindings/c" }
-serialization = { package = "ekzg-serialization", version = "0.6.0", path = "crates/serialization" }
+serialization = { package = "ekzg-serialization", version = "0.7.0", path = "crates/serialization" }
 hex = "0.4.3"
 rayon = "1.10.0"
 rand = "0.8.4"
