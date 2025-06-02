@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.1](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.7.0...v0.7.1) (2025-06-02)
+
+
+### Bug Fixes
+
+* Add description for serialization and trusted_setup crates ([7d99170](https://github.com/crate-crypto/rust-eth-kzg/commit/7d991706ad5a657f97107f99fe8d24dd4b1aa03d))
+* Add description to kzg-single-open ([3db08da](https://github.com/crate-crypto/rust-eth-kzg/commit/3db08dad47e2959ecf8e5591ac476f9a68fb19fb))
+
 ## [0.7.0](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.6.0...v0.7.0) (2025-06-02)
 
 
