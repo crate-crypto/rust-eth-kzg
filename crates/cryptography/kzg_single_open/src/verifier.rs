@@ -12,6 +12,9 @@ pub struct VerificationKey {
     pub gen_g1: G1Point,
     pub gen_g2: G2Point,
     pub tau_g2: G2Point,
+    // Precomputed G2Prepared values for efficiency
+    pub gen_g2_prepared: G2Prepared,
+    pub tau_g2_prepared: G2Prepared,
 }
 
 #[derive(Debug)]
@@ -39,20 +42,21 @@ impl Verifier {
     ) -> Result<(), VerifierError> {
         let vk = &self.verification_key;
 
-        // [f(τ) - f(z)]G₁
-        let lhs_g1 = (commitment - vk.gen_g1 * y).to_affine();
+        // Compute [f(τ) - f(z) + z*q(τ)]G₁
+        // This is equivalent to [f(τ) - y + z*q(τ)]G₁
+        let lhs_g1 = {
+            // First compute [y - z*q(τ)]G₁
+            let y_minus_zq = vk.gen_g1 * y - proof * z;
+            // Then compute [f(τ) - (y - z*q(τ))]G₁ = [f(τ) - y + z*q(τ)]G₁
+            (commitment - y_minus_zq).to_affine()
+        };
 
-        // [-1]G₂
-        let lhs_g2 = G2Prepared::from(-vk.gen_g2);
+        // [-q(τ)]G₁
+        let rhs_g1 = -proof;
 
-        // [q(τ)]G₁
-        let rhs_g1 = proof;
-
-        // [τ - z]G₂
-        let rhs_g2 = G2Prepared::from((vk.tau_g2 - vk.gen_g2 * z).to_affine());
-
-        // Check whether `f(τ) - f(z) == q(τ) * (τ - z)`
-        multi_pairings(&[(&lhs_g1, &lhs_g2), (&rhs_g1, &rhs_g2)])
+        // Check whether e([f(τ) - f(z) + z*q(τ)]G₁, G₂) * e([-q(τ)]G₁, [τ]G₂) == 1
+        // Use precomputed G2Prepared values
+        multi_pairings(&[(&lhs_g1, &vk.gen_g2_prepared), (&rhs_g1, &vk.tau_g2_prepared)])
             .then_some(())
             .ok_or(VerifierError::InvalidProof)
     }
@@ -74,7 +78,7 @@ impl Verifier {
 
         let vk = &self.verification_key;
 
-        // \sum (r^i * [f_i(τ)]G₁) - [\sum (r^i * y_i)]G₁ + \sum (r^i * z_i * [q(τ)]G₁)
+        // Compute \sum (r^i * [f_i(τ) - y_i + z_i * q_i(τ)]G₁)
         let lhs_g1 = {
             let points = chain![commitments, [&vk.gen_g1], proofs]
                 .copied()
@@ -82,6 +86,7 @@ impl Verifier {
             let scalars = {
                 // \sum r^i * y_i
                 let y_lincomb: Scalar = izip!(r_powers, ys).map(|(r_i, y_i)| r_i * y_i).sum();
+                // r^i * z_i for each proof
                 let r_z = r_powers.iter().zip(zs).map(|(r_i, z_i)| r_i * z_i);
                 chain![cloned(r_powers), [-y_lincomb], r_z].collect_vec()
             };
@@ -90,19 +95,16 @@ impl Verifier {
                 .to_affine()
         };
 
-        // \sum r^i * [q(τ)]G₁
-        let rhs_g1 = g1_lincomb(proofs, r_powers)
-            .expect("proofs.len() == r_powers.len()")
-            .to_affine();
+        // -\sum (r^i * [q_i(τ)]G₁)
+        let rhs_g1 = {
+            let neg_r_powers: Vec<Scalar> = r_powers.iter().map(|r| -r).collect();
+            g1_lincomb(proofs, &neg_r_powers)
+                .expect("proofs.len() == neg_r_powers.len()")
+                .to_affine()
+        };
 
-        // [-1]G₂
-        let lhs_g2 = G2Prepared::from(-vk.gen_g2);
-
-        // [τ]G₂
-        let rhs_g2 = G2Prepared::from(vk.tau_g2);
-
-        // Check whether `\sum (r^i * (f_i(τ) - y_i)) + \sum (r^i * z_i * q(τ)) == \sum (r^i * τ * q(τ))`
-        multi_pairings(&[(&lhs_g1, &lhs_g2), (&rhs_g1, &rhs_g2)])
+        // Check the pairing equation using precomputed G2Prepared values
+        multi_pairings(&[(&lhs_g1, &vk.gen_g2_prepared), (&rhs_g1, &vk.tau_g2_prepared)])
             .then_some(())
             .ok_or(VerifierError::InvalidProof)
     }
