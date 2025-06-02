@@ -1,6 +1,7 @@
 [package]
 name = "ekzg-serialization"
 authors.workspace = true
+description = "This crate provides serialization utility methods for EIP4844 and EIP7594"
 edition.workspace = true
 license.workspace = true
 version.workspace = true

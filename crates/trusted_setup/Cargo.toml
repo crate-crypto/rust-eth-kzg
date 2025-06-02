@@ -1,6 +1,7 @@
 [package]
 name = "ekzg-trusted-setup"
 authors.workspace = true
+description = "This crate provides utility methods to parse the Ethereum trusted setup file"
 edition.workspace = true
 license.workspace = true
 version.workspace = true
