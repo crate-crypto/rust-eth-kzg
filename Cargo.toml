@@ -26,7 +26,7 @@ resolver = "2"
 authors = ["Kevaundray Wedderburn <kev@the.dev>"]
 edition = "2021"
 license = "MIT"
-version = "0.6.0"
+version = "0.7.0"
 rust-version = "1.73"
 repository = "https://github.com/crate-crypto/rust-eth-kzg"
 
@@ -60,16 +60,16 @@ wildcard_imports = "allow"
 # These names are essentially a way to achieve scoping when we publish to crates.io
 # Ideally we don't publish bls12_381 and polynomial, but crates.io requires
 # all dependencies to be published and not local.
-bls12_381 = { package = "ekzg-bls12-381", version = "0.6.0", path = "crates/cryptography/bls12_381" }
-polynomial = { package = "ekzg-polynomial", version = "0.6.0", path = "crates/cryptography/polynomial" }
-erasure_codes = { package = "ekzg-erasure-codes", version = "0.6.0", path = "crates/cryptography/erasure_codes" }
-rust_eth_kzg = { version = "0.6.0", path = "crates/eip7594" }
-eip4844 = { version = "0.6.0", path = "crates/eip4844" }
-maybe_rayon = { package = "ekzg-maybe-rayon", version = "0.6.0", path = "crates/maybe_rayon" }
-trusted_setup = { package = "ekzg-trusted-setup", version = "0.6.0", path = "crates/trusted_setup" }
-kzg_single_open = { package = "ekzg-single-open", version = "0.6.0", path = "crates/cryptography/kzg_single_open" }
-kzg_multi_open = { package = "ekzg-multi-open", version = "0.6.0", path = "crates/cryptography/kzg_multi_open" }
-c_eth_kzg = { version = "0.6.0", path = "bindings/c" }
+bls12_381 = { package = "ekzg-bls12-381", version = "0.7.0", path = "crates/cryptography/bls12_381" }
+polynomial = { package = "ekzg-polynomial", version = "0.7.0", path = "crates/cryptography/polynomial" }
+erasure_codes = { package = "ekzg-erasure-codes", version = "0.7.0", path = "crates/cryptography/erasure_codes" }
+rust_eth_kzg = { version = "0.7.0", path = "crates/eip7594" }
+eip4844 = { version = "0.7.0", path = "crates/eip4844" }
+maybe_rayon = { package = "ekzg-maybe-rayon", version = "0.7.0", path = "crates/maybe_rayon" }
+trusted_setup = { package = "ekzg-trusted-setup", version = "0.7.0", path = "crates/trusted_setup" }
+kzg_single_open = { package = "ekzg-single-open", version = "0.7.0", path = "crates/cryptography/kzg_single_open" }
+kzg_multi_open = { package = "ekzg-multi-open", version = "0.7.0", path = "crates/cryptography/kzg_multi_open" }
+c_eth_kzg = { version = "0.7.0", path = "bindings/c" }
 serialization = { package = "ekzg-serialization", version = "0.6.0", path = "crates/serialization" }
 hex = "0.4.3"
 rayon = "1.10.0"
