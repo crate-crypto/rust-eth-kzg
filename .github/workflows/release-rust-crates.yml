@@ -109,8 +109,23 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_RELEASE_TOKEN }}
 
+      - name: Publish kzg_single_open
+        run: cargo publish --package ekzg-single-open
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_RELEASE_TOKEN }}
+
       - name: Publish kzg_multi_open
         run: cargo publish --package ekzg-multi-open
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_RELEASE_TOKEN }}
+
+      - name: Publish serialization
+        run: cargo publish --package ekzg-serialization
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_RELEASE_TOKEN }}
+
+      - name: Publish trusted setup
+        run: cargo publish --package ekzg-trusted-setup
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_IO_RELEASE_TOKEN }}
 
