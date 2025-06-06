@@ -25,7 +25,7 @@ namespace EthKZG.Native
         ///  by calling `eth_kzg_das_context_free`.
         ///
         ///  config = 0 (prover but with no precomp)
-        ///  config = 1+ (prover with precomp)
+        ///  config = 1 (prover with precomp)
         ///  config = 2 (no prover)
         ///
         ///  Note: This is just a quick hacky way to allow users to set this.
