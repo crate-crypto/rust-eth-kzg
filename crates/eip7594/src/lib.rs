@@ -25,6 +25,14 @@ pub type CellIndex = kzg_multi_open::CosetIndex;
 use prover::ProverContext;
 use verifier::VerifierContext;
 
+/// An enum to specify whether we want to prove and verify or just verify
+pub enum Mode {
+    /// Initialize both the prover and verifier
+    Both(UsePrecomp),
+    /// Only initialize the verifier. Methods like blob_to_kzg_commitment will not be available
+    VerifierOnly,
+}
+
 /// DASContext manages the shared environment for creating and
 /// verifying KZG cell proofs used in PeerDAS (EIP-7594).
 ///
@@ -41,7 +49,7 @@ use verifier::VerifierContext;
 pub struct DASContext {
     /// Prover-side context:
     /// prepares and generates KZG cell proofs for blobs and cells.
-    pub prover_ctx: ProverContext,
+    pub prover_ctx: Option<ProverContext>,
 
     /// Verifier-side context:
     /// verifies KZG cell proofs and ensures data integrity in PeerDAS.
@@ -54,7 +62,7 @@ pub struct DASContext {
 
 impl Default for DASContext {
     fn default() -> Self {
-        Self::new(&TrustedSetup::default(), UsePrecomp::No)
+        Self::new(&TrustedSetup::default(), Mode::Both(UsePrecomp::No))
     }
 }
 
@@ -78,11 +86,19 @@ impl DASContext {
     /// * `use_precomp` — Whether to enable prover-side precomputations
     ///   for faster proof creation at the cost of extra memory. The cost in
     ///   memory is exponential in the `width`.
-    pub fn new(trusted_setup: &TrustedSetup, use_precomp: UsePrecomp) -> Self {
+    pub fn new(trusted_setup: &TrustedSetup, mode: Mode) -> Self {
+        let (prover_ctx, eip4844_mode) = match mode {
+            Mode::Both(use_precomp) => (
+                Some(ProverContext::new(trusted_setup, use_precomp)),
+                eip4844::Mode::Both,
+            ),
+            Mode::VerifierOnly => (None, eip4844::Mode::VerifierOnly),
+        };
+
         Self {
-            prover_ctx: ProverContext::new(trusted_setup, use_precomp),
+            prover_ctx,
             verifier_ctx: VerifierContext::new(trusted_setup),
-            eip4844_ctx: eip4844::Context::new(trusted_setup),
+            eip4844_ctx: eip4844::Context::new(trusted_setup, eip4844_mode),
         }
     }
 }

@@ -22,7 +22,7 @@
 use std::time::Instant;
 
 use bls12_381::Scalar;
-use rust_eth_kzg::{constants::BYTES_PER_BLOB, DASContext, TrustedSetup};
+use rust_eth_kzg::{constants::BYTES_PER_BLOB, DASContext, Mode, TrustedSetup};
 use tracing_forest::{util::LevelFilter, ForestLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Registry};
 
@@ -54,7 +54,7 @@ fn main() {
     // Initialize the data availability sampling context with precomputed fixed-base MSM
     let ctx = DASContext::new(
         &trusted_setup,
-        bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 },
+        Mode::Both(bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 }),
     );
 
     // Warm-up phase

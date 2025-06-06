@@ -1,11 +1,18 @@
 use std::collections::HashMap;
 
-use kzg_multi_open::Verifier;
-use serialization::{deserialize_cells, deserialize_compressed_g1_points};
+use eip4844::{BlobRef, Cell};
+use kzg_multi_open::{CosetEvaluator, ProverInput, Verifier};
+use serialization::{
+    deserialize_blob_to_scalars, deserialize_cells, deserialize_compressed_g1_points,
+    serialize_cells,
+};
 
 pub use crate::errors::VerifierError;
 use crate::{
-    constants::{CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_EXT_BLOB},
+    constants::{
+        CELLS_PER_EXT_BLOB, FIELD_ELEMENTS_PER_BLOB, FIELD_ELEMENTS_PER_CELL,
+        FIELD_ELEMENTS_PER_EXT_BLOB,
+    },
     errors::Error,
     trusted_setup::{verification_key_from_setup, TrustedSetup},
     Bytes48Ref, CellIndex, CellRef, DASContext,
@@ -15,6 +22,7 @@ use crate::{
 #[derive(Debug)]
 pub struct VerifierContext {
     kzg_multipoint_verifier: Verifier,
+    evaluator: CosetEvaluator,
 }
 
 impl Default for VerifierContext {
@@ -34,9 +42,26 @@ impl VerifierContext {
             CELLS_PER_EXT_BLOB,
         );
 
+        let evaluator = CosetEvaluator::new(
+            FIELD_ELEMENTS_PER_BLOB,
+            FIELD_ELEMENTS_PER_EXT_BLOB,
+            FIELD_ELEMENTS_PER_CELL,
+        );
+
         Self {
             kzg_multipoint_verifier: multipoint_verifier,
+            evaluator,
         }
+    }
+
+    pub fn compute_cells(&self, blob: BlobRef) -> Result<[Cell; CELLS_PER_EXT_BLOB], Error> {
+        // Deserialization
+        let scalars = deserialize_blob_to_scalars(blob)?;
+
+        // Computation
+        let extended_blob = self.evaluator.extend_polynomial(ProverInput::Data(scalars));
+
+        Ok(serialize_cells(&extended_blob))
     }
 }
 

@@ -2,7 +2,8 @@ use bls12_381::Scalar;
 use criterion::{criterion_group, criterion_main, Criterion};
 use rust_eth_kzg::{
     constants::{BYTES_PER_BLOB, CELLS_PER_EXT_BLOB},
-    Bytes48Ref, Cell, CellIndex, CellRef, DASContext, KZGCommitment, KZGProof, TrustedSetup,
+    Bytes48Ref, Cell, CellIndex, CellRef, DASContext, KZGCommitment, KZGProof, Mode, TrustedSetup,
+    UsePrecomp,
 };
 
 const POLYNOMIAL_LEN: usize = 4096;
@@ -38,10 +39,7 @@ pub fn bench_compute_cells_and_kzg_proofs(c: &mut Criterion) {
 
     let blob = dummy_blob();
 
-    let ctx = DASContext::new(
-        &trusted_setup,
-        bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 },
-    );
+    let ctx = DASContext::new(&trusted_setup, Mode::Both(UsePrecomp::Yes { width: 8 }));
 
     c.bench_function("computing cells_and_kzg_proofs - multi threaded", |b| {
         b.iter(|| ctx.compute_cells_and_kzg_proofs(&blob));
@@ -61,7 +59,7 @@ pub fn bench_recover_cells_and_compute_kzg_proofs(c: &mut Criterion) {
 
     let ctx = DASContext::new(
         &trusted_setup,
-        bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 },
+        Mode::Both(bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 }),
     );
 
     c.bench_function(
@@ -86,7 +84,7 @@ pub fn bench_verify_cell_kzg_proof_batch(c: &mut Criterion) {
 
     let ctx = DASContext::new(
         &trusted_setup,
-        bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 },
+        Mode::Both(bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 }),
     );
     c.bench_function("verify_cell_kzg_proof_batch - multi threaded", |b| {
         b.iter(|| {
@@ -106,7 +104,7 @@ pub fn bench_init_context(c: &mut Criterion) {
             let trusted_setup = TrustedSetup::default();
             DASContext::new(
                 &trusted_setup,
-                bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 },
+                Mode::Both(bls12_381::fixed_base_msm::UsePrecomp::Yes { width: 8 }),
             )
         });
     });

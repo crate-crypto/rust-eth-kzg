@@ -73,6 +73,7 @@ impl From<eip4844::Error> for Error {
 /// Errors that can occur while calling a method in the Prover API
 #[derive(Debug)]
 pub enum ProverError {
+    ProverNotInitialized,
     /// Underlying recovery failure encountered during proving.
     RecoveryFailure(RecoveryError),
 }
