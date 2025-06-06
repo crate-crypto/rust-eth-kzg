@@ -26,9 +26,9 @@ public sealed unsafe class EthKZG : IDisposable
 
     private DASContext* _context;
 
-    public EthKZG(bool usePrecomp = true)
+    public EthKZG(byte config = 0)
     {
-        _context = eth_kzg_das_context_new(usePrecomp);
+        _context = eth_kzg_das_context_new(config);
     }
 
     public void Dispose()
@@ -480,10 +480,10 @@ public sealed unsafe class EthKZG : IDisposable
                 }
             }
 
-            CResult result = eth_kzg_verify_blob_kzg_proof_batch(_context, 
+            CResult result = eth_kzg_verify_blob_kzg_proof_batch(_context,
                 Convert.ToUInt64(numBlobs), blobPtrPtr,
-                Convert.ToUInt64(numCommitments), commitmentPtrPtr, 
-                Convert.ToUInt64(numProofs), proofPtrPtr, 
+                Convert.ToUInt64(numCommitments), commitmentPtrPtr,
+                Convert.ToUInt64(numProofs), proofPtrPtr,
                 &verified);
             ThrowOnError(result);
         }

@@ -22,7 +22,13 @@ type CResult* = object
 #
 # To avoid memory leaks, one should ensure that the pointer is freed after use
 # by calling `eth_kzg_das_context_free`.
-proc eth_kzg_das_context_new*(use_precomp: bool): ptr DASContext {.importc: "eth_kzg_das_context_new".}
+#
+# config = 0 (prover but with no precomp)
+# config = 1+ (prover with precomp)
+# config = 2 (no prover)
+#
+# Note: This is just a quick hacky way to allow users to set this.
+proc eth_kzg_das_context_new*(config: uint8): ptr DASContext {.importc: "eth_kzg_das_context_new".}
 
 ## # Safety
 #

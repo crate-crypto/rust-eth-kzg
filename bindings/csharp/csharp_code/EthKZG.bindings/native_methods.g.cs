@@ -23,9 +23,15 @@ namespace EthKZG.Native
         ///
         ///  To avoid memory leaks, one should ensure that the pointer is freed after use
         ///  by calling `eth_kzg_das_context_free`.
+        ///
+        ///  config = 0 (prover but with no precomp)
+        ///  config = 1+ (prover with precomp)
+        ///  config = 2 (no prover)
+        ///
+        ///  Note: This is just a quick hacky way to allow users to set this.
         /// </summary>
         [DllImport(__DllName, EntryPoint = "eth_kzg_das_context_new", CallingConvention = CallingConvention.Cdecl, ExactSpelling = true)]
-        internal static extern DASContext* eth_kzg_das_context_new([MarshalAs(UnmanagedType.U1)] bool use_precomp);
+        internal static extern DASContext* eth_kzg_das_context_new(byte config);
 
         /// <summary>
         ///  # Safety

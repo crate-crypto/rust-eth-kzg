@@ -14,7 +14,9 @@ pub extern "system" fn Java_ethereum_cryptography_LibEthKZG_DASContextNew(
     _class: JClass,
     use_precomp: jboolean,
 ) -> jlong {
-    let use_precomp = use_precomp != 0;
+    // TODO: This should be a u8 instead of a boolean
+    let use_precomp = if use_precomp == 0 { 0 } else { 1 };
+
     c_eth_kzg::eth_kzg_das_context_new(use_precomp) as jlong
 }
 
