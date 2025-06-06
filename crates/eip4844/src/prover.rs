@@ -1,4 +1,5 @@
 use bls12_381::{lincomb::g1_lincomb, traits::*};
+use kzg_single_open::prover::Prover;
 use serialization::{
     deserialize_blob_to_scalars, deserialize_bytes_to_scalar, deserialize_compressed_g1,
     serialize_g1_compressed,
@@ -11,6 +12,10 @@ use crate::{
 };
 
 impl Context {
+    fn prover(&self) -> Result<&Prover, Error> {
+        self.prover.as_ref().ok_or(Error::ProverNotInitialized)
+    }
+
     /// Computes the KZG commitment to the polynomial represented by the blob.
     ///
     /// The matching function in the specs is: https://github.com/ethereum/consensus-specs/blob/13ac373a2c284dc66b48ddd2ef0a10537e4e0de6/specs/deneb/polynomial-commitments.md#blob_to_kzg_commitment
@@ -19,10 +24,10 @@ impl Context {
         let blob_scalar = deserialize_blob_to_scalars(blob)?;
 
         // Convert blob into monomial form.
-        let polynomial = blob_scalar_to_polynomial(&self.prover.domain, &blob_scalar);
+        let polynomial = blob_scalar_to_polynomial(&self.prover()?.domain, &blob_scalar);
 
         // Compute commitment in monomial form.
-        let commitment = g1_lincomb(&self.prover.commit_key.g1s, &polynomial)
+        let commitment = g1_lincomb(&self.prover()?.commit_key.g1s, &polynomial)
             .expect("commit_key.g1s.len() == polynomial.len()")
             .to_affine();
 
@@ -43,13 +48,13 @@ impl Context {
         let blob_scalar = deserialize_blob_to_scalars(blob)?;
 
         // Convert blob into monomial form.
-        let polynomial = blob_scalar_to_polynomial(&self.prover.domain, &blob_scalar);
+        let polynomial = blob_scalar_to_polynomial(&self.prover()?.domain, &blob_scalar);
 
         // Deserialize the point into scalar.
         let z = deserialize_bytes_to_scalar(&z)?;
 
         // Compute evaluation and commitment to quotient at challenge.
-        let (proof, y) = self.prover.compute_kzg_proof(&polynomial, z);
+        let (proof, y) = self.prover()?.compute_kzg_proof(&polynomial, z);
 
         // Serialize the commitment.
         Ok((serialize_g1_compressed(&proof), y.to_bytes_be()))
@@ -71,7 +76,7 @@ impl Context {
         let blob_scalar = deserialize_blob_to_scalars(blob)?;
 
         // Convert blob into monomial form.
-        let polynomial = blob_scalar_to_polynomial(&self.prover.domain, &blob_scalar);
+        let polynomial = blob_scalar_to_polynomial(&self.prover()?.domain, &blob_scalar);
 
         // Deserialize the KZG commitment.
         // We only do this to check if it is in the correct subgroup
@@ -81,7 +86,7 @@ impl Context {
         let z = compute_fiat_shamir_challenge(blob, *commitment);
 
         // Compute evaluation and commitment to quotient at z.
-        let (proof, _) = self.prover.compute_kzg_proof(&polynomial, z);
+        let (proof, _) = self.prover()?.compute_kzg_proof(&polynomial, z);
 
         // Serialize the commitment.
         Ok(serialize_g1_compressed(&proof))

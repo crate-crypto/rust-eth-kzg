@@ -22,7 +22,7 @@ fn main() {
     let blob = dummy_blob();
     let z = Scalar::random(rand::thread_rng()).to_bytes_be();
 
-    let ctx = Context::new(&trusted_setup);
+    let ctx = Context::new(&trusted_setup, eip4844::Mode::Both);
 
     println!("Warming up for 3 seconds...");
 

@@ -17,7 +17,7 @@ use trusted_setup::{commit_key_from_setup, verification_key_from_setup};
 
 #[derive(Debug)]
 pub struct Context {
-    prover: Prover,
+    prover: Option<Prover>,
     verifier: Verifier,
 }
 
@@ -25,21 +25,32 @@ impl Default for Context {
     fn default() -> Self {
         let trusted_setup = TrustedSetup::default();
 
-        Self::new(&trusted_setup)
+        Self::new(&trusted_setup, Mode::Both)
     }
 }
 
+/// An enum to specify whether we want to prove and verify or just verify
+pub enum Mode {
+    /// Initialize both the prover and verifier
+    Both,
+    /// Only initialize the verifier. Methods like blob_to_kzg_commitment will not be available
+    VerifierOnly,
+}
+
 impl Context {
-    pub fn new(trusted_setup: &TrustedSetup) -> Self {
-        Self {
-            prover: Prover::new(
+    pub fn new(trusted_setup: &TrustedSetup, mode: Mode) -> Self {
+        let verifier = Verifier::new(
+            FIELD_ELEMENTS_PER_BLOB,
+            verification_key_from_setup(trusted_setup),
+        );
+
+        let prover = match mode {
+            Mode::Both => Some(Prover::new(
                 FIELD_ELEMENTS_PER_BLOB,
                 commit_key_from_setup(trusted_setup),
-            ),
-            verifier: Verifier::new(
-                FIELD_ELEMENTS_PER_BLOB,
-                verification_key_from_setup(trusted_setup),
-            ),
-        }
+            )),
+            Mode::VerifierOnly => None,
+        };
+        Self { prover, verifier }
     }
 }
