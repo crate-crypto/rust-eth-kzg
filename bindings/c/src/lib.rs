@@ -75,18 +75,26 @@ impl Deref for DASContext {
 ///
 /// To avoid memory leaks, one should ensure that the pointer is freed after use
 /// by calling `eth_kzg_das_context_free`.
+///
+/// config = 0 (prover but with no precomp)
+/// config = 1+ (prover with precomp)
+/// config = 2 (no prover)
+///
+/// Note: This is just a quick hacky way to allow users to set this.
 #[no_mangle]
-pub extern "C" fn eth_kzg_das_context_new(use_precomp: bool) -> *mut DASContext {
-    let use_precomp = if use_precomp {
-        rust_eth_kzg::UsePrecomp::Yes {
+pub extern "C" fn eth_kzg_das_context_new(config: u8) -> *mut DASContext {
+    let mode = if config == 0 {
+        rust_eth_kzg::Mode::Both(rust_eth_kzg::UsePrecomp::No)
+    } else if config == 1 {
+        rust_eth_kzg::Mode::Both(rust_eth_kzg::UsePrecomp::Yes {
             width: RECOMMENDED_PRECOMP_WIDTH,
-        }
+        })
     } else {
-        rust_eth_kzg::UsePrecomp::No
+        rust_eth_kzg::Mode::VerifierOnly
     };
 
     let ctx = Box::new(DASContext {
-        inner: rust_eth_kzg::DASContext::new(&rust_eth_kzg::TrustedSetup::default(), use_precomp),
+        inner: rust_eth_kzg::DASContext::new(&rust_eth_kzg::TrustedSetup::default(), mode),
     });
     Box::into_raw(ctx)
 }
