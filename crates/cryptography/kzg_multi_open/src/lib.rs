@@ -3,8 +3,8 @@ mod fk20;
 pub mod verification_key;
 
 pub use fk20::{
-    recover_evaluations_in_domain_order, CommitmentIndex, CosetIndex, Prover, ProverInput,
-    Verifier, VerifierError,
+    recover_evaluations_in_domain_order, CommitmentIndex, CosetEvaluator, CosetIndex, Prover,
+    ProverInput, Verifier, VerifierError,
 };
 
 #[cfg(test)]

@@ -10,6 +10,46 @@ use crate::{
     },
 };
 
+#[derive(Debug)]
+pub struct CosetEvaluator {
+    /// The amount of points that a single proof will attest to the opening of.
+    ///
+    /// Note: FK20 allows you to create a proof of an opening for multiple points.
+    /// Each proof will attest to the opening of `l` points.
+    /// In the FK20 paper, this is also referred to as `l` (ELL).
+    coset_size: usize,
+    /// Domain used to evaluate the polynomial at the points we want to open at.
+    evaluation_domain: Domain,
+    /// Domain used for converting polynomial to monomial form.
+    poly_domain: Domain,
+}
+
+impl CosetEvaluator {
+    pub fn new(
+        polynomial_bound: usize,
+        number_of_points_to_open: usize,
+        points_per_proof: usize,
+    ) -> Self {
+        let poly_domain = Domain::new(polynomial_bound);
+        let evaluation_domain = Domain::new(number_of_points_to_open);
+
+        Self {
+            coset_size: points_per_proof,
+            evaluation_domain,
+            poly_domain,
+        }
+    }
+
+    pub fn extend_polynomial(&self, input: Input) -> Vec<Vec<Scalar>> {
+        FK20Prover::extend_polynomial_(
+            &self.evaluation_domain,
+            &self.poly_domain,
+            self.coset_size,
+            input,
+        )
+    }
+}
+
 /// Input contains the various structures that we can make FK20 proofs over.
 pub enum Input {
     /// This is akin to creating proofs over a polynomial in monomial basis.
@@ -163,6 +203,18 @@ impl FK20Prover {
             .map(<[Scalar]>::to_vec)
             .collect()
     }
+    fn compute_coset_evaluations_(
+        evaluation_domain: &Domain,
+        coset_size: usize,
+        polynomial: PolyCoeff,
+    ) -> Vec<Vec<Scalar>> {
+        let mut evaluations = evaluation_domain.fft_scalars(polynomial);
+        reverse_bit_order(&mut evaluations);
+        evaluations
+            .chunks_exact(coset_size)
+            .map(<[Scalar]>::to_vec)
+            .collect()
+    }
 
     /// Computes multi-opening proofs over the given `Input`.
     ///
@@ -194,6 +246,23 @@ impl FK20Prover {
             }
         };
         self.compute_coset_evaluations(poly_coeff)
+    }
+
+    pub fn extend_polynomial_(
+        evaluation_domain: &Domain,
+        poly_domain: &Domain,
+        coset_size: usize,
+        input: Input,
+    ) -> Vec<Vec<Scalar>> {
+        // Convert data to polynomial coefficients
+        let poly_coeff = match input {
+            Input::PolyCoeff(polynomial) => polynomial,
+            Input::Data(mut data) => {
+                reverse_bit_order(&mut data);
+                poly_domain.ifft_scalars(data)
+            }
+        };
+        Self::compute_coset_evaluations_(evaluation_domain, coset_size, poly_coeff)
     }
 
     /// Computes multi-opening proofs over a given polynomial in coefficient form.
