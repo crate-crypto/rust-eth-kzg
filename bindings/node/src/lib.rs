@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use napi::{
   bindgen_prelude::{BigInt, Error, Uint8Array},
-  Result,
+  Either, Result,
 };
 use napi_derive::napi;
 
@@ -157,10 +157,10 @@ impl DASContextJs {
   #[napi]
   pub fn recover_cells_and_kzg_proofs(
     &self,
-    cell_indices: Vec<BigInt>,
+    cell_indices: Vec<Either<u32, BigInt>>,
     cells: Vec<Uint8Array>,
   ) -> Result<CellsAndProofs> {
-    let cell_indices: Vec<_> = cell_indices.into_iter().map(bigint_to_u64).collect();
+    let cell_indices: Vec<_> = cell_indices.into_iter().map(u32_or_bigint_to_u64).collect();
     let cells: Vec<_> = cells.iter().map(|cell| cell.as_ref()).collect();
 
     let ctx = &self.inner;
@@ -196,7 +196,7 @@ impl DASContextJs {
   #[napi]
   pub async fn async_recover_cells_and_kzg_proofs(
     &self,
-    cell_indices: Vec<BigInt>,
+    cell_indices: Vec<Either<u32, BigInt>>,
     cells: Vec<Uint8Array>,
   ) -> Result<CellsAndProofs> {
     self.recover_cells_and_kzg_proofs(cell_indices, cells)
@@ -206,11 +206,11 @@ impl DASContextJs {
   pub fn verify_cell_kzg_proof_batch(
     &self,
     commitments: Vec<Uint8Array>,
-    cell_indices: Vec<BigInt>,
+    cell_indices: Vec<Either<u32, BigInt>>,
     cells: Vec<Uint8Array>,
     proofs: Vec<Uint8Array>,
   ) -> Result<bool> {
-    let cell_indices: Vec<_> = cell_indices.into_iter().map(bigint_to_u64).collect();
+    let cell_indices: Vec<_> = cell_indices.into_iter().map(u32_or_bigint_to_u64).collect();
 
     let commitments: Vec<_> = commitments
       .iter()
@@ -241,7 +241,7 @@ impl DASContextJs {
   pub async fn async_verify_cell_kzg_proof_batch(
     &self,
     commitments: Vec<Uint8Array>,
-    cell_indices: Vec<BigInt>,
+    cell_indices: Vec<Either<u32, BigInt>>,
     cells: Vec<Uint8Array>,
     proofs: Vec<Uint8Array>,
   ) -> Result<bool> {
@@ -424,10 +424,15 @@ impl DASContextJs {
 }
 
 // We use bigint because u64 cannot be used as an argument, see : https://napi.rs/docs/concepts/values.en#bigint
-fn bigint_to_u64(value: BigInt) -> u64 {
-  let (signed, value_u128, _) = value.get_u128();
-  assert!(!signed, "value should be an unsigned integer");
-  value_u128 as u64
+fn u32_or_bigint_to_u64(value: Either<u32, BigInt>) -> u64 {
+  match value {
+    Either::A(v) => v as u64,
+    Either::B(v) => {
+      let (signed, value_u128, _) = v.get_u128();
+      assert!(!signed, "value should be an unsigned integer");
+      value_u128 as u64
+    }
+  }
 }
 
 /// Convert a slice into a reference to an array

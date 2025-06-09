@@ -26,10 +26,10 @@ export class DasContextJs {
   asyncComputeCellsAndKzgProofs(blob: Uint8Array): Promise<CellsAndProofs>
   computeCells(blob: Uint8Array): Array<Uint8Array>
   asyncComputeCells(blob: Uint8Array): Promise<Array<Uint8Array>>
-  recoverCellsAndKzgProofs(cellIndices: Array<bigint>, cells: Array<Uint8Array>): CellsAndProofs
-  asyncRecoverCellsAndKzgProofs(cellIndices: Array<bigint>, cells: Array<Uint8Array>): Promise<CellsAndProofs>
-  verifyCellKzgProofBatch(commitments: Array<Uint8Array>, cellIndices: Array<bigint>, cells: Array<Uint8Array>, proofs: Array<Uint8Array>): boolean
-  asyncVerifyCellKzgProofBatch(commitments: Array<Uint8Array>, cellIndices: Array<bigint>, cells: Array<Uint8Array>, proofs: Array<Uint8Array>): Promise<boolean>
+  recoverCellsAndKzgProofs(cellIndices: Array<number | bigint>, cells: Array<Uint8Array>): CellsAndProofs
+  asyncRecoverCellsAndKzgProofs(cellIndices: Array<number | bigint>, cells: Array<Uint8Array>): Promise<CellsAndProofs>
+  verifyCellKzgProofBatch(commitments: Array<Uint8Array>, cellIndices: Array<number | bigint>, cells: Array<Uint8Array>, proofs: Array<Uint8Array>): boolean
+  asyncVerifyCellKzgProofBatch(commitments: Array<Uint8Array>, cellIndices: Array<number | bigint>, cells: Array<Uint8Array>, proofs: Array<Uint8Array>): Promise<boolean>
   computeKzgProof(blob: Uint8Array, z: Uint8Array): Array<Uint8Array>
   asyncComputeKzgProof(blob: Uint8Array, z: Uint8Array): Promise<Array<Uint8Array>>
   computeBlobKzgProof(blob: Uint8Array, commitment: Uint8Array): Uint8Array
