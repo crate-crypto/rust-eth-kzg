@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.8.0](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.7.1...v0.8.0) (2025-07-22)
+
+
+### ⚠ BREAKING CHANGES
+
+* enable portable flag ([#409](https://github.com/crate-crypto/rust-eth-kzg/issues/409))
+
+### Features
+
+* **nodejs:** Support number or bigint input ([#408](https://github.com/crate-crypto/rust-eth-kzg/issues/408)) ([0367938](https://github.com/crate-crypto/rust-eth-kzg/commit/0367938de39cec8da46ff2ef89f9aec8cbd41fb3))
+
+
+### Miscellaneous Chores
+
+* Enable portable flag ([#409](https://github.com/crate-crypto/rust-eth-kzg/issues/409)) ([43f62f6](https://github.com/crate-crypto/rust-eth-kzg/commit/43f62f6920b7e05e44b9e3f65a641982cf495d9f))
+
 ## [0.7.1](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.7.0...v0.7.1) (2025-06-02)
 
 

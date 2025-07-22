@@ -22,7 +22,7 @@
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/crate-crypto/rust-eth-kzg</RepositoryUrl>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <Version>0.7.1</Version>
+    <Version>0.8.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
