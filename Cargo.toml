@@ -27,7 +27,7 @@ authors = ["Kevaundray Wedderburn <kev@the.dev>"]
 edition = "2021"
 license = "MIT"
 version = "0.7.1"
-rust-version = "1.73"
+rust-version = "1.86"
 repository = "https://github.com/crate-crypto/rust-eth-kzg"
 
 [workspace.lints.clippy]
