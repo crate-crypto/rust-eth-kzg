@@ -16,13 +16,13 @@ pub trait MaybeParallelExt: IntoParallelIterator {
 }
 
 pub trait MaybeParallelRefExt: for<'a> IntoParallelRefIterator<'a> {
-    fn maybe_par_iter(&self) -> <Self as IntoParallelRefIterator>::Iter {
+    fn maybe_par_iter(&self) -> <Self as IntoParallelRefIterator<'_>>::Iter {
         self.par_iter()
     }
 }
 
 pub trait MaybeParallelRefMutExt: for<'a> IntoParallelRefMutIterator<'a> {
-    fn maybe_par_iter_mut(&mut self) -> <Self as IntoParallelRefMutIterator>::Iter {
+    fn maybe_par_iter_mut(&mut self) -> <Self as IntoParallelRefMutIterator<'_>>::Iter {
         self.par_iter_mut()
     }
 }

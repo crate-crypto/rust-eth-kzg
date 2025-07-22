@@ -131,9 +131,9 @@ pub fn reduce_bytes_to_scalar_bias(bytes: [u8; 32]) -> Scalar {
     unsafe {
         // Convert byte array into a scalar
         let mut s = blst::blst_scalar::default();
-        blst::blst_scalar_from_bendian(&mut s, bytes.as_ptr());
+        blst::blst_scalar_from_bendian(&raw mut s, bytes.as_ptr());
         // Convert scalar into a `blst_fr` reducing the value along the way
-        blst::blst_fr_from_scalar(&mut out, std::ptr::addr_of!(s));
+        blst::blst_fr_from_scalar(&raw mut out, std::ptr::addr_of!(s));
     }
 
     Scalar::from(out)

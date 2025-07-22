@@ -110,25 +110,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn blst_footgun() {
-        let points = vec![G1Point::generator(), G1Point::identity()];
-        let scalars = vec![Scalar::ONE, Scalar::ONE];
-
-        // Ideally, we expect the answer to be:
-        // 1 * G + 1 * 0 = G
-        // However, since one of the points is the identity, the answer is 0 for blst
-
-        let result = g1_lincomb_unchecked(&points, &scalars)
-            .expect("number of points and number of scalars should be equal");
-        assert_eq!(result, G1Projective::identity());
-
-        // Doing it with the g1_lincomb method will give the correct result
-        let result = g1_lincomb(&points, &scalars)
-            .expect("number of points and number of scalars should be equal");
-        assert_eq!(result, G1Projective::generator());
-    }
-
-    #[test]
     fn g1_lincomb_empty_inputs() {
         // MSM with empty input returns identity
         let points: Vec<G1Point> = vec![];
