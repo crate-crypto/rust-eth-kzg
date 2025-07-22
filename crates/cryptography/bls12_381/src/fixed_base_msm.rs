@@ -163,7 +163,7 @@ impl FixedBaseMSMPrecompBLST {
             .collect();
         let blst_scalar_ptrs: Vec<*const u8> = blst_scalars
             .iter()
-            .map(|s| s as *const _ as *const u8)
+            .map(|s| std::ptr::from_ref(s) as *const u8)
             .collect();
 
         // Prepare scratch space and output
@@ -173,7 +173,7 @@ impl FixedBaseMSMPrecompBLST {
         // Perform MSM using BLST
         unsafe {
             blst::blst_p1s_mult_wbits(
-                &mut ret,
+                &raw mut ret,
                 self.table.as_ptr(),
                 self.wbits,
                 self.num_points,
