@@ -12,11 +12,11 @@ crate-type = ["cdylib"]
 
 [dependencies]
 # Enable napi6 feature because we want `BigInt` as a proxy for u64
-napi = { version = "2.16.3", default-features = false, features = [
+napi = { version = "3.1.2", default-features = false, features = [
     "napi6",
     "async",
 ] }
-napi-derive = "2.16.13"
+napi-derive = "3.1.1"
 rust_eth_kzg = { workspace = true, features = ["multithreaded"] }
 
 [build-dependencies]

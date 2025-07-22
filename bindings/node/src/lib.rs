@@ -26,8 +26,8 @@ pub const BYTES_PER_CELL: u32 = constants::BYTES_PER_CELL as u32;
 
 #[napi]
 pub struct CellsAndProofs {
-  pub cells: Vec<Uint8Array>,
-  pub proofs: Vec<Uint8Array>,
+  pub cells: Vec<Vec<u8>>,
+  pub proofs: Vec<Vec<u8>>,
 }
 
 #[napi]
@@ -108,12 +108,9 @@ impl DASContextJs {
 
     let cells_uint8array = cells
       .into_iter()
-      .map(|cell| Uint8Array::from(cell.to_vec()))
-      .collect::<Vec<Uint8Array>>();
-    let proofs_uint8array = proofs
-      .into_iter()
-      .map(Uint8Array::from)
-      .collect::<Vec<Uint8Array>>();
+      .map(|cell| cell.to_vec())
+      .collect::<Vec<Vec<u8>>>();
+    let proofs_uint8array = proofs.into_iter().map(Vec::from).collect::<Vec<Vec<_>>>();
 
     Ok(CellsAndProofs {
       cells: cells_uint8array,
@@ -180,12 +177,9 @@ impl DASContextJs {
 
     let cells_uint8array = cells
       .into_iter()
-      .map(|cell| Uint8Array::from(cell.to_vec()))
-      .collect::<Vec<Uint8Array>>();
-    let proofs_uint8array = proofs
-      .into_iter()
-      .map(Uint8Array::from)
-      .collect::<Vec<Uint8Array>>();
+      .map(|cell| cell.to_vec())
+      .collect::<Vec<Vec<u8>>>();
+    let proofs_uint8array = proofs.into_iter().map(Vec::from).collect::<Vec<Vec<_>>>();
 
     Ok(CellsAndProofs {
       cells: cells_uint8array,
