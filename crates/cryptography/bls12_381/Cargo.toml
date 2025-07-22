@@ -18,7 +18,7 @@ workspace = true
 blst = { version = "0.3", default-features = false }
 
 # __private_bench feature is used to allow us to access the base field
-blstrs = { version = "0.7.1", features = ["__private_bench"] }
+blstrs = { version = "0.7.1", features = ["__private_bench", "portable"] }
 ff = "0.13.0"
 group = "0.13"
 pairing = { version = "0.23" }
