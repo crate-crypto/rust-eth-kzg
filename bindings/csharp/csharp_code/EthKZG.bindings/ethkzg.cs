@@ -62,7 +62,7 @@ public sealed unsafe class EthKZG : IDisposable
         return commitment;
     }
 
-    public unsafe (byte[][], byte[][]) ComputeCellsAndKZGProofs(byte[] blob)
+    public unsafe (Memory<byte>[], Memory<byte>[]) ComputeCellsAndKZGProofs(byte[] blob)
     {
         // Length checks
         if (blob.Length != BytesPerBlob)
@@ -73,14 +73,16 @@ public sealed unsafe class EthKZG : IDisposable
         int numProofs = CellsPerExtBlob;
         int numCells = CellsPerExtBlob;
 
-        byte[][] outCells = InitializeJaggedArray(numCells, BytesPerCell);
-        byte[][] outProofs = InitializeJaggedArray(numCells, BytesPerProof);
+        byte[] outCells = new byte[numCells * BytesPerCell];
+        byte[] outProofs = new byte[numProofs * BytesPerProof];
 
         // Allocate an array of pointers for cells and proofs
         byte*[] outCellsPtrs = new byte*[numCells];
         byte*[] outProofsPtrs = new byte*[numProofs];
 
         fixed (byte* blobPtr = blob)
+        fixed (byte* outCells2 = outCells)
+        fixed (byte* outProofs2 = outProofs)
         fixed (byte** outCellsPtrPtr = outCellsPtrs)
         fixed (byte** outProofsPtrPtr = outProofsPtrs)
         {
@@ -88,25 +90,32 @@ public sealed unsafe class EthKZG : IDisposable
             // Get the pointer for each cell
             for (int i = 0; i < numCells; i++)
             {
-                fixed (byte* cellPtr = outCells[i])
-                {
-                    outCellsPtrPtr[i] = cellPtr;
-                }
+                outCellsPtrPtr[i] = outCells2 + i * BytesPerCell;
             }
 
             // Get the pointer for each proof
             for (int i = 0; i < numCells; i++)
             {
-                fixed (byte* proofPtr = outProofs[i])
-                {
-                    outProofsPtrPtr[i] = proofPtr;
-                }
+                outProofsPtrPtr[i] = outProofs2 + i * BytesPerProof;
             }
 
             CResult result = eth_kzg_compute_cells_and_kzg_proofs(_context, blobPtr, outCellsPtrPtr, outProofsPtrPtr);
             ThrowOnError(result);
         }
-        return (outCells, outProofs);
+
+        return (Segment(outCells, BytesPerCell), Segment(outProofs, BytesPerProof));
+    }
+
+    private Memory<byte>[] Segment(byte[] arr, int itemLength)
+    {
+        Memory<byte>[] result = new Memory<byte>[arr.Length / itemLength];
+
+        for (int i = 0; i < arr.Length; i += itemLength)
+        {
+            result[i] = new Memory<byte>(arr, i, itemLength);
+        }
+
+        return result;
     }
 
     public unsafe byte[][] ComputeCells(byte[] blob)
@@ -480,10 +489,10 @@ public sealed unsafe class EthKZG : IDisposable
                 }
             }
 
-            CResult result = eth_kzg_verify_blob_kzg_proof_batch(_context, 
+            CResult result = eth_kzg_verify_blob_kzg_proof_batch(_context,
                 Convert.ToUInt64(numBlobs), blobPtrPtr,
-                Convert.ToUInt64(numCommitments), commitmentPtrPtr, 
-                Convert.ToUInt64(numProofs), proofPtrPtr, 
+                Convert.ToUInt64(numCommitments), commitmentPtrPtr,
+                Convert.ToUInt64(numProofs), proofPtrPtr,
                 &verified);
             ThrowOnError(result);
         }
