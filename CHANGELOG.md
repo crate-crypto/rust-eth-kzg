@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.8.1](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.8.0...v0.8.1) (2025-08-20)
+
+
+### Bug Fixes
+
+* Use 1dim arrays segmented using Memory&lt;byte&gt; in .NET bindings ([#413](https://github.com/crate-crypto/rust-eth-kzg/issues/413)) ([4018f24](https://github.com/crate-crypto/rust-eth-kzg/commit/4018f24748aa5b92813d7f0f95a96ce19fb7e8fd))
+
 ## [0.8.0](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.7.1...v0.8.0) (2025-07-22)
 
 
