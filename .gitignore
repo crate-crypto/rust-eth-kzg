@@ -4,3 +4,4 @@ target
 Cargo.lock
 
 proptest-regressions
+.vs
