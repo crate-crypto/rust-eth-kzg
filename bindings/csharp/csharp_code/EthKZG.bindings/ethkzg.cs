@@ -534,13 +534,13 @@ public sealed unsafe class EthKZG : IDisposable
         return flattenedArray;
     }
 
-    private Memory<byte>[] Segment(byte[] arr, int itemLength)
+    private static Memory<byte>[] Segment(byte[] arr, int itemLength)
     {
         Memory<byte>[] result = new Memory<byte>[arr.Length / itemLength];
 
-        for (int i = 0; i < arr.Length; i += itemLength)
+        for (int i = 0; i < result.Length; i++)
         {
-            result[i] = new Memory<byte>(arr, i, itemLength);
+            result[i] = new Memory<byte>(arr, i * itemLength, itemLength);
         }
 
         return result;

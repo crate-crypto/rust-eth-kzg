@@ -46,20 +46,11 @@ public class ReferenceTests
 
     #region Helper Functions
 
-    private static byte[] GetBytes(string hex)
-    {
-        return Convert.FromHexString(hex[2..]);
-    }
+    private static byte[] GetBytes(string hex) => Convert.FromHexString(hex[2..]);
 
-    private static byte[][] GetByteArrays(List<string> strings)
-    {
-        return strings.Select(GetBytes).ToArray();
-    }
+    private static byte[][] GetByteArrays(List<string> strings) => strings.Select(GetBytes).ToArray();
 
-    private static Memory<byte>[] GetMemoryArrays(List<string> strings)
-    {
-        return strings.Select((bytes) => GetBytes(bytes).AsMemory()).ToArray();
-    }
+    private static byte[][] GetByteArrays(Memory<byte>[] arrays) => [.. arrays.Select((memory) => memory.ToArray())];
 
     #endregion
 
@@ -146,13 +137,13 @@ public class ReferenceTests
             {
                 (Memory<byte>[] cells, Memory<byte>[] proofs) = _context.ComputeCellsAndKZGProofs(blob);
                 Assert.That(test.Output, Is.Not.EqualTo(null));
-                Memory<byte>[] expectedCells = GetMemoryArrays(test.Output.ElementAt(0));
-                Assert.That(cells, Is.EqualTo(expectedCells));
-                Memory<byte>[] expectedProofs = GetMemoryArrays(test.Output.ElementAt(1));
-                Assert.That(proofs, Is.EqualTo(expectedProofs));
+                byte[][] expectedCells = GetByteArrays(test.Output.ElementAt(0));
+                Assert.That(GetByteArrays(cells), Is.EqualTo(expectedCells));
+                byte[][] expectedProofs = GetByteArrays(test.Output.ElementAt(1));
+                Assert.That(GetByteArrays(proofs), Is.EqualTo(expectedProofs));
 
                 Memory<byte>[] cells_ = _context.ComputeCells(blob);
-                Assert.That(cells_, Is.EqualTo(expectedCells));
+                Assert.That(GetByteArrays(cells_), Is.EqualTo(expectedCells));
             }
             catch
             {
@@ -249,10 +240,10 @@ public class ReferenceTests
             {
                 (Memory<byte>[] recoveredCells, Memory<byte>[] recoveredProofs) = _context.RecoverCellsAndKZGProofs(cellIndices, cells);
                 Assert.That(test.Output, Is.Not.EqualTo(null));
-                Memory<byte>[] expectedCells = GetMemoryArrays(test.Output.ElementAt(0));
-                Assert.That(recoveredCells, Is.EqualTo(expectedCells));
-                Memory<byte>[] expectedProofs = GetMemoryArrays(test.Output.ElementAt(1));
-                Assert.That(recoveredProofs, Is.EqualTo(expectedProofs));
+                byte[][] expectedCells = GetByteArrays(test.Output.ElementAt(0));
+                Assert.That(GetByteArrays(recoveredCells), Is.EqualTo(expectedCells));
+                byte[][] expectedProofs = GetByteArrays(test.Output.ElementAt(1));
+                Assert.That(GetByteArrays(recoveredProofs), Is.EqualTo(expectedProofs));
             }
             catch
             {
