@@ -74,15 +74,15 @@ public sealed unsafe class EthKZG : IDisposable
         int numCells = CellsPerExtBlob;
 
         byte[] outCells = new byte[numCells * BytesPerCell];
-        byte[] outProofs = new byte[numProofs * BytesPerProof];
+        byte[] outProofs = new byte[numCells * BytesPerProof];
 
         // Allocate an array of pointers for cells and proofs
         byte*[] outCellsPtrs = new byte*[numCells];
         byte*[] outProofsPtrs = new byte*[numProofs];
 
         fixed (byte* blobPtr = blob)
-        fixed (byte* outCells2 = outCells)
-        fixed (byte* outProofs2 = outProofs)
+        fixed (byte* outCellsPtr = outCells)
+        fixed (byte* outProofsPtr = outProofs)
         fixed (byte** outCellsPtrPtr = outCellsPtrs)
         fixed (byte** outProofsPtrPtr = outProofsPtrs)
         {
@@ -90,13 +90,13 @@ public sealed unsafe class EthKZG : IDisposable
             // Get the pointer for each cell
             for (int i = 0; i < numCells; i++)
             {
-                outCellsPtrPtr[i] = outCells2 + i * BytesPerCell;
+                outCellsPtrPtr[i] = outCellsPtr + i * BytesPerCell;
             }
 
             // Get the pointer for each proof
             for (int i = 0; i < numCells; i++)
             {
-                outProofsPtrPtr[i] = outProofs2 + i * BytesPerProof;
+                outProofsPtrPtr[i] = outProofsPtr + i * BytesPerProof;
             }
 
             CResult result = eth_kzg_compute_cells_and_kzg_proofs(_context, blobPtr, outCellsPtrPtr, outProofsPtrPtr);
@@ -106,19 +106,7 @@ public sealed unsafe class EthKZG : IDisposable
         return (Segment(outCells, BytesPerCell), Segment(outProofs, BytesPerProof));
     }
 
-    private Memory<byte>[] Segment(byte[] arr, int itemLength)
-    {
-        Memory<byte>[] result = new Memory<byte>[arr.Length / itemLength];
-
-        for (int i = 0; i < arr.Length; i += itemLength)
-        {
-            result[i] = new Memory<byte>(arr, i, itemLength);
-        }
-
-        return result;
-    }
-
-    public unsafe byte[][] ComputeCells(byte[] blob)
+    public unsafe Memory<byte>[] ComputeCells(byte[] blob)
     {
         // Length checks
         if (blob.Length != BytesPerBlob)
@@ -128,28 +116,27 @@ public sealed unsafe class EthKZG : IDisposable
 
         int numCells = CellsPerExtBlob;
 
-        byte[][] outCells = InitializeJaggedArray(numCells, BytesPerCell);
+        byte[] outCells = new byte[numCells * BytesPerCell];
 
         // Allocate an array of pointers for cells and proofs
         byte*[] outCellsPtrs = new byte*[numCells];
 
         fixed (byte* blobPtr = blob)
+        fixed (byte* outCellsPtr = outCells)
         fixed (byte** outCellsPtrPtr = outCellsPtrs)
         {
 
             // Get the pointer for each cell
             for (int i = 0; i < numCells; i++)
             {
-                fixed (byte* cellPtr = outCells[i])
-                {
-                    outCellsPtrPtr[i] = cellPtr;
-                }
+                outCellsPtrPtr[i] = outCellsPtr + i * BytesPerCell;
             }
 
             CResult result = eth_kzg_compute_cells(_context, blobPtr, outCellsPtrPtr);
             ThrowOnError(result);
         }
-        return (outCells);
+
+        return Segment(outCells, BytesPerCell);
     }
 
     public bool VerifyCellKZGProofBatch(byte[][] commitments, ulong[] cellIndices, byte[][] cells, byte[][] proofs)
@@ -229,7 +216,7 @@ public sealed unsafe class EthKZG : IDisposable
         return verified;
     }
 
-    public (byte[][], byte[][]) RecoverCellsAndKZGProofs(ulong[] cellIds, byte[][] cells)
+    public (Memory<byte>[], Memory<byte>[]) RecoverCellsAndKZGProofs(ulong[] cellIds, byte[][] cells)
     {
 
         // Length checks
@@ -245,8 +232,8 @@ public sealed unsafe class EthKZG : IDisposable
         int numOutCells = CellsPerExtBlob;
         int numInputCells = cells.Length;
 
-        byte[][] outCells = InitializeJaggedArray(numOutCells, BytesPerCell);
-        byte[][] outProofs = InitializeJaggedArray(numProofs, BytesPerProof);
+        byte[] outCells = new byte[numOutCells * BytesPerCell];
+        byte[] outProofs = new byte[numProofs * BytesPerProof];
 
         // Allocate an array of pointers for inputCells, outputCells and proofs
         byte*[] inputCellsPtrs = new byte*[numInputCells];
@@ -254,6 +241,8 @@ public sealed unsafe class EthKZG : IDisposable
         byte*[] outProofsPtrs = new byte*[numProofs];
 
         fixed (ulong* cellIdsPtr = cellIds)
+        fixed (byte* outCellsPtr = outCells)
+        fixed (byte* outProofsPtr = outProofs)
         fixed (byte** inputCellsPtrPtr = inputCellsPtrs)
         fixed (byte** outCellsPtrPtr = outCellsPtrs)
         fixed (byte** outProofsPtrPtr = outProofsPtrs)
@@ -270,26 +259,20 @@ public sealed unsafe class EthKZG : IDisposable
             // Get the pointer for each output cell
             for (int i = 0; i < numOutCells; i++)
             {
-                fixed (byte* cellPtr = outCells[i])
-                {
-                    outCellsPtrPtr[i] = cellPtr;
-                }
+                outCellsPtrPtr[i] = outCellsPtr + i * BytesPerCell;
             }
 
             // Get the pointer for each proof
             for (int i = 0; i < numProofs; i++)
             {
-                fixed (byte* proofPtr = outProofs[i])
-                {
-                    outProofsPtrPtr[i] = proofPtr;
-                }
+                outProofsPtrPtr[i] = outProofsPtr + i * BytesPerProof;
             }
 
             CResult result = eth_kzg_recover_cells_and_proofs(_context, Convert.ToUInt64(numInputCells), inputCellsPtrPtr, Convert.ToUInt64(cellIds.Length), cellIdsPtr, outCellsPtrPtr, outProofsPtrPtr);
             ThrowOnError(result);
         }
 
-        return (outCells, outProofs);
+        return (Segment(outCells, BytesPerCell), Segment(outProofs, BytesPerProof));
     }
 
     // EIP-4844 methods
@@ -551,28 +534,15 @@ public sealed unsafe class EthKZG : IDisposable
         return flattenedArray;
     }
 
-    private static byte[][] DeflattenArray(byte[] flattenedArray, int length)
+    private Memory<byte>[] Segment(byte[] arr, int itemLength)
     {
-        int numArrays = flattenedArray.Length / length;
-        byte[][] jaggedArray = new byte[numArrays][];
+        Memory<byte>[] result = new Memory<byte>[arr.Length / itemLength];
 
-        for (int i = 0; i < numArrays; i++)
+        for (int i = 0; i < arr.Length; i += itemLength)
         {
-            jaggedArray[i] = new byte[length];
-            Array.Copy(flattenedArray, i * length, jaggedArray[i], 0, length);
+            result[i] = new Memory<byte>(arr, i, itemLength);
         }
 
-        return jaggedArray;
-    }
-
-    static byte[][] InitializeJaggedArray(int outerLen, int innerLen)
-    {
-        // Create and initialize the jagged array
-        byte[][] jaggedArray = new byte[outerLen][];
-        for (int i = 0; i < outerLen; i++)
-        {
-            jaggedArray[i] = new byte[innerLen];
-        }
-        return jaggedArray;
+        return result;
     }
 }

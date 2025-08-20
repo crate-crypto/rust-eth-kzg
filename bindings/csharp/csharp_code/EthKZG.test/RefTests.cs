@@ -1,5 +1,4 @@
 using Microsoft.Extensions.FileSystemGlobbing;
-using NUnit.Framework;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -34,7 +33,7 @@ public class ReferenceTests
     private readonly string _computeCellsAndKzgProofsTests = Path.Join(TestDir, "compute_cells_and_kzg_proofs");
     private readonly string _verifyCellKzgProofBatchTests = Path.Join(TestDir, "verify_cell_kzg_proof_batch");
     private readonly string _recoverCellsAndKzgProofsTests = Path.Join(TestDir, "recover_cells_and_kzg_proofs");
-    
+
     // EIP-4844 test directories
     private readonly string _computeKzgProofTests = Path.Join(TestDir, "compute_kzg_proof");
     private readonly string _computeBlobKzgProofTests = Path.Join(TestDir, "compute_blob_kzg_proof");
@@ -55,6 +54,11 @@ public class ReferenceTests
     private static byte[][] GetByteArrays(List<string> strings)
     {
         return strings.Select(GetBytes).ToArray();
+    }
+
+    private static Memory<byte>[] GetMemoryArrays(List<string> strings)
+    {
+        return strings.Select((bytes) => GetBytes(bytes).AsMemory()).ToArray();
     }
 
     #endregion
@@ -140,14 +144,14 @@ public class ReferenceTests
 
             try
             {
-                (byte[][] cells, byte[][] proofs) = _context.ComputeCellsAndKZGProofs(blob);
+                (Memory<byte>[] cells, Memory<byte>[] proofs) = _context.ComputeCellsAndKZGProofs(blob);
                 Assert.That(test.Output, Is.Not.EqualTo(null));
-                byte[][] expectedCells = GetByteArrays(test.Output.ElementAt(0));
+                Memory<byte>[] expectedCells = GetMemoryArrays(test.Output.ElementAt(0));
                 Assert.That(cells, Is.EqualTo(expectedCells));
-                byte[][] expectedProofs = GetByteArrays(test.Output.ElementAt(1));
+                Memory<byte>[] expectedProofs = GetMemoryArrays(test.Output.ElementAt(1));
                 Assert.That(proofs, Is.EqualTo(expectedProofs));
 
-                byte[][] cells_ = _context.ComputeCells(blob);
+                Memory<byte>[] cells_ = _context.ComputeCells(blob);
                 Assert.That(cells_, Is.EqualTo(expectedCells));
             }
             catch
@@ -243,11 +247,11 @@ public class ReferenceTests
 
             try
             {
-                (byte[][] recoveredCells, byte[][] recoveredProofs) = _context.RecoverCellsAndKZGProofs(cellIndices, cells);
+                (Memory<byte>[] recoveredCells, Memory<byte>[] recoveredProofs) = _context.RecoverCellsAndKZGProofs(cellIndices, cells);
                 Assert.That(test.Output, Is.Not.EqualTo(null));
-                byte[][] expectedCells = GetByteArrays(test.Output.ElementAt(0));
+                Memory<byte>[] expectedCells = GetMemoryArrays(test.Output.ElementAt(0));
                 Assert.That(recoveredCells, Is.EqualTo(expectedCells));
-                byte[][] expectedProofs = GetByteArrays(test.Output.ElementAt(1));
+                Memory<byte>[] expectedProofs = GetMemoryArrays(test.Output.ElementAt(1));
                 Assert.That(recoveredProofs, Is.EqualTo(expectedProofs));
             }
             catch
