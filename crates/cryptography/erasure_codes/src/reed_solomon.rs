@@ -238,20 +238,6 @@ impl ReedSolomon {
 
         // Expand the vanishing polynomial, so that it vanishes on all blocks in the codeword
         // at the same indices.
-        //
-        // Example; consider the following polynomial f(x) = x - r
-        // It vanishes/has roots at `r`.
-        //
-        // Now if we expand it by a factor of three which is the process of shifting all coefficients
-        // up three spaces, we get the polynomial g(x) = x^3 - r.
-        // g(x) has all of the roots of f(x) and a few extra roots.
-        //
-        // The roots of g(x) can be characterized as {r, \omega * r, \omega^2 * r}
-        // where \omega is a third root of unity.
-        //
-        // This process is happening below, ie we create a polynomial which has roots `r_i`
-        // Then we expand it by `num_blocks` so that it has additional roots \omega^i * r_i
-        // Where \omega is a `num_blocks` root of unity.
         let mut z_x = vec![Scalar::ZERO; evaluation_domain_size];
         for (i, coeff) in vanish_poly_first_block.0.into_iter().enumerate() {
             // Let's compute the bounds for the array access below to argue that it is safe:
