@@ -61,6 +61,19 @@ impl FK20Verifier {
         num_cosets: usize,
     ) -> Self {
         const BIT_REVERSED: bool = true;
+
+        assert!(
+            verification_key.coset_size.is_power_of_two(),
+            "coset size must be a power of two"
+        );
+        assert!(
+            num_cosets * verification_key.coset_size == num_points_to_open,
+            "Expected {} * {} == {}",
+            num_cosets,
+            verification_key.coset_size,
+            num_points_to_open
+        );
+
         let coset_gens = coset_gens(num_points_to_open, num_cosets, BIT_REVERSED);
 
         let coset_size = num_points_to_open / num_cosets;
