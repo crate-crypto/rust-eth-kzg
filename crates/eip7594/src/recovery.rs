@@ -80,7 +80,7 @@ fn find_missing_cell_indices(present_cell_indices: &[usize]) -> Vec<usize> {
 /// - Each index has a corresponding cell (`len(indices) == len(cells)`).
 /// - All indices are within `[0, CELLS_PER_EXT_BLOB)`.
 /// - Each cell has exactly `BYTES_PER_CELL` bytes.
-/// - No duplicate indices are present.
+/// - No duplicate indices are present and the cells are in ascending order.
 /// - There are enough cells to reconstruct the data (`≥ CELLS_PER_EXT_BLOB / EXPANSION_FACTOR`).
 /// - There are not too many cells (`≤ CELLS_PER_EXT_BLOB`).
 ///
@@ -116,8 +116,8 @@ pub(crate) fn validate_recovery_inputs(
         assert_eq!(cell.len(), BYTES_PER_CELL, "the number of bytes in a cell should always equal {BYTES_PER_CELL} since the type is a reference to an array. Check cell at index {i}");
     }
 
-    // Check that we have no duplicate cell indices
-    if !are_cell_indices_unique(cell_indices) {
+    // Check that cells are ordered (ascending)
+    if !are_cell_indices_ordered(cell_indices) {
         return Err(RecoveryError::CellIndicesNotUnique);
     }
 
@@ -145,10 +145,9 @@ pub(crate) fn validate_recovery_inputs(
     Ok(())
 }
 
-/// Check if all of the cell indices are unique
-fn are_cell_indices_unique(cell_indices: &[CellIndex]) -> bool {
-    let mut seen = HashSet::with_capacity(cell_indices.len());
-    cell_indices.iter().all(|idx| seen.insert(idx))
+/// Check if all of the cell indices are sorted in ascending order
+fn are_cell_indices_ordered(cell_indices: &[CellIndex]) -> bool {
+    cell_indices.is_sorted_by(|a, b| a < b)
 }
 
 #[cfg(test)]
@@ -169,15 +168,24 @@ mod tests {
     }
 
     #[test]
-    fn test_cell_indices_unique() {
+    fn test_cell_indices_ordered() {
         let cell_indices = vec![1, 2, 3];
-        assert!(are_cell_indices_unique(&cell_indices));
+        assert!(are_cell_indices_ordered(&cell_indices));
+
+        let cell_indices = vec![3, 2, 1];
+        assert!(!are_cell_indices_ordered(&cell_indices));
+
+        let cell_indices = vec![1, 2, 3, 1];
+        assert!(!are_cell_indices_ordered(&cell_indices));
+
         let cell_indices = vec![];
-        assert!(are_cell_indices_unique(&cell_indices));
-        let cell_indices = vec![1, 1, 2, 3];
-        assert!(!are_cell_indices_unique(&cell_indices));
+        assert!(are_cell_indices_ordered(&cell_indices));
+
+        let cell_indices = vec![1, 1, 2, 3]; // duplicates should return false
+        assert!(!are_cell_indices_ordered(&cell_indices));
+
         let cell_indices = vec![0, 0, 0];
-        assert!(!are_cell_indices_unique(&cell_indices));
+        assert!(!are_cell_indices_ordered(&cell_indices));
     }
 
     #[test]
