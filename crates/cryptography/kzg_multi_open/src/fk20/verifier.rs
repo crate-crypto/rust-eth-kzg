@@ -138,6 +138,14 @@ impl FK20Verifier {
             bit_reversed_proofs.len(),
             "Expected to have a proof for each evaluation we want to prove an opening for"
         );
+        let all_same_size = bit_reversed_coset_evals
+            .windows(2)
+            .all(|w| w[0].len() == w[1].len());
+        assert!(
+            all_same_size,
+            "Expected all cosets to have the same number of elements"
+        );
+
         // The batch size corresponds to how many openings, we ultimately want to be verifying.
         let batch_size = bit_reversed_coset_indices.len();
 
