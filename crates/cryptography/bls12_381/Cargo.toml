@@ -14,8 +14,9 @@ workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
-blst = { version = "0.3", default-features = false }
+# We want at least 0.3.15 because this is where the fix for points at infinity was added.
+# See: https://github.com/supranational/blst/commit/ae643bad61ac6fd618bffd771d0ccfddfddf8aee
+blst = { version = "0.3.15", default-features = false }
 
 # __private_bench feature is used to allow us to access the base field
 blstrs = { version = "0.7.1", features = ["__private_bench", "portable"] }
