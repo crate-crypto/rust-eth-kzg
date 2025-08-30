@@ -56,7 +56,7 @@ impl FixedBaseMSMPrecompWindow {
         // 1 * P, ..., (2^{wbits} - 1) * P
         //
         // The total amount of memory is roughly (numPoints * 2^{wbits} - 1)
-        // where each point is 64 bytes.
+        // where each point is 96 bytes.
         let table = points
             .iter()
             .map(|point| Self::precompute_points(wbits, *point))
