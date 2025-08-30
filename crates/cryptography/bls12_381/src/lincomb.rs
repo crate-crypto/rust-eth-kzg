@@ -2,99 +2,41 @@ use crate::{traits::*, G1Point, G1Projective, G2Point, G2Projective, Scalar};
 
 /// A multi-scalar multiplication algorithm over G1 elements
 ///
-/// Note: "unchecked" refers to the fact that blst will return the identity
-/// element, if any of the points are the identity element.
-///
-/// Calling this method means that the caller is aware that there are no
-/// identity elements amongst their points.
-///
-/// See test below named `blst_footgun` for the edge case.
-pub fn g1_lincomb_unchecked(points: &[G1Point], scalars: &[Scalar]) -> Option<G1Projective> {
-    (points.len() == scalars.len()).then(|| {
-        // Convert to Projective, since the API forces us to do this
-        let proj_points: Vec<_> = points.iter().map(Into::into).collect();
-        G1Projective::multi_exp(&proj_points, scalars)
-    })
-}
-
-/// A multi-scalar multiplication algorithm over G2 elements
-///
 /// Returns None if the points and the scalars are not the
 /// same length.
-///
-/// Note: "unchecked" refers to the fact that blst will return the identity
-/// element, if any of the points are the identity element.
-///
-/// Calling this method means that the caller is aware that there are no
-/// identity elements amongst their points.
-///
-/// See test below named `blst_footgun` for the edge case.
-pub fn g2_lincomb_unchecked(points: &[G2Point], scalars: &[Scalar]) -> Option<G2Projective> {
-    (points.len() == scalars.len()).then(|| {
-        // Convert to Projective, since the API forces us to do this
-        let proj_points: Vec<_> = points.iter().map(Into::into).collect();
-        G2Projective::multi_exp(&proj_points, scalars)
-    })
-}
-
-/// A multi-scalar multiplication algorithm over G1 elements
-///
-/// Returns None if the points and the scalars are not the
-/// same length.
-///
-/// This method is a safe wrapper around `g1_lincomb_unsafe`.
-///
-/// It filters out any points that are the identity.
 pub fn g1_lincomb(points: &[G1Point], scalars: &[Scalar]) -> Option<G1Projective> {
     if points.len() != scalars.len() {
         return None;
     }
 
-    // Filter out identity points
-    let (points_filtered, scalars_filtered): (Vec<_>, Vec<_>) = points
-        .iter()
-        .zip(scalars)
-        .filter(|(point, _)| !(bool::from(point.is_identity())))
-        .map(|(point, scalar)| (*point, *scalar))
-        .unzip();
-
-    // If all points were identity, return the group identity
-    if points_filtered.is_empty() {
-        Some(G1Projective::identity())
-    } else {
-        // Perform the actual MSM using the filtered data
-        g1_lincomb_unchecked(&points_filtered, &scalars_filtered)
+    if points.is_empty() {
+        return Some(G1Projective::identity());
     }
+
+    // Convert to Projective, since the API forces us to do this
+    let proj_points: Vec<_> = points.iter().map(Into::into).collect();
+    return Some(G1Projective::multi_exp(&proj_points, &scalars));
 }
 
 /// A multi-scalar multiplication algorithm over G2 elements
 ///
 /// Returns None if the points and the scalars are not the
 /// same length.
-///
-/// This method is a safe wrapper around `g2_lincomb_unsafe`.
-///
-/// It filters out any points that are the identity.
 pub fn g2_lincomb(points: &[G2Point], scalars: &[Scalar]) -> Option<G2Projective> {
     if points.len() != scalars.len() {
         return None;
     }
 
-    // Filter out identity points
-    let (points_filtered, scalars_filtered): (Vec<_>, Vec<_>) = points
-        .iter()
-        .zip(scalars)
-        .filter(|(point, _)| !(bool::from(point.is_identity())))
-        .map(|(point, scalar)| (*point, *scalar))
-        .unzip();
 
     // Return group identity if no valid points remain
-    if points_filtered.is_empty() {
-        Some(G2Projective::identity())
-    } else {
-        // Use the unchecked version to perform MSM on valid points
-        g2_lincomb_unchecked(&points_filtered, &scalars_filtered)
+    if points.is_empty() {
+        return Some(G2Projective::identity());
     }
+
+    // Convert to Projective, since the API forces us to do this
+    let proj_points: Vec<_> = points.iter().map(Into::into).collect();
+
+    return Some(G2Projective::multi_exp(&proj_points, &scalars));
 }
 
 #[cfg(test)]
@@ -118,7 +60,6 @@ mod tests {
         let points = vec![G1Point::generator()];
         let scalars = vec![];
         assert_eq!(g1_lincomb(&points, &scalars), None);
-        assert_eq!(g1_lincomb_unchecked(&points, &scalars), None);
     }
 
     #[test]
@@ -135,7 +76,6 @@ mod tests {
         let points = vec![G2Point::generator()];
         let scalars = vec![];
         assert_eq!(g2_lincomb(&points, &scalars), None);
-        assert_eq!(g2_lincomb_unchecked(&points, &scalars), None);
     }
 
     #[test]
@@ -161,7 +101,7 @@ mod tests {
     }
 
     #[test]
-    fn g1_lincomb_filters_identity_correctly() {
+    fn g1_lincomb_handles_identity_correctly() {
         // Mix generator and identity points with scalars
         let p = G1Point::generator();
         let zero = Scalar::ZERO;
@@ -174,13 +114,14 @@ mod tests {
         let points = vec![p, G1Point::identity(), p];
         let scalars = vec![one, one, zero];
 
-        // Safe lincomb filters out identity and zero scalar product
+        // Note: blst used to have a bug where the identity point was not being handled correctly
+        // so we have this test
         let result = g1_lincomb(&points, &scalars).expect("length mismatch");
         assert_eq!(result, G1Projective::generator());
     }
 
     #[test]
-    fn g2_lincomb_filters_identity_correctly() {
+    fn g2_lincomb_handles_identity_correctly() {
         // Mix generator and identity points with scalars
         let p = G2Point::generator();
         let zero = Scalar::ZERO;
