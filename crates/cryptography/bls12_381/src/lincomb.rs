@@ -15,7 +15,7 @@ pub fn g1_lincomb(points: &[G1Point], scalars: &[Scalar]) -> Option<G1Projective
 
     // Convert to Projective, since the API forces us to do this
     let proj_points: Vec<_> = points.iter().map(Into::into).collect();
-    return Some(G1Projective::multi_exp(&proj_points, &scalars));
+    Some(G1Projective::multi_exp(&proj_points, scalars))
 }
 
 /// A multi-scalar multiplication algorithm over G2 elements
@@ -35,7 +35,7 @@ pub fn g2_lincomb(points: &[G2Point], scalars: &[Scalar]) -> Option<G2Projective
     // Convert to Projective, since the API forces us to do this
     let proj_points: Vec<_> = points.iter().map(Into::into).collect();
 
-    return Some(G2Projective::multi_exp(&proj_points, &scalars));
+    Some(G2Projective::multi_exp(&proj_points, scalars))
 }
 
 #[cfg(test)]
