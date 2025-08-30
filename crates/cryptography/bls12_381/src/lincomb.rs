@@ -27,7 +27,6 @@ pub fn g2_lincomb(points: &[G2Point], scalars: &[Scalar]) -> Option<G2Projective
         return None;
     }
 
-
     // Return group identity if no valid points remain
     if points.is_empty() {
         return Some(G2Projective::identity());
