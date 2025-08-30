@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.9.0](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.8.1...v0.9.0) (2025-08-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* Add shuffle tests ([#421](https://github.com/crate-crypto/rust-eth-kzg/issues/421))
+
+### Features
+
+* Add shuffle tests ([#421](https://github.com/crate-crypto/rust-eth-kzg/issues/421)) ([780c843](https://github.com/crate-crypto/rust-eth-kzg/commit/780c843f757e4a2dfe86fa23e4d4e33f7cdedd22))
+
 ## [0.8.1](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.8.0...v0.8.1) (2025-08-30)
 
 
