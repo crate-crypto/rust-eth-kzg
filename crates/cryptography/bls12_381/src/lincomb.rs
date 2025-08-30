@@ -46,10 +46,7 @@ pub fn g2_lincomb_unchecked(points: &[G2Point], scalars: &[Scalar]) -> Option<G2
 ///
 /// It filters out any points that are the identity.
 pub fn g1_lincomb(points: &[G1Point], scalars: &[Scalar]) -> Option<G1Projective> {
-    // Early return if:
-    // - If the lengths mismatch
-    // - And either the points or the scalars are empty
-    if points.len() != scalars.len() && (scalars.is_empty() || points.is_empty()) {
+    if points.len() != scalars.len() {
         return None;
     }
 
@@ -79,10 +76,7 @@ pub fn g1_lincomb(points: &[G1Point], scalars: &[Scalar]) -> Option<G1Projective
 ///
 /// It filters out any points that are the identity.
 pub fn g2_lincomb(points: &[G2Point], scalars: &[Scalar]) -> Option<G2Projective> {
-    // Early return if:
-    // - If the lengths mismatch
-    // - And either the points or the scalars are empty
-    if points.len() != scalars.len() && (scalars.is_empty() || points.is_empty()) {
+    if points.len() != scalars.len() {
         return None;
     }
 
@@ -132,14 +126,7 @@ mod tests {
         // MSM returns None when point and scalar lengths differ
         let points = vec![G1Point::generator(); 4];
         let scalars = vec![Scalar::from(1), Scalar::from(2), Scalar::from(3)];
-        assert_eq!(
-            g1_lincomb(&points, &scalars),
-            Some(
-                G1Point::generator() * Scalar::from(1)
-                    + G1Point::generator() * Scalar::from(2)
-                    + G1Point::generator() * Scalar::from(3)
-            )
-        );
+        assert_eq!(g1_lincomb(&points, &scalars), None);
     }
 
     #[test]
@@ -156,14 +143,7 @@ mod tests {
         // MSM returns None when point and scalar lengths differ
         let points = vec![G2Point::generator(); 4];
         let scalars = vec![Scalar::from(1), Scalar::from(2), Scalar::from(3)];
-        assert_eq!(
-            g2_lincomb(&points, &scalars),
-            Some(
-                G2Point::generator() * Scalar::from(1)
-                    + G2Point::generator() * Scalar::from(2)
-                    + G2Point::generator() * Scalar::from(3)
-            )
-        );
+        assert_eq!(g2_lincomb(&points, &scalars), None);
     }
 
     #[test]
