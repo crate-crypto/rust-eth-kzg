@@ -168,13 +168,22 @@ mod tests {
     }
 
     #[test]
-    fn test_cell_indices_unique() {
+    fn test_cell_indices_ordered() {
         let cell_indices = vec![1, 2, 3];
         assert!(are_cell_indices_ordered(&cell_indices));
+
+        let cell_indices = vec![3, 2, 1];
+        assert!(!are_cell_indices_ordered(&cell_indices));
+
+        let cell_indices = vec![1, 2, 3, 1];
+        assert!(!are_cell_indices_ordered(&cell_indices));
+
         let cell_indices = vec![];
         assert!(are_cell_indices_ordered(&cell_indices));
+
         let cell_indices = vec![1, 1, 2, 3]; // duplicates should return false
         assert!(!are_cell_indices_ordered(&cell_indices));
+
         let cell_indices = vec![0, 0, 0];
         assert!(!are_cell_indices_ordered(&cell_indices));
     }
