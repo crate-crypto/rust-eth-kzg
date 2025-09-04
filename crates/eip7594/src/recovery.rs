@@ -118,7 +118,7 @@ pub(crate) fn validate_recovery_inputs(
 
     // Check that cells are ordered (ascending)
     if !are_cell_indices_ordered(cell_indices) {
-        return Err(RecoveryError::CellIndicesNotUnique);
+        return Err(RecoveryError::CellIndicesNotUniquelyOrdered);
     }
 
     // Check that we have enough cells to perform a reconstruction
@@ -230,7 +230,7 @@ mod tests {
         let indices = vec![0, 1, 2, 2]; // duplicate
         let cells: Vec<CellRef> = (0..indices.len()).map(|_| zeroed_cell_ref()).collect();
         let err = validate_recovery_inputs(&indices, &cells).unwrap_err();
-        assert!(matches!(err, RecoveryError::CellIndicesNotUnique));
+        assert!(matches!(err, RecoveryError::CellIndicesNotUniquelyOrdered));
     }
 
     #[test]
