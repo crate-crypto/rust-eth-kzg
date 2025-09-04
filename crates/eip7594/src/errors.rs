@@ -114,7 +114,7 @@ pub enum RecoveryError {
         /// Maximum allowed number of cells.
         max_number_of_cells: u64,
     },
-    /// Cell indices provided for reconstruction are not in ascending order or unique.
+    /// Cell indices provided for reconstruction are not in ascending order and unique.
     CellIndicesNotUniquelyOrdered,
     /// Failure in the underlying Reed-Solomon decoding.
     ReedSolomon(RSError),
