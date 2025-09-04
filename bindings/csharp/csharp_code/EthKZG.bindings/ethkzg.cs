@@ -171,43 +171,40 @@ public sealed unsafe class EthKZG : IDisposable
         int numProofs = proofs.Length;
         int numCommitments = commitments.Length;
 
-        byte*[] commPtrs = new byte*[numCommitments];
+        // Flatten arrays to avoid nested fixed blocks
+        byte[] flattenedCells = FlattenArray(cells);
+        byte[] flattenedCommitments = FlattenArray(commitments);
+        byte[] flattenedProofs = FlattenArray(proofs);
+
         byte*[] cellsPtrs = new byte*[numCells];
+        byte*[] commPtrs = new byte*[numCommitments];
         byte*[] proofsPtrs = new byte*[numProofs];
 
         bool verified = false;
         bool* verifiedPtr = &verified;
 
-        fixed (byte** commitmentPtrPtr = commPtrs)
+        fixed (byte* flatCellsPtr = flattenedCells)
+        fixed (byte* flatCommPtr = flattenedCommitments)
+        fixed (byte* flatProofsPtr = flattenedProofs)
         fixed (byte** cellsPtrPtr = cellsPtrs)
+        fixed (byte** commitmentPtrPtr = commPtrs)
         fixed (byte** proofsPtrPtr = proofsPtrs)
         fixed (ulong* cellIndicesPtr = cellIndices)
         {
-            // Get the pointer for each cell
+            // Set pointers to flattened data
             for (int i = 0; i < numCells; i++)
             {
-                fixed (byte* cellPtr = cells[i])
-                {
-                    cellsPtrPtr[i] = cellPtr;
-                }
+                cellsPtrs[i] = flatCellsPtr + i * BytesPerCell;
             }
 
-            // Get the pointer for each commitment
             for (int i = 0; i < numCommitments; i++)
             {
-                fixed (byte* commPtr = commitments[i])
-                {
-                    commitmentPtrPtr[i] = commPtr;
-                }
+                commPtrs[i] = flatCommPtr + i * BytesPerCommitment;
             }
 
-            // Get the pointer for each commitment
             for (int i = 0; i < numProofs; i++)
             {
-                fixed (byte* proofPtr = proofs[i])
-                {
-                    proofsPtrPtr[i] = proofPtr;
-                }
+                proofsPtrs[i] = flatProofsPtr + i * BytesPerProof;
             }
 
             CResult result = eth_kzg_verify_cell_kzg_proof_batch(_context, Convert.ToUInt64(commitments.Length), commitmentPtrPtr, Convert.ToUInt64(cellIndices.Length), cellIndicesPtr, Convert.ToUInt64(cells.Length), cellsPtrPtr, Convert.ToUInt64(proofs.Length), proofsPtrPtr, verifiedPtr);
@@ -240,20 +237,21 @@ public sealed unsafe class EthKZG : IDisposable
         byte*[] outCellsPtrs = new byte*[numOutCells];
         byte*[] outProofsPtrs = new byte*[numProofs];
 
+        // Flatten input cells to avoid nested fixed blocks
+        byte[] flattenedInputCells = FlattenArray(cells);
+
         fixed (ulong* cellIdsPtr = cellIds)
+        fixed (byte* flatInputCellsPtr = flattenedInputCells)
         fixed (byte* outCellsPtr = outCells)
         fixed (byte* outProofsPtr = outProofs)
         fixed (byte** inputCellsPtrPtr = inputCellsPtrs)
         fixed (byte** outCellsPtrPtr = outCellsPtrs)
         fixed (byte** outProofsPtrPtr = outProofsPtrs)
         {
-            // Get the pointer for each input cell
+            // Set pointers to flattened input cells
             for (int i = 0; i < numInputCells; i++)
             {
-                fixed (byte* cellPtr = cells[i])
-                {
-                    inputCellsPtrPtr[i] = cellPtr;
-                }
+                inputCellsPtrs[i] = flatInputCellsPtr + i * BytesPerCell;
             }
 
             // Get the pointer for each output cell
@@ -435,41 +433,38 @@ public sealed unsafe class EthKZG : IDisposable
         int numCommitments = commitments.Length;
         int numProofs = proofs.Length;
 
+        // Flatten arrays to avoid nested fixed blocks
+        byte[] flattenedBlobs = FlattenArray(blobs);
+        byte[] flattenedCommitments = FlattenArray(commitments);
+        byte[] flattenedProofs = FlattenArray(proofs);
+
         byte*[] blobPtrs = new byte*[numBlobs];
         byte*[] commitmentPtrs = new byte*[numCommitments];
         byte*[] proofPtrs = new byte*[numProofs];
 
         bool verified = false;
 
+        fixed (byte* flatBlobsPtr = flattenedBlobs)
+        fixed (byte* flatCommPtr = flattenedCommitments)
+        fixed (byte* flatProofsPtr = flattenedProofs)
         fixed (byte** blobPtrPtr = blobPtrs)
         fixed (byte** commitmentPtrPtr = commitmentPtrs)
         fixed (byte** proofPtrPtr = proofPtrs)
         {
-            // Get the pointer for each blob
+            // Set pointers to flattened data
             for (int i = 0; i < numBlobs; i++)
             {
-                fixed (byte* blobPtr = blobs[i])
-                {
-                    blobPtrPtr[i] = blobPtr;
-                }
+                blobPtrs[i] = flatBlobsPtr + i * BytesPerBlob;
             }
 
-            // Get the pointer for each commitment
             for (int i = 0; i < numCommitments; i++)
             {
-                fixed (byte* commitmentPtr = commitments[i])
-                {
-                    commitmentPtrPtr[i] = commitmentPtr;
-                }
+                commitmentPtrs[i] = flatCommPtr + i * BytesPerCommitment;
             }
 
-            // Get the pointer for each proof
             for (int i = 0; i < numProofs; i++)
             {
-                fixed (byte* proofPtr = proofs[i])
-                {
-                    proofPtrPtr[i] = proofPtr;
-                }
+                proofPtrs[i] = flatProofsPtr + i * BytesPerProof;
             }
 
             CResult result = eth_kzg_verify_blob_kzg_proof_batch(_context,
