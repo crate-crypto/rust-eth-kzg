@@ -50,7 +50,30 @@ public class ReferenceTests
 
     private static byte[][] GetByteArrays(List<string> strings) => strings.Select(GetBytes).ToArray();
 
-    private static byte[][] GetByteArrays(Memory<byte>[] arrays) => [.. arrays.Select((memory) => memory.ToArray())];
+    private static byte[][] SplitIntoChunks(byte[] data, int chunkSize)
+    {
+        int numChunks = data.Length / chunkSize;
+        byte[][] chunks = new byte[numChunks][];
+        for (int i = 0; i < numChunks; i++)
+        {
+            chunks[i] = new byte[chunkSize];
+            Array.Copy(data, i * chunkSize, chunks[i], 0, chunkSize);
+        }
+        return chunks;
+    }
+
+    private static byte[] FlattenByteArrays(byte[][] arrays)
+    {
+        int totalLength = arrays.Sum(arr => arr.Length);
+        byte[] result = new byte[totalLength];
+        int offset = 0;
+        foreach (byte[] array in arrays)
+        {
+            Array.Copy(array, 0, result, offset, array.Length);
+            offset += array.Length;
+        }
+        return result;
+    }
 
     #endregion
 
@@ -135,15 +158,15 @@ public class ReferenceTests
 
             try
             {
-                (Memory<byte>[] cells, Memory<byte>[] proofs) = _context.ComputeCellsAndKZGProofs(blob);
+                (byte[] cells, byte[] proofs) = _context.ComputeCellsAndKZGProofs(blob);
                 Assert.That(test.Output, Is.Not.EqualTo(null));
                 byte[][] expectedCells = GetByteArrays(test.Output.ElementAt(0));
-                Assert.That(GetByteArrays(cells), Is.EqualTo(expectedCells));
+                Assert.That(SplitIntoChunks(cells, EthKZG.BytesPerCell), Is.EqualTo(expectedCells));
                 byte[][] expectedProofs = GetByteArrays(test.Output.ElementAt(1));
-                Assert.That(GetByteArrays(proofs), Is.EqualTo(expectedProofs));
+                Assert.That(SplitIntoChunks(proofs, EthKZG.BytesPerProof), Is.EqualTo(expectedProofs));
 
-                Memory<byte>[] cells_ = _context.ComputeCells(blob);
-                Assert.That(GetByteArrays(cells_), Is.EqualTo(expectedCells));
+                byte[] cells_ = _context.ComputeCells(blob);
+                Assert.That(SplitIntoChunks(cells_, EthKZG.BytesPerCell), Is.EqualTo(expectedCells));
             }
             catch
             {
@@ -192,7 +215,7 @@ public class ReferenceTests
 
             try
             {
-                bool isCorrect = _context.VerifyCellKZGProofBatch(commitments, cellIndices, cells, proofs);
+                bool isCorrect = _context.VerifyCellKZGProofBatch(FlattenByteArrays(commitments), cellIndices, FlattenByteArrays(cells), FlattenByteArrays(proofs));
                 Assert.That(isCorrect, Is.EqualTo(test.Output));
             }
             catch
@@ -238,12 +261,12 @@ public class ReferenceTests
 
             try
             {
-                (Memory<byte>[] recoveredCells, Memory<byte>[] recoveredProofs) = _context.RecoverCellsAndKZGProofs(cellIndices, cells);
+                (byte[] recoveredCells, byte[] recoveredProofs) = _context.RecoverCellsAndKZGProofs(cellIndices, FlattenByteArrays(cells));
                 Assert.That(test.Output, Is.Not.EqualTo(null));
                 byte[][] expectedCells = GetByteArrays(test.Output.ElementAt(0));
-                Assert.That(GetByteArrays(recoveredCells), Is.EqualTo(expectedCells));
+                Assert.That(SplitIntoChunks(recoveredCells, EthKZG.BytesPerCell), Is.EqualTo(expectedCells));
                 byte[][] expectedProofs = GetByteArrays(test.Output.ElementAt(1));
-                Assert.That(GetByteArrays(recoveredProofs), Is.EqualTo(expectedProofs));
+                Assert.That(SplitIntoChunks(recoveredProofs, EthKZG.BytesPerProof), Is.EqualTo(expectedProofs));
             }
             catch
             {
@@ -488,7 +511,7 @@ public class ReferenceTests
 
             try
             {
-                bool isValid = _context.VerifyBlobKzgProofBatch(blobs, commitments, proofs);
+                bool isValid = _context.VerifyBlobKzgProofBatch(FlattenByteArrays(blobs), FlattenByteArrays(commitments), FlattenByteArrays(proofs));
                 Assert.That(isValid, Is.EqualTo(test.Output));
             }
             catch
