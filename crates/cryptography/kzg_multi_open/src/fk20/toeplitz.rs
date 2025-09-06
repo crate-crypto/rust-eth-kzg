@@ -133,7 +133,7 @@ impl CirculantMatrix {
         let mut extension_col = tm.row;
         extension_col.rotate_left(1);
         extension_col.reverse();
-        
+
         // Note: When doing FFTs, the pivot point is essentially
         // a free variable, we set it to zero to match the specs
         extension_col[0] = Scalar::from(0);
