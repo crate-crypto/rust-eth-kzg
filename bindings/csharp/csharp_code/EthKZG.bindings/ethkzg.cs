@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace EthKZG;
 
-public sealed unsafe class EthKZG : IDisposable
+public sealed unsafe class EthKZG(bool usePrecomp = true) : IDisposable
 {
     // These constants are copied from the c-kzg csharp bindings file.
     //
@@ -24,12 +24,7 @@ public sealed unsafe class EthKZG : IDisposable
     // The number of bytes in a single cell.
     public const int BytesPerCell = 2048;
 
-    private DASContext* _context;
-
-    public EthKZG(bool usePrecomp = true)
-    {
-        _context = eth_kzg_das_context_new(usePrecomp);
-    }
+    private DASContext* _context = eth_kzg_das_context_new(usePrecomp);
 
     public void Dispose()
     {
@@ -42,7 +37,6 @@ public sealed unsafe class EthKZG : IDisposable
 
     public unsafe byte[] BlobToKzgCommitment(byte[] blob)
     {
-
         // Length checks
         if (blob.Length != BytesPerBlob)
         {
@@ -62,7 +56,7 @@ public sealed unsafe class EthKZG : IDisposable
         return commitment;
     }
 
-    public unsafe (Memory<byte>[], Memory<byte>[]) ComputeCellsAndKZGProofs(byte[] blob)
+    public unsafe (byte[], byte[]) ComputeCellsAndKZGProofs(byte[] blob)
     {
         // Length checks
         if (blob.Length != BytesPerBlob)
@@ -86,7 +80,6 @@ public sealed unsafe class EthKZG : IDisposable
         fixed (byte** outCellsPtrPtr = outCellsPtrs)
         fixed (byte** outProofsPtrPtr = outProofsPtrs)
         {
-
             // Get the pointer for each cell
             for (int i = 0; i < numCells; i++)
             {
@@ -103,10 +96,10 @@ public sealed unsafe class EthKZG : IDisposable
             ThrowOnError(result);
         }
 
-        return (Segment(outCells, BytesPerCell), Segment(outProofs, BytesPerProof));
+        return (outCells, outProofs);
     }
 
-    public unsafe Memory<byte>[] ComputeCells(byte[] blob)
+    public unsafe byte[] ComputeCells(byte[] blob)
     {
         // Length checks
         if (blob.Length != BytesPerBlob)
@@ -118,14 +111,13 @@ public sealed unsafe class EthKZG : IDisposable
 
         byte[] outCells = new byte[numCells * BytesPerCell];
 
-        // Allocate an array of pointers for cells and proofs
+        // Allocate an array of pointers for cells
         byte*[] outCellsPtrs = new byte*[numCells];
 
         fixed (byte* blobPtr = blob)
         fixed (byte* outCellsPtr = outCells)
         fixed (byte** outCellsPtrPtr = outCellsPtrs)
         {
-
             // Get the pointer for each cell
             for (int i = 0; i < numCells; i++)
             {
@@ -136,101 +128,80 @@ public sealed unsafe class EthKZG : IDisposable
             ThrowOnError(result);
         }
 
-        return Segment(outCells, BytesPerCell);
+        return outCells;
     }
 
-    public bool VerifyCellKZGProofBatch(byte[][] commitments, ulong[] cellIndices, byte[][] cells, byte[][] proofs)
+    public bool VerifyCellKZGProofBatch(byte[] commitments, ulong[] cellIndices, byte[] cells, byte[] proofs)
     {
+        int numCommitments = commitments.Length / BytesPerCommitment;
+        int numCells = cells.Length / BytesPerCell;
+        int numProofs = proofs.Length / BytesPerProof;
 
         // Length checks
-        for (int i = 0; i < cells.Length; i++)
+        if (commitments.Length % BytesPerCommitment != 0)
         {
-            if (cells[i].Length != BytesPerCell)
-            {
-                throw new ArgumentException($"cell at index {i} has an invalid length");
-            }
+            throw new ArgumentException($"commitments length must be a multiple of {BytesPerCommitment}");
         }
 
-        for (int i = 0; i < proofs.Length; i++)
+        if (cells.Length % BytesPerCell != 0)
         {
-            if (proofs[i].Length != BytesPerCommitment)
-            {
-                throw new ArgumentException($"proof at index {i} has an invalid length");
-            }
+            throw new ArgumentException($"cells length must be a multiple of {BytesPerCell}");
         }
 
-        for (int i = 0; i < commitments.Length; i++)
+        if (proofs.Length % BytesPerProof != 0)
         {
-            if (commitments[i].Length != BytesPerCommitment)
-            {
-                throw new ArgumentException($"commitments at index {i} has an invalid length");
-            }
+            throw new ArgumentException($"proofs length must be a multiple of {BytesPerProof}");
         }
 
-        int numCells = cells.Length;
-        int numProofs = proofs.Length;
-        int numCommitments = commitments.Length;
-
-        byte*[] commPtrs = new byte*[numCommitments];
         byte*[] cellsPtrs = new byte*[numCells];
+        byte*[] commPtrs = new byte*[numCommitments];
         byte*[] proofsPtrs = new byte*[numProofs];
 
         bool verified = false;
         bool* verifiedPtr = &verified;
 
-        fixed (byte** commitmentPtrPtr = commPtrs)
+        fixed (byte* cellsPtr = cells)
+        fixed (byte* commitmentsPtr = commitments)
+        fixed (byte* proofsPtr = proofs)
         fixed (byte** cellsPtrPtr = cellsPtrs)
+        fixed (byte** commitmentPtrPtr = commPtrs)
         fixed (byte** proofsPtrPtr = proofsPtrs)
         fixed (ulong* cellIndicesPtr = cellIndices)
         {
-            // Get the pointer for each cell
+            // Set pointers to flat data
             for (int i = 0; i < numCells; i++)
             {
-                fixed (byte* cellPtr = cells[i])
-                {
-                    cellsPtrPtr[i] = cellPtr;
-                }
+                cellsPtrs[i] = cellsPtr + i * BytesPerCell;
             }
 
-            // Get the pointer for each commitment
             for (int i = 0; i < numCommitments; i++)
             {
-                fixed (byte* commPtr = commitments[i])
-                {
-                    commitmentPtrPtr[i] = commPtr;
-                }
+                commPtrs[i] = commitmentsPtr + i * BytesPerCommitment;
             }
 
-            // Get the pointer for each commitment
             for (int i = 0; i < numProofs; i++)
             {
-                fixed (byte* proofPtr = proofs[i])
-                {
-                    proofsPtrPtr[i] = proofPtr;
-                }
+                proofsPtrs[i] = proofsPtr + i * BytesPerProof;
             }
 
-            CResult result = eth_kzg_verify_cell_kzg_proof_batch(_context, Convert.ToUInt64(commitments.Length), commitmentPtrPtr, Convert.ToUInt64(cellIndices.Length), cellIndicesPtr, Convert.ToUInt64(cells.Length), cellsPtrPtr, Convert.ToUInt64(proofs.Length), proofsPtrPtr, verifiedPtr);
+            CResult result = eth_kzg_verify_cell_kzg_proof_batch(_context, Convert.ToUInt64(numCommitments), commitmentPtrPtr, Convert.ToUInt64(cellIndices.Length), cellIndicesPtr, Convert.ToUInt64(numCells), cellsPtrPtr, Convert.ToUInt64(numProofs), proofsPtrPtr, verifiedPtr);
             ThrowOnError(result);
         }
         return verified;
     }
 
-    public (Memory<byte>[], Memory<byte>[]) RecoverCellsAndKZGProofs(ulong[] cellIds, byte[][] cells)
+    public (byte[], byte[]) RecoverCellsAndKZGProofs(ulong[] cellIds, byte[] cells)
     {
+        int numInputCells = cells.Length / BytesPerCell;
 
         // Length checks
-        for (int i = 0; i < cells.Length; i++)
+        if (cells.Length % BytesPerCell != 0)
         {
-            if (cells[i].Length != BytesPerCell)
-            {
-                throw new ArgumentException($"cell at index {i} has an invalid length");
-            }
+            throw new ArgumentException($"cells length must be a multiple of {BytesPerCell}");
         }
 
         int numProofs = CellsPerExtBlob;
         int numOutCells = CellsPerExtBlob;
-        int numInputCells = cells.Length;
 
         byte[] outCells = new byte[numOutCells * BytesPerCell];
         byte[] outProofs = new byte[numProofs * BytesPerProof];
@@ -241,19 +212,17 @@ public sealed unsafe class EthKZG : IDisposable
         byte*[] outProofsPtrs = new byte*[numProofs];
 
         fixed (ulong* cellIdsPtr = cellIds)
+        fixed (byte* inputCellsPtr = cells)
         fixed (byte* outCellsPtr = outCells)
         fixed (byte* outProofsPtr = outProofs)
         fixed (byte** inputCellsPtrPtr = inputCellsPtrs)
         fixed (byte** outCellsPtrPtr = outCellsPtrs)
         fixed (byte** outProofsPtrPtr = outProofsPtrs)
         {
-            // Get the pointer for each input cell
+            // Set pointers to flat input cells
             for (int i = 0; i < numInputCells; i++)
             {
-                fixed (byte* cellPtr = cells[i])
-                {
-                    inputCellsPtrPtr[i] = cellPtr;
-                }
+                inputCellsPtrs[i] = inputCellsPtr + i * BytesPerCell;
             }
 
             // Get the pointer for each output cell
@@ -272,7 +241,7 @@ public sealed unsafe class EthKZG : IDisposable
             ThrowOnError(result);
         }
 
-        return (Segment(outCells, BytesPerCell), Segment(outProofs, BytesPerProof));
+        return (outCells, outProofs);
     }
 
     // EIP-4844 methods
@@ -399,41 +368,32 @@ public sealed unsafe class EthKZG : IDisposable
         return verified;
     }
 
-    public unsafe bool VerifyBlobKzgProofBatch(byte[][] blobs, byte[][] commitments, byte[][] proofs)
+    public unsafe bool VerifyBlobKzgProofBatch(byte[] blobs, byte[] commitments, byte[] proofs)
     {
+        int numBlobs = blobs.Length / BytesPerBlob;
+        int numCommitments = commitments.Length / BytesPerCommitment;
+        int numProofs = proofs.Length / BytesPerProof;
+
         // Length checks
-        if (blobs.Length != commitments.Length || blobs.Length != proofs.Length)
+        if (blobs.Length % BytesPerBlob != 0)
         {
-            throw new ArgumentException($"blobs, commitments, and proofs must have the same length");
+            throw new ArgumentException($"blobs length must be a multiple of {BytesPerBlob}");
         }
 
-        for (int i = 0; i < blobs.Length; i++)
+        if (commitments.Length % BytesPerCommitment != 0)
         {
-            if (blobs[i].Length != BytesPerBlob)
-            {
-                throw new ArgumentException($"blob at index {i} has an invalid length. Expected {BytesPerBlob}, got {blobs[i].Length}");
-            }
+            throw new ArgumentException($"commitments length must be a multiple of {BytesPerCommitment}");
         }
 
-        for (int i = 0; i < commitments.Length; i++)
+        if (proofs.Length % BytesPerProof != 0)
         {
-            if (commitments[i].Length != BytesPerCommitment)
-            {
-                throw new ArgumentException($"commitment at index {i} has an invalid length. Expected {BytesPerCommitment}, got {commitments[i].Length}");
-            }
+            throw new ArgumentException($"proofs length must be a multiple of {BytesPerProof}");
         }
 
-        for (int i = 0; i < proofs.Length; i++)
+        if (numBlobs != numCommitments || numBlobs != numProofs)
         {
-            if (proofs[i].Length != BytesPerProof)
-            {
-                throw new ArgumentException($"proof at index {i} has an invalid length. Expected {BytesPerProof}, got {proofs[i].Length}");
-            }
+            throw new ArgumentException($"blobs, commitments, and proofs must have the same count");
         }
-
-        int numBlobs = blobs.Length;
-        int numCommitments = commitments.Length;
-        int numProofs = proofs.Length;
 
         byte*[] blobPtrs = new byte*[numBlobs];
         byte*[] commitmentPtrs = new byte*[numCommitments];
@@ -441,35 +401,27 @@ public sealed unsafe class EthKZG : IDisposable
 
         bool verified = false;
 
+        fixed (byte* blobsPtr = blobs)
+        fixed (byte* commitmentsPtr = commitments)
+        fixed (byte* proofsPtr = proofs)
         fixed (byte** blobPtrPtr = blobPtrs)
         fixed (byte** commitmentPtrPtr = commitmentPtrs)
         fixed (byte** proofPtrPtr = proofPtrs)
         {
-            // Get the pointer for each blob
+            // Set pointers to flat data
             for (int i = 0; i < numBlobs; i++)
             {
-                fixed (byte* blobPtr = blobs[i])
-                {
-                    blobPtrPtr[i] = blobPtr;
-                }
+                blobPtrs[i] = blobsPtr + i * BytesPerBlob;
             }
 
-            // Get the pointer for each commitment
             for (int i = 0; i < numCommitments; i++)
             {
-                fixed (byte* commitmentPtr = commitments[i])
-                {
-                    commitmentPtrPtr[i] = commitmentPtr;
-                }
+                commitmentPtrs[i] = commitmentsPtr + i * BytesPerCommitment;
             }
 
-            // Get the pointer for each proof
             for (int i = 0; i < numProofs; i++)
             {
-                fixed (byte* proofPtr = proofs[i])
-                {
-                    proofPtrPtr[i] = proofPtr;
-                }
+                proofPtrs[i] = proofsPtr + i * BytesPerProof;
             }
 
             CResult result = eth_kzg_verify_blob_kzg_proof_batch(_context,
@@ -507,42 +459,5 @@ public sealed unsafe class EthKZG : IDisposable
             default:
                 throw new ApplicationException("EthKZG returned an unexpected result variant");
         }
-    }
-
-    private static byte[] FlattenArray(byte[][] jaggedArray)
-    {
-        int totalLength = 0;
-
-        // Calculate the total length of the flattened array
-        foreach (byte[] subArray in jaggedArray)
-        {
-            totalLength += subArray.Length;
-        }
-
-        // Create a new array to hold the flattened result
-        byte[] flattenedArray = new byte[totalLength];
-
-        int currentIndex = 0;
-
-        // Copy elements from the jagged array to the flattened array
-        foreach (byte[] subArray in jaggedArray)
-        {
-            Array.Copy(subArray, 0, flattenedArray, currentIndex, subArray.Length);
-            currentIndex += subArray.Length;
-        }
-
-        return flattenedArray;
-    }
-
-    private static Memory<byte>[] Segment(byte[] arr, int itemLength)
-    {
-        Memory<byte>[] result = new Memory<byte>[arr.Length / itemLength];
-
-        for (int i = 0; i < result.Length; i++)
-        {
-            result[i] = new Memory<byte>(arr, i * itemLength, itemLength);
-        }
-
-        return result;
     }
 }
