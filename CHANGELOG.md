@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.9.0...v0.9.1) (2025-09-24)
+
+
+### Features
+
+* Filter out zero scalars ([#430](https://github.com/crate-crypto/rust-eth-kzg/issues/430)) ([de11e67](https://github.com/crate-crypto/rust-eth-kzg/commit/de11e6701d9fbb3c4fa12870414c0072604a7570))
+
 ## [0.9.0](https://github.com/crate-crypto/rust-eth-kzg/compare/v0.8.1...v0.9.0) (2025-08-30)
 
 
