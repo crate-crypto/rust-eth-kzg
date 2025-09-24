@@ -13,7 +13,11 @@ pub fn g1_lincomb(points: &[G1Point], scalars: &[Scalar]) -> Option<G1Projective
     let (points, scalars): (Vec<_>, Vec<_>) = points
         .iter()
         .zip(scalars)
-        .filter(|(point, _)| !(bool::from(point.is_identity())))
+        .filter(|(point, scalar)| {
+            let point_is_identity = bool::from(point.is_identity());
+            let scalar_is_zero = scalar.is_zero_vartime();
+            !(point_is_identity || scalar_is_zero)
+        })
         .map(|(point, scalar)| (G1Projective::from(point), *scalar))
         .unzip();
 
@@ -38,7 +42,11 @@ pub fn g2_lincomb(points: &[G2Point], scalars: &[Scalar]) -> Option<G2Projective
     let (points, scalars): (Vec<_>, Vec<_>) = points
         .iter()
         .zip(scalars)
-        .filter(|(point, _)| !(bool::from(point.is_identity())))
+        .filter(|(point, scalar)| {
+            let point_is_identity = bool::from(point.is_identity());
+            let scalar_is_zero = scalar.is_zero_vartime();
+            !(point_is_identity || scalar_is_zero)
+        })
         .map(|(point, scalar)| (G2Projective::from(point), *scalar))
         .unzip();
 
