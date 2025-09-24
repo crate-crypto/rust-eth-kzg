@@ -9,10 +9,6 @@ pub fn g1_lincomb(points: &[G1Point], scalars: &[Scalar]) -> Option<G1Projective
         return None;
     }
 
-    if points.is_empty() {
-        return Some(G1Projective::identity());
-    }
-
     // Filter out identity points
     let (points, scalars): (Vec<_>, Vec<_>) = points
         .iter()
@@ -20,6 +16,11 @@ pub fn g1_lincomb(points: &[G1Point], scalars: &[Scalar]) -> Option<G1Projective
         .filter(|(point, _)| !(bool::from(point.is_identity())))
         .map(|(point, scalar)| (G1Projective::from(point), *scalar))
         .unzip();
+
+    // Return group identity if no valid points remain
+    if points.is_empty() {
+        return Some(G1Projective::identity());
+    }
 
     Some(G1Projective::multi_exp(&points, &scalars))
 }
@@ -33,11 +34,6 @@ pub fn g2_lincomb(points: &[G2Point], scalars: &[Scalar]) -> Option<G2Projective
         return None;
     }
 
-    // Return group identity if no valid points remain
-    if points.is_empty() {
-        return Some(G2Projective::identity());
-    }
-
     // Filter out identity points
     let (points, scalars): (Vec<_>, Vec<_>) = points
         .iter()
@@ -46,11 +42,17 @@ pub fn g2_lincomb(points: &[G2Point], scalars: &[Scalar]) -> Option<G2Projective
         .map(|(point, scalar)| (G2Projective::from(point), *scalar))
         .unzip();
 
+    // Return group identity if no valid points remain
+    if points.is_empty() {
+        return Some(G2Projective::identity());
+    }
+
     Some(G2Projective::multi_exp(&points, &scalars))
 }
 
 #[cfg(test)]
 mod tests {
+    use blstrs::G1Projective;
     use rand::{rngs::StdRng, SeedableRng};
 
     use super::*;
@@ -70,6 +72,16 @@ mod tests {
         let points = vec![G1Point::generator()];
         let scalars = vec![];
         assert_eq!(g1_lincomb(&points, &scalars), None);
+    }
+
+    #[test]
+    fn g1_lincomb_filters_out_identity_points() {
+        let points = vec![G1Point::identity()];
+        let scalars = vec![Scalar::from(1)];
+        assert_eq!(
+            g1_lincomb(&points, &scalars),
+            Some(G1Projective::identity())
+        );
     }
 
     #[test]
