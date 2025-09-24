@@ -13,9 +13,15 @@ pub fn g1_lincomb(points: &[G1Point], scalars: &[Scalar]) -> Option<G1Projective
         return Some(G1Projective::identity());
     }
 
-    // Convert to Projective, since the API forces us to do this
-    let proj_points: Vec<_> = points.iter().map(Into::into).collect();
-    Some(G1Projective::multi_exp(&proj_points, scalars))
+    // Filter out identity points
+    let (points, scalars): (Vec<_>, Vec<_>) = points
+        .iter()
+        .zip(scalars)
+        .filter(|(point, _)| !(bool::from(point.is_identity())))
+        .map(|(point, scalar)| (G1Projective::from(point), *scalar))
+        .unzip();
+
+    Some(G1Projective::multi_exp(&points, &scalars))
 }
 
 /// A multi-scalar multiplication algorithm over G2 elements
@@ -32,10 +38,15 @@ pub fn g2_lincomb(points: &[G2Point], scalars: &[Scalar]) -> Option<G2Projective
         return Some(G2Projective::identity());
     }
 
-    // Convert to Projective, since the API forces us to do this
-    let proj_points: Vec<_> = points.iter().map(Into::into).collect();
+    // Filter out identity points
+    let (points, scalars): (Vec<_>, Vec<_>) = points
+        .iter()
+        .zip(scalars)
+        .filter(|(point, _)| !(bool::from(point.is_identity())))
+        .map(|(point, scalar)| (G2Projective::from(point), *scalar))
+        .unzip();
 
-    Some(G2Projective::multi_exp(&proj_points, scalars))
+    Some(G2Projective::multi_exp(&points, &scalars))
 }
 
 #[cfg(test)]
